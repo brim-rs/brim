@@ -12,7 +12,7 @@ brim-error = { path = "crates/error", version = "0.1.1" }
 brim-shell = { path = "crates/shell", version = "0.1.0" }
 
 # Other dependencies
-anyhow = "1.0.93"
+anyhow = "1.0.94"
 colored = "2.1.0"
 log = "0.4.22"
 thiserror = "2.0.3"
