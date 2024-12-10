@@ -1,0 +1,19 @@
+[package]
+name = "brim-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+backtrace = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+colored = { workspace = true }
+anstyle = { workspace = true }
+toml = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+anstream = { workspace = true }
+toml_edit = { workspace = true }
+tokio = { version = "1.0.0", features = ["rt", "rt-multi-thread", "macros"] }
+http-body-util = { workspace = true }
+dirs = "5.0.1"
+brim-shell = { workspace = true }

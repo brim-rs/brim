@@ -1,0 +1,262 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  PROJECT_NAME: brim-cli
+  BINARIES_DIR: binaries
+
+jobs:
+  changelog:
+    name: Generate changelog
+    runs-on: ubuntu-latest
+    outputs:
+      release_body: ${{ steps.git-cliff.outputs.content }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@main
+        id: git-cliff
+        with:
+          config: cliff.toml
+          args: -vv --latest --no-exec --github-repo ${{ github.repository }}
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
+
+  build:
+    name: Build for multiple platforms
+    needs: changelog
+    runs-on: ${{ matrix.build.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build:
+          - {
+            NAME: linux-x64-glibc,
+            OS: ubuntu-22.04,
+            TOOLCHAIN: stable,
+            TARGET: x86_64-unknown-linux-gnu,
+          }
+          - {
+            NAME: linux-x64-musl,
+            OS: ubuntu-22.04,
+            TOOLCHAIN: stable,
+            TARGET: x86_64-unknown-linux-musl,
+          }
+          - {
+            NAME: linux-x86-glibc,
+            OS: ubuntu-22.04,
+            TOOLCHAIN: stable,
+            TARGET: i686-unknown-linux-gnu,
+          }
+          - {
+            NAME: linux-x86-musl,
+            OS: ubuntu-22.04,
+            TOOLCHAIN: stable,
+            TARGET: i686-unknown-linux-musl,
+          }
+          - {
+            NAME: linux-arm64-glibc,
+            OS: ubuntu-22.04,
+            TOOLCHAIN: stable,
+            TARGET: aarch64-unknown-linux-gnu,
+          }
+          - {
+            NAME: linux-arm64-musl,
+            OS: ubuntu-22.04,
+            TOOLCHAIN: stable,
+            TARGET: aarch64-unknown-linux-musl,
+          }
+          - {
+            NAME: win32-x64-mingw,
+            OS: windows-2022,
+            TOOLCHAIN: stable,
+            TARGET: x86_64-pc-windows-gnu,
+          }
+          - {
+            NAME: win32-x64-msvc,
+            OS: windows-2022,
+            TOOLCHAIN: stable,
+            TARGET: x86_64-pc-windows-msvc,
+          }
+          - {
+            NAME: win32-x86-msvc,
+            OS: windows-2022,
+            TOOLCHAIN: stable,
+            TARGET: i686-pc-windows-msvc,
+          }
+          - {
+            NAME: win32-arm64-msvc,
+            OS: windows-2022,
+            TOOLCHAIN: stable,
+            TARGET: aarch64-pc-windows-msvc,
+          }
+          - {
+            NAME: darwin-x64,
+            OS: macos-14,
+            TOOLCHAIN: stable,
+            TARGET: x86_64-apple-darwin,
+          }
+          - {
+            NAME: darwin-arm64,
+            OS: macos-14,
+            TOOLCHAIN: stable,
+            TARGET: aarch64-apple-darwin,
+          }
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set the release version
+        shell: bash
+        run: echo "RELEASE_VERSION=${GITHUB_REF:11}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if [[ "${{ matrix.build.NAME }}" = *"-musl" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends \
+              --allow-unauthenticated musl-tools
+          fi
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.build.TOOLCHAIN }}
+          target: ${{ matrix.build.TARGET }}
+          override: true
+
+      - name: Setup Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install OpenSSL (if required)
+        if: matrix.build.OS == 'macos-14' || matrix.build.TARGET == 'x86_64-unknown-linux-gnu'
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew install openssl
+            echo "OPENSSL_DIR=$(brew --prefix openssl)" >> $GITHUB_ENV
+            echo "PKG_CONFIG_PATH=$(brew --prefix openssl)/lib/pkgconfig" >> $GITHUB_ENV
+          fi
+
+      - name: Build (linux/macos)
+        if: matrix.build.OS != 'windows-2022'
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release --locked --target ${{ matrix.build.TARGET }} --bin ${{ env.PROJECT_NAME }}
+
+      - name: Build (windows)
+        if: matrix.build.OS == 'windows-2022'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --locked --target ${{ matrix.build.TARGET }} --bin ${{ env.PROJECT_NAME }}
+
+      - name: Create binaries directory
+        run: mkdir -p ${{ env.BINARIES_DIR }}
+
+      - name: Archive Binary
+        shell: bash
+        run: |
+          echo "Target: ${{ matrix.build.TARGET }}"
+          echo "Project: ${{ env.PROJECT_NAME }}"
+          echo "Binary Path: $binary_path"
+          if [[ "${{ matrix.build.OS }}" == "windows-2022" ]]; then
+            binary_path="target/${{ matrix.build.TARGET }}/release/${{ env.PROJECT_NAME }}.exe"
+            echo "Copying Windows binary: $binary_path"
+            cp "$binary_path" "${{ env.BINARIES_DIR }}/${{ env.PROJECT_NAME }}-${{ matrix.build.TARGET }}.exe"
+          else
+            binary_path="target/${{ matrix.build.TARGET }}/release/${{ env.PROJECT_NAME }}"
+            echo "Copying non-Windows binary: $binary_path"
+            cp "$binary_path" "${{ env.BINARIES_DIR }}/${{ env.PROJECT_NAME }}-${{ matrix.build.TARGET }}"
+          fi
+
+      - name: Upload Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ matrix.build.TARGET }}"
+          path: ${{ env.BINARIES_DIR }}
+
+  release:
+    name: Create a new release
+    needs: [ build, changelog ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clean up binaries
+        run: rm -rf binaries
+
+      - name: Download Binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries
+
+      - name: Print release body
+        run: echo "${{ needs.changelog.outputs.release_body }}"
+
+      - name: Zip release binaries
+        run: |
+          for dir in binaries/*; do
+            if [ -d "$dir" ]; then
+              dir_name=$(basename "$dir")
+              cd "$dir"
+              zip -r "../../binaries/${dir_name}.zip" ./*
+              cd -
+            fi
+          done
+
+      - name: Sign the release
+        if: matrix.build.OS == 'ubuntu-22.04' || matrix.build.OS == 'macos-14'
+        run: |
+          for dir in ./binaries/*.zip; do
+            echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 --decode > private.key
+            echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --pinentry-mode=loopback \
+              --passphrase-fd 0 --import private.key
+            echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --pinentry-mode=loopback \
+              --passphrase-fd 0 --detach-sign "$dir"
+          done
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: |
+            ./binaries/*.zip
+          body: ${{ needs.changelog.outputs.release_body }}
+          tag: "${{ github.ref_name }}"
+          name: "${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          allowUpdates: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  core_publish:
+    name: Publish crates crates to crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Publish crates crates
+        run: |
+          for crate_dir in core/*; do
+            if [ -f "$crate_dir/Cargo.toml" ]; then
+              cd "$crate_dir"
+              cargo publish --token "${{ secrets.CRATES_IO_TOKEN }}" || echo "Skipping: already published"
+              cd -
+            fi
+          done

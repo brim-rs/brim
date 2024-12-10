@@ -1,0 +1,11 @@
+[package]
+name = "brim-shell"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anstyle = { workspace = true }
+anyhow = { workspace = true }
+url = { workspace = true }
+anstream = { workspace = true }
+gethostname = { workspace = true }

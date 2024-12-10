@@ -1,0 +1,31 @@
+[workspace]
+members = [
+    "cli",
+    "crates/error", "crates/shell",
+]
+resolver = "1"
+
+[workspace.dependencies]
+
+# Core dependencies
+brim-error = { path = "crates/error", version = "0.1.1" }
+brim-shell = { path = "crates/shell", version = "0.1.0" }
+
+# Other dependencies
+anyhow = "1.0.93"
+colored = "2.1.0"
+log = "0.4.22"
+thiserror = "2.0.3"
+backtrace = "0.3.74"
+clap = { version = "4.5.20", features = ["derive"] }
+anstyle = "1.0.10"
+tar = "0.4.42"
+toml = "0.8.19"
+serde = "1.0.215"
+uuid = { version = "1.11.0", features = ["v4"] }
+indexmap = "2.6.0"
+anstream = "0.6.18"
+toml_edit = "0.22.22"
+http-body-util = "0.1.2"
+url = "2.5.3"
+gethostname = "0.5.0"
