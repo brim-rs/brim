@@ -27,7 +27,7 @@ impl<'a> CompilationUnit<'a> {
     pub fn compile(&mut self) -> Result<()> {
         self.lexer.lex()?;
 
-        println!("{:#?}", self.lexer.tokens);
+        // println!("{:#?}", self.lexer.tokens);
 
         Ok(())
     }

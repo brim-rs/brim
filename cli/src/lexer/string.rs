@@ -1,3 +1,4 @@
+use std::fs;
 use anyhow::{bail, Result};
 use crate::error::lexer_error;
 use crate::error::span::TextSpan;
@@ -35,7 +36,7 @@ impl StringLiteral {
                         '"' => str.push('"'),
                         _ => {
                             bail!(lexer_error(
-                                next.to_string(),
+                                format!("Invalid escape sequence: {}", next.to_string()),
                                 TextSpan::new(lexer.position, lexer.position, next.to_string()),
                                 None
                             ))
