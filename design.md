@@ -1,4 +1,91 @@
-# This file specifies how the language looks.
+# This file specifies the language design of Brim.
+
+## Values
+
+### Primitives
+
+| Type    | Description                    |
+|---------|--------------------------------|
+| `i8`    | 8-bit signed integer           |
+| `i16`   | 16-bit signed integer          |
+| `i32`   | 32-bit signed integer          |
+| `i64`   | 64-bit signed integer          |
+| `i128`  | 128-bit signed integer         |
+| `u8`    | 8-bit unsigned integer         |
+| `u16`   | 16-bit unsigned integer        |
+| `u32`   | 32-bit unsigned integer        |
+| `u64`   | 64-bit unsigned integer        |
+| `u128`  | 128-bit unsigned integer       |
+| `usize` | Pointer-sized unsigned integer |
+| `isize` | Pointer-sized signed integer   |
+| `f16`   | 16-bit floating-point number   |
+| `f32`   | 32-bit floating-point number   |
+| `f64`   | 64-bit floating-point number   |
+| `f128`  | 128-bit floating-point number  |
+| `bool`  | Boolean. `true` or `false`     |
+| `void`  | No return value                |
+| `char`  | Unicode character              |
+
+### `undefined` value
+
+`undefined` is a special value that represents an uninitialized value.
+
+### Compound types
+
+#### Tuples
+
+Tuples are a collection of values of different types.
+
+```brim
+let tuple = (1, "Hello", 3.14)
+```
+
+#### Arrays
+
+Arrays are a collection of values of the same type with a fixed size.
+`Vec` is a dynamic array that can change its size. It's a part of the standard library.
+
+```brim
+let array = [1, 2, 3, 4, 5]
+```
+
+```brim
+let array: int[5] = [1, 2, 3, 4, 5]
+```
+
+> Arrays are useful when you know the size of the collection at compile time and know that it won't change.
+
+- Accessing elements in an array is done using the `[]` operator.
+
+```brim
+let array: int[5] = [1, 2, 3, 4, 5]
+let first = array[0]
+```
+
+⚠️ **Warning**: Accessing an element outside the bounds of the array will result in a panic. This prevents memory
+issues.
+
+## Comments
+
+Basic comments are supported using the `//` symbol.
+
+```brim
+// This is a comment
+pub fn main() {
+    println("Hello, World!")
+}
+```
+
+### Block comments
+
+Block comments are used for documentation and start with `///`.
+
+```brim
+/// This function prints "Hello, World!"
+pub fn main() {
+    println("Hello, World!")
+}
+```
 
 ## Functions
 
@@ -19,6 +106,18 @@ Return types are specified after the `->` followed by the type. Similar to many 
 ```brim
 fn add(a: int, b: int) -> int {
     return a + b
+}
+```
+
+### Anonymous functions
+
+Anonymous functions are defined using the `|` symbol.
+
+```brim
+fn add(a: int, b: int) -> int {
+    let result = |a, b| a + b
+
+    return result(a, b)
 }
 ```
 
