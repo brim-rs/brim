@@ -1,14 +1,12 @@
 [workspace]
 members = [
-    "cli",
-    "crates/error", "crates/shell",
+    "cli", "crates/shell",
 ]
 resolver = "1"
 
 [workspace.dependencies]
 
 # Core dependencies
-brim-error = { path = "crates/error", version = "0.1.1" }
 brim-shell = { path = "crates/shell", version = "0.1.0" }
 
 # Other dependencies
@@ -29,3 +27,4 @@ toml_edit = "0.22.22"
 http-body-util = "0.1.2"
 url = "2.5.4"
 gethostname = "0.5.0"
+ropey = "1.6.1"

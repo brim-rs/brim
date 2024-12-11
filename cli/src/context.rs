@@ -2,6 +2,9 @@ use anstream::ColorChoice;
 use anyhow::{anyhow, bail, Context, Result};
 use std::{fs::read_to_string, path::PathBuf, sync::Arc, time::Instant};
 use brim_shell::Shell;
+use crate::error::diagnostic::{Diagnostic, Level};
+use crate::error::span::TextSpan;
+use crate::lexer::source::Source;
 
 #[derive(Debug)]
 pub struct GlobalContext {
@@ -9,6 +12,7 @@ pub struct GlobalContext {
     pub cwd: PathBuf,
     pub start: Instant,
     pub shell: Shell,
+    pub diagnostics: Vec<Diagnostic>,
 }
 
 impl GlobalContext {
@@ -18,6 +22,7 @@ impl GlobalContext {
             cwd: std::env::current_dir().context("Failed to get current directory")?,
             start: Instant::now(),
             shell: Shell::new(color_choice),
+            diagnostics: Vec::new(),
         })
     }
 
@@ -27,6 +32,7 @@ impl GlobalContext {
             cwd,
             start: Instant::now(),
             shell: Shell::new(color_choice),
+            diagnostics: Vec::new(),
         })
     }
 
@@ -40,5 +46,21 @@ impl GlobalContext {
 
     pub fn cache_dir(&self) -> Result<PathBuf> {
         Ok(dirs::cache_dir().unwrap().join("brim"))
+    }
+
+    pub fn warning(&mut self, message: String, source: Option<Arc<Source>>, span: Option<TextSpan>, hint: Option<String>) {
+        self.diagnostics.push(Diagnostic {
+            text: message,
+            level: Level::Warning,
+            source,
+            span,
+            hint,
+        });
+    }
+
+    pub fn print_diagnostics(&mut self) {
+        for diagnostic in self.diagnostics.clone() {
+            diagnostic.write(&mut self.shell).unwrap();
+        }
     }
 }

@@ -73,6 +73,28 @@ impl Shell {
         Ok(())
     }
 
+    pub fn write(
+        &self,
+        status: &dyn fmt::Display,
+        message: Option<&dyn fmt::Display>,
+        style: &Style,
+        justified: bool,
+    ) -> Result<String> {
+        let dim = anstyle::Style::new() | anstyle::Effects::DIMMED;
+
+        let mut buffer = Vec::new();
+        if justified {
+            write!(&mut buffer, "{style}{status:>13}{style:#}")?;
+        } else {
+            write!(&mut buffer, "{style}{status}{style:#}{dim}:{dim:#}")?;
+        }
+        match message {
+            Some(message) => writeln!(buffer, " {message}")?,
+            None => write!(buffer, " ")?,
+        }
+        Ok(String::from_utf8(buffer)?)
+    }
+
     pub fn warn<T: fmt::Display>(&mut self, message: T) -> Result<()> {
         self.print(&"warning", Some(&message), &WARN, false)
     }

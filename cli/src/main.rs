@@ -17,6 +17,9 @@ pub mod context;
 pub mod fs;
 pub mod panic_handler;
 pub mod path;
+pub mod lexer;
+mod compilation;
+mod error;
 
 #[tokio::main]
 async fn main() -> Result<()> {
