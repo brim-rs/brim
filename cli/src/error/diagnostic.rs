@@ -16,13 +16,12 @@ pub enum Level {
 pub struct Diagnostic {
     pub text: String,
     pub level: Level,
-    pub source: Option<Arc<Source>>,
     pub span: Option<TextSpan>,
     pub hint: Option<String>,
 }
 
 impl Diagnostic {
-    pub fn write(&self, shell: &mut Shell) -> Result<()> {
+    pub fn write(&self, shell: &mut Shell, source: Option<Arc<Source>>) -> Result<()> {
         let mut buf = stderr();
         let level_str = match self.level {
             Level::Error => "error",

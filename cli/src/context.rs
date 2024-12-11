@@ -12,7 +12,7 @@ pub struct GlobalContext {
     pub cwd: PathBuf,
     pub start: Instant,
     pub shell: Shell,
-    pub diagnostics: Vec<Diagnostic>,
+    pub diagnostics: Vec<(Diagnostic, Option<Arc<Source>>)>,
 }
 
 impl GlobalContext {
@@ -49,18 +49,21 @@ impl GlobalContext {
     }
 
     pub fn warning(&mut self, message: String, source: Option<Arc<Source>>, span: Option<TextSpan>, hint: Option<String>) {
-        self.diagnostics.push(Diagnostic {
+        self.diagnostics.push((Diagnostic {
             text: message,
             level: Level::Warning,
-            source,
             span,
             hint,
-        });
+        }, source));
+    }
+    
+    pub fn new_diagnostic(&mut self, diagnostic: Diagnostic) {
+        self.diagnostics.push((diagnostic, None));
     }
 
     pub fn print_diagnostics(&mut self) {
-        for diagnostic in self.diagnostics.clone() {
-            diagnostic.write(&mut self.shell).unwrap();
+        for (diagnostic, source) in self.diagnostics.clone() {
+            diagnostic.write(&mut self.shell, source).unwrap();
         }
     }
 }

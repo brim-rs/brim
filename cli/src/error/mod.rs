@@ -5,6 +5,7 @@ pub mod position;
 use std::io;
 use thiserror::Error;
 use crate::error::diagnostic::{Diagnostic, Level};
+use crate::error::span::TextSpan;
 
 #[derive(Error, Debug)]
 pub enum BrimError {
@@ -13,10 +14,35 @@ pub enum BrimError {
         message: String,
     },
 
+    #[error("Lexer error")]
+    LexerError {
+        message: String,
+        span: TextSpan,
+        hint: Option<String>,
+    },
+
     #[error("Other error")]
     OtherError {
         source: anyhow::Error
     },
+}
+
+pub fn lexer_error(message: String, span: TextSpan, hint: Option<String>) -> BrimError {
+    BrimError::LexerError {
+        message,
+        span,
+        hint,
+    }
+}
+
+pub fn invalid_token(
+    token: String, span: TextSpan
+) -> BrimError {
+    BrimError::LexerError {
+        message: format!("Found invalid token: {}", token),
+        span,
+        hint: None,
+    }
 }
 
 impl From<io::Error> for BrimError {
@@ -33,16 +59,20 @@ impl BrimError {
             BrimError::CliError { message } => Diagnostic {
                 text: message.clone(),
                 level: Level::Error,
-                source: None,
                 span: None,
                 hint: Some("Please check the CLI usage with `brim --help` and try again".to_string()),
             },
             BrimError::OtherError { source } => Diagnostic {
                 text: source.to_string(),
                 level: Level::Error,
-                source: None,
                 span: None,
                 hint: None,
+            },
+            BrimError::LexerError { message, span, hint } => Diagnostic {
+                text: message.clone(),
+                level: Level::Error,
+                span: Some(span.clone()),
+                hint: hint.clone(),
             },
         }
     }

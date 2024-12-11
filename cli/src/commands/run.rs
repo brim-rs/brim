@@ -27,7 +27,7 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
             let brim_err = e.downcast_ref::<BrimError>();
 
             if let Some(err) = brim_err {
-                ctx.diagnostics.push(err.to_diagnostic());
+                ctx.new_diagnostic(err.to_diagnostic());
 
                 ctx.print_diagnostics();
             } else {

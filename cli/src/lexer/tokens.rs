@@ -72,7 +72,6 @@ impl Display for TokenKind {
             TokenKind::Use => write!(f, "use"),
             TokenKind::Pub => write!(f, "pub"),
             TokenKind::From => write!(f, "from"),
-            TokenKind::Throw => write!(f, "throw"),
             TokenKind::Try => write!(f, "try"),
             TokenKind::Catch => write!(f, "catch"),
             TokenKind::Loop => write!(f, "loop"),
@@ -84,7 +83,8 @@ impl Display for TokenKind {
             TokenKind::Trait => write!(f, "trait"),
             TokenKind::Then => write!(f, "then"),
             TokenKind::Const => write!(f, "const"),
-
+            TokenKind::Error => write!(f, "error"),
+            
             // Operators
             TokenKind::Plus => write!(f, "+"),
             TokenKind::Minus => write!(f, "-"),
@@ -164,7 +164,6 @@ pub enum TokenKind {
     Use,
     Pub,
     From,
-    Throw,
     Try,
     Catch,
     Loop,
@@ -176,6 +175,7 @@ pub enum TokenKind {
     Trait,
     Then,
     Const,
+    Error,
 
     // Operators
     Plus,              // +

@@ -1,0 +1,26 @@
+error MyError {
+    ParsingError: {
+        message: string,
+        span: Span
+    },
+    UnknownError
+}
+
+fn parse(input: string) -> string !MyError {
+     if input.len() <= 0 {
+         return MyError::ParsingError {
+             message: "Input is empty",
+             span: Span::new(0, 0)
+         }
+     }
+
+     return input
+}
+
+pub fn main() {
+    let value = parse(input) catch |err| {
+        println(err)
+    }
+
+    println("Value {}", [value])
+}
