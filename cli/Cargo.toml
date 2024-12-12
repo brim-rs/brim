@@ -19,3 +19,4 @@ dirs = "5.0.1"
 brim-shell = { workspace = true }
 ropey = { workspace = true }
 thiserror = { workspace = true }
+indexmap = "2.7.0"

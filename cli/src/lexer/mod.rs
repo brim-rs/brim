@@ -10,7 +10,7 @@ use crate::lexer::punctuation::Punctuation;
 use crate::lexer::string::StringLiteral;
 
 pub mod source;
-mod tokens;
+pub mod tokens;
 mod string;
 mod numbers;
 mod identifiers;

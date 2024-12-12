@@ -106,6 +106,7 @@ dependencies = [
  "colored",
  "dirs",
  "http-body-util",
+ "indexmap",
  "ropey",
  "serde",
  "thiserror 2.0.6",

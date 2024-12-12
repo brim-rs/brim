@@ -22,6 +22,8 @@ pub mod path;
 pub mod lexer;
 mod compilation;
 mod error;
+mod idx;
+mod ast;
 
 #[tokio::main]
 async fn main() -> Result<()> {
