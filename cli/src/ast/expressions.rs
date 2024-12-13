@@ -5,6 +5,35 @@ use crate::ast::types::TypeKind;
 use crate::error::span::TextSpan;
 use crate::lexer::tokens::{Token, TokenKind};
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Expr {
+    pub kind: ExprKind,
+    pub id: ExprId,
+    pub ty: TypeKind,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ExprKind {
+    Literal(Literal),
+    Binary(Binary),
+    Unary(Unary),
+    Variable(Variable),
+    Parenthesized(Parenthesized),
+    Call(CallExpr),
+    Assign(Assign),
+    Array(ArrayExpr),
+    Access(AccessExpr),
+    Null(Token),
+    StructConstructor(StructConstructor),
+    Object(ObjectExpr),
+}
+
+impl Expr {
+    pub fn new(kind: ExprKind, id: ExprId, ty: TypeKind) -> Self {
+        Expr { kind, id, ty }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct ArrayExpr {
     pub exprs: Vec<ExprId>,
@@ -82,6 +111,7 @@ pub enum BinOpKind {
     Increment,
     /// Decrement operator (`--`).
     Decrement,
+    Catch,
 }
 
 impl BinOpKind {
@@ -309,6 +339,8 @@ impl BinOperator {
             BinOpKind::Or => 10,
             // Increment/Decrement operators
             BinOpKind::Increment | BinOpKind::Decrement => 9,
+            // Error-handling operator
+            BinOpKind::Catch => 8,
         }
     }
 
@@ -326,36 +358,6 @@ impl BinOperator {
 pub enum BinOpAssociativity {
     Left,
     Right,
-}
-
-#[derive(Debug, Clone)]
-#[derive(PartialEq)]
-pub struct Expr {
-    pub kind: ExprKind,
-    pub id: ExprId,
-    pub ty: TypeKind,
-}
-
-impl Expr {
-    pub fn new(kind: ExprKind, id: ExprId, ty: TypeKind) -> Self {
-        Expr { kind, id, ty }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum ExprKind {
-    Literal(Literal),
-    Binary(Binary),
-    Unary(Unary),
-    Variable(Variable),
-    Parenthesized(Parenthesized),
-    Call(CallExpr),
-    Assign(Assign),
-    Array(ArrayExpr),
-    Access(AccessExpr),
-    Null(Token),
-    StructConstructor(StructConstructor),
-    Object(ObjectExpr),
 }
 
 #[derive(Debug, Clone, PartialEq)]

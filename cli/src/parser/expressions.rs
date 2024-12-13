@@ -49,6 +49,7 @@ impl<'a> Parser<'a> {
             TokenKind::Decrement => Some(BinOpKind::Decrement),
             TokenKind::DoubleGreaterThan => Some(BinOpKind::ShiftRight),
             TokenKind::DoubleLessThan => Some(BinOpKind::ShiftLeft),
+            TokenKind::Catch => Some(BinOpKind::Catch),
             _ => None,
         };
         kind.map(|kind| BinOperator::new(kind, token.clone()))

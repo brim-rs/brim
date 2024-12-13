@@ -192,8 +192,6 @@ fn parse(input: string) -> string !MyError {
 }
 ```
 
-> The `catch` expression has to return the same type as the `try` expression.
-
 ### `@panic` keyword
 
 `@panic` is a built-in function that can be used to panic the program. It immediately stops the execution of the program
