@@ -251,19 +251,6 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_then_else_expr(&mut self, condition: ExprId) -> Result<ExprId> {
-        let then_token = self.expect(TokenKind::Then)?;
-
-        let then_expr = self.parse_expr()?;
-        let else_token = self.expect(TokenKind::Else)?;
-
-        let else_expr = self.parse_expr()?;
-
-        Ok(self.ast.new_then_else(
-            condition, then_expr, else_expr, then_token, else_token,
-        ))
-    }
-
     pub fn parse_call_expr(&mut self, callee: Token) -> Result<ExprId> {
         self.expect(TokenKind::LeftParen)?;
 
@@ -323,9 +310,7 @@ impl<'a> Parser<'a> {
             return Ok(self.ast.new_assignment(expr, operator, right));
         }
         // TODO: move this to binary expressions
-        else if self.peek().kind == TokenKind::Then {
-            return self.parse_then_else_expr(expr);
-        } else if self.peek().kind == TokenKind::Catch {
+        else if self.peek().kind == TokenKind::Catch {
             panic!("Catch not implemented");
         }
 

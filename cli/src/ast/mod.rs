@@ -4,7 +4,7 @@ pub mod types;
 pub mod item;
 
 use indexmap::IndexMap;
-use crate::ast::expressions::{AccessExpr, AccessKind, ArrayExpr, Assign, AssignOperator, BinOperator, Binary, CallExpr, Expr, ExprKind, Literal, LiteralType, ObjectExpr, Parenthesized, StructConstructor, ThenElse, UnOperator, Unary, Variable};
+use crate::ast::expressions::{AccessExpr, AccessKind, ArrayExpr, Assign, AssignOperator, BinOperator, Binary, CallExpr, Expr, ExprKind, Literal, LiteralType, ObjectExpr, Parenthesized, StructConstructor, UnOperator, Unary, Variable};
 use crate::ast::item::TopLevelItem;
 use crate::ast::statements::{Block, Const, ElseBlock, FnParam, Function, Let, Loop, Return, Stmt, StmtKind, Struct, StructField, StructImpl, TraitDef, TraitImpl, Try, TypeAnnotation, Use, While};
 use crate::ast::types::TypeKind;
@@ -208,17 +208,6 @@ impl Ast {
         let expr = self.new_expr(ExprKind::Literal(Literal {
             value: LiteralType::String(value),
             token,
-        }));
-        expr.id
-    }
-
-    pub fn new_then_else(&mut self, condition: ExprId, then_expr: ExprId, else_expr: ExprId, then_token: Token, else_token: Token) -> ExprId {
-        let expr = self.new_expr(ExprKind::ThenElse(ThenElse {
-            condition,
-            then_expr,
-            else_expr,
-            then_token,
-            else_token,
         }));
         expr.id
     }

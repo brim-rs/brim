@@ -355,7 +355,6 @@ pub enum ExprKind {
     Access(AccessExpr),
     Null(Token),
     StructConstructor(StructConstructor),
-    ThenElse(ThenElse),
     Object(ObjectExpr),
 }
 
@@ -363,25 +362,6 @@ pub enum ExprKind {
 pub struct ObjectExpr {
     pub fields: IndexMap<String, ExprId>,
     pub braces: (Token, Token),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct ThenElse {
-    pub condition: ExprId,
-    pub then_expr: ExprId,
-    pub else_expr: ExprId,
-    pub then_token: Token,
-    pub else_token: Token,
-}
-
-impl GetSpan for ThenElse {
-    fn span(&self, ast: &Ast) -> TextSpan {
-        let condition_span = ast.query_expr(self.condition).span(ast);
-        let then_span = ast.query_expr(self.then_expr).span(ast);
-        let else_span = ast.query_expr(self.else_expr).span(ast);
-
-        TextSpan::combine(vec![condition_span, then_span, else_span]).unwrap()
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -446,7 +426,6 @@ impl GetSpan for Expr {
             ExprKind::Access(a) => ast.query_expr(a.base).span(ast),
             ExprKind::Null(t) => t.span.clone(),
             ExprKind::StructConstructor(s) => s.token.span.clone(),
-            ExprKind::ThenElse(t) => t.span(ast),
             ExprKind::Object(o) => {
                 TextSpan::combine(vec![o.braces.0.span.clone(), o.braces.1.span.clone()]).unwrap()
             }
