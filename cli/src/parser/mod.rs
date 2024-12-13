@@ -54,7 +54,9 @@ impl<'a> Parser<'a> {
 impl<'a> Parser<'a> {
     pub fn parse(&mut self) -> Result<()> {
         while !self.is_eof() {
-            self.parse_stmt()?;
+            if let Some(stmt_id) = self.parse_stmt()? {
+                self.ast.new_item(stmt_id);
+            }
         }
 
         Ok(())

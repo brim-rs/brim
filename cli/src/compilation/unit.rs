@@ -34,7 +34,6 @@ impl<'a> CompilationUnit<'a> {
 
         self.parser.parse()?;
 
-
         Ok(())
     }
 }

@@ -66,12 +66,15 @@ impl Ast {
         &self.statements[id]
     }
 
-
-    pub fn item_from_kind(&mut self, stmt: Stmt) -> &TopLevelItem {
+    pub fn new_item(&mut self, stmt: StmtId) -> &TopLevelItem {
         let item = TopLevelItem::new(stmt, ItemId::new(0));
         let id = self.top_level_items.push(item);
         self.top_level_items[id].id = id;
         &self.top_level_items[id]
+    }
+    
+    pub fn query_item(&self, item_id: ItemId) -> &TopLevelItem {
+        &self.top_level_items[item_id]
     }
 }
 
@@ -395,7 +398,7 @@ impl Ast {
         ));
         stmt.id
     }
-    
+
     pub fn new_anonymous_function(&mut self, params: Vec<FnParam>, body: StmtId, return_type: Option<TypeAnnotation>, pipes: (Token, Token)) -> ExprId {
         let expr = self.new_expr(ExprKind::AnonymousFunction(
             AnonymousFunction {
