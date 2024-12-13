@@ -104,7 +104,8 @@ impl<'a> Parser<'a> {
         } else {
             bail!(parser_error(
                 format!("Expected token of kind: {}", kind),
-                token.span.clone(),
+                vec![(token.span.clone(), None)],
+                vec![],
                 None
             ));
         }
@@ -122,9 +123,11 @@ impl<'a> Parser<'a> {
 
             bail!(parser_error(
                 format!("Expected token of kind: {}", kind),
-                prev.span
+                vec![(prev.span
                     .move_right(len + prev.span.literal.len())
                     .shorten(len),
+                    "This is where the expected token should be".to_string().into())],
+                vec![],
                 None
             ));
         }

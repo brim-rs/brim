@@ -188,8 +188,10 @@ impl<'a> Parser<'a> {
                         } else {
                             bail!(expected_token(
                                 "string literal".to_string(),
-                                Some("Field names in objects must be string literals.".to_string()),
-                                self.peek().span.clone(),
+                                vec!["Field names in objects must be string literals.".to_string()],
+                                vec![
+                                    (self.peek().span.clone(), "Expected a string literal".to_string().into())
+                                ],
                             ))
                         }
                     };
@@ -242,7 +244,9 @@ impl<'a> Parser<'a> {
             _ => {
                 Err(parser_error(
                     format!("Unexpected token: {}", token.kind.to_string()),
-                    token.span.clone(), None).into())
+                    vec![(
+                        token.span.clone(), None
+                    )], vec![], None).into())
             }
         }
     }

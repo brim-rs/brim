@@ -89,7 +89,10 @@ impl Lexer {
         } else {
             Err(invalid_token(
                 c.unwrap().to_string(),
-                TextSpan::new(self.position, self.position, c.unwrap().to_string()),
+                vec![(
+                    TextSpan::new(self.position, self.position, c.unwrap().to_string())
+                    , None
+                )],
             )
                 .into())
         }
@@ -147,7 +150,7 @@ impl Lexer {
             one_char
         }
     }
-    
+
     pub fn peek(&self) -> Option<char> {
         self.source.content.get_char(self.position.index + 1)
     }

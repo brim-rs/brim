@@ -1,3 +1,10 @@
+error MyError {
+    ParsingError {
+        message: string,
+        span: Span
+    }
+}
+
 fn parse(input: string) -> string !MyError {
      if input.len() <= 0 {
          return MyError::ParsingError {
@@ -10,9 +17,5 @@ fn parse(input: string) -> string !MyError {
 }
 
 pub fn main() {
-    let value = parse(input) catch |err| {
-        println(err)
-    }
-
     println("Value {}", [value])
 }

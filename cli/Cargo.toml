@@ -20,3 +20,6 @@ brim-shell = { workspace = true }
 ropey = { workspace = true }
 thiserror = { workspace = true }
 indexmap = "2.7.0"
+codespan-reporting = "0.11.1"
+unindent = "0.2.3"
+term = "1.0.0"

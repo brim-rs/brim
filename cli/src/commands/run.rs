@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use clap::{ArgAction, ArgMatches, Command};
 use crate::context::GlobalContext;
 use anyhow::Result;
@@ -16,7 +17,8 @@ pub fn run_cmd() -> Command {
 pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
     let start = ctx.start;
     let time = args.get_flag("time");
-    // TODO: update to detect using brim.toml
+
+    // TODO: update to detect using a brim.toml file
     let mut unit = CompilationUnit::new(ctx.cwd.join("main.brim"), ctx)?;
 
     match unit.compile() {
@@ -24,15 +26,16 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
             ctx.print_diagnostics();
         }
         Err(e) => {
-            let brim_err = e.downcast_ref::<BrimError>();
+            if let Some(err) = e.downcast_ref::<BrimError>() {
+                let diagnostic = err.to_diagnostic();
+                let source = Arc::new(unit.source.clone());
 
-            if let Some(err) = brim_err {
-                ctx.new_diagnostic(err.to_diagnostic());
-
-                ctx.print_diagnostics();
+                ctx.new_diagnostic(diagnostic, source.clone());
             } else {
                 ctx.shell.error(&format!("{}", e))?;
             }
+
+            ctx.print_diagnostics();
 
             return Ok(());
         }

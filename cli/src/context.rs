@@ -48,17 +48,18 @@ impl GlobalContext {
         Ok(dirs::cache_dir().unwrap().join("brim"))
     }
 
-    pub fn warning(&mut self, message: String, source: Option<Arc<Source>>, span: Option<TextSpan>, hint: Option<String>) {
+    pub fn warning(&mut self, message: String, source: Option<Arc<Source>>, labels: Vec<(TextSpan, Option<String>)>, hint: Vec<String>) {
         self.diagnostics.push((Diagnostic {
             text: message,
             level: Level::Warning,
-            span,
+            labels,
             hint,
+            code: None
         }, source));
     }
-    
-    pub fn new_diagnostic(&mut self, diagnostic: Diagnostic) {
-        self.diagnostics.push((diagnostic, None));
+
+    pub fn new_diagnostic(&mut self, diagnostic: Diagnostic, source: Arc<Source>) {
+        self.diagnostics.push((diagnostic, Some(source)));
     }
 
     pub fn print_diagnostics(&mut self) {

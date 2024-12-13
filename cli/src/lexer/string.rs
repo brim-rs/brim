@@ -37,7 +37,10 @@ impl StringLiteral {
                         _ => {
                             bail!(lexer_error(
                                 format!("Invalid escape sequence: {}", next.to_string()),
-                                TextSpan::new(lexer.position, lexer.position, next.to_string()),
+                                vec![((TextSpan::new(lexer.position, lexer.position, next.to_string()), 
+                                    format!("{} is invalid escape sequence", next.to_string()).into()
+                                ))],
+                                vec![],
                                 None
                             ))
                         }

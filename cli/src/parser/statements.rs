@@ -178,11 +178,13 @@ impl<'a> Parser<'a> {
         if self.peek().kind != TokenKind::RightBrace && self.peek().kind != TokenKind::Identifier {
             return Err(expected_token(
                 "field declaration".to_string(),
-                Some(format!(
+                vec![format!(
                     "Expected field declaration or '}}' after struct declaration, found '{}'",
                     self.peek().literal()
-                )),
-                self.previous().span.clone(),
+                )],
+                vec![
+                    (self.previous().span.clone(), None)
+                ],
             )
                 .into());
         }
@@ -203,11 +205,13 @@ impl<'a> Parser<'a> {
             if self.peek().kind != TokenKind::RightBrace && self.peek().kind != TokenKind::Comma {
                 return Err(expected_token(
                     "comma or '}}'".to_string(),
-                    Some(format!(
+                    vec![format!(
                         "Every field except the last one must be followed by a comma, found '{}'",
                         self.peek().literal()
-                    )),
-                    self.previous().span.clone(),
+                    )],
+                    vec![
+                        (self.previous().span.clone(), None)
+                    ],
                 )
                     .into());
             } else {
@@ -352,8 +356,8 @@ impl<'a> Parser<'a> {
         } else {
             bail!(expected_token(
                 "string".to_string(),
-                Some("Expected string that is valid module or file".to_string()),
-                self.peek().span.clone(),
+                vec!["Expected string that is valid module or file".to_string()],
+                vec![(self.peek().span.clone(), None)],
             ))
         };
 
@@ -396,11 +400,11 @@ impl<'a> Parser<'a> {
             if self.peek().kind != TokenKind::Colon {
                 return Err(expected_token(
                     "colon and type name".to_string(),
-                    Some(format!(
+                    vec![format!(
                         "Expected ':' followed by a type name, found '{}'",
                         self.peek().literal()
-                    )),
-                    self.peek().span.clone(),
+                    )],
+                    vec![(self.peek().span.clone(), None)],
                 )
                     .into());
             }
@@ -443,11 +447,11 @@ impl<'a> Parser<'a> {
         if self.peek().kind != TokenKind::Arrow && self.peek().kind != TokenKind::LeftBrace {
             return Err(expected_token(
                 "arrow or left brace".to_string(),
-                Some(format!(
+                vec![format!(
                     "Expected '->' or '{{' after function parameters, found '{}'",
                     self.peek().literal()
-                )),
-                self.peek().span.clone(),
+                )],
+                vec![(self.peek().span.clone(), None)],
             )
                 .into());
         } else if self.peek().kind == TokenKind::Bang {
@@ -527,8 +531,9 @@ impl<'a> Parser<'a> {
                     if !is_static {
                         bail!(parser_error(
                                 "Self parameter must be first parameter in method".to_string(),
-                                param.span.clone(),
-                                None,
+                                vec![(param.span.clone(), None)],
+                                vec![],
+                                None
                             ))
                     }
 
@@ -560,8 +565,9 @@ impl<'a> Parser<'a> {
         if !is_static && params[0].ident.literal() != "self" {
             bail!(parser_error(
                 "First parameter in method must be 'self'".to_string(),
-                self.peek().span.clone(),
-                None,
+                vec![(self.peek().span.clone(), None)],
+                vec![],
+                None
             ))
         }
 

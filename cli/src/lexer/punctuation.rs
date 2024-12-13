@@ -115,7 +115,7 @@ impl Punctuation {
             _ => {
                 return Err(invalid_token(
                     c.to_string(),
-                    TextSpan::new(lexer.position, lexer.position, c.to_string()),
+                    vec![(TextSpan::new(lexer.position, lexer.position, c.to_string()), None)],
                 )
                     .into())
             }
