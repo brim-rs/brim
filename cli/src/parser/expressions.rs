@@ -4,7 +4,7 @@ use crate::lexer::tokens::{Token, TokenKind};
 use crate::parser::{ParseContext, Parser};
 use anyhow::{bail, Result};
 use crate::ast::{ExprId, StmtId};
-use crate::ast::statements::TypeAnnotation;
+use crate::ast::statements::{FnParam, TypeAnnotation};
 use crate::error::{expected_token, parser_error};
 
 impl<'a> Parser<'a> {
@@ -177,6 +177,33 @@ impl<'a> Parser<'a> {
             TokenKind::Null => Ok(self.ast.new_null(token)),
             TokenKind::True | TokenKind::False => {
                 Ok(self.ast.new_boolean(token.as_bool().unwrap(), token.clone()))
+            }
+            TokenKind::Pipe => {
+                let mut params = vec![];
+
+                if self.peek().kind != TokenKind::Pipe {
+                    while self.peek().kind != TokenKind::Pipe && !self.is_eof() {
+                        self.possible_check(TokenKind::Comma);
+
+                        let param = self.consume();
+                        let type_annotation = self.parse_type_annotation(true)?;
+
+                        params.push(FnParam {
+                            type_annotation,
+                            ident: param,
+                        });
+                    }
+                }
+
+                let pipe2 = self.expect_punct(TokenKind::Pipe)?;
+
+                let return_type = self.parse_return_type()?;
+
+                self.expect_punct(TokenKind::LeftBrace)?;
+                let body = self.parse_block()?;
+                self.expect_punct(TokenKind::RightBrace)?;
+
+                Ok(self.ast.new_anonymous_function(params, body, return_type, (token, pipe2)))
             }
             TokenKind::LeftBracket => self.parse_array(),
             TokenKind::LeftBrace => {

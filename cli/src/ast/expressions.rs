@@ -1,6 +1,7 @@
 use indexmap::IndexMap;
 use std::fmt::{Display, Formatter};
-use crate::ast::{Ast, ExprId, GetSpan};
+use crate::ast::{Ast, ExprId, GetSpan, StmtId};
+use crate::ast::statements::{FnParam, TypeAnnotation};
 use crate::ast::types::TypeKind;
 use crate::error::span::TextSpan;
 use crate::lexer::tokens::{Token, TokenKind};
@@ -26,6 +27,16 @@ pub enum ExprKind {
     Null(Token),
     StructConstructor(StructConstructor),
     Object(ObjectExpr),
+    AnonymousFunction(AnonymousFunction),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+// |params| -> return_type { body }
+pub struct AnonymousFunction {
+    pub params: Vec<FnParam>,
+    pub body: StmtId,
+    pub pipes: (Token, Token),
+    pub return_type: Option<TypeAnnotation>,
 }
 
 impl Expr {
@@ -430,6 +441,19 @@ impl GetSpan for Expr {
             ExprKind::StructConstructor(s) => s.token.span.clone(),
             ExprKind::Object(o) => {
                 TextSpan::combine(vec![o.braces.0.span.clone(), o.braces.1.span.clone()]).unwrap()
+            }
+            // We don't include the body because the function could be too long. Arguments and return type are enough.
+            ExprKind::AnonymousFunction(anon) => {
+                let params_span: Vec<TextSpan> = anon.params.iter().map(|p| p.span(ast).clone()).collect();
+                let params_span = TextSpan::combine(params_span).unwrap();
+
+                let mut spans = vec![anon.pipes.0.span.clone(), params_span, anon.pipes.1.span.clone()];
+
+                if let Some(return_type) = &anon.return_type {
+                    spans.push(return_type.span(ast));
+                }
+
+                TextSpan::combine(spans).unwrap()
             }
         }
     }

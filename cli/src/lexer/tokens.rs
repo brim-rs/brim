@@ -84,7 +84,7 @@ impl Display for TokenKind {
             TokenKind::Then => write!(f, "then"),
             TokenKind::Const => write!(f, "const"),
             TokenKind::Error => write!(f, "error"),
-            
+
             // Operators
             TokenKind::Plus => write!(f, "+"),
             TokenKind::Minus => write!(f, "-"),

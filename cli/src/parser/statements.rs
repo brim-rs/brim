@@ -1,4 +1,5 @@
 use anyhow::{bail, Result};
+use colored::Colorize;
 use indexmap::IndexMap;
 use crate::ast::statements::{ElseBlock, FnParam, Function, StructField, TypeAnnotation};
 use crate::ast::StmtId;
@@ -401,8 +402,9 @@ impl<'a> Parser<'a> {
                 return Err(expected_token(
                     "colon and type name".to_string(),
                     vec![format!(
-                        "Expected ':' followed by a type name, found '{}'",
-                        self.peek().literal()
+                        "Expected {} followed by a type name, found {}",
+                        ":".cyan(),
+                        self.peek().literal().cyan()
                     )],
                     vec![(self.peek().span.clone(), None)],
                 )

@@ -33,8 +33,7 @@ impl<'a> CompilationUnit<'a> {
         self.parser.tokens = self.lexer.tokens.clone();
 
         self.parser.parse()?;
-        
-        println!("{:#?}", self.parser.ast);
+
 
         Ok(())
     }

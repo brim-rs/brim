@@ -4,7 +4,7 @@ pub mod types;
 pub mod item;
 
 use indexmap::IndexMap;
-use crate::ast::expressions::{AccessExpr, AccessKind, ArrayExpr, Assign, AssignOperator, BinOperator, Binary, CallExpr, Expr, ExprKind, Literal, LiteralType, ObjectExpr, Parenthesized, StructConstructor, UnOperator, Unary, Variable};
+use crate::ast::expressions::{AccessExpr, AccessKind, AnonymousFunction, ArrayExpr, Assign, AssignOperator, BinOperator, Binary, CallExpr, Expr, ExprKind, Literal, LiteralType, ObjectExpr, Parenthesized, StructConstructor, UnOperator, Unary, Variable};
 use crate::ast::item::TopLevelItem;
 use crate::ast::statements::{Block, Const, ElseBlock, FnParam, Function, Let, Loop, Return, Stmt, StmtKind, Struct, StructField, StructImpl, TraitDef, TraitImpl, Try, TypeAnnotation, Use, While};
 use crate::ast::types::TypeKind;
@@ -394,6 +394,18 @@ impl Ast {
             }
         ));
         stmt.id
+    }
+    
+    pub fn new_anonymous_function(&mut self, params: Vec<FnParam>, body: StmtId, return_type: Option<TypeAnnotation>, pipes: (Token, Token)) -> ExprId {
+        let expr = self.new_expr(ExprKind::AnonymousFunction(
+            AnonymousFunction {
+                params,
+                body,
+                pipes,
+                return_type,
+            }
+        ));
+        expr.id
     }
 }
 
