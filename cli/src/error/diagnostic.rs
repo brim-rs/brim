@@ -33,6 +33,7 @@ impl Diagnostic {
         };
         write!(buf, "{}", shell.write(&level_str, Some(&self.text), &style, false)?)?;
 
+        println!("{:?}", self.span);
         Ok(())
     }
 }

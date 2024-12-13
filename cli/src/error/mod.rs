@@ -21,6 +21,13 @@ pub enum BrimError {
         hint: Option<String>,
     },
 
+    #[error("Parser error")]
+    ParserError {
+        message: String,
+        span: TextSpan,
+        hint: Option<String>,
+    },
+
     #[error("Other error")]
     OtherError {
         source: anyhow::Error
@@ -35,8 +42,26 @@ pub fn lexer_error(message: String, span: TextSpan, hint: Option<String>) -> Bri
     }
 }
 
+pub fn parser_error(message: String, span: TextSpan, hint: Option<String>) -> BrimError {
+    BrimError::ParserError {
+        message,
+        span,
+        hint,
+    }
+}
+
+pub fn expected_token(
+    expected: String, hint: Option<String>, span: TextSpan,
+) -> BrimError {
+    BrimError::ParserError {
+        message: format!("Expected token: {}", expected),
+        span,
+        hint,
+    }
+}
+
 pub fn invalid_token(
-    token: String, span: TextSpan
+    token: String, span: TextSpan,
 ) -> BrimError {
     BrimError::LexerError {
         message: format!("Found invalid token: {}", token),
@@ -68,7 +93,7 @@ impl BrimError {
                 span: None,
                 hint: None,
             },
-            BrimError::LexerError { message, span, hint } => Diagnostic {
+            BrimError::LexerError { message, span, hint } | BrimError::ParserError { message, span, hint } => Diagnostic {
                 text: message.clone(),
                 level: Level::Error,
                 span: Some(span.clone()),

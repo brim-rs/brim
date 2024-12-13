@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Display, Formatter};
 use indexmap::IndexMap;
 use crate::ast::{Ast, ExprId, GetSpan, StmtId};
+use crate::ast::types::TypeKind;
 use crate::error::span::TextSpan;
 use crate::lexer::tokens::Token;
 
@@ -10,6 +11,12 @@ pub struct Stmt {
     pub id: StmtId,
 }
 
+impl Stmt {
+    pub fn new(kind: StmtKind, id: StmtId) -> Self {
+        Self { kind, id }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum StmtKind {
     Expr(ExprId),
@@ -17,7 +24,7 @@ pub enum StmtKind {
     Block(Block),
     If(If),
     Return(Return),
-    Fn(Fn),
+    Fn(Function),
     Let(Let),
     Try(Try),
     Break(Token),
@@ -58,7 +65,7 @@ pub struct StructField {
 pub struct TraitDef {
     pub trait_token: Token,
     pub name: Token,
-    pub methods: Vec<Fn>,
+    pub methods: Vec<StmtId>,
     pub public: bool,
 }
 
@@ -66,7 +73,7 @@ pub struct TraitDef {
 pub struct StructImpl {
     pub impl_token: Token,
     pub struct_name: Token,
-    pub methods: Vec<Fn>,
+    pub methods: Vec<StmtId>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -75,20 +82,20 @@ pub struct TraitImpl {
     pub trait_name: Token,
     pub for_token: Token,
     pub struct_name: Token,
-    pub methods: Vec<Fn>,
+    pub methods: Vec<StmtId>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Loop {
-    pub loop_token: Token,
-    pub block: Block,
+    pub token: Token,
+    pub block: StmtId,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct While {
     pub while_token: Token,
     pub condition: ExprId,
-    pub block: Block,
+    pub block: StmtId,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -99,10 +106,8 @@ pub struct Throw {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Try {
-    pub try_token: Token,
-    pub try_block: Block,
-    pub error_ident: Token,
-    pub catch_block: Block,
+    pub token: Token,
+    pub expr: ExprId,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -130,7 +135,7 @@ impl GetSpan for Let {
 }
 
 impl Stmt {
-    pub fn as_function(&self) -> &Fn {
+    pub fn as_function(&self) -> &Function {
         match &self.kind {
             StmtKind::Fn(f) => f,
             _ => panic!("Expected function"),
@@ -142,7 +147,6 @@ impl Stmt {
 pub struct FnParam {
     pub ident: Token,
     pub type_annotation: TypeAnnotation,
-    pub is_rest: bool,
 }
 
 impl GetSpan for FnParam {
@@ -152,11 +156,10 @@ impl GetSpan for FnParam {
 }
 
 impl FnParam {
-    pub fn new(ident: Token, type_annotation: TypeAnnotation, is_rest: bool) -> Self {
+    pub fn new(ident: Token, type_annotation: TypeAnnotation) -> Self {
         Self {
             ident,
             type_annotation,
-            is_rest,
         }
     }
 }
@@ -169,73 +172,13 @@ pub struct TypeAnnotation {
     pub is_nullable: bool,
     pub module_id: Option<String>,
     pub generics: Vec<TypeAnnotation>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum TypeKind {
-    String,
-    Int,
-    Float,
-    Char,
-    Bool,
-    Vec,
-    Object,
-    Anytype,
-    Void,
-    Custom(String),
-}
-
-impl Display for TypeKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            TypeKind::String => write!(f, "string"),
-            TypeKind::Int => write!(f, "int"),
-            TypeKind::Float => write!(f, "float"),
-            TypeKind::Char => write!(f, "char"),
-            TypeKind::Bool => write!(f, "bool"),
-            TypeKind::Vec => write!(f, "vec"),
-            TypeKind::Object => write!(f, "object"),
-            TypeKind::Anytype => write!(f, "anytype"),
-            TypeKind::Void => write!(f, "void"),
-            TypeKind::Custom(name) => write!(f, "{}", name),
-        }
-    }
-}
-
-impl TypeKind {
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "string" => TypeKind::String,
-            "int" => TypeKind::Int,
-            "float" => TypeKind::Float,
-            "char" => TypeKind::Char,
-            "bool" => TypeKind::Bool,
-            "vec" => TypeKind::Vec,
-            "object" => TypeKind::Object,
-            "anytype" => TypeKind::Anytype,
-            "void" => TypeKind::Void,
-            _ => TypeKind::Custom(s.to_string()),
-        }
-    }
+    pub can_be_error: bool,
+    pub error_type: Option<Token>,
 }
 
 impl TypeAnnotation {
-    pub fn is_any(&self) -> bool {
-        self.kind == TypeKind::Anytype
-    }
-
     pub fn is_generic(&self) -> bool {
         self.generics.len() > 0
-    }
-
-    pub fn match_generic(&self, generic: TypeKind, args: Vec<TypeKind>) -> bool {
-        let generics_names = self
-            .generics
-            .iter()
-            .map(|g| g.kind.clone())
-            .collect::<Vec<TypeKind>>();
-
-        self.kind == generic && generics_names == args
     }
 }
 
@@ -260,11 +203,11 @@ impl GetSpan for TypeAnnotation {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Fn {
+pub struct Function {
     pub fn_token: Token,
     pub name: String,
     pub params: Vec<FnParam>,
-    pub body: Block,
+    pub body: StmtId,
     pub public: bool,
     pub return_type: Option<TypeAnnotation>,
     pub is_static: bool,
@@ -274,7 +217,7 @@ pub struct Fn {
 pub struct If {
     pub if_token: Token,
     pub condition: ExprId,
-    pub then_block: Block,
+    pub then_block: StmtId,
     pub else_ifs: Vec<ElseBlock>,
     pub else_block: Option<ElseBlock>,
 }
@@ -282,7 +225,7 @@ pub struct If {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ElseBlock {
     pub condition: ExprId,
-    pub block: Block,
+    pub block: StmtId,
     pub else_if: bool,
 }
 
@@ -295,7 +238,7 @@ pub struct Use {
 
 #[derive(Clone, PartialEq)]
 pub struct Block {
-    pub stmts: Vec<Stmt>,
+    pub stmts: Vec<StmtId>,
 }
 
 impl Debug for Block {

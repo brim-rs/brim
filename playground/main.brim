@@ -1,11 +1,3 @@
-error MyError {
-    ParsingError: {
-        message: string,
-        span: Span
-    },
-    UnknownError
-}
-
 fn parse(input: string) -> string !MyError {
      if input.len() <= 0 {
          return MyError::ParsingError {

@@ -1,12 +1,13 @@
 use indexmap::IndexMap;
 use std::fmt::{Display, Formatter};
 use crate::ast::{Ast, ExprId, GetSpan};
+use crate::ast::types::TypeKind;
 use crate::error::span::TextSpan;
 use crate::lexer::tokens::{Token, TokenKind};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ArrayExpr {
-    pub exprs: Vec<Expr>,
+    pub exprs: Vec<ExprId>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -162,7 +163,7 @@ pub struct Parenthesized {
 #[derive(Debug, Clone, PartialEq)]
 pub struct CallExpr {
     pub callee: String,
-    pub args: Vec<Expr>,
+    pub args: Vec<ExprId>,
     pub token: Token,
 }
 
@@ -171,7 +172,8 @@ impl GetSpan for CallExpr {
     fn span(&self, ast: &Ast) -> TextSpan {
         // TODO: get the span of the closing parenthesis
         let callee_span = self.token.span.clone();
-        let args_span: Vec<TextSpan> = self.args.iter().map(|arg| arg.span(ast)).collect();
+
+        let args_span: Vec<TextSpan> = self.args.iter().map(|arg| ast.query_expr(*arg).span(ast)).collect();
         let args_span = TextSpan::combine(args_span);
 
         let mut spans = vec![callee_span];
@@ -326,8 +328,22 @@ pub enum BinOpAssociativity {
     Right,
 }
 
+#[derive(Debug, Clone)]
+#[derive(PartialEq)]
+pub struct Expr {
+    pub kind: ExprKind,
+    pub id: ExprId,
+    pub ty: TypeKind,
+}
+
+impl Expr {
+    pub fn new(kind: ExprKind, id: ExprId, ty: TypeKind) -> Self {
+        Expr { kind, id, ty }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
-pub enum Expr {
+pub enum ExprKind {
     Literal(Literal),
     Binary(Binary),
     Unary(Unary),
@@ -345,7 +361,7 @@ pub enum Expr {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ObjectExpr {
-    pub fields: IndexMap<String, Expr>,
+    pub fields: IndexMap<String, ExprId>,
     pub braces: (Token, Token),
 }
 
@@ -371,7 +387,7 @@ impl GetSpan for ThenElse {
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructConstructor {
     pub name: String,
-    pub fields: IndexMap<String, Expr>,
+    pub fields: IndexMap<String, ExprId>,
     pub token: Token,
 }
 
@@ -407,31 +423,31 @@ impl GetSpan for AccessExpr {
 
 impl GetSpan for Expr {
     fn span(&self, ast: &Ast) -> TextSpan {
-        match &self {
-            Expr::Literal(l) => l.clone().token.span,
-            Expr::Binary(b) => {
+        match &self.kind {
+            ExprKind::Literal(l) => l.clone().token.span,
+            ExprKind::Binary(b) => {
                 let left = ast.query_expr(b.left).span(ast);
                 let right = ast.query_expr(b.right).span(ast);
                 TextSpan::combine(vec![left, right]).unwrap()
             }
-            Expr::Unary(u) => u.clone().token.span,
-            Expr::Variable(v) => v.clone().token.span,
-            Expr::Parenthesized(p) => ast.query_expr(p.expr).span(ast),
-            Expr::Call(c) => c.clone().token.span,
-            Expr::Assign(a) => {
+            ExprKind::Unary(u) => u.clone().token.span,
+            ExprKind::Variable(v) => v.clone().token.span,
+            ExprKind::Parenthesized(p) => ast.query_expr(p.expr).span(ast),
+            ExprKind::Call(c) => c.clone().token.span,
+            ExprKind::Assign(a) => {
                 let left = ast.query_expr(a.left).span(ast);
                 let right = ast.query_expr(a.right).span(ast);
                 TextSpan::combine(vec![left, right]).unwrap()
             }
-            Expr::Array(v) => {
-                let spans: Vec<TextSpan> = v.exprs.iter().map(|e| e.span(ast)).collect();
+            ExprKind::Array(v) => {
+                let spans: Vec<TextSpan> = v.exprs.iter().map(|e| ast.query_expr(*e).span(ast)).collect();
                 TextSpan::combine(spans).unwrap()
             }
-            Expr::Access(a) => ast.query_expr(a.base).span(ast),
-            Expr::Null(t) => t.span.clone(),
-            Expr::StructConstructor(s) => s.token.span.clone(),
-            Expr::ThenElse(t) => t.span(ast),
-            Expr::Object(o) => {
+            ExprKind::Access(a) => ast.query_expr(a.base).span(ast),
+            ExprKind::Null(t) => t.span.clone(),
+            ExprKind::StructConstructor(s) => s.token.span.clone(),
+            ExprKind::ThenElse(t) => t.span(ast),
+            ExprKind::Object(o) => {
                 TextSpan::combine(vec![o.braces.0.span.clone(), o.braces.1.span.clone()]).unwrap()
             }
         }

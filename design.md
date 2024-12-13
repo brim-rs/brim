@@ -158,7 +158,7 @@ error MyError {
 }
 ```
 
-> Error types are similar to struct definitions, but they are used to represent errors that can be returned from
+> Error types are similar to enum definitions, but they are used to represent errors that can be returned from
 > functions.
 
 > A single error can be a simple enum, or a struct with multiple fields.
