@@ -7,7 +7,7 @@ use crate::ast::{ExprId, StmtId};
 use crate::ast::statements::{FnParam, TypeAnnotation};
 use crate::error::{expected_token, parser_error};
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_expr(&mut self) -> Result<ExprId> {
         self.parse_assignment()
     }

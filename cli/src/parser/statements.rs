@@ -8,7 +8,7 @@ use crate::error::{expected_token, parser_error};
 use crate::lexer::tokens::{Token, TokenKind};
 use crate::parser::{ParseContext, Parser};
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_stmt(&mut self) -> Result<Option<StmtId>> {
         let token = self.peek();
 

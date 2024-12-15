@@ -1,39 +1,85 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::path::PathBuf;
-use anyhow::bail;
 use crate::ast::Ast;
-use crate::context::GlobalContext;
-use crate::error::BrimError::CliError;
+use crate::ast::statements::{Const, Function, Struct, TraitDef};
+use crate::compilation::imports::UnitLoader;
+use crate::compilation::passes::resolver::Resolver;
+use crate::error::diagnostic::Diagnostics;
 use crate::lexer::Lexer;
 use crate::lexer::source::Source;
 use crate::parser::Parser;
 use crate::Result;
 
-#[derive(Debug)]
-pub struct CompilationUnit<'a> {
-    pub source: Source,
-    pub context: &'a mut GlobalContext,
-    pub lexer: Lexer,
-    pub parser: Parser<'a>,
+#[derive(Debug, Clone)]
+pub struct UnitItem {
+    pub kind: UnitItemKind,
+    pub imported: bool,
+    pub unit: String,
 }
 
-impl<'a> CompilationUnit<'a> {
-    pub fn new(path: PathBuf, context: &'a mut GlobalContext) -> Result<Self> {
+#[derive(Debug, Clone)]
+pub enum UnitItemKind {
+    Function(Function),
+    Struct(Struct),
+    Trait(TraitDef),
+    Const(Const),
+}
+
+#[derive(Debug, Clone)]
+pub struct CompilationUnit {
+    pub source: Source,
+    pub lexer: Lexer,
+    pub parser: Parser,
+    // Units that are used in imports etc
+    pub unit_items: HashMap<String, UnitItem>,
+}
+
+impl CompilationUnit {
+    pub fn new(path: PathBuf) -> Result<Self> {
         let source = Source::from_reader(path.clone(), File::open(path)?)?;
         Ok(Self {
             source: source.clone(),
-            context,
             lexer: Lexer::new(source),
-            parser: Parser::new(vec![], Box::leak(Box::new(Ast::new()))),
+            parser: Parser::new(vec![], Ast::new()),
+            unit_items: HashMap::new(),
         })
     }
 
-    pub fn compile(&mut self) -> Result<()> {
+    pub fn new_item(&mut self, name: String, kind: UnitItemKind, unit: String) {
+        self.unit_items.insert(name, UnitItem {
+            kind,
+            imported: false,
+            unit,
+        });
+    }
+    
+    pub fn new_imported_item(&mut self, name: String, kind: UnitItemKind, unit: String) {
+        self.unit_items.insert(name, UnitItem {
+            kind,
+            imported: true,
+            unit,
+        });
+    }
+
+    pub fn compile(&mut self, loader: &mut UnitLoader, diags: &mut Diagnostics) -> Result<()> {
         self.lexer.lex()?;
         self.parser.tokens = self.lexer.tokens.clone();
 
         self.parser.parse()?;
 
+        let mut resolver = Resolver {
+            unit: self,
+            loader,
+            diags,
+        };
+
+        resolver.run()?;
+
         Ok(())
+    }
+
+    pub fn ast(&self) -> &Ast {
+        &self.parser.ast
     }
 }

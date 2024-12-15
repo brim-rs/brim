@@ -16,7 +16,7 @@ mod numbers;
 mod identifiers;
 mod punctuation;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Lexer {
     pub position: Position,
     pub tokens: Vec<Token>,

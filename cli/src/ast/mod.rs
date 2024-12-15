@@ -18,8 +18,7 @@ idx!(StmtId);
 idx!(ExprId);
 idx!(ItemId);
 
-#[cfg_attr(test, derive(Clone))]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ast {
     pub statements: IdxVec<StmtId, Stmt>,
     pub expressions: IdxVec<ExprId, Expr>,

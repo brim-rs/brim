@@ -1,10 +1,14 @@
 use anstream::ColorChoice;
 use anyhow::{anyhow, bail, Context, Result};
 use std::{fs::read_to_string, path::PathBuf, sync::Arc, time::Instant};
+use colored::Colorize;
 use brim_shell::Shell;
+use crate::config::BrimConfig;
 use crate::error::diagnostic::{Diagnostic, Level};
 use crate::error::span::TextSpan;
+use crate::fs::walk_for_file;
 use crate::lexer::source::Source;
+use crate::path::{canonicalize_path, normalize_without_canonicalize};
 
 #[derive(Debug)]
 pub struct GlobalContext {
@@ -12,27 +16,96 @@ pub struct GlobalContext {
     pub cwd: PathBuf,
     pub start: Instant,
     pub shell: Shell,
-    pub diagnostics: Vec<(Diagnostic, Option<Arc<Source>>)>,
+    pub config: BrimConfig,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ProjectType {
+    Lib,
+    Bin,
 }
 
 impl GlobalContext {
-    pub fn default(color_choice: ColorChoice) -> Result<Self> {
-        Ok(Self {
-            verbose: false,
-            cwd: std::env::current_dir().context("Failed to get current directory")?,
-            start: Instant::now(),
-            shell: Shell::new(color_choice),
-            diagnostics: Vec::new(),
-        })
+    pub fn load_config(cwd: PathBuf) -> Result<BrimConfig> {
+        let path = walk_for_file(cwd.clone(), "brim.toml");
+
+        if path.is_none() {
+            return Err(anyhow!("Failed to find {}. Make sure you are running the command inside project root or in a subdirectory", "brim.toml".bright_magenta()));
+        }
+
+        let path = path.unwrap();
+
+        let content = read_to_string(&path).context("Failed to read roan.toml")?;
+        let config: BrimConfig = toml::from_str(&content)?;
+
+        if config.project.r#type.is_none() {
+            return Err(anyhow!(
+                "Project type is not specified in [project] in roan.toml. Available types: 'lib', 'bin'"
+            ));
+        }
+
+        let r#type = config.project.r#type.as_ref().unwrap();
+        if r#type != "lib" && r#type != "bin" {
+            return Err(anyhow!(
+                "Invalid project type in [project] in roan.toml. Available types: 'lib', 'bin'"
+            ));
+        }
+
+        Ok(config)
     }
 
-    pub fn from_cwd(cwd: PathBuf, color_choice: ColorChoice) -> Result<Self> {
+    pub fn default(color_choice: ColorChoice) -> Result<Self> {
+        let cwd = std::env::current_dir().context("Failed to get current directory")?;
+        let config = GlobalContext::load_config(cwd.clone())?;
+
         Ok(Self {
             verbose: false,
             cwd,
             start: Instant::now(),
             shell: Shell::new(color_choice),
-            diagnostics: Vec::new(),
+            config,
+        })
+    }
+
+    pub fn project_type(&self) -> Result<ProjectType> {
+        match self.config.project.r#type.as_ref().unwrap().as_str() {
+            "lib" => Ok(ProjectType::Lib),
+            "bin" => Ok(ProjectType::Bin),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_main_file(&self) -> Result<PathBuf> {
+        let file: PathBuf = match self.project_type()? {
+            ProjectType::Lib => {
+                self.config.project.lib.clone().unwrap_or_else(|| self.cwd.join("src\\lib.brim"))
+            }
+            ProjectType::Bin => {
+                self.config.project.bin.clone().unwrap_or_else(|| self.cwd.join("src\\main.brim"))
+            }
+        };
+
+        let path = normalize_without_canonicalize(file, self.cwd.clone());
+        if !path.exists() {
+            return Err(anyhow!("Main file does not exist: {}", path.display()));
+        }
+
+        Ok(canonicalize_path(path)?)
+    }
+
+    pub fn get_main_dir(&self) -> Result<PathBuf> {
+        Ok(self.get_main_file()?.parent().unwrap().to_path_buf())
+    }
+
+    pub fn from_cwd(cwd: PathBuf, color_choice: ColorChoice) -> Result<Self> {
+        let config = GlobalContext::load_config(cwd.clone())?;
+
+        Ok(Self {
+            verbose: false,
+            cwd,
+            start: Instant::now(),
+            shell: Shell::new(color_choice),
+            config,
         })
     }
 
@@ -46,25 +119,5 @@ impl GlobalContext {
 
     pub fn cache_dir(&self) -> Result<PathBuf> {
         Ok(dirs::cache_dir().unwrap().join("brim"))
-    }
-
-    pub fn warning(&mut self, message: String, source: Option<Arc<Source>>, labels: Vec<(TextSpan, Option<String>)>, hint: Vec<String>) {
-        self.diagnostics.push((Diagnostic {
-            text: message,
-            level: Level::Warning,
-            labels,
-            hint,
-            code: None
-        }, source));
-    }
-
-    pub fn new_diagnostic(&mut self, diagnostic: Diagnostic, source: Arc<Source>) {
-        self.diagnostics.push((diagnostic, Some(source)));
-    }
-
-    pub fn print_diagnostics(&mut self) {
-        for (diagnostic, source) in self.diagnostics.clone() {
-            diagnostic.write(&mut self.shell, source).unwrap();
-        }
     }
 }

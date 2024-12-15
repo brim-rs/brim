@@ -1,0 +1,11 @@
+pub struct Span {
+    start: usize,
+    end: usize,
+}
+
+impl Span {
+    pub fn new(start: usize, end: usize) -> Span {
+        // TODO: allow to pass only the field name
+        Span { start: start, end: end }
+    }
+}

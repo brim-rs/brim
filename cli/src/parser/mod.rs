@@ -7,23 +7,23 @@ use anyhow::{bail, Result};
 use crate::ast::Ast;
 use crate::error::parser_error;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ParseContext {
     Normal,
     IfCondition,
     WhileCondition,
 }
 
-#[derive(Debug)]
-pub struct Parser<'a> {
+#[derive(Debug, Clone)]
+pub struct Parser {
     pub tokens: Vec<Token>,
     pub current: usize,
     pub context_stack: Vec<ParseContext>,
-    pub ast: &'a mut Ast,
+    pub ast: Ast,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(tokens: Vec<Token>, ast: &'a mut Ast) -> Self {
+impl Parser {
+    pub fn new(tokens: Vec<Token>, ast: Ast) -> Self {
         Self {
             tokens,
             current: 0,
@@ -51,7 +51,7 @@ impl<'a> Parser<'a> {
     }
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse(&mut self) -> Result<()> {
         while !self.is_eof() {
             if let Some(stmt_id) = self.parse_stmt()? {

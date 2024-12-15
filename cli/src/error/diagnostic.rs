@@ -27,7 +27,7 @@ pub struct Diagnostic {
 }
 
 impl Diagnostic {
-    pub fn write(&self, shell: &mut Shell, source: Option<Arc<Source>>) -> Result<()> {
+    pub fn write(&self, source: Option<Arc<Source>>) -> Result<()> {
         if let Some(ref source) = source {
             let mut files = SimpleFiles::new();
 
@@ -70,5 +70,38 @@ impl Diagnostic {
         }
 
         Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct Diagnostics {
+    pub diagnostics: Vec<(Diagnostic, Option<Arc<Source>>)>,
+}
+
+impl Diagnostics {
+    pub fn new() -> Self {
+        Self {
+            diagnostics: Vec::new(),
+        }
+    }
+
+    pub fn warning(&mut self, message: String, source: Option<Arc<Source>>, labels: Vec<(TextSpan, Option<String>)>, hint: Vec<String>) {
+        self.diagnostics.push((Diagnostic {
+            text: message,
+            level: Level::Warning,
+            labels,
+            hint,
+            code: None,
+        }, source));
+    }
+
+    pub fn new_diagnostic(&mut self, diagnostic: Diagnostic, source: Arc<Source>) {
+        self.diagnostics.push((diagnostic, Some(source)));
+    }
+
+    pub fn print_diagnostics(&mut self) {
+        for (diagnostic, source) in self.diagnostics.clone() {
+            diagnostic.write(source).unwrap();
+        }
     }
 }

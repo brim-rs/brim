@@ -25,6 +25,7 @@ mod error;
 mod idx;
 mod ast;
 mod parser;
+mod config;
 
 #[tokio::main]
 async fn main() -> Result<()> {

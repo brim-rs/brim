@@ -1,3 +1,5 @@
+use { Span } from "./span.brim"
+
 fn parse(input: string) -> string !MyError {
      if input.len() <= 0 {
          return MyError::ParsingError {
