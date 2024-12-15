@@ -22,4 +22,11 @@ impl Source {
     pub fn get_between(&self, start: usize, end: usize) -> String {
         self.content.slice(start..end).to_string()
     }
+    
+    pub fn with_path(&self, path: PathBuf) -> Self {
+        Self {
+            path,
+            content: self.content.clone(),
+        }
+    }
 }

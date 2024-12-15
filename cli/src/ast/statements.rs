@@ -55,6 +55,12 @@ pub struct Struct {
     pub trait_impls: Vec<TraitImpl>,
 }
 
+impl Struct {
+    pub fn span(&self) -> TextSpan {
+        TextSpan::combine(vec![self.struct_token.span.clone(), self.name.span.clone()]).unwrap()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct StructField {
     pub ident: Token,
@@ -67,6 +73,12 @@ pub struct TraitDef {
     pub name: Token,
     pub methods: Vec<StmtId>,
     pub public: bool,
+}
+
+impl TraitDef {
+    pub(crate) fn span(&self) -> TextSpan {
+        TextSpan::combine(vec![self.trait_token.span.clone(), self.name.span.clone()]).unwrap()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -211,6 +223,14 @@ pub struct Function {
     pub public: bool,
     pub return_type: Option<TypeAnnotation>,
     pub is_static: bool,
+}
+
+impl Function {
+    pub fn span(&self) -> TextSpan {
+        let spans = vec![self.fn_token.span.clone()];
+
+        TextSpan::combine(spans).unwrap()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::path::PathBuf;
 use crate::ast::Ast;
-use crate::ast::statements::{Const, Function, Struct, TraitDef};
 use crate::compilation::imports::UnitLoader;
+use crate::compilation::items::{UnitItem, UnitItemKind};
 use crate::compilation::passes::resolver::Resolver;
 use crate::error::diagnostic::Diagnostics;
 use crate::lexer::Lexer;
@@ -11,20 +11,6 @@ use crate::lexer::source::Source;
 use crate::parser::Parser;
 use crate::Result;
 
-#[derive(Debug, Clone)]
-pub struct UnitItem {
-    pub kind: UnitItemKind,
-    pub imported: bool,
-    pub unit: String,
-}
-
-#[derive(Debug, Clone)]
-pub enum UnitItemKind {
-    Function(Function),
-    Struct(Struct),
-    Trait(TraitDef),
-    Const(Const),
-}
 
 #[derive(Debug, Clone)]
 pub struct CompilationUnit {
@@ -46,19 +32,21 @@ impl CompilationUnit {
         })
     }
 
-    pub fn new_item(&mut self, name: String, kind: UnitItemKind, unit: String) {
+    pub fn new_item(&mut self, name: String, kind: UnitItemKind, unit: String, public: bool) {
         self.unit_items.insert(name, UnitItem {
             kind,
             imported: false,
             unit,
+            public,
         });
     }
-    
-    pub fn new_imported_item(&mut self, name: String, kind: UnitItemKind, unit: String) {
+
+    pub fn new_imported_item(&mut self, name: String, kind: UnitItemKind, unit: String, public: bool) {
         self.unit_items.insert(name, UnitItem {
             kind,
             imported: true,
             unit,
+            public,
         });
     }
 
