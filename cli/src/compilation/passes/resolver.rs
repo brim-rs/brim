@@ -43,15 +43,9 @@ impl<'a> Pass for Resolver<'a> {
                 let trait_item = match self.unit.unit_items.get(&trait_name) {
                     Some(item) => item,
                     None => {
-                        self.diags.new_diagnostic(Diagnostic {
-                            text: format!("Attempted to implement trait `{}` that doesn't exist", trait_name),
-                            level: Level::Error,
-                            labels: vec![
-                                (trait_impl.trait_name.span.clone(), None),
-                            ],
-                            hint: vec![],
-                            code: None,
-                        }, Arc::new(self.unit.source.clone()));
+                        self.diags.new_diagnostic(Diagnostic::error(format!("Attempted to implement trait `{}` that doesn't exist", trait_name), vec![
+                            (trait_impl.trait_name.span.clone(), None)
+                        ], vec![]), Arc::new(self.unit.source.clone()));
                         return Ok(());
                     }
                 };
@@ -59,15 +53,10 @@ impl<'a> Pass for Resolver<'a> {
                 let trait_def = match &trait_item.kind {
                     UnitItemKind::Trait(trait_def) => trait_def,
                     _ => {
-                        self.diags.new_diagnostic(Diagnostic {
-                            text: format!("Attempted to implement item `{}` for `{}` that isn't a trait", trait_name, trait_item.kind),
-                            level: Level::Error,
-                            labels: vec![
-                                (trait_impl.trait_name.span.clone(), None),
-                            ],
-                            hint: vec![],
-                            code: None,
-                        }, Arc::new(self.unit.source.clone()));
+                        self.diags.new_diagnostic(Diagnostic::error(format!("Attempted to implement item `{}` for `{}` that isn't a trait", trait_name, trait_item.kind), vec![
+                            (trait_impl.trait_name.span.clone(), None)
+                        ], vec![]), Arc::new(self.unit.source.clone()));
+
                         return Ok(());
                     }
                 };
@@ -77,15 +66,11 @@ impl<'a> Pass for Resolver<'a> {
                 let struct_item = match self.unit.unit_items.get(&struct_name) {
                     Some(item) => item,
                     None => {
-                        self.diags.new_diagnostic(Diagnostic {
-                            text: format!("Attempted to implement trait `{}` for struct `{}` that doesn't exist", trait_name, struct_name),
-                            level: Level::Error,
-                            labels: vec![
-                                (trait_impl.struct_name.span.clone(), None),
-                            ],
-                            hint: vec![],
-                            code: None,
-                        }, Arc::new(self.unit.source.clone()));
+                        self.diags.new_diagnostic(
+                            Diagnostic::error(format!("Attempted to implement trait `{}` for struct `{}` that doesn't exist", trait_name, struct_name), vec![
+                                (trait_impl.struct_name.span.clone(), None)
+                            ], vec![]), Arc::new(self.unit.source.clone()));
+
                         return Ok(());
                     }
                 };
@@ -93,29 +78,23 @@ impl<'a> Pass for Resolver<'a> {
                 let struct_def = &mut match struct_item.kind.clone() {
                     UnitItemKind::Struct(struct_def) => struct_def,
                     _ => {
-                        self.diags.new_diagnostic(Diagnostic {
-                            text: format!("Attempted to implement trait `{}` for item `{}` that isn't a struct", trait_name, struct_name),
-                            level: Level::Error,
-                            labels: vec![
-                                (trait_impl.struct_name.span.clone(), None),
-                            ],
-                            hint: vec![],
-                            code: None,
-                        }, Arc::new(self.unit.source.clone()));
+                        self.diags.new_diagnostic(Diagnostic::error(format!("Attempted to implement trait `{}` for item `{}` that isn't a struct", trait_name, struct_name), vec![
+                            (trait_impl.struct_name.span.clone(), None)
+                        ], vec![]), Arc::new(self.unit.source.clone()));
+
                         return Ok(());
                     }
                 };
 
                 if struct_def.trait_impls.iter().any(|t| t.trait_impl.trait_name.literal() == trait_name && trait_item.unit == t.unit) {
-                    self.diags.new_diagnostic(Diagnostic {
-                        text: format!("Struct `{}` already implements trait `{}`", struct_name, trait_name),
-                        level: Level::Error,
-                        labels: vec![
+                    self.diags.new_diagnostic(Diagnostic::error(
+                        format!("Struct `{}` already implements trait `{}`", struct_name, trait_name),
+                        vec![
                             (trait_impl.struct_name.span.clone(), None),
                         ],
-                        hint: vec![],
-                        code: None,
-                    }, Arc::new(self.unit.source.clone()));
+                        vec![],
+                    ), Arc::new(self.unit.source.clone()));
+
                     return Ok(());
                 }
 
@@ -134,17 +113,16 @@ impl<'a> Pass for Resolver<'a> {
                     }) {
                         Some(item) => item,
                         None => {
-                            self.diags.new_diagnostic(Diagnostic {
-                                text: format!("Tried to implement method `{}` that isn't defined in trait `{}`", method_name, trait_name),
-                                level: Level::Error,
-                                labels: vec![
+                            self.diags.new_diagnostic(Diagnostic::error(
+                                format!("Tried to implement method `{}` that isn't defined in trait `{}`", method_name, trait_name),
+                                vec![
                                     (method.name.span, None),
                                 ],
-                                hint: vec![
+                                vec![
                                     "If you want to implement it as a struct method, use `impl` instead".to_string(),
                                 ],
-                                code: None,
-                            }, Arc::new(self.unit.source.clone()));
+                            ), Arc::new(self.unit.source.clone()));
+
                             continue;
                         }
                     };
@@ -157,15 +135,14 @@ impl<'a> Pass for Resolver<'a> {
                         collect::<Vec<String>>();
 
                     if !missing_params.is_empty() {
-                        self.diags.new_diagnostic(Diagnostic {
-                            text: format!("Method `{}` is missing parameters: {}", method_name, missing_params.join(", ")),
-                            level: Level::Error,
-                            labels: vec![
+                        self.diags.new_diagnostic(Diagnostic::error(
+                            format!("Method `{}` is missing parameters: {}", method_name, missing_params.join(", ")),
+                            vec![
                                 (method.name.span.clone(), None),
                             ],
-                            hint: vec![],
-                            code: None,
-                        }, Arc::new(self.unit.source.clone()));
+                            vec![],
+                        ), Arc::new(self.unit.source.clone()
+                        ))
                     }
 
                     for param in method_def.params.iter().zip(method.params.iter()) {
@@ -178,13 +155,11 @@ impl<'a> Pass for Resolver<'a> {
                                 (param.ident.span.clone(), Some("implementation".to_string())),
                             ];
 
-                            self.diags.new_diagnostic(Diagnostic {
-                                text: format!("Method `{}` parameter `{}` has a different type from the trait definition", method_name, defining_param.ident.literal()),
-                                level: Level::Error,
-                                labels: vec,
-                                hint: vec![],
-                                code: None,
-                            }, Arc::new(self.unit.source.clone()));
+                            self.diags.new_diagnostic(Diagnostic::error(
+                                format!("Method `{}` parameter `{}` has a different type from the trait definition", method_name, defining_param.ident.literal()),
+                                vec,
+                                vec![],
+                            ), Arc::new(self.unit.source.clone()));
                         }
                     }
 
@@ -197,15 +172,13 @@ impl<'a> Pass for Resolver<'a> {
                             ).clone());
                         }
 
-                        self.diags.new_diagnostic(Diagnostic {
-                            text: format!("Method `{}` has a different return type from the trait definition", method_name),
-                            level: Level::Error,
-                            labels: vec![
+                        self.diags.new_diagnostic(Diagnostic::error(
+                            format!("Method `{}` has a different return type from the trait definition", method_name),
+                            vec![
                                 (TextSpan::combine(spans).unwrap(), None),
                             ],
-                            hint: vec![],
-                            code: None,
-                        }, Arc::new(self.unit.source.clone()));
+                            vec![],
+                        ), Arc::new(self.unit.source.clone()));
                     }
                 }
 
@@ -261,6 +234,7 @@ impl<'a> Pass for Resolver<'a> {
                 self.unit.new_item(struct_name, UnitItemKind::Struct(struct_def.clone()), self.unit.path().to_string(), struct_item.public);
             }
             StmtKind::Fn(fn_stmt) => {
+                println!("fn_stmt: {:#?}", fn_stmt);
                 self.unit.new_item(fn_stmt.name.literal(), UnitItemKind::Function(fn_stmt.clone()), self.unit.path().to_string(), fn_stmt.public);
             }
             StmtKind::TraitDef(trait_stmt) => {
@@ -283,51 +257,49 @@ impl<'a> Pass for Resolver<'a> {
                             if unit_item.imported {
                                 let original_path = strip_base(unit_item.unit.clone().into(), self.loader.cwd.clone());
 
-                                self.diags.new_diagnostic(Diagnostic {
-                                    text:
+                                self.diags.new_diagnostic(Diagnostic::error(
                                     format!("Tried to import {} `{}` that comes from `{}` and not from {}",
                                             unit_item.kind,
                                             name,
                                             original_path.display(),
                                             strip_base(unit.source.path.clone(), self.loader.cwd.clone()).display()
                                     ),
-                                    level: Level::Error,
-                                    labels: vec![
+                                    vec![
                                         (item.span.clone(), None),
                                     ],
-                                    hint: vec![
+                                    vec![
                                         format!("Remove the `use` statement and import the item from {} directly", original_path.display()),
                                     ],
-                                    code: None,
-                                }, Arc::new(self.unit.source.clone()));
+                                ), Arc::new(self.unit.source.clone()
+                                ));
+
                                 continue;
                             }
 
                             if !unit_item.public {
-                                self.diags.new_diagnostic(Diagnostic {
-                                    text: format!("item `{}` isn't public", name),
-                                    level: Level::Error,
-                                    labels: vec![
+                                self.diags.new_diagnostic(Diagnostic::error(
+                                    format!("item `{}` isn't public", name),
+                                    vec![
                                         (item.span, Some(format!("private {}", unit_item.kind))),
                                     ],
-                                    hint: vec![],
-                                    code: None,
-                                }, Arc::new(self.unit.source.clone()));
+                                    vec![],
+                                ), Arc::new(self.unit.source.clone()));
+
                                 continue;
                             }
 
                             unit_item.kind.clone()
                         }
                         None => {
-                            self.diags.new_diagnostic(Diagnostic {
-                                text: format!("Item `{}` not found in file {}", name, unit.path()),
-                                level: Level::Error,
-                                labels: vec![
+                            self.diags.new_diagnostic(Diagnostic::error(
+                                format!("Item `{}` not found in file {}", name, unit.path()),
+                                vec![
                                     (item.span.clone(), None),
                                 ],
-                                hint: vec![],
-                                code: None,
-                            }, Arc::new(self.unit.source.clone()));
+                                vec![],
+                            ), Arc::new(self.unit.source.clone()
+                            ));
+
                             continue;
                         }
                     };
@@ -340,7 +312,6 @@ impl<'a> Pass for Resolver<'a> {
 
         self.loader.units.insert(self.unit.path().to_string(), self.unit.clone());
 
-        println!("{:#?}", self.unit.unit_items);
         Ok(())
     }
 }

@@ -374,7 +374,7 @@ impl Parser {
         }
     }
 
-    fn parse_type(&mut self) -> Result<(Token, Vec<TypeAnnotation>)> {
+    fn parse_type(&mut self) -> Result<(Token, Vec<TypeAnnotation>, bool)> {
         let type_name = self.expect(TokenKind::Identifier)?;
 
         let generics = if self.peek().kind == TokenKind::LessThan {
@@ -392,8 +392,17 @@ impl Parser {
         } else {
             vec![]
         };
+        
+        let is_array = if self.peek().kind == TokenKind::LeftBracket {
+            self.consume();
+            self.expect_punct(TokenKind::RightBracket)?;
+           
+            true
+        } else {
+            false
+        };
 
-        Ok((type_name, generics))
+        Ok((type_name, generics, is_array))
     }
 
     pub fn parse_type_annotation(&mut self, expect_colon: bool) -> Result<TypeAnnotation> {
@@ -416,13 +425,13 @@ impl Parser {
             None
         };
 
-        let (token, generics) = self.parse_type()?;
+        let (token, generics, is_array) = self.parse_type()?;
 
         let (can_be_error, error_type) = self.parse_error_type()?;
 
         Ok(TypeAnnotation {
             token_name: Some(token.clone()),
-            kind: TypeKind::from_str(&token.literal()),
+            kind: TypeKind::from_str(&token.literal(), is_array),
             is_nullable: self.is_nullable(),
             separator: colon,
             generics,
@@ -479,13 +488,13 @@ impl Parser {
         }
 
         let arrow = self.consume(); // consume the arrow
-        let (token, generics) = self.parse_type()?;
+        let (token, generics, is_array) = self.parse_type()?;
 
         let (can_be_error, error_type) = self.parse_error_type()?;
 
         Ok(Some(TypeAnnotation {
             token_name: Some(token.clone()),
-            kind: TypeKind::from_str(&token.literal()),
+            kind: TypeKind::from_str(&token.literal(), is_array),
             is_nullable: self.is_nullable(),
             separator: Some(arrow),
             generics,

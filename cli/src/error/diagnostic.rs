@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fs::FileTimes;
 use std::io::{stderr, Write};
 use std::sync::Arc;
 use brim_shell::Shell;
@@ -70,6 +71,16 @@ impl Diagnostic {
         }
 
         Ok(())
+    }
+    
+    pub fn error(message: String, labels: Vec<(TextSpan, Option<String>)>, hint: Vec<String>) -> Self {
+        Self {
+            text: message,
+            level: Level::Error,
+            labels,
+            hint,
+            code: None,
+        }
     }
 }
 

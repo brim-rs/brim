@@ -4,6 +4,7 @@ use crate::compilation::imports::UnitLoader;
 use crate::compilation::unit::CompilationUnit;
 
 pub mod resolver;
+pub mod type_checker;
 
 pub trait Pass {
     fn visit_item(&mut self, unit: &mut CompilationUnit, item: ItemId) -> anyhow::Result<()> {

@@ -51,6 +51,7 @@ pub enum TypeKind {
     Undefined,
     Null,
     String,
+    Array(Box<TypeKind>),
     Custom(String),
 }
 
@@ -80,12 +81,17 @@ impl Display for TypeKind {
             TypeKind::Null => write!(f, "null"),
             TypeKind::String => write!(f, "string"),
             TypeKind::Custom(name) => write!(f, "{}", name),
+            TypeKind::Array(t) => write!(f, "{}[]", t),
         }
     }
 }
 
 impl TypeKind {
-    pub fn from_str(s: &str) -> Self {
+    pub fn from_str(s: &str, is_array: bool) -> Self {
+        if is_array {
+            return TypeKind::Array(Box::new(TypeKind::from_str(s, false)));
+        }
+        
         match s {
             "i8" => TypeKind::I8,
             "i16" => TypeKind::I16,
