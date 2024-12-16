@@ -71,7 +71,7 @@ impl Ast {
         self.top_level_items[id].id = id;
         &self.top_level_items[id]
     }
-    
+
     pub fn query_item(&self, item_id: ItemId) -> &TopLevelItem {
         &self.top_level_items[item_id]
     }
@@ -255,7 +255,7 @@ impl Ast {
         stmt.id
     }
 
-    pub fn new_fn(&mut self, fn_token: Token, name: String, params: Vec<FnParam>, body: StmtId, public: bool, return_type: Option<TypeAnnotation>, is_static: bool) -> StmtId {
+    pub fn new_fn(&mut self, fn_token: Token, name: Token, params: Vec<FnParam>, body: Option<StmtId>, public: bool, return_type: Option<TypeAnnotation>, is_static: bool) -> StmtId {
         let stmt = self.new_stmt(StmtKind::Fn(
             Function {
                 fn_token,

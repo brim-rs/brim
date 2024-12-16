@@ -118,9 +118,9 @@ impl UnitLoader {
             return Ok((cache_key, unit.clone()));
         }
 
-        let path = self.resolve_path(&cache_key, referer)?;
+        let cache_key = self.resolve_path(&cache_key, referer)?.to_string_lossy().to_string();
 
-        let unit = CompilationUnit::new(path)?;
+        let unit = CompilationUnit::new(cache_key.clone().into())?;
         self.units.insert(cache_key.clone(), unit);
 
         Ok((cache_key.clone(), self.units.get(&cache_key).unwrap().clone()))

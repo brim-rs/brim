@@ -29,17 +29,6 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
     let mut unit = CompilationUnit::new(ctx.get_main_file()?)?;
     let mut diags = &mut Diagnostics::new();
 
-    compile_unit(&mut unit, &mut diags, loader)?;
-
-    if time {
-        let elapsed = start.elapsed();
-        ctx.shell.status("Time taken", &format!("{:?}", elapsed))?;
-    }
-
-    Ok(())
-}
-
-pub fn compile_unit(unit: &mut CompilationUnit, diags: &mut Diagnostics, loader: &mut UnitLoader) -> Result<()> {
     let source = Arc::new(unit.source.clone());
 
     match unit.compile(loader, diags) {
@@ -67,6 +56,17 @@ pub fn compile_unit(unit: &mut CompilationUnit, diags: &mut Diagnostics, loader:
             diags.print_diagnostics();
         }
     }
+
+    if time {
+        let elapsed = start.elapsed();
+        ctx.shell.status("Time taken", &format!("{:?}", elapsed))?;
+    }
+
+    Ok(())
+}
+
+pub fn compile_unit(unit: &mut CompilationUnit, diags: &mut Diagnostics, loader: &mut UnitLoader) -> Result<()> {
+    unit.compile(loader, diags)?;
 
     Ok(())
 }

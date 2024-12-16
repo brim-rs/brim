@@ -1,11 +1,14 @@
-pub struct Span {
-    start: usize,
-    end: usize,
+use { Span } from "span.brim";
+
+pub fn test() {
 }
 
-impl Span {
-    pub fn new(start: usize, end: usize) -> Span {
-        // TODO: allow to pass only the field name
-        Span { start: start, end: end }
+pub trait Display {
+    fn test(self) -> string!;
+}
+
+impl Display for Span {
+    fn test(self) -> string! {
+        format("Span({}..{})", self.start, self.end)
     }
 }

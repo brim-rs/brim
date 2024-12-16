@@ -1,1 +1,21 @@
-use { Span } from "test.brim"
+pub struct Span {
+    start: usize,
+    end: usize,
+}
+
+impl Span {
+    pub fn new(start: usize, end: usize) -> Span {
+        // TODO: implement short-hand syntax for this
+        Span { start: start, end: end }
+    }
+}
+
+pub trait Display {
+    fn fmt(self, num: i32) -> string!;
+}
+
+impl Display for Span {
+    fn fmt(self, num: i32) -> string! {
+        format("Span({}..{})", self.start, self.end)
+    }
+}

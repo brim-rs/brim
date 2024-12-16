@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use colored::Colorize;
 use indexmap::IndexMap;
-use crate::ast::statements::{ElseBlock, FnParam, Function, StructField, TypeAnnotation};
+use crate::ast::statements::{Block, ElseBlock, FnParam, Function, StructField, TypeAnnotation};
 use crate::ast::StmtId;
 use crate::ast::types::TypeKind;
 use crate::error::{expected_token, parser_error};
@@ -426,7 +426,6 @@ impl Parser {
             is_nullable: self.is_nullable(),
             separator: colon,
             generics,
-            module_id: None,
             can_be_error,
             error_type,
         })
@@ -471,7 +470,6 @@ impl Parser {
                     is_nullable: false,
                     separator: None,
                     generics: vec![],
-                    module_id: None,
                     can_be_error: true,
                     error_type: err_type,
                 })
@@ -491,7 +489,6 @@ impl Parser {
             is_nullable: self.is_nullable(),
             separator: Some(arrow),
             generics,
-            module_id: None,
             can_be_error,
             error_type,
         }))
@@ -549,7 +546,6 @@ impl Parser {
                         is_nullable: false,
                         separator: None,
                         generics: vec![],
-                        module_id: None,
                         can_be_error: false,
                         error_type: None,
                     }
@@ -577,13 +573,19 @@ impl Parser {
 
         let return_type = self.parse_return_type()?;
 
-        self.expect_punct(TokenKind::LeftBrace)?;
-        let body = self.parse_block()?;
-        self.expect_punct(TokenKind::RightBrace)?;
+        let body: Option<StmtId> = if self.peek().kind != TokenKind::LeftBrace {
+            self.possible_check(TokenKind::Semicolon);
+            None
+        } else {
+            self.expect_punct(TokenKind::LeftBrace)?;
+            let block = self.parse_block()?;
+            self.expect_punct(TokenKind::RightBrace)?;
+            Some(block)
+        };
 
         Ok(self.ast.new_fn(
             fn_token,
-            name.literal(),
+            name,
             params,
             body,
             public,

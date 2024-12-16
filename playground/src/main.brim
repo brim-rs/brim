@@ -1,4 +1,5 @@
 use { Span } from "./span.brim"
+use { test } from "./test.brim"
 
 fn parse(input: string) -> string !MyError {
      if input.len() <= 0 {

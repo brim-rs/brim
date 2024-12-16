@@ -52,7 +52,13 @@ pub struct Struct {
     pub fields: IndexMap<String, StructField>,
     pub public: bool,
     pub impls: Vec<StructImpl>,
-    pub trait_impls: Vec<TraitImpl>,
+    pub trait_impls: Vec<StoredTraitImpl>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct StoredTraitImpl {
+    pub unit: String,
+    pub trait_impl: TraitImpl,
 }
 
 impl Struct {
@@ -176,16 +182,31 @@ impl FnParam {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct TypeAnnotation {
     pub separator: Option<Token>,
     pub token_name: Option<Token>,
     pub kind: TypeKind,
     pub is_nullable: bool,
-    pub module_id: Option<String>,
     pub generics: Vec<TypeAnnotation>,
     pub can_be_error: bool,
     pub error_type: Option<Token>,
+}
+
+impl PartialEq for TypeAnnotation {
+    fn eq(&self, other: &Self) -> bool {
+        if let (Some(name1), Some(name2)) = (&self.token_name, &other.token_name) {
+            if name1.literal() == "self" && name2.literal() == "self" {
+                return true;
+            }
+        }
+
+        self.kind == other.kind
+            && self.is_nullable == other.is_nullable
+            && self.generics == other.generics
+            && self.can_be_error == other.can_be_error
+            && self.error_type.as_ref().map(|e| e.span.literal.clone()) == other.error_type.as_ref().map(|e| e.span.literal.clone())
+    }
 }
 
 impl TypeAnnotation {
@@ -217,9 +238,9 @@ impl GetSpan for TypeAnnotation {
 #[derive(Clone, PartialEq, Debug)]
 pub struct Function {
     pub fn_token: Token,
-    pub name: String,
+    pub name: Token,
     pub params: Vec<FnParam>,
-    pub body: StmtId,
+    pub body: Option<StmtId>,
     pub public: bool,
     pub return_type: Option<TypeAnnotation>,
     pub is_static: bool,
@@ -227,7 +248,7 @@ pub struct Function {
 
 impl Function {
     pub fn span(&self) -> TextSpan {
-        let spans = vec![self.fn_token.span.clone()];
+        let spans = vec![self.fn_token.span.clone(), self.name.span.clone()];
 
         TextSpan::combine(spans).unwrap()
     }
