@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use anyhow::Result;
 use crate::ast::{Ast, GetSpan, StmtId};
-use crate::ast::statements::{Function, Stmt, StmtKind, StoredTraitImpl};
+use crate::ast::statements::{Function, Stmt, StmtKind, StoredStructImpl, StoredTraitImpl};
 use crate::commands::run::compile_unit;
 use crate::compilation::imports::{UnitLoader};
 use crate::compilation::items::UnitItemKind;
@@ -35,7 +35,7 @@ impl<'a> Pass for Resolver<'a> {
 
         match statement.kind {
             StmtKind::Struct(struct_stmt) => {
-                self.unit.new_item(struct_stmt.name.literal(), UnitItemKind::Struct(struct_stmt.clone()), self.unit.source.path.display().to_string(), struct_stmt.public);
+                self.unit.new_item(struct_stmt.name.literal(), UnitItemKind::Struct(struct_stmt.clone()), self.unit.path().to_string(), struct_stmt.public);
             }
             StmtKind::TraitImpl(trait_impl) => {
                 let trait_name = trait_impl.trait_name.literal();
@@ -106,7 +106,6 @@ impl<'a> Pass for Resolver<'a> {
                     }
                 };
 
-                println!("{:?}", struct_def.trait_impls);
                 if struct_def.trait_impls.iter().any(|t| t.trait_impl.trait_name.literal() == trait_name && trait_item.unit == t.unit) {
                     self.diags.new_diagnostic(Diagnostic {
                         text: format!("Struct `{}` already implements trait `{}`", struct_name, trait_name),
@@ -217,16 +216,58 @@ impl<'a> Pass for Resolver<'a> {
                     }
                 );
 
-                self.unit.new_item(struct_name, UnitItemKind::Struct(struct_def.clone()), self.unit.source.path.display().to_string(), struct_item.public);
+                self.unit.new_item(struct_name, UnitItemKind::Struct(struct_def.clone()), self.unit.path().to_string(), struct_item.public);
+            }
+            StmtKind::StructImpl(struct_impl) => {
+                let struct_name = struct_impl.struct_name.literal();
+
+                let struct_item = match self.unit.unit_items.get(&struct_name) {
+                    Some(item) => item,
+                    None => {
+                        self.diags.new_diagnostic(Diagnostic {
+                            text: format!("Attempted to implement struct `{}` that doesn't exist", struct_name),
+                            level: Level::Error,
+                            labels: vec![
+                                (struct_impl.struct_name.span.clone(), None),
+                            ],
+                            hint: vec![],
+                            code: None,
+                        }, Arc::new(self.unit.source.clone()));
+                        return Ok(());
+                    }
+                };
+
+                let struct_def = &mut match struct_item.kind.clone() {
+                    UnitItemKind::Struct(struct_def) => struct_def,
+                    _ => {
+                        self.diags.new_diagnostic(Diagnostic {
+                            text: format!("Attempted to implement item `{}` that isn't a struct", struct_name),
+                            level: Level::Error,
+                            labels: vec![
+                                (struct_impl.struct_name.span.clone(), None),
+                            ],
+                            hint: vec![],
+                            code: None,
+                        }, Arc::new(self.unit.source.clone()));
+                        return Ok(());
+                    }
+                };
+
+                struct_def.impls.push(StoredStructImpl {
+                    struct_impl: struct_impl.clone(),
+                    unit: self.unit.path().to_string(),
+                });
+
+                self.unit.new_item(struct_name, UnitItemKind::Struct(struct_def.clone()), self.unit.path().to_string(), struct_item.public);
             }
             StmtKind::Fn(fn_stmt) => {
-                self.unit.new_item(fn_stmt.name.literal(), UnitItemKind::Function(fn_stmt.clone()), self.unit.source.path.display().to_string(), fn_stmt.public);
+                self.unit.new_item(fn_stmt.name.literal(), UnitItemKind::Function(fn_stmt.clone()), self.unit.path().to_string(), fn_stmt.public);
             }
             StmtKind::TraitDef(trait_stmt) => {
-                self.unit.new_item(trait_stmt.name.literal(), UnitItemKind::Trait(trait_stmt.clone()), self.unit.source.path.display().to_string(), trait_stmt.public);
+                self.unit.new_item(trait_stmt.name.literal(), UnitItemKind::Trait(trait_stmt.clone()), self.unit.path().to_string(), trait_stmt.public);
             }
             StmtKind::Const(const_stmt) => {
-                self.unit.new_item(const_stmt.ident.literal(), UnitItemKind::Const(const_stmt.clone()), self.unit.source.path.display().to_string(), const_stmt.public);
+                self.unit.new_item(const_stmt.ident.literal(), UnitItemKind::Const(const_stmt.clone()), self.unit.path().to_string(), const_stmt.public);
             }
             StmtKind::Use(use_stmt) => {
                 let (cache_key, mut unit) = self.loader.load_unit(&use_stmt.from.literal(), self.unit)?;
@@ -279,7 +320,7 @@ impl<'a> Pass for Resolver<'a> {
                         }
                         None => {
                             self.diags.new_diagnostic(Diagnostic {
-                                text: format!("Item `{}` not found in file {}", name, unit.source.path.display()),
+                                text: format!("Item `{}` not found in file {}", name, unit.path()),
                                 level: Level::Error,
                                 labels: vec![
                                     (item.span.clone(), None),
@@ -291,14 +332,15 @@ impl<'a> Pass for Resolver<'a> {
                         }
                     };
 
-                    self.unit.new_imported_item(name, kind, unit.source.path.display().to_string(), true);
+                    self.unit.new_imported_item(name, kind, unit.path().to_string(), true);
                 }
             }
             _ => {}
         }
 
-        self.loader.units.insert(self.unit.source.path.display().to_string(), self.unit.clone());
+        self.loader.units.insert(self.unit.path().to_string(), self.unit.clone());
 
+        println!("{:#?}", self.unit.unit_items);
         Ok(())
     }
 }

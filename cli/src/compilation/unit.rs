@@ -32,6 +32,10 @@ impl CompilationUnit {
         })
     }
 
+    pub fn path(&self) -> String {
+        self.source.path.display().to_string()
+    }
+    
     pub fn new_item(&mut self, name: String, kind: UnitItemKind, unit: String, public: bool) {
         self.unit_items.insert(name, UnitItem {
             kind,

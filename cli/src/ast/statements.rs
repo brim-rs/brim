@@ -51,7 +51,7 @@ pub struct Struct {
     pub name: Token,
     pub fields: IndexMap<String, StructField>,
     pub public: bool,
-    pub impls: Vec<StructImpl>,
+    pub impls: Vec<StoredStructImpl>,
     pub trait_impls: Vec<StoredTraitImpl>,
 }
 
@@ -59,6 +59,12 @@ pub struct Struct {
 pub struct StoredTraitImpl {
     pub unit: String,
     pub trait_impl: TraitImpl,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct StoredStructImpl {
+    pub unit: String,
+    pub struct_impl: StructImpl,
 }
 
 impl Struct {
