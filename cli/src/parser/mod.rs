@@ -56,6 +56,8 @@ impl Parser {
         while !self.is_eof() {
             if let Some(stmt_id) = self.parse_stmt()? {
                 self.ast.new_item(stmt_id);
+                
+                self.expect_punct(TokenKind::Semicolon)?;
             }
         }
 

@@ -5,6 +5,7 @@ use crate::ast::Ast;
 use crate::compilation::imports::UnitLoader;
 use crate::compilation::items::{UnitItem, UnitItemKind};
 use crate::compilation::passes::resolver::Resolver;
+use crate::compilation::passes::type_checker::pass::TypeChecker;
 use crate::error::diagnostic::Diagnostics;
 use crate::lexer::Lexer;
 use crate::lexer::source::Source;
@@ -35,7 +36,7 @@ impl CompilationUnit {
     pub fn path(&self) -> String {
         self.source.path.display().to_string()
     }
-    
+
     pub fn new_item(&mut self, name: String, kind: UnitItemKind, unit: String, public: bool) {
         self.unit_items.insert(name, UnitItem {
             kind,
@@ -67,6 +68,15 @@ impl CompilationUnit {
         };
 
         resolver.run()?;
+
+        let mut type_checker = TypeChecker {
+            scopes: vec![HashMap::new()],
+            unit: self,
+            loader,
+            diags,
+        };
+
+        type_checker.run()?;
 
         Ok(())
     }

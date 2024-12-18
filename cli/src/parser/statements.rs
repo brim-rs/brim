@@ -392,11 +392,11 @@ impl Parser {
         } else {
             vec![]
         };
-        
+
         let is_array = if self.peek().kind == TokenKind::LeftBracket {
             self.consume();
             self.expect_punct(TokenKind::RightBracket)?;
-           
+
             true
         } else {
             false

@@ -234,7 +234,6 @@ impl<'a> Pass for Resolver<'a> {
                 self.unit.new_item(struct_name, UnitItemKind::Struct(struct_def.clone()), self.unit.path().to_string(), struct_item.public);
             }
             StmtKind::Fn(fn_stmt) => {
-                println!("fn_stmt: {:#?}", fn_stmt);
                 self.unit.new_item(fn_stmt.name.literal(), UnitItemKind::Function(fn_stmt.clone()), self.unit.path().to_string(), fn_stmt.public);
             }
             StmtKind::TraitDef(trait_stmt) => {

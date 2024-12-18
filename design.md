@@ -18,10 +18,8 @@
 | `u128`  | 128-bit unsigned integer       |
 | `usize` | Pointer-sized unsigned integer |
 | `isize` | Pointer-sized signed integer   |
-| `f16`   | 16-bit floating-point number   |
 | `f32`   | 32-bit floating-point number   |
 | `f64`   | 64-bit floating-point number   |
-| `f128`  | 128-bit floating-point number  |
 | `bool`  | Boolean. `true` or `false`     |
 | `void`  | No return value                |
 | `char`  | Unicode character              |

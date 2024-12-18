@@ -13,10 +13,8 @@
 //! | `u128`  | 128-bit unsigned integer       |
 //! | `usize` | Pointer-sized unsigned integer |
 //! | `isize` | Pointer-sized signed integer   |
-//! | `f16`   | 16-bit floating-point number   |
 //! | `f32`   | 32-bit floating-point number   |
 //! | `f64`   | 64-bit floating-point number   |
-//! | `f128`  | 128-bit floating-point number  |
 //! | `bool`  | Boolean. `true` or `false`     |
 //! | `void`  | No return value                |
 //! | `char`  | Unicode character              |
@@ -26,6 +24,7 @@
 //! Look at `design.md` for more information.
 
 use std::fmt::{Display, Formatter};
+use crate::compilation::passes::type_checker::ResolvedType;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeKind {
@@ -41,17 +40,15 @@ pub enum TypeKind {
     U128,
     Usize,
     Isize,
-    F16,
     F32,
     F64,
-    F128,
     Bool,
     Void,
     Char,
     Undefined,
     Null,
     String,
-    Array(Box<TypeKind>),
+    Array(Box<ResolvedType>),
     Custom(String),
 }
 
@@ -70,10 +67,8 @@ impl Display for TypeKind {
             TypeKind::U128 => write!(f, "u128"),
             TypeKind::Usize => write!(f, "usize"),
             TypeKind::Isize => write!(f, "isize"),
-            TypeKind::F16 => write!(f, "f16"),
             TypeKind::F32 => write!(f, "f32"),
             TypeKind::F64 => write!(f, "f64"),
-            TypeKind::F128 => write!(f, "f128"),
             TypeKind::Bool => write!(f, "bool"),
             TypeKind::Void => write!(f, "void"),
             TypeKind::Char => write!(f, "char"),
@@ -89,7 +84,7 @@ impl Display for TypeKind {
 impl TypeKind {
     pub fn from_str(s: &str, is_array: bool) -> Self {
         if is_array {
-            return TypeKind::Array(Box::new(TypeKind::from_str(s, false)));
+            return TypeKind::Array(Box::new(ResolvedType::base(TypeKind::from_str(s, false))));
         }
         
         match s {
@@ -105,10 +100,8 @@ impl TypeKind {
             "u128" => TypeKind::U128,
             "usize" => TypeKind::Usize,
             "isize" => TypeKind::Isize,
-            "f16" => TypeKind::F16,
             "f32" => TypeKind::F32,
             "f64" => TypeKind::F64,
-            "f128" => TypeKind::F128,
             "bool" => TypeKind::Bool,
             "void" => TypeKind::Void,
             "char" => TypeKind::Char,
