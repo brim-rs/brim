@@ -125,6 +125,36 @@ pub enum BinOpKind {
     Catch,
 }
 
+impl Display for BinOpKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BinOpKind::Plus => write!(f, "'+' (addition)"),
+            BinOpKind::Minus => write!(f, "'-' (subtraction)"),
+            BinOpKind::Multiply => write!(f, "'*' (multiplication)"),
+            BinOpKind::Divide => write!(f, "'/' (division)"),
+            BinOpKind::Power => write!(f, "'**' (exponentiation)"),
+            BinOpKind::Modulo => write!(f, "'%' (modulo)"),
+            BinOpKind::BitwiseAnd => write!(f, "'&' (bitwise AND)"),
+            BinOpKind::BitwiseOr => write!(f, "'|' (bitwise OR)"),
+            BinOpKind::BitwiseXor => write!(f, "'^' (bitwise XOR)"),
+            BinOpKind::ShiftLeft => write!(f, "'<<' (bitwise shift left)"),
+            BinOpKind::ShiftRight => write!(f, "'>>' (bitwise shift right)"),
+            BinOpKind::Equals => write!(f, "'=' (assignment)"),
+            BinOpKind::LessThan => write!(f, "'<' (less-than)"),
+            BinOpKind::LessThanOrEqual => write!(f, "'<=' (less-than-or-equal)"),
+            BinOpKind::GreaterThan => write!(f, "'>' (greater-than)"),
+            BinOpKind::GreaterThanOrEqual => write!(f, "'>=' (greater-than-or-equal)"),
+            BinOpKind::EqualsEquals => write!(f, "'==' (equality)"),
+            BinOpKind::BangEquals => write!(f, "'!=' (inequality)"),
+            BinOpKind::And => write!(f, "'&&' (logical AND)"),
+            BinOpKind::Or => write!(f, "'||' (logical OR)"),
+            BinOpKind::Increment => write!(f, "'++' (increment)"),
+            BinOpKind::Decrement => write!(f, "'--' (decrement)"),
+            BinOpKind::Catch => write!(f, "'catch' (exception handling)"),
+        }
+    }
+}
+
 impl BinOpKind {
     pub fn is_number_operator(&self) -> bool {
         match self {

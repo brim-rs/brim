@@ -1,22 +1,23 @@
 fn parse(input: string) -> string[] !MyError {
      ~123;
-     if input.len() <= 0 {
-         return MyError::ParsingError {
-             message: "Input is empty",
-             span: Span::new(0, 0)
-         };
-     };
+     //if input.len() <= 0 {
+     //    return MyError::ParsingError {
+     //        message: "Input is empty",
+     //        span: Span::new(0, 0)
+     //    };
+     //};
 
      return input
 };
 
 pub fn main() {
-    let value = parse(input) catch |err: MyError| {
-        println(err)
-    };
+    //let value = parse(input) catch |err: MyError| {
+    //    println(err)
+    //};
 
-    let val: string = "qwe";
-    val
-
-    println("Value {}", [value])
+    if 1 + 1 > 5 {
+        println("Hello, world!");
+    } else {
+        println("Hello, world!");
+    }
 };

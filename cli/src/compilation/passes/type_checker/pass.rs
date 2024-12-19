@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::compilation::passes::type_checker::ResolvedType;
 use anyhow::Result;
 use crate::ast::{ExprId, GetSpan, StmtId};
-use crate::ast::expressions::{ExprKind, LiteralType, UnOpKind, Unary};
+use crate::ast::expressions::{BinOpKind, ExprKind, LiteralType, UnOpKind, Unary};
 use crate::ast::statements::{StmtKind, TypeAnnotation};
 use crate::ast::types::TypeKind;
 use crate::compilation::imports::UnitLoader;
@@ -121,6 +121,103 @@ impl<'a> TypeChecker<'a> {
                     ResolvedType::base(TypeKind::Null)
                 }
             }
+            ExprKind::Parenthesized(paren) => self.resolve_from_expr(paren.expr)?,
+            ExprKind::Binary(ref binary) => {
+                let left = self.resolve_from_expr(binary.left)?;
+                let right = self.resolve_from_expr(binary.right)?;
+
+                if binary.operator.is_number_operator() {
+                    match (left.kind.clone(), right.kind.clone()) {
+                        // Concatenate strings or characters
+                        (TypeKind::Char | TypeKind::String, TypeKind::Char | TypeKind::String)
+                        if binary.operator == BinOpKind::Plus => ResolvedType::base(TypeKind::String),
+
+                        // Matching types directly
+                        (TypeKind::I8 | TypeKind::I16 | TypeKind::I32 | TypeKind::I64 | TypeKind::I128,
+                            TypeKind::I8 | TypeKind::I16 | TypeKind::I32 | TypeKind::I64 | TypeKind::I128) => {
+                            ResolvedType::base(std::cmp::max(left.kind, right.kind))
+                        }
+
+                        (TypeKind::U8 | TypeKind::U16 | TypeKind::U32 | TypeKind::U64 | TypeKind::U128,
+                            TypeKind::U8 | TypeKind::U16 | TypeKind::U32 | TypeKind::U64 | TypeKind::U128) => {
+                            ResolvedType::base(std::cmp::max(left.kind, right.kind))
+                        }
+
+                        (TypeKind::F32 | TypeKind::F64, TypeKind::F32 | TypeKind::F64) => {
+                            ResolvedType::base(std::cmp::max(left.kind, right.kind))
+                        }
+
+                        _ => {
+                            self.diags.new_diagnostic(Diagnostic::error(
+                                format!(
+                                    "Binary operator {} not supported for types '{}' and '{}'",
+                                    binary.operator, left.kind, right.kind
+                                ),
+                                vec![(expr.span(self.unit.ast()).clone(), None)],
+                                vec![],
+                            ), Arc::new(self.unit.source.clone()));
+
+                            ResolvedType::base(TypeKind::Null)
+                        }
+                    }
+                } else if binary.operator.is_boolean_operator() {
+                    match (left.kind.clone(), binary.operator, right.kind.clone()) {
+                        (TypeKind::Bool, BinOpKind::And, TypeKind::Bool) => ResolvedType::base(TypeKind::Bool),
+                        (TypeKind::Bool, BinOpKind::Or, TypeKind::Bool) => ResolvedType::base(TypeKind::Bool),
+                        (
+                            TypeKind::String | TypeKind::Char,
+                            BinOpKind::Equals,
+                            TypeKind::String | TypeKind::Char,
+                        ) => ResolvedType::base(TypeKind::Bool),
+
+                        (TypeKind::Null, _, TypeKind::Null) => ResolvedType::base(TypeKind::Bool),
+
+                        (TypeKind::Array(t1), BinOpKind::Equals, TypeKind::Array(t2)) => {
+                            if t1.kind == t2.kind {
+                                ResolvedType::base(TypeKind::Bool)
+                            } else {
+                                self.diags.new_diagnostic(Diagnostic::error(
+                                    format!("Array types must match, found '{}' and '{}'", t1, t2),
+                                    vec![(expr.span(self.unit.ast()).clone(), None)],
+                                    vec![],
+                                ), Arc::new(self.unit.source.clone()));
+
+                                ResolvedType::base(TypeKind::Null)
+                            }
+                        }
+
+                        (TypeKind::Custom(t1), _, TypeKind::Custom(t2)) => {
+                            self.diags.new_diagnostic(Diagnostic::error(
+                                format!("Cannot compare custom types '{}' and '{}'", t1, t2),
+                                vec![(expr.span(self.unit.ast()).clone(), None)],
+                                vec![],
+                            ), Arc::new(self.unit.source.clone()));
+
+                            ResolvedType::base(TypeKind::Null)
+                        }
+
+                        _ if left.is_number() && right.is_number() => ResolvedType::base(TypeKind::Bool),
+
+                        _ => {
+                            self.diags.new_diagnostic(Diagnostic::error(
+                                format!("Binary operator '{}' not supported for types '{}' and '{}'", binary.operator, left.kind, right.kind),
+                                vec![(expr.span(self.unit.ast()).clone(), None)],
+                                vec![],
+                            ), Arc::new(self.unit.source.clone()));
+
+                            ResolvedType::base(TypeKind::Null)
+                        }
+                    }
+                } else {
+                    self.diags.new_diagnostic(Diagnostic::error(
+                        format!("Binary operator {} not supported", binary.operator),
+                        vec![(expr.span(self.unit.ast()).clone(), None)],
+                        vec![]),
+                                              Arc::new(self.unit.source.clone()));
+
+                    ResolvedType::base(TypeKind::Null)
+                }
+            }
             _ => ResolvedType::base(TypeKind::Null)
         };
 
@@ -217,9 +314,11 @@ impl<'a> Pass for TypeChecker<'a> {
                 self.visit_statement(loop_stmt.block)?;
             }
             StmtKind::If(if_stmt) => {
+                self.resolve_from_expr(if_stmt.condition.clone())?;
                 self.visit_statement(if_stmt.then_block)?;
 
                 for else_if in if_stmt.else_ifs {
+                    self.resolve_from_expr(else_if.condition.clone())?;
                     self.visit_statement(else_if.block)?;
                 }
 

@@ -86,7 +86,7 @@ impl TypeKind {
         if is_array {
             return TypeKind::Array(Box::new(ResolvedType::base(TypeKind::from_str(s, false))));
         }
-        
+
         match s {
             "i8" => TypeKind::I8,
             "i16" => TypeKind::I16,
@@ -109,6 +109,61 @@ impl TypeKind {
             "null" => TypeKind::Null,
             "string" => TypeKind::String,
             _ => TypeKind::Custom(s.to_string()),
+        }
+    }
+}
+
+use std::cmp::Ordering;
+
+impl PartialOrd for TypeKind {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Eq for TypeKind {}
+
+impl Ord for TypeKind {
+    fn cmp(&self, other: &Self) -> Ordering {
+        use TypeKind::*;
+        match (self, other) {
+            (Custom(a), Custom(b)) => a.cmp(b),
+            (Array(a), Array(b)) => a.kind.cmp(&b.kind),
+            (Custom(_), _) => Ordering::Greater,
+            (_, Custom(_)) => Ordering::Less,
+            (Array(_), _) => Ordering::Greater,
+            (_, Array(_)) => Ordering::Less,
+            _ => self.to_discriminant().cmp(&other.to_discriminant()),
+        }
+    }
+}
+
+impl TypeKind {
+    fn to_discriminant(&self) -> usize {
+        use TypeKind::*;
+        match self {
+            Bool => 0,
+            Char => 1,
+            F32 => 2,
+            F64 => 3,
+            I8 => 4,
+            I16 => 5,
+            I32 => 6,
+            I64 => 7,
+            I128 => 8,
+            Isize => 9,
+            Null => 10,
+            String => 11,
+            U8 => 12,
+            U16 => 13,
+            U32 => 14,
+            U64 => 15,
+            U128 => 16,
+            Usize => 17,
+            Void => 18,
+            Undefined => 19,
+            Array(_) => 20, // Arrays and custom types are handled separately
+            Custom(_) => 21,
         }
     }
 }
