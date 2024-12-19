@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 fn remove_prefix(path: &PathBuf) -> PathBuf {
     let path_str = path.to_str().unwrap_or("");
@@ -25,7 +25,9 @@ pub fn canonicalize_path(path: PathBuf) -> Result<PathBuf> {
 }
 
 pub fn canonicalize_path_with_err_message(path: PathBuf, err_message: &str) -> Result<PathBuf> {
-    let path = path.canonicalize().map_err(|e| anyhow!("{}: {}", err_message, e))?;
+    let path = path
+        .canonicalize()
+        .map_err(|e| anyhow!("{}: {}", err_message, e))?;
     Ok(remove_prefix(&path))
 }
 
@@ -39,7 +41,10 @@ pub fn normalize_without_canonicalize(mut path: PathBuf, root: PathBuf) -> PathB
 pub fn strip_base(path: PathBuf, base: PathBuf) -> PathBuf {
     let mut path = path.strip_prefix(base).unwrap_or(&path).to_path_buf();
     if path.starts_with(std::path::MAIN_SEPARATOR.to_string()) {
-        path = path.strip_prefix(std::path::MAIN_SEPARATOR.to_string()).unwrap_or(&path).to_path_buf();
+        path = path
+            .strip_prefix(std::path::MAIN_SEPARATOR.to_string())
+            .unwrap_or(&path)
+            .to_path_buf();
     }
     path
 }

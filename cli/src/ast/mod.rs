@@ -1,18 +1,28 @@
-pub mod statements;
 pub mod expressions;
-pub mod types;
 pub mod item;
+pub mod statements;
+pub mod types;
 
+use crate::{
+    ast::{
+        expressions::{
+            AccessExpr, AccessKind, AnonymousFunction, ArrayExpr, Assign, AssignOperator,
+            BinOperator, Binary, CallExpr, Expr, ExprKind, Literal, LiteralType, ObjectExpr,
+            Parenthesized, StructConstructor, UnOperator, Unary, Variable,
+        },
+        item::TopLevelItem,
+        statements::{
+            Block, Const, ElseBlock, FnParam, Function, Let, Loop, Return, Stmt, StmtKind, Struct,
+            StructField, StructImpl, TraitDef, TraitImpl, Try, TypeAnnotation, Use, While,
+        },
+        types::TypeKind,
+    },
+    error::span::TextSpan,
+    idx,
+    idx::{Idx, IdxVec},
+    lexer::tokens::Token,
+};
 use indexmap::IndexMap;
-use crate::ast::expressions::{AccessExpr, AccessKind, AnonymousFunction, ArrayExpr, Assign, AssignOperator, BinOperator, Binary, CallExpr, Expr, ExprKind, Literal, LiteralType, ObjectExpr, Parenthesized, StructConstructor, UnOperator, Unary, Variable};
-use crate::ast::item::TopLevelItem;
-use crate::ast::statements::{Block, Const, ElseBlock, FnParam, Function, Let, Loop, Return, Stmt, StmtKind, Struct, StructField, StructImpl, TraitDef, TraitImpl, Try, TypeAnnotation, Use, While};
-use crate::ast::types::TypeKind;
-use crate::error::span::TextSpan;
-use crate::idx::Idx;
-use crate::idx;
-use crate::idx::IdxVec;
-use crate::lexer::tokens::Token;
 
 idx!(StmtId);
 idx!(ExprId);
@@ -84,21 +94,26 @@ impl Ast {
     }
 
     pub fn new_unary(&mut self, operator: UnOperator, operand: ExprId, token: Token) -> ExprId {
-        let expr = self.new_expr(ExprKind::Unary(Unary { operator, expr: operand, token }));
+        let expr = self.new_expr(ExprKind::Unary(Unary {
+            operator,
+            expr: operand,
+            token,
+        }));
         expr.id
     }
 
     pub fn new_binary(&mut self, left: ExprId, operator: BinOperator, right: ExprId) -> ExprId {
-        let expr = self.new_expr(ExprKind::Binary(Binary { left, right, operator: operator.kind }));
+        let expr = self.new_expr(ExprKind::Binary(Binary {
+            left,
+            right,
+            operator: operator.kind,
+        }));
 
         expr.id
     }
 
     pub fn new_variable(&mut self, token: Token, ident: String) -> ExprId {
-        let expr = self.new_expr(ExprKind::Variable(Variable {
-            token,
-            ident,
-        }));
+        let expr = self.new_expr(ExprKind::Variable(Variable { token, ident }));
         expr.id
     }
 
@@ -129,7 +144,12 @@ impl Ast {
         expr.id
     }
 
-    pub fn new_static_method_access(&mut self, base: ExprId, method: ExprId, token: Token) -> ExprId {
+    pub fn new_static_method_access(
+        &mut self,
+        base: ExprId,
+        method: ExprId,
+        token: Token,
+    ) -> ExprId {
         let expr = self.new_expr(ExprKind::Access(AccessExpr {
             base,
             access: AccessKind::StaticMethod(method),
@@ -138,7 +158,12 @@ impl Ast {
         expr.id
     }
 
-    pub fn new_struct_constructor(&mut self, name: String, fields: IndexMap<String, ExprId>, token: Token) -> ExprId {
+    pub fn new_struct_constructor(
+        &mut self,
+        name: String,
+        fields: IndexMap<String, ExprId>,
+        token: Token,
+    ) -> ExprId {
         let expr = self.new_expr(ExprKind::StructConstructor(StructConstructor {
             name,
             fields,
@@ -179,22 +204,17 @@ impl Ast {
         expr.id
     }
 
-    pub fn new_object(&mut self, fields: IndexMap<String, ExprId>, braces: (Token, Token)) -> ExprId {
-        let expr = self.new_expr(ExprKind::Object(
-            ObjectExpr {
-                fields,
-                braces,
-            }
-        ));
+    pub fn new_object(
+        &mut self,
+        fields: IndexMap<String, ExprId>,
+        braces: (Token, Token),
+    ) -> ExprId {
+        let expr = self.new_expr(ExprKind::Object(ObjectExpr { fields, braces }));
         expr.id
     }
 
     pub fn new_parenthesized(&mut self, expr: ExprId) -> ExprId {
-        let expr = self.new_expr(ExprKind::Parenthesized(
-            Parenthesized {
-                expr,
-            }
-        ));
+        let expr = self.new_expr(ExprKind::Parenthesized(Parenthesized { expr }));
         expr.id
     }
 
@@ -215,11 +235,7 @@ impl Ast {
     }
 
     pub fn new_array(&mut self, elements: Vec<ExprId>) -> ExprId {
-        let expr = self.new_expr(ExprKind::Array(
-            ArrayExpr {
-                exprs: elements,
-            }
-        ));
+        let expr = self.new_expr(ExprKind::Array(ArrayExpr { exprs: elements }));
         expr.id
     }
 
@@ -239,174 +255,186 @@ impl Ast {
     }
 
     pub fn new_loop(&mut self, body: StmtId, token: Token) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::Loop(Loop {
-            block: body,
-            token,
-        }));
+        let stmt = self.new_stmt(StmtKind::Loop(Loop { block: body, token }));
         stmt.id
     }
 
     pub fn new_block(&mut self, stmts: Vec<StmtId>) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::Block(
-            Block {
-                stmts
-            }
-        ));
+        let stmt = self.new_stmt(StmtKind::Block(Block { stmts }));
         stmt.id
     }
 
-    pub fn new_fn(&mut self, fn_token: Token, name: Token, params: Vec<FnParam>, body: Option<StmtId>, public: bool, return_type: Option<TypeAnnotation>, is_static: bool) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::Fn(
-            Function {
-                fn_token,
-                name,
-                params,
-                body,
-                public,
-                return_type,
-                is_static,
-            }
-        ));
+    pub fn new_fn(
+        &mut self,
+        fn_token: Token,
+        name: Token,
+        params: Vec<FnParam>,
+        body: Option<StmtId>,
+        public: bool,
+        return_type: Option<TypeAnnotation>,
+        is_static: bool,
+    ) -> StmtId {
+        let stmt = self.new_stmt(StmtKind::Fn(Function {
+            fn_token,
+            name,
+            params,
+            body,
+            public,
+            return_type,
+            is_static,
+        }));
         stmt.id
     }
 
     pub fn new_use(&mut self, use_token: Token, from: Token, items: Vec<Token>) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::Use(
-            Use {
-                use_token,
-                from,
-                items,
-            }
-        ));
+        let stmt = self.new_stmt(StmtKind::Use(Use {
+            use_token,
+            from,
+            items,
+        }));
         stmt.id
     }
 
-    pub fn new_if(&mut self, if_token: Token, condition: ExprId, then_block: StmtId, else_ifs: Vec<ElseBlock>, else_block: Option<ElseBlock>) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::If(
-            statements::If {
-                if_token,
-                condition,
-                then_block,
-                else_ifs,
-                else_block,
-            }
-        ));
+    pub fn new_if(
+        &mut self,
+        if_token: Token,
+        condition: ExprId,
+        then_block: StmtId,
+        else_ifs: Vec<ElseBlock>,
+        else_block: Option<ElseBlock>,
+    ) -> StmtId {
+        let stmt = self.new_stmt(StmtKind::If(statements::If {
+            if_token,
+            condition,
+            then_block,
+            else_ifs,
+            else_block,
+        }));
         stmt.id
     }
 
-    pub fn new_let(&mut self, ident: Token, initializer: ExprId, type_annotation: Option<TypeAnnotation>) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::Let(
-            Let {
-                ident,
-                initializer,
-                type_annotation,
-            }
-        ));
+    pub fn new_let(
+        &mut self,
+        ident: Token,
+        initializer: ExprId,
+        type_annotation: Option<TypeAnnotation>,
+    ) -> StmtId {
+        let stmt = self.new_stmt(StmtKind::Let(Let {
+            ident,
+            initializer,
+            type_annotation,
+        }));
         stmt.id
     }
 
     pub fn new_return(&mut self, return_token: Token, expr: Option<ExprId>) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::Return(
-            Return {
-                return_token,
-                expr,
-            }
-        ));
+        let stmt = self.new_stmt(StmtKind::Return(Return { return_token, expr }));
         stmt.id
     }
 
     pub fn new_try(&mut self, token: Token, expr: ExprId) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::Try(
-            Try {
-                token,
-                expr,
-            }
-        ));
+        let stmt = self.new_stmt(StmtKind::Try(Try { token, expr }));
 
         stmt.id
     }
 
     pub fn new_while(&mut self, while_token: Token, condition: ExprId, block: StmtId) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::While(
-            While {
-                while_token,
-                condition,
-                block,
-            }
-        ));
+        let stmt = self.new_stmt(StmtKind::While(While {
+            while_token,
+            condition,
+            block,
+        }));
         stmt.id
     }
 
-    pub fn new_struct(&mut self, struct_token: Token, name: Token, fields: IndexMap<String, StructField>, public: bool) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::Struct(
-            Struct {
-                struct_token,
-                name,
-                fields,
-                public,
-                impls: vec![],
-                trait_impls: vec![],
-            }
-        ));
+    pub fn new_struct(
+        &mut self,
+        struct_token: Token,
+        name: Token,
+        fields: IndexMap<String, StructField>,
+        public: bool,
+    ) -> StmtId {
+        let stmt = self.new_stmt(StmtKind::Struct(Struct {
+            struct_token,
+            name,
+            fields,
+            public,
+            impls: vec![],
+            trait_impls: vec![],
+        }));
         stmt.id
     }
 
     pub fn new_const(&mut self, expr: ExprId, ident: Token, public: bool) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::Const(
-            Const {
-                expr,
-                ident,
-                public,
-            }
-        ));
+        let stmt = self.new_stmt(StmtKind::Const(Const {
+            expr,
+            ident,
+            public,
+        }));
         stmt.id
     }
 
-    pub fn new_trait_def(&mut self, trait_token: Token, name: Token, methods: Vec<StmtId>, public: bool) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::TraitDef(
-            TraitDef {
-                trait_token,
-                name,
-                methods,
-                public,
-            }
-        ));
+    pub fn new_trait_def(
+        &mut self,
+        trait_token: Token,
+        name: Token,
+        methods: Vec<StmtId>,
+        public: bool,
+    ) -> StmtId {
+        let stmt = self.new_stmt(StmtKind::TraitDef(TraitDef {
+            trait_token,
+            name,
+            methods,
+            public,
+        }));
         stmt.id
     }
 
-    pub fn new_trait_impl(&mut self, impl_token: Token, trait_name: Token, for_token: Token, struct_name: Token, methods: Vec<StmtId>) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::TraitImpl(
-            TraitImpl {
-                impl_token,
-                trait_name,
-                for_token,
-                struct_name,
-                methods,
-            }
-        ));
+    pub fn new_trait_impl(
+        &mut self,
+        impl_token: Token,
+        trait_name: Token,
+        for_token: Token,
+        struct_name: Token,
+        methods: Vec<StmtId>,
+    ) -> StmtId {
+        let stmt = self.new_stmt(StmtKind::TraitImpl(TraitImpl {
+            impl_token,
+            trait_name,
+            for_token,
+            struct_name,
+            methods,
+        }));
         stmt.id
     }
 
-    pub fn new_struct_impl(&mut self, impl_token: Token, struct_name: Token, methods: Vec<StmtId>) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::StructImpl(
-            StructImpl {
-                impl_token,
-                struct_name,
-                methods,
-            }
-        ));
+    pub fn new_struct_impl(
+        &mut self,
+        impl_token: Token,
+        struct_name: Token,
+        methods: Vec<StmtId>,
+    ) -> StmtId {
+        let stmt = self.new_stmt(StmtKind::StructImpl(StructImpl {
+            impl_token,
+            struct_name,
+            methods,
+        }));
         stmt.id
     }
 
-    pub fn new_anonymous_function(&mut self, params: Vec<FnParam>, body: StmtId, return_type: Option<TypeAnnotation>, pipes: (Token, Token)) -> ExprId {
-        let expr = self.new_expr(ExprKind::AnonymousFunction(
-            AnonymousFunction {
-                params,
-                body,
-                pipes,
-                return_type,
-            }
-        ));
+    pub fn new_anonymous_function(
+        &mut self,
+        params: Vec<FnParam>,
+        body: StmtId,
+        return_type: Option<TypeAnnotation>,
+        pipes: (Token, Token),
+    ) -> ExprId {
+        let expr = self.new_expr(ExprKind::AnonymousFunction(AnonymousFunction {
+            params,
+            body,
+            pipes,
+            return_type,
+        }));
         expr.id
     }
 }

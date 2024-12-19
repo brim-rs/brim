@@ -16,7 +16,7 @@ pub fn setup_panic_handler() {
             None => "".into(),
             Some(location) => format!("{}:{}", location.file(), location.line()),
         }
-            .replace("\\", "/");
+        .replace("\\", "/");
 
         let text = format!(
             "{}
@@ -55,8 +55,8 @@ Location: {}
                         new_text,
                         shorten_path(filename.to_str().unwrap()).unwrap()
                     )
-                        .cyan()
-                        .to_string();
+                    .cyan()
+                    .to_string();
                 }
 
                 backtrace = format!("{}  {}\n", backtrace, new_text);

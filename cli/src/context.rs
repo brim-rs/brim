@@ -1,14 +1,13 @@
+use crate::{
+    config::BrimConfig,
+    fs::walk_for_file,
+    path::{canonicalize_path, normalize_without_canonicalize},
+};
 use anstream::ColorChoice;
-use anyhow::{anyhow, bail, Context, Result};
-use std::{fs::read_to_string, path::PathBuf, sync::Arc, time::Instant};
-use colored::Colorize;
+use anyhow::{anyhow, Context, Result};
 use brim_shell::Shell;
-use crate::config::BrimConfig;
-use crate::error::diagnostic::{Diagnostic, Level};
-use crate::error::span::TextSpan;
-use crate::fs::walk_for_file;
-use crate::lexer::source::Source;
-use crate::path::{canonicalize_path, normalize_without_canonicalize};
+use colored::Colorize;
+use std::{fs::read_to_string, path::PathBuf, time::Instant};
 
 #[derive(Debug)]
 pub struct GlobalContext {
@@ -77,12 +76,18 @@ impl GlobalContext {
 
     pub fn get_main_file(&self) -> Result<PathBuf> {
         let file: PathBuf = match self.project_type()? {
-            ProjectType::Lib => {
-                self.config.project.lib.clone().unwrap_or_else(|| self.cwd.join("src\\lib.brim"))
-            }
-            ProjectType::Bin => {
-                self.config.project.bin.clone().unwrap_or_else(|| self.cwd.join("src\\main.brim"))
-            }
+            ProjectType::Lib => self
+                .config
+                .project
+                .lib
+                .clone()
+                .unwrap_or_else(|| self.cwd.join("src\\lib.brim")),
+            ProjectType::Bin => self
+                .config
+                .project
+                .bin
+                .clone()
+                .unwrap_or_else(|| self.cwd.join("src\\main.brim")),
         };
 
         let path = normalize_without_canonicalize(file, self.cwd.clone());

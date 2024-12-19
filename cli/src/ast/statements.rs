@@ -1,9 +1,10 @@
-use std::fmt::{Debug, Display, Formatter};
+use crate::{
+    ast::{types::TypeKind, Ast, ExprId, GetSpan, StmtId},
+    error::span::TextSpan,
+    lexer::tokens::Token,
+};
 use indexmap::IndexMap;
-use crate::ast::{Ast, ExprId, GetSpan, StmtId};
-use crate::ast::types::TypeKind;
-use crate::error::span::TextSpan;
-use crate::lexer::tokens::Token;
+use std::fmt::{Debug, Formatter};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stmt {
@@ -149,10 +150,7 @@ impl GetSpan for Let {
             spans.push(type_annotation.span(ast));
         }
 
-        spans.push(
-            ast.query_expr(self.initializer)
-                .span(ast)
-        );
+        spans.push(ast.query_expr(self.initializer).span(ast));
 
         TextSpan::combine(spans).unwrap()
     }
@@ -175,7 +173,11 @@ pub struct FnParam {
 
 impl GetSpan for FnParam {
     fn span(&self, ast: &Ast) -> TextSpan {
-        TextSpan::combine(vec![self.ident.span.clone(), self.type_annotation.span(ast)]).unwrap()
+        TextSpan::combine(vec![
+            self.ident.span.clone(),
+            self.type_annotation.span(ast),
+        ])
+        .unwrap()
     }
 }
 
@@ -211,7 +213,8 @@ impl PartialEq for TypeAnnotation {
             && self.is_nullable == other.is_nullable
             && self.generics == other.generics
             && self.can_be_error == other.can_be_error
-            && self.error_type.as_ref().map(|e| e.span.literal.clone()) == other.error_type.as_ref().map(|e| e.span.literal.clone())
+            && self.error_type.as_ref().map(|e| e.span.literal.clone())
+                == other.error_type.as_ref().map(|e| e.span.literal.clone())
     }
 }
 

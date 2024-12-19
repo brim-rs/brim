@@ -1,12 +1,15 @@
-use std::sync::Arc;
-use clap::{ArgAction, ArgMatches, Command};
-use crate::context::{GlobalContext, ProjectType};
+use crate::{
+    cli::opt,
+    compilation::{imports::UnitLoader, unit::CompilationUnit},
+    context::{GlobalContext, ProjectType},
+    error::{
+        diagnostic::{Diagnostic, Diagnostics, Level},
+        BrimError,
+    },
+};
 use anyhow::Result;
-use crate::cli::opt;
-use crate::compilation::imports::UnitLoader;
-use crate::compilation::unit::CompilationUnit;
-use crate::error::BrimError;
-use crate::error::diagnostic::{Diagnostic, Diagnostics, Level};
+use clap::{ArgAction, ArgMatches, Command};
+use std::sync::Arc;
 
 pub fn run_cmd() -> Command {
     Command::new("run").about("Run a project").arg(
@@ -27,7 +30,7 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
 
     let loader = &mut UnitLoader::new(ctx.cwd.clone());
     let mut unit = CompilationUnit::new(ctx.get_main_file()?)?;
-    let mut diags = &mut Diagnostics::new();
+    let diags = &mut Diagnostics::new();
 
     let source = Arc::new(unit.source.clone());
 
@@ -45,13 +48,16 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
                 let diagnostic = err.to_diagnostic();
                 diags.new_diagnostic(diagnostic, source);
             } else {
-                diags.new_diagnostic(Diagnostic {
-                    text: format!("{}", e),
-                    level: Level::Error,
-                    labels: vec![],
-                    hint: vec![],
-                    code: None,
-                }, source);
+                diags.new_diagnostic(
+                    Diagnostic {
+                        text: format!("{}", e),
+                        level: Level::Error,
+                        labels: vec![],
+                        hint: vec![],
+                        code: None,
+                    },
+                    source,
+                );
             }
             diags.print_diagnostics();
         }
@@ -65,7 +71,11 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
-pub fn compile_unit(unit: &mut CompilationUnit, diags: &mut Diagnostics, loader: &mut UnitLoader) -> Result<()> {
+pub fn compile_unit(
+    unit: &mut CompilationUnit,
+    diags: &mut Diagnostics,
+    loader: &mut UnitLoader,
+) -> Result<()> {
     unit.compile(loader, diags)?;
 
     Ok(())

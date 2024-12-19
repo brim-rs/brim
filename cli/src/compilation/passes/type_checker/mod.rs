@@ -1,6 +1,5 @@
+use crate::ast::{statements::TypeAnnotation, types::TypeKind};
 use std::fmt::Display;
-use crate::ast::statements::TypeAnnotation;
-use crate::ast::types::TypeKind;
 
 pub mod pass;
 
@@ -14,7 +13,13 @@ pub struct ResolvedType {
 }
 
 impl ResolvedType {
-    pub fn new(kind: TypeKind, is_nullable: bool, generics: Vec<ResolvedType>, can_be_error: bool, error_type: Option<String>) -> Self {
+    pub fn new(
+        kind: TypeKind,
+        is_nullable: bool,
+        generics: Vec<ResolvedType>,
+        can_be_error: bool,
+        error_type: Option<String>,
+    ) -> Self {
         Self {
             kind,
             is_nullable,
@@ -37,32 +42,42 @@ impl ResolvedType {
 
 impl ResolvedType {
     pub fn is_number(&self) -> bool {
-        matches!(self.kind,
+        matches!(
+            self.kind,
             TypeKind::I8
-            | TypeKind::I16
-            | TypeKind::I32
-            | TypeKind::I64
-            | TypeKind::I128
-            | TypeKind::U8
-            | TypeKind::U16
-            | TypeKind::U32
-            | TypeKind::U64
-            | TypeKind::U128
-            | TypeKind::F32
-            | TypeKind::F64)
+                | TypeKind::I16
+                | TypeKind::I32
+                | TypeKind::I64
+                | TypeKind::I128
+                | TypeKind::U8
+                | TypeKind::U16
+                | TypeKind::U32
+                | TypeKind::U64
+                | TypeKind::U128
+                | TypeKind::F32
+                | TypeKind::F64
+        )
     }
 
     pub fn matches(&self, other: &ResolvedType) -> bool {
         self.kind == other.kind
             && self.generics.len() == other.generics.len()
-            && self.generics.iter().zip(other.generics.iter()).all(|(a, b)| a.matches(b))
+            && self
+                .generics
+                .iter()
+                .zip(other.generics.iter())
+                .all(|(a, b)| a.matches(b))
             && self.is_nullable == other.is_nullable
             && self.can_be_error == other.can_be_error
             && self.error_type == other.error_type
     }
-    
+
     pub fn from_type_annotation(typ: TypeAnnotation) -> ResolvedType {
-        let generics = typ.generics.into_iter().map(ResolvedType::from_type_annotation).collect();
+        let generics = typ
+            .generics
+            .into_iter()
+            .map(ResolvedType::from_type_annotation)
+            .collect();
 
         ResolvedType {
             kind: typ.kind,
@@ -72,11 +87,11 @@ impl ResolvedType {
             error_type: typ.error_type.map(|t| t.literal()),
         }
     }
-    
+
     pub fn is_string_like(&self) -> bool {
         matches!(self.kind, TypeKind::String | TypeKind::Char)
     }
-    
+
     pub fn is_string_or_number(&self) -> bool {
         self.is_string_like() || self.is_number()
     }

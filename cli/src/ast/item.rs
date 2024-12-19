@@ -1,5 +1,4 @@
 use crate::ast::{ItemId, StmtId};
-use crate::ast::statements::Stmt;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TopLevelItem {

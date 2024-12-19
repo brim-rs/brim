@@ -1,7 +1,6 @@
-use clap::{builder::Styles, Arg, ArgAction, Command, ValueHint};
-use clap::builder::TypedValueParser;
-use brim_shell::styles::*;
 use crate::commands::run::run_cmd;
+use brim_shell::styles::*;
+use clap::{builder::Styles, Arg, ArgAction, Command};
 
 pub fn opt(name: &'static str, help: &'static str) -> Arg {
     Arg::new(name).long(name).help(help).action(ArgAction::Set)

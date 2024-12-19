@@ -1,10 +1,14 @@
+use crate::{
+    ast::{
+        statements::{FnParam, TypeAnnotation},
+        types::TypeKind,
+        Ast, ExprId, GetSpan, StmtId,
+    },
+    error::span::TextSpan,
+    lexer::tokens::{Token, TokenKind},
+};
 use indexmap::IndexMap;
 use std::fmt::{Display, Formatter};
-use crate::ast::{Ast, ExprId, GetSpan, StmtId};
-use crate::ast::statements::{FnParam, TypeAnnotation};
-use crate::ast::types::TypeKind;
-use crate::error::span::TextSpan;
-use crate::lexer::tokens::{Token, TokenKind};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Expr {
@@ -216,7 +220,11 @@ pub struct Unary {
 
 impl GetSpan for Unary {
     fn span(&self, ast: &Ast) -> TextSpan {
-        TextSpan::combine(vec![self.operator.token.span.clone(), ast.query_expr(self.expr).span(ast)]).unwrap()
+        TextSpan::combine(vec![
+            self.operator.token.span.clone(),
+            ast.query_expr(self.expr).span(ast),
+        ])
+        .unwrap()
     }
 }
 
@@ -244,7 +252,11 @@ impl GetSpan for CallExpr {
         // TODO: get the span of the closing parenthesis
         let callee_span = self.token.span.clone();
 
-        let args_span: Vec<TextSpan> = self.args.iter().map(|arg| ast.query_expr(*arg).span(ast)).collect();
+        let args_span: Vec<TextSpan> = self
+            .args
+            .iter()
+            .map(|arg| ast.query_expr(*arg).span(ast))
+            .collect();
         let args_span = TextSpan::combine(args_span);
 
         let mut spans = vec![callee_span];
@@ -433,12 +445,16 @@ impl GetSpan for AccessExpr {
         let base_span = ast.query_expr(self.base).span(ast);
         let access_span = match &self.access {
             AccessKind::Field(_) => self.token.span.clone(), // Span includes the '.' and the field name
-            AccessKind::Index(index_expr) => {
-                TextSpan::combine(vec![self.token.span.clone(), ast.query_expr(*index_expr).span(ast)]).unwrap()
-            } // Span includes '[' , index, and ']'
-            AccessKind::StaticMethod(method) => {
-                TextSpan::combine(vec![self.token.span.clone(), ast.query_expr(*method).span(ast)]).unwrap()
-            }
+            AccessKind::Index(index_expr) => TextSpan::combine(vec![
+                self.token.span.clone(),
+                ast.query_expr(*index_expr).span(ast),
+            ])
+            .unwrap(), // Span includes '[' , index, and ']'
+            AccessKind::StaticMethod(method) => TextSpan::combine(vec![
+                self.token.span.clone(),
+                ast.query_expr(*method).span(ast),
+            ])
+            .unwrap(),
         };
         TextSpan::combine(vec![base_span, access_span]).unwrap()
     }
@@ -463,7 +479,11 @@ impl GetSpan for Expr {
                 TextSpan::combine(vec![left, right]).unwrap()
             }
             ExprKind::Array(v) => {
-                let spans: Vec<TextSpan> = v.exprs.iter().map(|e| ast.query_expr(*e).span(ast)).collect();
+                let spans: Vec<TextSpan> = v
+                    .exprs
+                    .iter()
+                    .map(|e| ast.query_expr(*e).span(ast))
+                    .collect();
                 TextSpan::combine(spans).unwrap()
             }
             ExprKind::Access(a) => ast.query_expr(a.base).span(ast),
@@ -474,10 +494,15 @@ impl GetSpan for Expr {
             }
             // We don't include the body because the function could be too long. Arguments and return type are enough.
             ExprKind::AnonymousFunction(anon) => {
-                let params_span: Vec<TextSpan> = anon.params.iter().map(|p| p.span(ast).clone()).collect();
+                let params_span: Vec<TextSpan> =
+                    anon.params.iter().map(|p| p.span(ast).clone()).collect();
                 let params_span = TextSpan::combine(params_span).unwrap();
 
-                let mut spans = vec![anon.pipes.0.span.clone(), params_span, anon.pipes.1.span.clone()];
+                let mut spans = vec![
+                    anon.pipes.0.span.clone(),
+                    params_span,
+                    anon.pipes.1.span.clone(),
+                ];
 
                 if let Some(return_type) = &anon.return_type {
                     spans.push(return_type.span(ast));

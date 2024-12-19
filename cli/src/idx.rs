@@ -60,22 +60,22 @@ impl<Index: Idx, T> IdxVec<Index, T> {
         next_index
     }
 
-    pub fn iter(&self) -> impl Iterator<Item=&T> {
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.vec.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item=&mut T> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.vec.iter_mut()
     }
 
-    pub fn indexed_iter(&self) -> impl Iterator<Item=(Index, &T)> {
+    pub fn indexed_iter(&self) -> impl Iterator<Item = (Index, &T)> {
         self.vec
             .iter()
             .enumerate()
             .map(|(index, value)| (Index::new(index), value))
     }
 
-    pub fn indexed_iter_mut(&mut self) -> impl Iterator<Item=(Index, &mut T)> {
+    pub fn indexed_iter_mut(&mut self) -> impl Iterator<Item = (Index, &mut T)> {
         self.vec
             .iter_mut()
             .enumerate()
@@ -106,7 +106,7 @@ impl<Index: Idx, T> IdxVec<Index, T> {
         &mut self[index]
     }
 
-    pub fn indices(&self) -> impl Iterator<Item=Index> {
+    pub fn indices(&self) -> impl Iterator<Item = Index> {
         (0..self.vec.len()).map(|index| Index::new(index))
     }
 }
@@ -118,7 +118,7 @@ impl<I: Idx, T> IdxVec<I, Option<T>> {
     }
 
     #[inline]
-    pub fn indexed_iter_as_option(&self) -> impl Iterator<Item=Option<(I, &T)>> {
+    pub fn indexed_iter_as_option(&self) -> impl Iterator<Item = Option<(I, &T)>> {
         self.vec
             .iter()
             .enumerate()

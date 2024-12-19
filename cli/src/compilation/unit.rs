@@ -1,17 +1,16 @@
-use std::collections::HashMap;
-use std::fs::File;
-use std::path::PathBuf;
-use crate::ast::Ast;
-use crate::compilation::imports::UnitLoader;
-use crate::compilation::items::{UnitItem, UnitItemKind};
-use crate::compilation::passes::resolver::Resolver;
-use crate::compilation::passes::type_checker::pass::TypeChecker;
-use crate::error::diagnostic::Diagnostics;
-use crate::lexer::Lexer;
-use crate::lexer::source::Source;
-use crate::parser::Parser;
-use crate::Result;
-
+use crate::{
+    ast::Ast,
+    compilation::{
+        imports::UnitLoader,
+        items::{UnitItem, UnitItemKind},
+        passes::{resolver::Resolver, type_checker::pass::TypeChecker},
+    },
+    error::diagnostic::Diagnostics,
+    lexer::{source::Source, Lexer},
+    parser::Parser,
+    Result,
+};
+use std::{collections::HashMap, fs::File, path::PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct CompilationUnit {
@@ -38,21 +37,33 @@ impl CompilationUnit {
     }
 
     pub fn new_item(&mut self, name: String, kind: UnitItemKind, unit: String, public: bool) {
-        self.unit_items.insert(name, UnitItem {
-            kind,
-            imported: false,
-            unit,
-            public,
-        });
+        self.unit_items.insert(
+            name,
+            UnitItem {
+                kind,
+                imported: false,
+                unit,
+                public,
+            },
+        );
     }
 
-    pub fn new_imported_item(&mut self, name: String, kind: UnitItemKind, unit: String, public: bool) {
-        self.unit_items.insert(name, UnitItem {
-            kind,
-            imported: true,
-            unit,
-            public,
-        });
+    pub fn new_imported_item(
+        &mut self,
+        name: String,
+        kind: UnitItemKind,
+        unit: String,
+        public: bool,
+    ) {
+        self.unit_items.insert(
+            name,
+            UnitItem {
+                kind,
+                imported: true,
+                unit,
+                public,
+            },
+        );
     }
 
     pub fn compile(&mut self, loader: &mut UnitLoader, diags: &mut Diagnostics) -> Result<()> {

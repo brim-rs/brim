@@ -23,8 +23,8 @@
 //!
 //! Look at `design.md` for more information.
 
-use std::fmt::{Display, Formatter};
 use crate::compilation::passes::type_checker::ResolvedType;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeKind {

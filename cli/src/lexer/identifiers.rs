@@ -1,6 +1,5 @@
+use crate::lexer::{tokens::TokenKind, Lexer};
 use anyhow::Result;
-use crate::lexer::Lexer;
-use crate::lexer::tokens::TokenKind;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Identifier {}

@@ -1,8 +1,8 @@
+use crate::error::span::TextSpan;
 use std::{
     fmt,
     fmt::{Debug, Display, Formatter},
 };
-use crate::error::span::TextSpan;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Token {

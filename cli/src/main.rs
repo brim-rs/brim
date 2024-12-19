@@ -1,31 +1,28 @@
 #![feature(let_chains)]
 
-use crate::{
-    context::GlobalContext,
-};
+use crate::{commands::run::run_command, context::GlobalContext};
 use anstream::ColorChoice;
 use anyhow::Result;
 use clap::ArgMatches;
 use cli::cli;
 use panic_handler::setup_panic_handler;
 use std::{env, process::exit};
-use crate::commands::run::run_command;
 
 pub mod cli;
 pub mod commands {
     pub mod run;
 }
-pub mod context;
-pub mod fs;
-pub mod panic_handler;
-pub mod path;
-pub mod lexer;
-mod compilation;
-mod error;
-mod idx;
 mod ast;
-mod parser;
+mod compilation;
 mod config;
+pub mod context;
+mod error;
+pub mod fs;
+mod idx;
+pub mod lexer;
+pub mod panic_handler;
+mod parser;
+pub mod path;
 
 #[tokio::main]
 async fn main() -> Result<()> {

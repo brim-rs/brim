@@ -1,11 +1,17 @@
-use indexmap::IndexMap;
-use crate::ast::expressions::{AssignOperator, BinOpAssociativity, BinOpKind, BinOperator, Expr, UnOpKind, UnOperator};
-use crate::lexer::tokens::{Token, TokenKind};
-use crate::parser::{ParseContext, Parser};
+use crate::{
+    ast::{
+        expressions::{
+            AssignOperator, BinOpAssociativity, BinOpKind, BinOperator, UnOpKind, UnOperator,
+        },
+        statements::{FnParam, TypeAnnotation},
+        ExprId, StmtId,
+    },
+    error::{expected_token, parser_error},
+    lexer::tokens::{Token, TokenKind},
+    parser::{ParseContext, Parser},
+};
 use anyhow::{bail, Result};
-use crate::ast::{ExprId, StmtId};
-use crate::ast::statements::{FnParam, TypeAnnotation};
-use crate::error::{expected_token, parser_error};
+use indexmap::IndexMap;
 
 impl Parser {
     pub fn parse_expr(&mut self) -> Result<ExprId> {
@@ -75,7 +81,7 @@ impl Parser {
 
                 if next_precedence > operator_precedence
                     || (next_precedence == operator_precedence
-                    && next_operator.associativity() == BinOpAssociativity::Right)
+                        && next_operator.associativity() == BinOpAssociativity::Right)
                 {
                     right = self.parse_binary_expression_recurse(right, next_precedence)?;
                 } else {
@@ -118,7 +124,9 @@ impl Parser {
                 self.consume();
 
                 let field_token = self.consume();
-                let mut field_expr = self.ast.new_variable(field_token.clone(), field_token.literal());
+                let mut field_expr = self
+                    .ast
+                    .new_variable(field_token.clone(), field_token.literal());
 
                 if self.peek().kind == TokenKind::LeftParen {
                     field_expr = self.parse_call_expr(field_token)?;
@@ -161,11 +169,9 @@ impl Parser {
 
         self.expect_punct(TokenKind::RightBrace)?;
 
-        Ok(self.ast.new_struct_constructor(
-            identifier.literal(),
-            fields,
-            identifier,
-        ))
+        Ok(self
+            .ast
+            .new_struct_constructor(identifier.literal(), fields, identifier))
     }
 
     pub fn parse_primary_expression(&mut self) -> Result<ExprId> {
@@ -175,9 +181,9 @@ impl Parser {
             TokenKind::Integer(int) => Ok(self.ast.new_integer(*int, token.clone())),
             TokenKind::Float(float) => Ok(self.ast.new_float(*float, token.clone())),
             TokenKind::Null => Ok(self.ast.new_null(token)),
-            TokenKind::True | TokenKind::False => {
-                Ok(self.ast.new_boolean(token.as_bool().unwrap(), token.clone()))
-            }
+            TokenKind::True | TokenKind::False => Ok(self
+                .ast
+                .new_boolean(token.as_bool().unwrap(), token.clone())),
             TokenKind::Pipe => {
                 let mut params = vec![];
 
@@ -203,7 +209,9 @@ impl Parser {
                 let body = self.parse_block()?;
                 self.expect_punct(TokenKind::RightBrace)?;
 
-                Ok(self.ast.new_anonymous_function(params, body, return_type, (token, pipe2)))
+                Ok(self
+                    .ast
+                    .new_anonymous_function(params, body, return_type, (token, pipe2)))
             }
             TokenKind::LeftBracket => self.parse_array(),
             TokenKind::LeftBrace => {
@@ -217,9 +225,10 @@ impl Parser {
                             bail!(expected_token(
                                 "string literal".to_string(),
                                 vec!["Field names in objects must be string literals.".to_string()],
-                                vec![
-                                    (self.peek().span.clone(), "Expected a string literal".to_string().into())
-                                ],
+                                vec![(
+                                    self.peek().span.clone(),
+                                    "Expected a string literal".to_string().into()
+                                )],
                             ))
                         }
                     };
@@ -269,13 +278,13 @@ impl Parser {
             }
             TokenKind::String(s) => Ok(self.ast.new_string(s.clone(), token.clone())),
             TokenKind::Char(c) => Ok(self.ast.new_char(*c, token.clone())),
-            _ => {
-                Err(parser_error(
-                    format!("Unexpected token: {}", token.kind.to_string()),
-                    vec![(
-                        token.span.clone(), None
-                    )], vec![], None).into())
-            }
+            _ => Err(parser_error(
+                format!("Unexpected token: {}", token.kind.to_string()),
+                vec![(token.span.clone(), None)],
+                vec![],
+                None,
+            )
+            .into()),
         }
     }
 

@@ -1,9 +1,8 @@
-use std::fs;
+use crate::{
+    error::{lexer_error, span::TextSpan},
+    lexer::{tokens::TokenKind, Lexer},
+};
 use anyhow::{bail, Result};
-use crate::error::lexer_error;
-use crate::error::span::TextSpan;
-use crate::lexer::Lexer;
-use crate::lexer::tokens::TokenKind;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StringLiteral {}
@@ -37,9 +36,17 @@ impl StringLiteral {
                         _ => {
                             bail!(lexer_error(
                                 format!("Invalid escape sequence: {}", next.to_string()),
-                                vec![((TextSpan::new(lexer.position, lexer.position, next.to_string()), 
-                                    format!("{} is invalid escape sequence", next.to_string()).into()
-                                ))],
+                                vec![
+                                    ((
+                                        TextSpan::new(
+                                            lexer.position,
+                                            lexer.position,
+                                            next.to_string()
+                                        ),
+                                        format!("{} is invalid escape sequence", next.to_string())
+                                            .into()
+                                    ))
+                                ],
                                 vec![],
                                 None
                             ))

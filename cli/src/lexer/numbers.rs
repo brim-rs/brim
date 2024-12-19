@@ -1,6 +1,5 @@
+use crate::lexer::{tokens::TokenKind, Lexer};
 use anyhow::Result;
-use crate::lexer::Lexer;
-use crate::lexer::tokens::TokenKind;
 
 /// The type of number.
 #[derive(Debug)]
@@ -18,7 +17,7 @@ impl NumberLiteral {
 
         lexer.consume();
 
-        let consume_num = |mut num_str: String, lexer: &mut Lexer, radix: u32| -> Result<String>{
+        let consume_num = |mut num_str: String, lexer: &mut Lexer, radix: u32| -> Result<String> {
             while let Some(c) = lexer.current() {
                 if c.is_digit(radix) {
                     num_str.push(c);
@@ -35,11 +34,17 @@ impl NumberLiteral {
                 if matches!(c, 'x' | 'X') {
                     // Hexadecimal
                     lexer.consume();
-                    number = NumberType::Integer(i64::from_str_radix(&consume_num(String::new(), lexer, 16)?, 16)?);
+                    number = NumberType::Integer(i64::from_str_radix(
+                        &consume_num(String::new(), lexer, 16)?,
+                        16,
+                    )?);
                 } else if matches!(c, 'o' | 'O') {
                     // Octal
                     lexer.consume();
-                    number = NumberType::Integer(i64::from_str_radix(&consume_num(String::new(), lexer, 8)?, 8)?);
+                    number = NumberType::Integer(i64::from_str_radix(
+                        &consume_num(String::new(), lexer, 8)?,
+                        8,
+                    )?);
                 } else if matches!(c, 'b' | 'B') {
                     // Binary
                     lexer.consume();
@@ -58,9 +63,7 @@ impl NumberLiteral {
                     num_str.push(c);
                     lexer.consume();
 
-                    number = NumberType::Integer(
-                        consume_num(num_str, lexer, 10)?.parse()?
-                    );
+                    number = NumberType::Integer(consume_num(num_str, lexer, 10)?.parse()?);
                 } else {
                     // Invalid base specifier, return '0'
                     return Ok(TokenKind::Integer(0));
@@ -96,7 +99,6 @@ impl NumberLiteral {
                 number = NumberType::Integer(num_str.parse()?);
             }
         }
-
 
         Ok(match number {
             NumberType::Integer(i) => TokenKind::Integer(i),

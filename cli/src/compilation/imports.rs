@@ -1,10 +1,11 @@
-use std::path::{Path, PathBuf};
+use crate::{
+    compilation::unit::CompilationUnit, context::GlobalContext,
+    path::canonicalize_path_with_err_message,
+};
 use anstream::ColorChoice;
-use crate::compilation::unit::CompilationUnit;
-use crate::context::GlobalContext;
 use anyhow::Result;
 use indexmap::IndexMap;
-use crate::path::{canonicalize_path, canonicalize_path_with_err_message};
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct ImportIdentifier {
@@ -56,10 +57,10 @@ pub fn remove_surrounding_quotes(s: &str) -> &str {
 }
 
 pub fn resolve_referrer(referrer: &mut CompilationUnit, spec: &str) -> anyhow::Result<PathBuf> {
-    let referrer_path = referrer
-        .source
-        .path.clone();
-    let dir = referrer_path.parent().expect("Unit referer path has no parent");
+    let referrer_path = referrer.source.path.clone();
+    let dir = referrer_path
+        .parent()
+        .expect("Unit referer path has no parent");
 
     let spec = if cfg!(windows) {
         spec.replace("/", "\\")
@@ -112,17 +113,27 @@ impl UnitLoader {
         Ok(resolved_path)
     }
 
-    pub fn load_unit(&mut self, spec: &str, referer: &mut CompilationUnit) -> Result<(String, CompilationUnit)> {
+    pub fn load_unit(
+        &mut self,
+        spec: &str,
+        referer: &mut CompilationUnit,
+    ) -> Result<(String, CompilationUnit)> {
         let cache_key = remove_surrounding_quotes(spec).to_string();
         if let Some(unit) = self.units.get(&cache_key) {
             return Ok((cache_key, unit.clone()));
         }
 
-        let cache_key = self.resolve_path(&cache_key, referer)?.to_string_lossy().to_string();
+        let cache_key = self
+            .resolve_path(&cache_key, referer)?
+            .to_string_lossy()
+            .to_string();
 
         let unit = CompilationUnit::new(cache_key.clone().into())?;
         self.units.insert(cache_key.clone(), unit);
 
-        Ok((cache_key.clone(), self.units.get(&cache_key).unwrap().clone()))
+        Ok((
+            cache_key.clone(),
+            self.units.get(&cache_key).unwrap().clone(),
+        ))
     }
 }

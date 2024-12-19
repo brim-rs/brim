@@ -1,19 +1,18 @@
 pub mod diagnostic;
-pub mod span;
 pub mod position;
+pub mod span;
 
+use crate::error::{
+    diagnostic::{Diagnostic, Level},
+    span::TextSpan,
+};
 use std::io;
-use codespan_reporting::diagnostic::Label;
 use thiserror::Error;
-use crate::error::diagnostic::{Diagnostic, Level};
-use crate::error::span::TextSpan;
 
 #[derive(Error, Debug)]
 pub enum BrimError {
     #[error("CLI error")]
-    CliError {
-        message: String,
-    },
+    CliError { message: String },
 
     #[error("Lexer error")]
     LexerError {
@@ -32,12 +31,15 @@ pub enum BrimError {
     },
 
     #[error("Other error")]
-    OtherError {
-        source: anyhow::Error
-    },
+    OtherError { source: anyhow::Error },
 }
 
-pub fn lexer_error(message: String, labels: Vec<(TextSpan, Option<String>)>, hint: Vec<String>, code: Option<String>) -> BrimError {
+pub fn lexer_error(
+    message: String,
+    labels: Vec<(TextSpan, Option<String>)>,
+    hint: Vec<String>,
+    code: Option<String>,
+) -> BrimError {
     BrimError::LexerError {
         message,
         labels,
@@ -46,7 +48,12 @@ pub fn lexer_error(message: String, labels: Vec<(TextSpan, Option<String>)>, hin
     }
 }
 
-pub fn parser_error(message: String, labels: Vec<(TextSpan, Option<String>)>, hint: Vec<String>, code: Option<String>) -> BrimError {
+pub fn parser_error(
+    message: String,
+    labels: Vec<(TextSpan, Option<String>)>,
+    hint: Vec<String>,
+    code: Option<String>,
+) -> BrimError {
     BrimError::ParserError {
         message,
         labels,
@@ -56,7 +63,9 @@ pub fn parser_error(message: String, labels: Vec<(TextSpan, Option<String>)>, hi
 }
 
 pub fn expected_token(
-    expected: String, hint: Vec<String>, labels: Vec<(TextSpan, Option<String>)>,
+    expected: String,
+    hint: Vec<String>,
+    labels: Vec<(TextSpan, Option<String>)>,
 ) -> BrimError {
     BrimError::ParserError {
         message: format!("Expected token: {}", expected),
@@ -66,9 +75,7 @@ pub fn expected_token(
     }
 }
 
-pub fn invalid_token(
-    token: String, labels: Vec<(TextSpan, Option<String>)>,
-) -> BrimError {
+pub fn invalid_token(token: String, labels: Vec<(TextSpan, Option<String>)>) -> BrimError {
     BrimError::LexerError {
         message: format!("Found invalid token: {}", token),
         labels,
@@ -80,7 +87,7 @@ pub fn invalid_token(
 impl From<io::Error> for BrimError {
     fn from(error: io::Error) -> Self {
         BrimError::OtherError {
-            source: error.into()
+            source: error.into(),
         }
     }
 }
@@ -91,7 +98,9 @@ impl BrimError {
             BrimError::CliError { message } => Diagnostic {
                 text: message.clone(),
                 level: Level::Error,
-                hint: vec!["Please check the CLI usage with `brim --help` and try again".to_string()],
+                hint: vec![
+                    "Please check the CLI usage with `brim --help` and try again".to_string(),
+                ],
                 code: None,
                 labels: vec![],
             },
@@ -102,7 +111,18 @@ impl BrimError {
                 code: None,
                 labels: vec![],
             },
-            BrimError::LexerError { message, labels, hint, code } | BrimError::ParserError { message, labels, hint, code } => Diagnostic {
+            BrimError::LexerError {
+                message,
+                labels,
+                hint,
+                code,
+            }
+            | BrimError::ParserError {
+                message,
+                labels,
+                hint,
+                code,
+            } => Diagnostic {
                 text: message.clone(),
                 level: Level::Error,
                 labels: labels.clone(),

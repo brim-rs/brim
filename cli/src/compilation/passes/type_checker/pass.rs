@@ -1,16 +1,22 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use crate::compilation::passes::type_checker::ResolvedType;
+use crate::{
+    ast::{
+        expressions::{AssignOperator, BinOpKind, ExprKind, LiteralType, UnOpKind, Unary},
+        statements::StmtKind,
+        types::TypeKind,
+        ExprId, GetSpan, StmtId,
+    },
+    compilation::{
+        imports::UnitLoader,
+        passes::{type_checker::ResolvedType, Pass},
+        unit::CompilationUnit,
+    },
+    error::{
+        diagnostic::{Diagnostic, Diagnostics},
+        span::TextSpan,
+    },
+};
 use anyhow::Result;
-use crate::ast::{ExprId, GetSpan, StmtId};
-use crate::ast::expressions::{AssignOperator, BinOpKind, ExprKind, LiteralType, UnOpKind, Unary};
-use crate::ast::statements::{StmtKind, TypeAnnotation};
-use crate::ast::types::TypeKind;
-use crate::compilation::imports::UnitLoader;
-use crate::compilation::passes::Pass;
-use crate::compilation::unit::CompilationUnit;
-use crate::error::diagnostic::{Diagnostic, Diagnostics};
-use crate::error::span::TextSpan;
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Debug)]
 pub struct TypeChecker<'a> {
@@ -43,11 +49,14 @@ impl<'a> TypeChecker<'a> {
             }
         }
 
-        self.diags.new_diagnostic(Diagnostic::error(
-            format!("Variable '{}' not found in scope", name),
-            vec![(span, None)],
-            vec![],
-        ), Arc::new(self.unit.source.clone()));
+        self.diags.new_diagnostic(
+            Diagnostic::error(
+                format!("Variable '{}' not found in scope", name),
+                vec![(span, None)],
+                vec![],
+            ),
+            Arc::new(self.unit.source.clone()),
+        );
 
         Ok(())
     }
@@ -80,7 +89,7 @@ impl<'a> TypeChecker<'a> {
             ExprKind::Literal(literal) => match literal.value {
                 LiteralType::Null => ResolvedType::base(TypeKind::Null),
                 LiteralType::Bool(_) => ResolvedType::base(TypeKind::Bool),
-                LiteralType::Int(_) => ResolvedType::base(TypeKind::I32),  // ----]
+                LiteralType::Int(_) => ResolvedType::base(TypeKind::I32), // ----]
                 //      ] We default it to I32 or F32. Might have to change this later
                 LiteralType::Float(_) => ResolvedType::base(TypeKind::F32), // ----]
                 LiteralType::String(_) => ResolvedType::base(TypeKind::String),
@@ -112,11 +121,14 @@ impl<'a> TypeChecker<'a> {
                 if let Some(var_type) = self.find_variable(&literal.clone()) {
                     var_type.clone()
                 } else {
-                    self.diags.new_diagnostic(Diagnostic::error(
-                        format!("Variable '{}' not found in scope", literal),
-                        vec![(var.token.span.clone(), None)],
-                        vec![],
-                    ), Arc::new(self.unit.source.clone()));
+                    self.diags.new_diagnostic(
+                        Diagnostic::error(
+                            format!("Variable '{}' not found in scope", literal),
+                            vec![(var.token.span.clone(), None)],
+                            vec![],
+                        ),
+                        Arc::new(self.unit.source.clone()),
+                    );
 
                     ResolvedType::base(TypeKind::Null)
                 }
@@ -130,40 +142,66 @@ impl<'a> TypeChecker<'a> {
                     match (left.kind.clone(), right.kind.clone()) {
                         // Concatenate strings or characters
                         (TypeKind::Char | TypeKind::String, TypeKind::Char | TypeKind::String)
-                        if binary.operator == BinOpKind::Plus => ResolvedType::base(TypeKind::String),
+                            if binary.operator == BinOpKind::Plus =>
+                        {
+                            ResolvedType::base(TypeKind::String)
+                        }
 
                         // Matching types directly
-                        (TypeKind::I8 | TypeKind::I16 | TypeKind::I32 | TypeKind::I64 | TypeKind::I128,
-                            TypeKind::I8 | TypeKind::I16 | TypeKind::I32 | TypeKind::I64 | TypeKind::I128) => {
-                            ResolvedType::base(std::cmp::max(left.kind, right.kind))
-                        }
+                        (
+                            TypeKind::I8
+                            | TypeKind::I16
+                            | TypeKind::I32
+                            | TypeKind::I64
+                            | TypeKind::I128,
+                            TypeKind::I8
+                            | TypeKind::I16
+                            | TypeKind::I32
+                            | TypeKind::I64
+                            | TypeKind::I128,
+                        ) => ResolvedType::base(std::cmp::max(left.kind, right.kind)),
 
-                        (TypeKind::U8 | TypeKind::U16 | TypeKind::U32 | TypeKind::U64 | TypeKind::U128,
-                            TypeKind::U8 | TypeKind::U16 | TypeKind::U32 | TypeKind::U64 | TypeKind::U128) => {
-                            ResolvedType::base(std::cmp::max(left.kind, right.kind))
-                        }
+                        (
+                            TypeKind::U8
+                            | TypeKind::U16
+                            | TypeKind::U32
+                            | TypeKind::U64
+                            | TypeKind::U128,
+                            TypeKind::U8
+                            | TypeKind::U16
+                            | TypeKind::U32
+                            | TypeKind::U64
+                            | TypeKind::U128,
+                        ) => ResolvedType::base(std::cmp::max(left.kind, right.kind)),
 
                         (TypeKind::F32 | TypeKind::F64, TypeKind::F32 | TypeKind::F64) => {
                             ResolvedType::base(std::cmp::max(left.kind, right.kind))
                         }
 
                         _ => {
-                            self.diags.new_diagnostic(Diagnostic::error(
-                                format!(
-                                    "Binary operator {} not supported for types '{}' and '{}'",
-                                    binary.operator, left.kind, right.kind
+                            self.diags.new_diagnostic(
+                                Diagnostic::error(
+                                    format!(
+                                        "Binary operator {} not supported for types '{}' and '{}'",
+                                        binary.operator, left.kind, right.kind
+                                    ),
+                                    vec![(expr.span(self.unit.ast()).clone(), None)],
+                                    vec![],
                                 ),
-                                vec![(expr.span(self.unit.ast()).clone(), None)],
-                                vec![],
-                            ), Arc::new(self.unit.source.clone()));
+                                Arc::new(self.unit.source.clone()),
+                            );
 
                             ResolvedType::base(TypeKind::Null)
                         }
                     }
                 } else if binary.operator.is_boolean_operator() {
                     match (left.kind.clone(), binary.operator, right.kind.clone()) {
-                        (TypeKind::Bool, BinOpKind::And, TypeKind::Bool) => ResolvedType::base(TypeKind::Bool),
-                        (TypeKind::Bool, BinOpKind::Or, TypeKind::Bool) => ResolvedType::base(TypeKind::Bool),
+                        (TypeKind::Bool, BinOpKind::And, TypeKind::Bool) => {
+                            ResolvedType::base(TypeKind::Bool)
+                        }
+                        (TypeKind::Bool, BinOpKind::Or, TypeKind::Bool) => {
+                            ResolvedType::base(TypeKind::Bool)
+                        }
                         (
                             TypeKind::String | TypeKind::Char,
                             BinOpKind::Equals,
@@ -176,27 +214,38 @@ impl<'a> TypeChecker<'a> {
                             if t1.kind == t2.kind {
                                 ResolvedType::base(TypeKind::Bool)
                             } else {
-                                self.diags.new_diagnostic(Diagnostic::error(
-                                    format!("Array types must match, found '{}' and '{}'", t1, t2),
-                                    vec![(expr.span(self.unit.ast()).clone(), None)],
-                                    vec![],
-                                ), Arc::new(self.unit.source.clone()));
+                                self.diags.new_diagnostic(
+                                    Diagnostic::error(
+                                        format!(
+                                            "Array types must match, found '{}' and '{}'",
+                                            t1, t2
+                                        ),
+                                        vec![(expr.span(self.unit.ast()).clone(), None)],
+                                        vec![],
+                                    ),
+                                    Arc::new(self.unit.source.clone()),
+                                );
 
                                 ResolvedType::base(TypeKind::Null)
                             }
                         }
 
                         (TypeKind::Custom(t1), _, TypeKind::Custom(t2)) => {
-                            self.diags.new_diagnostic(Diagnostic::error(
-                                format!("Cannot compare custom types '{}' and '{}'", t1, t2),
-                                vec![(expr.span(self.unit.ast()).clone(), None)],
-                                vec![],
-                            ), Arc::new(self.unit.source.clone()));
+                            self.diags.new_diagnostic(
+                                Diagnostic::error(
+                                    format!("Cannot compare custom types '{}' and '{}'", t1, t2),
+                                    vec![(expr.span(self.unit.ast()).clone(), None)],
+                                    vec![],
+                                ),
+                                Arc::new(self.unit.source.clone()),
+                            );
 
                             ResolvedType::base(TypeKind::Null)
                         }
 
-                        _ if left.is_number() && right.is_number() => ResolvedType::base(TypeKind::Bool),
+                        _ if left.is_number() && right.is_number() => {
+                            ResolvedType::base(TypeKind::Bool)
+                        }
 
                         _ => {
                             self.diags.new_diagnostic(Diagnostic::error(
@@ -209,11 +258,14 @@ impl<'a> TypeChecker<'a> {
                         }
                     }
                 } else {
-                    self.diags.new_diagnostic(Diagnostic::error(
-                        format!("Binary operator {} not supported", binary.operator),
-                        vec![(expr.span(self.unit.ast()).clone(), None)],
-                        vec![]),
-                                              Arc::new(self.unit.source.clone()));
+                    self.diags.new_diagnostic(
+                        Diagnostic::error(
+                            format!("Binary operator {} not supported", binary.operator),
+                            vec![(expr.span(self.unit.ast()).clone(), None)],
+                            vec![],
+                        ),
+                        Arc::new(self.unit.source.clone()),
+                    );
 
                     ResolvedType::base(TypeKind::Null)
                 }
@@ -222,14 +274,21 @@ impl<'a> TypeChecker<'a> {
                 let left_type = self.resolve_from_expr(assign.left.clone())?;
                 let right_type = self.resolve_from_expr(assign.right)?;
 
-                if matches!(assign.op, AssignOperator::MultiplyEquals
+                if matches!(
+                    assign.op,
+                    AssignOperator::MultiplyEquals
                         | AssignOperator::DivideEquals
-                        | AssignOperator::MinusEquals) && left_type.is_number() && right_type.is_number() {
+                        | AssignOperator::MinusEquals
+                ) && left_type.is_number()
+                    && right_type.is_number()
+                {
                     return Ok(left_type.clone());
                 }
-                
+
                 if matches!(assign.op, AssignOperator::PlusEquals) {
-                    if (left_type.is_number() && right_type.is_number()) || (left_type.is_string_like() && right_type.is_string_like()) {
+                    if (left_type.is_number() && right_type.is_number())
+                        || (left_type.is_string_like() && right_type.is_string_like())
+                    {
                         return Ok(left_type.clone());
                     }
                 }
@@ -237,11 +296,14 @@ impl<'a> TypeChecker<'a> {
                 match (left_type.clone(), assign.op.clone(), right_type.clone()) {
                     (_, AssignOperator::Assign, _) => {
                         if !ResolvedType::matches(&left_type, &right_type) {
-                            self.diags.new_diagnostic(Diagnostic::error(
-                                format!("Cannot assign '{}' to '{}'", right_type, left_type),
-                                vec![(expr.span(self.unit.ast()).clone(), None)],
-                                vec![],
-                            ), Arc::new(self.unit.source.clone()));
+                            self.diags.new_diagnostic(
+                                Diagnostic::error(
+                                    format!("Cannot assign '{}' to '{}'", right_type, left_type),
+                                    vec![(expr.span(self.unit.ast()).clone(), None)],
+                                    vec![],
+                                ),
+                                Arc::new(self.unit.source.clone()),
+                            );
 
                             return Ok(left_type.clone());
                         } else {
@@ -249,19 +311,27 @@ impl<'a> TypeChecker<'a> {
                         }
                     }
                     _ => {
-                        self.diags.new_diagnostic(Diagnostic::error(
-                            format!("Cannot assign '{}' to '{}'", right_type, left_type),
-                            vec![(self.unit.ast().query_expr(assign.right).span(self.unit.ast()).clone(), Some(
-                                format!("expected '{}'", left_type)
-                            ))],
-                            vec![],
-                        ), Arc::new(self.unit.source.clone()));
+                        self.diags.new_diagnostic(
+                            Diagnostic::error(
+                                format!("Cannot assign '{}' to '{}'", right_type, left_type),
+                                vec![(
+                                    self.unit
+                                        .ast()
+                                        .query_expr(assign.right)
+                                        .span(self.unit.ast())
+                                        .clone(),
+                                    Some(format!("expected '{}'", left_type)),
+                                )],
+                                vec![],
+                            ),
+                            Arc::new(self.unit.source.clone()),
+                        );
 
                         return Ok(left_type.clone());
                     }
                 }
             }
-            _ => ResolvedType::base(TypeKind::Null)
+            _ => ResolvedType::base(TypeKind::Null),
         };
 
         Ok(result)
@@ -273,13 +343,17 @@ impl<'a> TypeChecker<'a> {
                 let expr_type = self.resolve_from_expr(unary.expr)?;
 
                 if !expr_type.is_number() {
-                    self.diags.new_diagnostic(Diagnostic::error(
-                        format!("Unary expressions only accepts numbers and floats, found '{}'", expr_type),
-                        vec![(unary.span(
-                            self.unit.ast()
-                        ), None)],
-                        vec![],
-                    ), Arc::new(self.unit.source.clone()));
+                    self.diags.new_diagnostic(
+                        Diagnostic::error(
+                            format!(
+                                "Unary expressions only accepts numbers and floats, found '{}'",
+                                expr_type
+                            ),
+                            vec![(unary.span(self.unit.ast()), None)],
+                            vec![],
+                        ),
+                        Arc::new(self.unit.source.clone()),
+                    );
                 }
 
                 Ok(ResolvedType::base(expr_type.kind))
@@ -302,7 +376,10 @@ impl<'a> Pass for TypeChecker<'a> {
             }
             StmtKind::Fn(function) => {
                 for param in function.params.clone() {
-                    self.declare_variable(param.ident.literal().clone(), ResolvedType::from_type_annotation(param.type_annotation.clone()));
+                    self.declare_variable(
+                        param.ident.literal().clone(),
+                        ResolvedType::from_type_annotation(param.type_annotation.clone()),
+                    );
                 }
 
                 if let Some(body_id) = function.body {
@@ -324,13 +401,14 @@ impl<'a> Pass for TypeChecker<'a> {
                     if !ResolvedType::matches(&typ, &expected) {
                         let expr = self.unit.ast().query_expr(let_stmt.initializer.clone());
 
-                        self.diags.new_diagnostic(Diagnostic::error(
-                            format!("Expected type '{}', found '{}'", expected, typ),
-                            vec![(expr.span(
-                                self.unit.ast()
-                            ).clone(), None)],
-                            vec![],
-                        ), Arc::new(self.unit.source.clone()));
+                        self.diags.new_diagnostic(
+                            Diagnostic::error(
+                                format!("Expected type '{}', found '{}'", expected, typ),
+                                vec![(expr.span(self.unit.ast()).clone(), None)],
+                                vec![],
+                            ),
+                            Arc::new(self.unit.source.clone()),
+                        );
                     }
                 }
 
@@ -342,13 +420,20 @@ impl<'a> Pass for TypeChecker<'a> {
                 if condition_type.kind != TypeKind::Bool {
                     let expr = self.unit.ast().query_expr(while_stmt.condition.clone());
 
-                    self.diags.new_diagnostic(Diagnostic::error(
-                        format!("While condition must be a boolean, found '{}'", condition_type),
-                        vec![(expr.span(
-                            self.unit.ast()
-                        ).clone(), Some("expected boolean".to_string()))],
-                        vec![],
-                    ), Arc::new(self.unit.source.clone()));
+                    self.diags.new_diagnostic(
+                        Diagnostic::error(
+                            format!(
+                                "While condition must be a boolean, found '{}'",
+                                condition_type
+                            ),
+                            vec![(
+                                expr.span(self.unit.ast()).clone(),
+                                Some("expected boolean".to_string()),
+                            )],
+                            vec![],
+                        ),
+                        Arc::new(self.unit.source.clone()),
+                    );
                 }
 
                 self.visit_statement(while_stmt.block)?;

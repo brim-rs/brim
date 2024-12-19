@@ -1,20 +1,22 @@
-use crate::error::position::Position;
-use crate::lexer::source::Source;
-use crate::lexer::tokens::{Token, TokenKind};
+use crate::{
+    error::{invalid_token, position::Position, span::TextSpan},
+    lexer::{
+        identifiers::Identifier,
+        numbers::NumberLiteral,
+        punctuation::Punctuation,
+        source::Source,
+        string::StringLiteral,
+        tokens::{Token, TokenKind},
+    },
+};
 use anyhow::Result;
-use crate::error::invalid_token;
-use crate::error::span::TextSpan;
-use crate::lexer::identifiers::Identifier;
-use crate::lexer::numbers::NumberLiteral;
-use crate::lexer::punctuation::Punctuation;
-use crate::lexer::string::StringLiteral;
 
-pub mod source;
-pub mod tokens;
-mod string;
-mod numbers;
 mod identifiers;
+mod numbers;
 mod punctuation;
+pub mod source;
+mod string;
+pub mod tokens;
 
 #[derive(Debug, Clone)]
 pub struct Lexer {
@@ -37,9 +39,7 @@ impl Lexer {
             let token = self.next_token()?;
 
             if let Some(token) = token {
-                if (token.kind == TokenKind::Comment)
-                    || token.kind == TokenKind::Whitespace
-                {
+                if (token.kind == TokenKind::Comment) || token.kind == TokenKind::Whitespace {
                     continue;
                 }
 
@@ -90,11 +90,11 @@ impl Lexer {
             Err(invalid_token(
                 c.unwrap().to_string(),
                 vec![(
-                    TextSpan::new(self.position, self.position, c.unwrap().to_string())
-                    , None
+                    TextSpan::new(self.position, self.position, c.unwrap().to_string()),
+                    None,
                 )],
             )
-                .into())
+            .into())
         }
     }
 

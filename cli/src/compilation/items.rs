@@ -1,6 +1,8 @@
+use crate::{
+    ast::statements::{Const, Function, Struct, TraitDef},
+    error::span::TextSpan,
+};
 use std::fmt::Display;
-use crate::ast::statements::{Const, Function, Struct, TraitDef};
-use crate::error::span::TextSpan;
 
 #[derive(Debug, Clone)]
 pub struct UnitItem {

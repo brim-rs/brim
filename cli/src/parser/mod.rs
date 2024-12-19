@@ -3,9 +3,8 @@ use crate::lexer::tokens::{Token, TokenKind};
 mod expressions;
 mod statements;
 
+use crate::{ast::Ast, error::parser_error};
 use anyhow::{bail, Result};
-use crate::ast::Ast;
-use crate::error::parser_error;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ParseContext {
@@ -56,7 +55,7 @@ impl Parser {
         while !self.is_eof() {
             if let Some(stmt_id) = self.parse_stmt()? {
                 self.ast.new_item(stmt_id);
-                
+
                 self.expect_punct(TokenKind::Semicolon)?;
             }
         }
@@ -115,7 +114,6 @@ impl Parser {
         }
     }
 
-
     pub fn expect_punct(&mut self, kind: TokenKind) -> Result<Token> {
         let token = self.peek();
 
@@ -127,10 +125,14 @@ impl Parser {
 
             bail!(parser_error(
                 format!("Expected token of kind: {}", kind),
-                vec![(prev.span
-                    .move_right(len + prev.span.literal.len())
-                    .shorten(len),
-                    "This is where the expected token should be".to_string().into())],
+                vec![(
+                    prev.span
+                        .move_right(len + prev.span.literal.len())
+                        .shorten(len),
+                    "This is where the expected token should be"
+                        .to_string()
+                        .into()
+                )],
                 vec![],
                 None
             ));

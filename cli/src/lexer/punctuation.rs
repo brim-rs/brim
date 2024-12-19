@@ -1,7 +1,7 @@
-use crate::error::invalid_token;
-use crate::error::span::TextSpan;
-use crate::lexer::Lexer;
-use crate::lexer::tokens::TokenKind;
+use crate::{
+    error::{invalid_token, span::TextSpan},
+    lexer::{tokens::TokenKind, Lexer},
+};
 use anyhow::Result;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -35,11 +35,7 @@ impl Punctuation {
                     }
                     TokenKind::Comment
                 } else {
-                    lexer.lex_potential_double(
-                        '=',
-                        TokenKind::Slash,
-                        TokenKind::DivideEquals,
-                    )
+                    lexer.lex_potential_double('=', TokenKind::Slash, TokenKind::DivideEquals)
                 }
             }
             '+' => {
@@ -81,20 +77,14 @@ impl Punctuation {
             '%' => TokenKind::Percent,
             '^' => TokenKind::Caret,
             '!' => lexer.lex_potential_double('=', TokenKind::Bang, TokenKind::BangEquals),
-            '=' => {
-                lexer.lex_potential_double('=', TokenKind::Equals, TokenKind::EqualsEquals)
-            }
+            '=' => lexer.lex_potential_double('=', TokenKind::Equals, TokenKind::EqualsEquals),
             '~' => TokenKind::Tilde,
             '<' => {
                 if lexer.match_next('<') {
                     lexer.consume();
                     TokenKind::DoubleLessThan
                 } else {
-                    lexer.lex_potential_double(
-                        '=',
-                        TokenKind::LessThan,
-                        TokenKind::LessThanEquals,
-                    )
+                    lexer.lex_potential_double('=', TokenKind::LessThan, TokenKind::LessThanEquals)
                 }
             }
             '>' => {
@@ -115,9 +105,12 @@ impl Punctuation {
             _ => {
                 return Err(invalid_token(
                     c.to_string(),
-                    vec![(TextSpan::new(lexer.position, lexer.position, c.to_string()), None)],
+                    vec![(
+                        TextSpan::new(lexer.position, lexer.position, c.to_string()),
+                        None,
+                    )],
                 )
-                    .into())
+                .into())
             }
         };
 

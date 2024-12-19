@@ -1,12 +1,16 @@
+use crate::{
+    ast::{
+        statements::{ElseBlock, FnParam, StructField, TypeAnnotation},
+        types::TypeKind,
+        StmtId,
+    },
+    error::{expected_token, parser_error},
+    lexer::tokens::{Token, TokenKind},
+    parser::{ParseContext, Parser},
+};
 use anyhow::{bail, Result};
 use colored::Colorize;
 use indexmap::IndexMap;
-use crate::ast::statements::{Block, ElseBlock, FnParam, Function, StructField, TypeAnnotation};
-use crate::ast::StmtId;
-use crate::ast::types::TypeKind;
-use crate::error::{expected_token, parser_error};
-use crate::lexer::tokens::{Token, TokenKind};
-use crate::parser::{ParseContext, Parser};
 
 impl Parser {
     pub fn parse_stmt(&mut self) -> Result<Option<StmtId>> {
@@ -117,13 +121,9 @@ impl Parser {
 
         self.expect_punct(TokenKind::RightBrace)?;
 
-        Ok(self.ast.new_trait_impl(
-            impl_keyword,
-            ident,
-            for_token,
-            trait_name,
-            methods,
-        ))
+        Ok(self
+            .ast
+            .new_trait_impl(impl_keyword, ident, for_token, trait_name, methods))
     }
 
     pub fn parse_pub(&mut self, _: TokenKind) -> Result<(Token, bool)> {
@@ -183,11 +183,9 @@ impl Parser {
                     "Expected field declaration or '}}' after struct declaration, found '{}'",
                     self.peek().literal()
                 )],
-                vec![
-                    (self.previous().span.clone(), None)
-                ],
+                vec![(self.previous().span.clone(), None)],
             )
-                .into());
+            .into());
         }
 
         let mut fields = IndexMap::new();
@@ -210,11 +208,9 @@ impl Parser {
                         "Every field except the last one must be followed by a comma, found '{}'",
                         self.peek().literal()
                     )],
-                    vec![
-                        (self.previous().span.clone(), None)
-                    ],
+                    vec![(self.previous().span.clone(), None)],
                 )
-                    .into());
+                .into());
             } else {
                 self.possible_check(TokenKind::Comma);
             }
@@ -243,10 +239,7 @@ impl Parser {
         let try_token = self.consume();
         let try_expression = self.parse_expr()?;
 
-        Ok(self.ast.new_try(
-            try_token,
-            try_expression,
-        ))
+        Ok(self.ast.new_try(try_token, try_expression))
     }
 
     pub fn parse_return(&mut self) -> Result<Option<StmtId>> {
@@ -417,7 +410,7 @@ impl Parser {
                     )],
                     vec![(self.peek().span.clone(), None)],
                 )
-                    .into());
+                .into());
             }
 
             Some(self.expect(TokenKind::Colon)?)
@@ -463,7 +456,7 @@ impl Parser {
                 )],
                 vec![(self.peek().span.clone(), None)],
             )
-                .into());
+            .into());
         } else if self.peek().kind == TokenKind::Bang {
             self.consume();
             let err_type = if self.peek().kind == TokenKind::Identifier {
@@ -472,17 +465,15 @@ impl Parser {
                 None
             };
 
-            return Ok(
-                Some(TypeAnnotation {
-                    token_name: None,
-                    kind: TypeKind::Void,
-                    is_nullable: false,
-                    separator: None,
-                    generics: vec![],
-                    can_be_error: true,
-                    error_type: err_type,
-                })
-            );
+            return Ok(Some(TypeAnnotation {
+                token_name: None,
+                kind: TypeKind::Void,
+                is_nullable: false,
+                separator: None,
+                generics: vec![],
+                can_be_error: true,
+                error_type: err_type,
+            }));
         } else if self.peek().kind == TokenKind::LeftBrace {
             return Ok(None);
         }
@@ -538,11 +529,11 @@ impl Parser {
                 if param.literal() == "self" {
                     if !is_static {
                         bail!(parser_error(
-                                "Self parameter must be first parameter in method".to_string(),
-                                vec![(param.span.clone(), None)],
-                                vec![],
-                                None
-                            ))
+                            "Self parameter must be first parameter in method".to_string(),
+                            vec![(param.span.clone(), None)],
+                            vec![],
+                            None
+                        ))
                     }
 
                     is_static = false;
@@ -592,14 +583,8 @@ impl Parser {
             Some(block)
         };
 
-        Ok(self.ast.new_fn(
-            fn_token,
-            name,
-            params,
-            body,
-            public,
-            return_type,
-            is_static,
-        ))
+        Ok(self
+            .ast
+            .new_fn(fn_token, name, params, body, public, return_type, is_static))
     }
 }

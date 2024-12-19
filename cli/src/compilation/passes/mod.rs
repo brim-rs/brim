@@ -1,7 +1,7 @@
-use crate::ast::{Ast, ItemId, StmtId};
-use crate::ast::statements::Stmt;
-use crate::compilation::imports::UnitLoader;
-use crate::compilation::unit::CompilationUnit;
+use crate::{
+    ast::{ItemId, StmtId},
+    compilation::unit::CompilationUnit,
+};
 
 pub mod resolver;
 pub mod type_checker;
@@ -13,7 +13,11 @@ pub trait Pass {
         Ok(())
     }
 
-    fn visit_item_default(&mut self, unit: &mut CompilationUnit, item: ItemId) -> anyhow::Result<()> {
+    fn visit_item_default(
+        &mut self,
+        unit: &mut CompilationUnit,
+        item: ItemId,
+    ) -> anyhow::Result<()> {
         let item = unit.ast().query_item(item).clone();
 
         self.visit_statement(item.stmt)?;
