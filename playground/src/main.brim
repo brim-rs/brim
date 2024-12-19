@@ -15,9 +15,7 @@ pub fn main() {
     //    println(err)
     //};
 
-    if 1 + 1 > 5 {
-        println("Hello, world!");
-    } else {
-        println("Hello, world!");
-    }
+    let value = "Hello, World!";
+
+    value += 1;
 };

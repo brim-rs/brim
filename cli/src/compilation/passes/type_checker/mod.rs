@@ -72,6 +72,14 @@ impl ResolvedType {
             error_type: typ.error_type.map(|t| t.literal()),
         }
     }
+    
+    pub fn is_string_like(&self) -> bool {
+        matches!(self.kind, TypeKind::String | TypeKind::Char)
+    }
+    
+    pub fn is_string_or_number(&self) -> bool {
+        self.is_string_like() || self.is_number()
+    }
 }
 
 impl Display for ResolvedType {

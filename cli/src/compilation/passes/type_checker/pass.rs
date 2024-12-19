@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::compilation::passes::type_checker::ResolvedType;
 use anyhow::Result;
 use crate::ast::{ExprId, GetSpan, StmtId};
-use crate::ast::expressions::{BinOpKind, ExprKind, LiteralType, UnOpKind, Unary};
+use crate::ast::expressions::{AssignOperator, BinOpKind, ExprKind, LiteralType, UnOpKind, Unary};
 use crate::ast::statements::{StmtKind, TypeAnnotation};
 use crate::ast::types::TypeKind;
 use crate::compilation::imports::UnitLoader;
@@ -216,6 +216,49 @@ impl<'a> TypeChecker<'a> {
                                               Arc::new(self.unit.source.clone()));
 
                     ResolvedType::base(TypeKind::Null)
+                }
+            }
+            ExprKind::Assign(ref assign) => {
+                let left_type = self.resolve_from_expr(assign.left.clone())?;
+                let right_type = self.resolve_from_expr(assign.right)?;
+
+                if matches!(assign.op, AssignOperator::MultiplyEquals
+                        | AssignOperator::DivideEquals
+                        | AssignOperator::MinusEquals) && left_type.is_number() && right_type.is_number() {
+                    return Ok(left_type.clone());
+                }
+                
+                if matches!(assign.op, AssignOperator::PlusEquals) {
+                    if (left_type.is_number() && right_type.is_number()) || (left_type.is_string_like() && right_type.is_string_like()) {
+                        return Ok(left_type.clone());
+                    }
+                }
+
+                match (left_type.clone(), assign.op.clone(), right_type.clone()) {
+                    (_, AssignOperator::Assign, _) => {
+                        if !ResolvedType::matches(&left_type, &right_type) {
+                            self.diags.new_diagnostic(Diagnostic::error(
+                                format!("Cannot assign '{}' to '{}'", right_type, left_type),
+                                vec![(expr.span(self.unit.ast()).clone(), None)],
+                                vec![],
+                            ), Arc::new(self.unit.source.clone()));
+
+                            return Ok(left_type.clone());
+                        } else {
+                            return Ok(left_type.clone());
+                        }
+                    }
+                    _ => {
+                        self.diags.new_diagnostic(Diagnostic::error(
+                            format!("Cannot assign '{}' to '{}'", right_type, left_type),
+                            vec![(self.unit.ast().query_expr(assign.right).span(self.unit.ast()).clone(), Some(
+                                format!("expected '{}'", left_type)
+                            ))],
+                            vec![],
+                        ), Arc::new(self.unit.source.clone()));
+
+                        return Ok(left_type.clone());
+                    }
                 }
             }
             _ => ResolvedType::base(TypeKind::Null)
