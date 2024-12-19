@@ -196,6 +196,37 @@ impl<'a> Pass for TypeChecker<'a> {
 
                 self.declare_variable(let_stmt.ident.literal().clone(), typ);
             }
+            StmtKind::While(while_stmt) => {
+                let condition_type = self.resolve_from_expr(while_stmt.condition.clone())?;
+
+                if condition_type.kind != TypeKind::Bool {
+                    let expr = self.unit.ast().query_expr(while_stmt.condition.clone());
+
+                    self.diags.new_diagnostic(Diagnostic::error(
+                        format!("While condition must be a boolean, found '{}'", condition_type),
+                        vec![(expr.span(
+                            self.unit.ast()
+                        ).clone(), Some("expected boolean".to_string()))],
+                        vec![],
+                    ), Arc::new(self.unit.source.clone()));
+                }
+
+                self.visit_statement(while_stmt.block)?;
+            }
+            StmtKind::Loop(loop_stmt) => {
+                self.visit_statement(loop_stmt.block)?;
+            }
+            StmtKind::If(if_stmt) => {
+                self.visit_statement(if_stmt.then_block)?;
+
+                for else_if in if_stmt.else_ifs {
+                    self.visit_statement(else_if.block)?;
+                }
+
+                if let Some(else_block) = if_stmt.else_block {
+                    self.visit_statement(else_block.block)?;
+                }
+            }
             _ => {}
         }
 
