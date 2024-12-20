@@ -144,22 +144,28 @@ Built-in functions are functions that are provided by the compiler itself. They 
 
 ## Errors
 
-### Errors can be defined using the `error` keyword.
+### Errors types
+
+You can return error of any type. It can be a simple string or a custom error type.
 
 ```brim
-error MyError {
-    ParsingError: {
+enum MyError {
+    ParsingError {
         message: string,
         span: Span
-    },
-    UnknownError
+    }
+}
+
+fn parse(input: string) -> string !MyError {
+     ...
 }
 ```
 
-> Error types are similar to enum definitions, but they are used to represent errors that can be returned from
-> functions.
-
-> A single error can be a simple enum, or a struct with multiple fields.
+```brim
+fn parse(input: string) -> string !string {
+     ...
+}
+```
 
 ### Defining a function that returns an error
 
