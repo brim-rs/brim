@@ -17,6 +17,8 @@ use crate::{
 };
 use anyhow::Result;
 use std::{collections::HashMap, sync::Arc};
+use crate::ast::expressions::AccessKind;
+use crate::compilation::items::UnitItemKind;
 
 #[derive(Debug)]
 pub struct TypeChecker<'a> {
@@ -142,10 +144,10 @@ impl<'a> TypeChecker<'a> {
                     match (left.kind.clone(), right.kind.clone()) {
                         // Concatenate strings or characters
                         (TypeKind::Char | TypeKind::String, TypeKind::Char | TypeKind::String)
-                            if binary.operator == BinOpKind::Plus =>
-                        {
-                            ResolvedType::base(TypeKind::String)
-                        }
+                        if binary.operator == BinOpKind::Plus =>
+                            {
+                                ResolvedType::base(TypeKind::String)
+                            }
 
                         // Matching types directly
                         (
@@ -293,7 +295,7 @@ impl<'a> TypeChecker<'a> {
                     }
                 }
 
-                match (left_type.clone(), assign.op.clone(), right_type.clone()) {
+                return match (left_type.clone(), assign.op.clone(), right_type.clone()) {
                     (_, AssignOperator::Assign, _) => {
                         if !ResolvedType::matches(&left_type, &right_type) {
                             self.diags.new_diagnostic(
@@ -305,9 +307,9 @@ impl<'a> TypeChecker<'a> {
                                 Arc::new(self.unit.source.clone()),
                             );
 
-                            return Ok(left_type.clone());
+                            Ok(left_type.clone())
                         } else {
-                            return Ok(left_type.clone());
+                            Ok(left_type.clone())
                         }
                     }
                     _ => {
@@ -327,11 +329,157 @@ impl<'a> TypeChecker<'a> {
                             Arc::new(self.unit.source.clone()),
                         );
 
-                        return Ok(left_type.clone());
+                        Ok(left_type.clone())
                     }
-                }
+                };
             }
-            _ => ResolvedType::base(TypeKind::Null),
+            ExprKind::Access(access) => match access.access.clone() {
+                AccessKind::Index(expr) => {
+                    let base = self.resolve_from_expr(access.base.clone())?;
+
+                    let index_type = self.resolve_from_expr(expr)?;
+
+                    if matches!(base.clone().kind, TypeKind::Array(_)) {
+                        if !index_type.is_number() {
+                            self.diags.new_diagnostic(
+                                Diagnostic::error(
+                                    format!("Array index must be a number, found '{}'", index_type),
+                                    vec![(
+                                        self.unit
+                                            .ast()
+                                            .query_expr(expr)
+                                            .span(self.unit.ast())
+                                            .clone(), Some("expected number".to_string()))],
+                                    vec![
+                                        "Floats can't be used as array indexes".to_string(),
+                                    ],
+                                ),
+                                Arc::new(self.unit.source.clone()),
+                            );
+                        } else {
+                            return Ok(base.array_type());
+                        }
+                    } else if matches!(base.clone().kind, TypeKind::String) {
+                        if !index_type.is_number() {
+                            self.diags.new_diagnostic(
+                                Diagnostic::error(
+                                    format!("String index must be a number, found '{}'", index_type),
+                                    vec![(
+                                        self.unit
+                                            .ast()
+                                            .query_expr(expr)
+                                            .span(self.unit.ast())
+                                            .clone(), Some("expected number".to_string()))],
+                                    vec![
+                                        "Floats can't be used as string indexes".to_string(),
+                                    ],
+                                ),
+                                Arc::new(self.unit.source.clone()),
+                            );
+                        } else {
+                            return Ok(ResolvedType::base(TypeKind::Char));
+                        }
+                    } else {
+                        self.diags.new_diagnostic(
+                            Diagnostic::error(
+                                format!(
+                                    "Invalid index operation. Attempted to access {} with {}",
+                                    base.to_string(),
+                                    index_type.to_string()
+                                ),
+                                vec![(self.unit.ast().query_expr(expr).span(self.unit.ast()).clone(), None)],
+                                vec![],
+                            ),
+                            Arc::new(self.unit.source.clone()),
+                        );
+                    }
+
+                    ResolvedType::base(TypeKind::Null)
+                }
+                AccessKind::Field(expr) => {
+                    todo!("access field: {:?}", expr);
+                }
+                AccessKind::StaticMethod(expr) => {
+                    todo!("static method access {:?}", expr);
+                }
+            },
+            ExprKind::StructConstructor(ref struct_ctor) => {
+                let item = self.unit.unit_items.get(&struct_ctor.name);
+
+                if let Some(item) = item {
+                    match item.kind.clone() {
+                        UnitItemKind::Struct(struct_item) => {
+                            let mut fields = HashMap::new();
+                            for (field_name, field) in struct_item.fields.clone() {
+                                fields.insert(field_name, field.type_annotation.clone());
+                            }
+
+                            for (field, expr) in struct_ctor.fields.clone() {
+                                let field_type = fields.get(&field.clone());
+
+                                if let Some(field_type) = field_type {
+                                    let expr_type = self.resolve_from_expr(expr)?;
+
+                                    let field_type = &ResolvedType::from_type_annotation(field_type.clone());
+                                    if !ResolvedType::matches(&expr_type, field_type) {
+                                        let expr = self.unit.ast().query_expr(expr);
+                                        
+                                        self.diags.new_diagnostic(
+                                            Diagnostic::error(
+                                                format!(
+                                                    "Expected type '{}', found '{}'",
+                                                    field_type, expr_type
+                                                ),
+                                                vec![(expr.span(self.unit.ast()).clone(), None)],
+                                                vec![],
+                                            ),
+                                            Arc::new(self.unit.source.clone()),
+                                        );
+                                    }
+                                } else {
+                                    let expr = self.unit.ast().query_expr(expr);
+                                    
+                                    self.diags.new_diagnostic(
+                                        Diagnostic::error(
+                                            format!(
+                                                "Field '{}' not found in struct '{}'",
+                                                field,
+                                                struct_ctor.name
+                                            ),
+                                            vec![(expr.span(self.unit.ast()).clone(), None)],
+                                            vec![],
+                                        ),
+                                        Arc::new(self.unit.source.clone()),
+                                    );
+                                }
+                            }
+                        }
+                        _ => {
+                            self.diags.new_diagnostic(
+                                Diagnostic::error(
+                                    format!("Attempted to construct struct '{}' that doesn't exist in this scope", struct_ctor.name),
+                                    vec![(expr.span(self.unit.ast()).clone(), None)],
+                                    vec![],
+                                ),
+                                Arc::new(self.unit.source.clone()),
+                            );
+                        
+                        }
+                    }
+                } else {
+                    self.diags.new_diagnostic(
+                        Diagnostic::error(
+                            format!("Struct '{}' not found", struct_ctor.name),
+                            vec![(expr.span(self.unit.ast()).clone(), None)],
+                            vec![],
+                        ),
+                        Arc::new(self.unit.source.clone()),
+                    );
+                }
+
+                ResolvedType::base(TypeKind::Null)
+            }
+            _ => todo!("{:?}", expr.kind),
         };
 
         Ok(result)

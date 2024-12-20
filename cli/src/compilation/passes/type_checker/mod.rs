@@ -95,6 +95,13 @@ impl ResolvedType {
     pub fn is_string_or_number(&self) -> bool {
         self.is_string_like() || self.is_number()
     }
+    
+    pub fn array_type(&self) -> ResolvedType {
+        match self.kind {
+            TypeKind::Array(ref t) => *t.clone(),
+            _ => unreachable!("Expected array type"),
+        }
+    }
 }
 
 impl Display for ResolvedType {
