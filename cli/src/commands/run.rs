@@ -1,3 +1,4 @@
+use std::fmt::format;
 use crate::{
     cli::opt,
     compilation::{imports::UnitLoader, unit::CompilationUnit},
@@ -10,6 +11,9 @@ use crate::{
 use anyhow::Result;
 use clap::{ArgAction, ArgMatches, Command};
 use std::sync::Arc;
+use crate::cli::{debug_mode, release_mode};
+use crate::compilation::build_type::resolve_build_type;
+use crate::compilation::code_gen::CodeGen;
 
 pub fn run_cmd() -> Command {
     Command::new("run").about("Run a project").arg(
@@ -17,6 +21,8 @@ pub fn run_cmd() -> Command {
             .short('t')
             .action(ArgAction::SetTrue),
     )
+        .arg(release_mode())
+        .arg(debug_mode())
 }
 
 pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
@@ -41,7 +47,12 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
                 return Ok(());
             }
 
-            // run execution
+            let build_type = resolve_build_type(ctx, args)?;
+            let codegen = &mut CodeGen::new(&mut unit, loader, build_type.clone());
+            
+            ctx.shell.status("Compiling", format!("{} in {} mode", ctx.config.project.name, build_type))?;
+        
+            codegen.generate_code(ctx)?;
         }
         Err(e) => {
             if let Some(err) = e.downcast_ref::<BrimError>() {

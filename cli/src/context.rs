@@ -125,4 +125,14 @@ impl GlobalContext {
     pub fn cache_dir(&self) -> Result<PathBuf> {
         Ok(dirs::cache_dir().unwrap().join("brim"))
     }
+    
+    pub fn output_file(&self, file_name: &str) -> Result<PathBuf> {
+        Ok(self.build_dir()?.join("bytecode").join(file_name).with_extension(
+            if cfg!(target_os = "windows") {
+                "obj"
+            } else {
+                "out"
+            },
+        ))
+    }
 }

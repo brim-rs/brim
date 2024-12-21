@@ -1,11 +1,20 @@
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
+use crate::compilation::build_type::BuildType;
+use crate::compilation::code_gen::linker::LinkerKind;
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct BrimConfig {
     pub project: ProjectConfig,
     pub tasks: Option<HashMap<String, String>>,
     pub dependencies: Option<HashMap<String, Dependency>>,
+    pub build: Option<BuildConfig>,
+}
+
+#[derive(Deserialize, Debug, Clone, Serialize)]
+pub struct BuildConfig {
+    pub r#type: Option<BuildType>,
+    pub linker: Option<LinkerKind>
 }
 
 #[derive(Deserialize, Debug, Clone, Serialize)]

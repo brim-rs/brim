@@ -10,11 +10,14 @@ pub fn positional(name: &'static str, help: &'static str) -> Arg {
     Arg::new(name).help(help).index(1)
 }
 
-pub fn build_type() -> Arg {
-    Arg::new("build-type")
-        .long("build-type")
-        .help("The type of build to run")
-        .default_value("debug")
+pub const COMPILATION_HEADING: &str = "Compilation options";
+
+pub fn release_mode() -> Arg {
+    opt("release", "Build in release mode").action(ArgAction::SetTrue).short('r').conflicts_with("debug").help_heading(COMPILATION_HEADING)
+}
+
+pub fn debug_mode() -> Arg {
+    opt("debug", "Build in debug mode").action(ArgAction::SetTrue).short('d').conflicts_with("release").help_heading(COMPILATION_HEADING)
 }
 
 pub fn cli() -> Command {
