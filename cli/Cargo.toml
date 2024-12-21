@@ -22,7 +22,7 @@ thiserror = { workspace = true }
 indexmap = "2.7.0"
 codespan-reporting = "0.11.1"
 unindent = "0.2.3"
-term = "1.0.0"
+term = "1.0.1"
 which = "7.0.1"
 tracing = { version = "0.1.40", default-features = false, features = ["std"] }
 tracing-subscriber = { version = "0.3.18", features = [
