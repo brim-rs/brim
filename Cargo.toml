@@ -19,7 +19,7 @@ clap = { version = "4.5.23", features = ["derive"] }
 anstyle = "1.0.10"
 tar = "0.4.42"
 toml = "0.8.19"
-serde = "1.0.215"
+serde = "1.0.216"
 uuid = { version = "1.11.0", features = ["v4"] }
 indexmap = "2.7.0"
 anstream = "0.6.18"
