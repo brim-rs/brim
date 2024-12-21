@@ -48,10 +48,10 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
             }
 
             let build_type = resolve_build_type(ctx, args)?;
-            let codegen = &mut CodeGen::new(&mut unit, loader, build_type.clone());
-            
+            let codegen = &mut CodeGen::new(&mut unit, loader, build_type.clone(), true)?;
+
             ctx.shell.status("Compiling", format!("{} in {} mode", ctx.config.project.name, build_type))?;
-        
+
             codegen.generate_code(ctx)?;
         }
         Err(e) => {

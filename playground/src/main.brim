@@ -1,12 +1,5 @@
-fn parse(input: string) -> string[] !MyError {
-         return MyError::ParsingError {
-             message: "Input is empty",
-             span: Span::new(0, 0)
-         };
-};
-
 pub fn main() {
+    let x = 1 + 1;
 
-
-    let value = "Hello, World!";
+    return value;
 };

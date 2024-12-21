@@ -16,7 +16,7 @@ pub fn setup_panic_handler() {
             None => "".into(),
             Some(location) => format!("{}:{}", location.file(), location.line()),
         }
-        .replace("\\", "/");
+            .replace("\\", "/");
 
         let text = format!(
             "{}
@@ -27,7 +27,7 @@ Location: {}
 
 {}
 ",
-            "\nOh no! Something went wrong!\nThis is a bug in Pulse, not in your code. \n"
+            "\nOh no! Something went wrong!\nThis is a bug in Brim, not in your code. \n"
                 .bright_red(),
             env!("CARGO_PKG_VERSION"),
             std::env::consts::OS,
@@ -55,8 +55,8 @@ Location: {}
                         new_text,
                         shorten_path(filename.to_str().unwrap()).unwrap()
                     )
-                    .cyan()
-                    .to_string();
+                        .cyan()
+                        .to_string();
                 }
 
                 backtrace = format!("{}  {}\n", backtrace, new_text);
