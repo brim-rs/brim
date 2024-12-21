@@ -1,6 +1,7 @@
 pub mod compiler;
 mod generator;
 mod utils;
+mod functions;
 
 use std::fs::{create_dir_all, remove_file, File};
 use std::io::Write;
@@ -17,6 +18,8 @@ pub struct CodeGen<'a> {
     // If the file is either main.brim or lib.brim
     pub is_entry_point: bool,
     pub buf: Vec<u8>,
+    pub ident: usize,
+    pub current_indent: usize,
 }
 
 impl<'a> CodeGen<'a> {
@@ -27,6 +30,8 @@ impl<'a> CodeGen<'a> {
             build_type,
             is_entry_point: entrypoint,
             buf: Vec::new(),
+            ident: 0,
+            current_indent: 0,
         })
     }
 }

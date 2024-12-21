@@ -15,7 +15,7 @@ impl<'a> CodeGen<'a> {
 
     pub fn generate_stmt(&mut self, stmt: Stmt) -> Result<()> {
         match stmt.kind {
-            // StmtKind::Fn(function) => self.generate_fn(function)?,
+            StmtKind::Fn(function) => self.generate_fn(function)?,
             _ => {}
         }
 
