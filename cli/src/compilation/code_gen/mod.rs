@@ -1,4 +1,4 @@
-pub mod linker;
+pub mod compiler;
 mod generator;
 
 use std::fs::{create_dir_all, remove_file, File};
@@ -7,7 +7,6 @@ use crate::compilation::imports::UnitLoader;
 use crate::compilation::unit::CompilationUnit;
 use anyhow::Result;
 use crate::compilation::build_type::BuildType;
-use crate::compilation::code_gen::linker::resolve_from_kind;
 use crate::context::GlobalContext;
 
 pub struct CodeGen<'a> {
@@ -49,16 +48,10 @@ impl<'a> CodeGen<'a> {
         let mut file = File::create(&output_file)?;
         file.write_all(&bytes)?;
 
-        let linker = if let Some(build) = &global.config.build && let Some(linker) = &build.linker {
-            resolve_from_kind(linker.clone())?
-        } else {
-            linker::detect_linker()?
-        };
+        let compiler = compiler::detect_compiler()?;
 
-        global.shell.status("Detected", linker.to_string())?;
+        global.shell.status("Detected", compiler.to_string())?;
         let exec_name = format!("{}{}", file_name, if cfg!(windows) { ".exe" } else { "" });
-
-        linker.link(exec_name, vec![output_file], global.build_dir()?)?;
 
         Ok(())
     }
