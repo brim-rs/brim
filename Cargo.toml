@@ -13,7 +13,7 @@ brim-shell = { path = "crates/shell", version = "0.1.0" }
 anyhow = "1.0.94"
 colored = "2.1.0"
 log = "0.4.22"
-thiserror = "2.0.3"
+thiserror = "2.0.8"
 backtrace = "0.3.74"
 clap = { version = "4.5.23", features = ["derive"] }
 anstyle = "1.0.10"
