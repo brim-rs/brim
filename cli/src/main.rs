@@ -7,6 +7,8 @@ use clap::ArgMatches;
 use cli::cli;
 use panic_handler::setup_panic_handler;
 use std::{env, process::exit};
+use ::tracing::debug;
+use crate::tracing::setup_tracing;
 
 pub mod cli;
 pub mod commands {
@@ -23,6 +25,7 @@ pub mod lexer;
 pub mod panic_handler;
 mod parser;
 pub mod path;
+mod tracing;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -34,6 +37,7 @@ async fn main() -> Result<()> {
     let verbose = args.get_flag("verbose");
 
     env::set_var("BRIM_LOG", if verbose { "trace" } else { "info" });
+    setup_tracing(verbose);
 
     let cmd = match args.subcommand() {
         Some((cmd, args)) => (cmd, args),
@@ -52,6 +56,8 @@ async fn main() -> Result<()> {
 
     let mut ctx = GlobalContext::default(color_choice)?;
     ctx.verbose = verbose;
+
+    debug!("Running in context: {:#?}", ctx);
 
     match execute_command(&mut ctx, cmd).await {
         Ok(()) => Ok(()),

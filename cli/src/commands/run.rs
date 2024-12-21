@@ -11,6 +11,7 @@ use crate::{
 use anyhow::Result;
 use clap::{ArgAction, ArgMatches, Command};
 use std::sync::Arc;
+use tracing::debug;
 use crate::cli::{debug_mode, release_mode};
 use crate::compilation::build_type::resolve_build_type;
 use crate::compilation::code_gen::CodeGen;
@@ -43,11 +44,13 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
     match unit.compile(loader, diags) {
         Ok(_) => {
             if diags.diagnostics.len() > 0 {
+                debug!("Found diagnostics. Skipping code generation");
                 diags.print_diagnostics();
                 return Ok(());
             }
 
             let build_type = resolve_build_type(ctx, args)?;
+            debug!("Build type: {:?}", build_type);
             let codegen = &mut CodeGen::new(&mut unit, loader, build_type.clone(), true)?;
 
             ctx.shell.status("Compiling", format!("{} in {} mode", ctx.config.project.name, build_type))?;

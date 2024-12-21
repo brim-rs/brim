@@ -1,5 +1,6 @@
 pub mod compiler;
 mod generator;
+mod utils;
 
 use std::fs::{create_dir_all, remove_file, File};
 use std::io::Write;
@@ -15,6 +16,7 @@ pub struct CodeGen<'a> {
     pub build_type: BuildType,
     // If the file is either main.brim or lib.brim
     pub is_entry_point: bool,
+    pub buf: Vec<u8>,
 }
 
 impl<'a> CodeGen<'a> {
@@ -24,6 +26,7 @@ impl<'a> CodeGen<'a> {
             loader,
             build_type,
             is_entry_point: entrypoint,
+            buf: Vec::new(),
         })
     }
 }
@@ -35,23 +38,6 @@ impl<'a> CodeGen<'a> {
 
             self.generate_item(item)?;
         }
-
-        Ok(())
-    }
-
-    pub fn write_and_link(&mut self, global: &mut GlobalContext, bytes: Vec<u8>) -> Result<()> {
-        let file_name = global.config.project.name.clone();
-        let output_file = global.output_file(&file_name)?;
-        remove_file(&output_file).ok();
-
-        create_dir_all(output_file.parent().unwrap())?;
-        let mut file = File::create(&output_file)?;
-        file.write_all(&bytes)?;
-
-        let compiler = compiler::detect_compiler()?;
-
-        global.shell.status("Detected", compiler.to_string())?;
-        let exec_name = format!("{}{}", file_name, if cfg!(windows) { ".exe" } else { "" });
 
         Ok(())
     }

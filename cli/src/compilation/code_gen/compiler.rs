@@ -59,7 +59,7 @@ pub fn detect_compiler() -> Result<Compiler> {
         }
     }
 
-    if let Ok(path) = which::which("clang") {
+    if let Ok(path) = which::which("clang++") {
         return Ok(Compiler::new(path, CompilerKind::Clang));
     }
 
@@ -68,11 +68,11 @@ pub fn detect_compiler() -> Result<Compiler> {
 
 #[cfg(target_os = "linux")]
 pub fn detect_compiler() -> Result<Compiler> {
-    if let Ok(path) = which::which("gcc") {
+    if let Ok(path) = which::which("g++") {
         return Ok(Compiler::new(path, CompilerKind::Gcc));
     }
 
-    if let Ok(path) = which::which("clang") {
+    if let Ok(path) = which::which("clang++") {
         return Ok(Compiler::new(path, CompilerKind::Clang));
     }
 
@@ -81,11 +81,11 @@ pub fn detect_compiler() -> Result<Compiler> {
 
 #[cfg(target_os = "macos")]
 pub fn detect_compiler() -> Result<Compiler> {
-    if let Ok(path) = which::which("clang") {
+    if let Ok(path) = which::which("clang++") {
         return Ok(Compiler::new(path, CompilerKind::Clang));
     }
 
-    if let Ok(path) = which::which("gcc") {
+    if let Ok(path) = which::which("gcc++") {
         return Ok(Compiler::new(path, CompilerKind::Gcc));
     }
 

@@ -8,8 +8,8 @@ use anyhow::{anyhow, Context, Result};
 use brim_shell::Shell;
 use colored::Colorize;
 use std::{fs::read_to_string, path::PathBuf, time::Instant};
+use std::fmt::{Debug, Display};
 
-#[derive(Debug)]
 pub struct GlobalContext {
     pub verbose: bool,
     pub cwd: PathBuf,
@@ -125,14 +125,15 @@ impl GlobalContext {
     pub fn cache_dir(&self) -> Result<PathBuf> {
         Ok(dirs::cache_dir().unwrap().join("brim"))
     }
-    
-    pub fn output_file(&self, file_name: &str) -> Result<PathBuf> {
-        Ok(self.build_dir()?.join("bytecode").join(file_name).with_extension(
-            if cfg!(target_os = "windows") {
-                "obj"
-            } else {
-                "out"
-            },
-        ))
+}
+
+impl Debug for GlobalContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GlobalContext")
+            .field("verbose", &self.verbose)
+            .field("cwd", &self.cwd)
+            .field("start", &self.start)
+            .field("config", &self.config)
+            .finish()
     }
 }
