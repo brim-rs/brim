@@ -73,6 +73,14 @@ impl GlobalContext {
             _ => unreachable!(),
         }
     }
+    
+    pub fn is_lib(&self) -> Result<bool> {
+        Ok(self.project_type()? == ProjectType::Lib)
+    }
+    
+    pub fn is_bin(&self) -> Result<bool> {
+        Ok(self.project_type()? == ProjectType::Bin)
+    }
 
     pub fn get_main_file(&self) -> Result<PathBuf> {
         let file: PathBuf = match self.project_type()? {

@@ -46,6 +46,24 @@ impl Ast {
         }
     }
 
+    pub fn main_fn(&self) -> Option<Function> {
+        self.top_level_items.iter().find_map(|item| {
+            let stmt_id = self.query_item(item.id).stmt;
+            let stmt = self.query_stmt(stmt_id).kind.clone();
+
+            match stmt {
+                StmtKind::Fn(ref function) => {
+                    if function.name.literal() == "main" {
+                        return Some(function.clone());
+                    }
+
+                    None
+                }
+                _ => None
+            }
+        })
+    }
+
     pub fn query_expr(&self, expr_id: ExprId) -> &Expr {
         &self.expressions[expr_id]
     }

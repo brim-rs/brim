@@ -3,10 +3,16 @@ use crate::compilation::code_gen::CodeGen;
 use anyhow::Result;
 use crate::ast::statements::{Function, Stmt, StmtKind, TypeAnnotation};
 use crate::ast::types::TypeKind;
+use crate::context::GlobalContext;
 
 impl<'a> CodeGen<'a> {
     pub fn generate_fn(&mut self, function: Function) -> Result<()> {
-        let return_type = self.map_type(function.return_type);
+        let mut return_type = self.map_type(function.return_type);
+
+        if function.name.literal() == "main" && self.is_entry_point && self.is_bin {
+            return_type = "int".to_string();
+        }
+
         let mut params = vec![];
 
         for param in function.params {
@@ -25,7 +31,7 @@ impl<'a> CodeGen<'a> {
 
         if let Some(body) = function.body {
             let body = self.unit.ast().query_stmt(body).clone();
-            
+
             self.generate_stmt(body)?;
         }
 

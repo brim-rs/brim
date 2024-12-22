@@ -8,7 +8,7 @@ use std::fs::{create_dir_all, remove_file, File};
 use std::io::Write;
 use crate::compilation::imports::UnitLoader;
 use crate::compilation::unit::CompilationUnit;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use tracing::debug;
 use crate::compilation::build_type::BuildType;
 use crate::context::GlobalContext;
@@ -24,6 +24,7 @@ pub struct CodeGen<'a> {
     pub ident: usize,
     pub current_indent: usize,
     pub needed_imports: Vec<String>,
+    pub is_bin: bool,
 }
 
 impl<'a> CodeGen<'a> {
@@ -37,12 +38,25 @@ impl<'a> CodeGen<'a> {
             ident: 0,
             current_indent: 0,
             needed_imports: vec![],
+            is_bin: false,
         })
     }
 }
 
 impl<'a> CodeGen<'a> {
     pub fn generate_code(&mut self, global: &mut GlobalContext) -> Result<()> {
+        self.is_bin = global.is_bin()?;
+
+        if self.is_entry_point && self.is_bin {
+            let main_fn = self.unit.ast().main_fn();
+
+            if let Some(main_fn) = main_fn {
+                debug!("Found main function: {:?}", main_fn);
+            } else {
+                bail!("Entrypoint file must contain a main function.");
+            }
+        }
+
         for item in &self.unit.ast().top_level_items.cloned_indices() {
             let item = self.unit.ast().query_item(*item).clone();
 

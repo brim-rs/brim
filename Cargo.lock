@@ -138,6 +138,7 @@ dependencies = [
  "dirs",
  "http-body-util",
  "indexmap",
+ "log",
  "ropey",
  "serde",
  "term",
