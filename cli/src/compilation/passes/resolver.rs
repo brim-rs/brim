@@ -334,8 +334,8 @@ impl<'a> Pass for Resolver<'a> {
                         Some(unit_item) => {
                             if unit_item.imported {
                                 let original_path = strip_base(
-                                    unit_item.unit.clone().into(),
-                                    self.loader.cwd.clone(),
+                                    &unit_item.unit.clone().into(),
+                                    &self.loader.cwd.clone(),
                                 );
 
                                 self.diags.new_diagnostic(Diagnostic::error(
@@ -343,7 +343,7 @@ impl<'a> Pass for Resolver<'a> {
                                             unit_item.kind,
                                             name,
                                             original_path.display(),
-                                            strip_base(unit.source.path.clone(), self.loader.cwd.clone()).display()
+                                            strip_base(&unit.source.path, &self.loader.cwd).display()
                                     ),
                                     vec![
                                         (item.span.clone(), None),

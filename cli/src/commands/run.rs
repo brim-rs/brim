@@ -55,7 +55,7 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
 
             ctx.shell.status("Compiling", format!("{} in {} mode", ctx.config.project.name, build_type))?;
 
-            codegen.generate_code(ctx)?;
+            codegen.generate_and_write(ctx)?;
         }
         Err(e) => {
             if let Some(err) = e.downcast_ref::<BrimError>() {

@@ -8,8 +8,10 @@ use std::io::Write;
 use crate::compilation::imports::UnitLoader;
 use crate::compilation::unit::CompilationUnit;
 use anyhow::Result;
+use tracing::debug;
 use crate::compilation::build_type::BuildType;
 use crate::context::GlobalContext;
+use crate::path::strip_base;
 
 pub struct CodeGen<'a> {
     pub unit: &'a mut CompilationUnit,
@@ -45,6 +47,27 @@ impl<'a> CodeGen<'a> {
 
             self.generate_item(item)?;
         }
+
+        debug!("Generated C++ code: \n{}", String::from_utf8_lossy(&self.buf));
+
+        Ok(())
+    }
+
+    pub fn generate_and_write(&mut self, global: &mut GlobalContext) -> Result<()> {
+        self.generate_code(global)?;
+        let out_dir = global.build_dir()?.join("source");
+        let rest_path = strip_base(&self.unit.source.path, &global.cwd);
+
+        let target_path = out_dir.join(rest_path).with_extension("cpp");
+
+        if let Some(parent_dir) = target_path.parent() {
+            create_dir_all(parent_dir)?;
+        }
+
+        debug!("Writing generated code to {}", target_path.display());
+
+        let mut file = File::create(target_path)?;
+        file.write_all(&self.buf)?;
 
         Ok(())
     }

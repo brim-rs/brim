@@ -38,7 +38,7 @@ pub fn normalize_without_canonicalize(mut path: PathBuf, root: PathBuf) -> PathB
     path
 }
 
-pub fn strip_base(path: PathBuf, base: PathBuf) -> PathBuf {
+pub fn strip_base(path: &PathBuf, base: &PathBuf) -> PathBuf {
     let mut path = path.strip_prefix(base).unwrap_or(&path).to_path_buf();
     if path.starts_with(std::path::MAIN_SEPARATOR.to_string()) {
         path = path

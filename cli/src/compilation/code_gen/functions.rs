@@ -31,7 +31,6 @@ impl<'a> CodeGen<'a> {
 
         self.pop_indent();
         self.write_line("}");
-        println!("{}", String::from_utf8_lossy(&self.buf));
 
         Ok(())
     }
