@@ -9,12 +9,13 @@ use crate::{
 };
 use indexmap::IndexMap;
 use std::fmt::{Display, Formatter};
+use crate::compilation::passes::type_checker::ResolvedType;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Expr {
     pub kind: ExprKind,
     pub id: ExprId,
-    pub ty: TypeKind,
+    pub ty: ResolvedType,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -44,7 +45,7 @@ pub struct AnonymousFunction {
 }
 
 impl Expr {
-    pub fn new(kind: ExprKind, id: ExprId, ty: TypeKind) -> Self {
+    pub fn new(kind: ExprKind, id: ExprId, ty: ResolvedType) -> Self {
         Expr { kind, id, ty }
     }
 }
@@ -224,7 +225,7 @@ impl GetSpan for Unary {
             self.operator.token.span.clone(),
             ast.query_expr(self.expr).span(ast),
         ])
-        .unwrap()
+            .unwrap()
     }
 }
 
@@ -449,12 +450,12 @@ impl GetSpan for AccessExpr {
                 self.token.span.clone(),
                 ast.query_expr(*index_expr).span(ast),
             ])
-            .unwrap(), // Span includes '[' , index, and ']'
+                .unwrap(), // Span includes '[' , index, and ']'
             AccessKind::StaticMethod(method) => TextSpan::combine(vec![
                 self.token.span.clone(),
                 ast.query_expr(*method).span(ast),
             ])
-            .unwrap(),
+                .unwrap(),
         };
         TextSpan::combine(vec![base_span, access_span]).unwrap()
     }

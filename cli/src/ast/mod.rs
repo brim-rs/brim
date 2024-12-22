@@ -23,6 +23,7 @@ use crate::{
     lexer::tokens::Token,
 };
 use indexmap::IndexMap;
+use crate::compilation::passes::type_checker::ResolvedType;
 
 idx!(StmtId);
 idx!(ExprId);
@@ -62,7 +63,7 @@ impl Ast {
     }
 
     pub fn new_expr(&mut self, kind: ExprKind) -> &Expr {
-        let expr = Expr::new(kind, ExprId::new(0), TypeKind::Undefined);
+        let expr = Expr::new(kind, ExprId::new(0), ResolvedType::base(TypeKind::Undefined));
         let id = self.expressions.push(expr);
         self.expressions[id].id = id;
         &self.expressions[id]
@@ -84,6 +85,11 @@ impl Ast {
 
     pub fn query_item(&self, item_id: ItemId) -> &TopLevelItem {
         &self.top_level_items[item_id]
+    }
+
+    pub fn set_type(&mut self, expr_id: ExprId, ty: ResolvedType) {
+        let expr = &mut self.expressions[expr_id];
+        expr.ty = ty;
     }
 }
 

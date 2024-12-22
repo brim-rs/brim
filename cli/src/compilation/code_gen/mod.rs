@@ -2,6 +2,7 @@ pub mod compiler;
 mod generator;
 mod utils;
 mod functions;
+mod expr;
 
 use std::fs::{create_dir_all, remove_file, File};
 use std::io::Write;

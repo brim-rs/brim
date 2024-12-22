@@ -1,5 +1,6 @@
 use crate::ast::{statements::TypeAnnotation, types::TypeKind};
 use std::fmt::Display;
+use crate::lexer::tokens::Token;
 
 pub mod pass;
 
@@ -89,6 +90,26 @@ impl ResolvedType {
             generics,
             can_be_error: typ.can_be_error,
             error_type: err_type,
+        }
+    }
+    
+    pub fn to_type_annotation(&self) -> TypeAnnotation {
+        let generics = self.generics.iter().map(ResolvedType::to_type_annotation).collect();
+        
+        let err_type = if let Some(err_type) = &self.error_type {
+            Some(Box::new(err_type.as_ref().to_type_annotation()))
+        } else {
+            None
+        };
+
+        TypeAnnotation {
+            kind: self.kind.clone(),
+            is_nullable: self.is_nullable,
+            generics,
+            can_be_error: self.can_be_error,
+            error_type: err_type,
+            token_name: None,
+            separator: None,
         }
     }
 

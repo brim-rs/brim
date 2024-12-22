@@ -84,16 +84,15 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub fn resolve_from_expr(&mut self, expr: ExprId) -> Result<ResolvedType> {
-        let expr = self.unit.ast().query_expr(expr).clone();
+        let mut expr = self.unit.ast().query_expr(expr).clone();
 
         let result = match expr.kind {
             ExprKind::Unary(unary) => self.validate_unary(unary)?,
             ExprKind::Literal(literal) => match literal.value {
                 LiteralType::Null => ResolvedType::base(TypeKind::Null),
                 LiteralType::Bool(_) => ResolvedType::base(TypeKind::Bool),
-                LiteralType::Int(_) => ResolvedType::base(TypeKind::I32), // ----]
-                //      ] We default it to I32 or F32. Might have to change this later
-                LiteralType::Float(_) => ResolvedType::base(TypeKind::F32), // ----]
+                LiteralType::Int(_) => ResolvedType::base(TypeKind::I32),
+                LiteralType::Float(_) => ResolvedType::base(TypeKind::F32),
                 LiteralType::String(_) => ResolvedType::base(TypeKind::String),
                 LiteralType::Char(_) => ResolvedType::base(TypeKind::Char),
             },
@@ -419,7 +418,7 @@ impl<'a> TypeChecker<'a> {
                                     let field_type = &ResolvedType::from_type_annotation(field_type.clone());
                                     if !ResolvedType::matches(&expr_type, field_type) {
                                         let expr = self.unit.ast().query_expr(expr);
-                                        
+
                                         self.diags.new_diagnostic(
                                             Diagnostic::error(
                                                 format!(
@@ -434,7 +433,7 @@ impl<'a> TypeChecker<'a> {
                                     }
                                 } else {
                                     let expr = self.unit.ast().query_expr(expr);
-                                    
+
                                     self.diags.new_diagnostic(
                                         Diagnostic::error(
                                             format!(
@@ -459,7 +458,6 @@ impl<'a> TypeChecker<'a> {
                                 ),
                                 Arc::new(self.unit.source.clone()),
                             );
-                        
                         }
                     }
                 } else {
@@ -478,6 +476,8 @@ impl<'a> TypeChecker<'a> {
             _ => todo!("{:?}", expr.kind),
         };
 
+        self.unit.ast_mut().set_type(expr.id, result.clone());
+        
         Ok(result)
     }
 

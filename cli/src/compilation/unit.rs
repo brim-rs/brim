@@ -95,4 +95,8 @@ impl CompilationUnit {
     pub fn ast(&self) -> &Ast {
         &self.parser.ast
     }
+    
+    pub fn ast_mut(&mut self) -> &mut Ast {
+        &mut self.parser.ast
+    }
 }
