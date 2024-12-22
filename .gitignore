@@ -5,3 +5,4 @@
 .nx/workspace-data
 node_modules
 playground/build
+cmake-build-debug
