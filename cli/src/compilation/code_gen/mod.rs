@@ -20,6 +20,7 @@ pub struct CodeGen<'a> {
     pub buf: Vec<u8>,
     pub ident: usize,
     pub current_indent: usize,
+    pub needed_imports: Vec<String>,
 }
 
 impl<'a> CodeGen<'a> {
@@ -32,6 +33,7 @@ impl<'a> CodeGen<'a> {
             buf: Vec::new(),
             ident: 0,
             current_indent: 0,
+            needed_imports: vec![],
         })
     }
 }

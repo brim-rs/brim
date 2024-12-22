@@ -198,7 +198,7 @@ pub struct TypeAnnotation {
     pub is_nullable: bool,
     pub generics: Vec<TypeAnnotation>,
     pub can_be_error: bool,
-    pub error_type: Option<Token>,
+    pub error_type: Option<Box<TypeAnnotation>>,
 }
 
 impl PartialEq for TypeAnnotation {
@@ -213,8 +213,7 @@ impl PartialEq for TypeAnnotation {
             && self.is_nullable == other.is_nullable
             && self.generics == other.generics
             && self.can_be_error == other.can_be_error
-            && self.error_type.as_ref().map(|e| e.span.literal.clone())
-                == other.error_type.as_ref().map(|e| e.span.literal.clone())
+            && self.error_type == other.error_type
     }
 }
 

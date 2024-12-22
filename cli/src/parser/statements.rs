@@ -185,7 +185,7 @@ impl Parser {
                 )],
                 vec![(self.previous().span.clone(), None)],
             )
-            .into());
+                .into());
         }
 
         let mut fields = IndexMap::new();
@@ -210,7 +210,7 @@ impl Parser {
                     )],
                     vec![(self.previous().span.clone(), None)],
                 )
-                .into());
+                    .into());
             } else {
                 self.possible_check(TokenKind::Comma);
             }
@@ -410,7 +410,7 @@ impl Parser {
                     )],
                     vec![(self.peek().span.clone(), None)],
                 )
-                .into());
+                    .into());
             }
 
             Some(self.expect(TokenKind::Colon)?)
@@ -433,14 +433,13 @@ impl Parser {
         })
     }
 
-    pub fn parse_error_type(&mut self) -> Result<(bool, Option<Token>)> {
+    pub fn parse_error_type(&mut self) -> Result<(bool, Option<Box<TypeAnnotation>>)> {
         if self.peek().kind == TokenKind::Bang {
             self.consume();
-            if self.peek().kind == TokenKind::Identifier {
-                Ok((true, Some(self.consume())))
-            } else {
-                Ok((true, None))
-            }
+            
+            let typ = self.parse_type_annotation(false)?;
+            
+            Ok((true, Some(Box::new(typ))))
         } else {
             Ok((false, None))
         }
@@ -456,14 +455,10 @@ impl Parser {
                 )],
                 vec![(self.peek().span.clone(), None)],
             )
-            .into());
+                .into());
         } else if self.peek().kind == TokenKind::Bang {
             self.consume();
-            let err_type = if self.peek().kind == TokenKind::Identifier {
-                Some(self.consume())
-            } else {
-                None
-            };
+            let typ = self.parse_type_annotation(false)?;
 
             return Ok(Some(TypeAnnotation {
                 token_name: None,
@@ -472,7 +467,7 @@ impl Parser {
                 separator: None,
                 generics: vec![],
                 can_be_error: true,
-                error_type: err_type,
+                error_type: Some(Box::new(typ)),
             }));
         } else if self.peek().kind == TokenKind::LeftBrace {
             return Ok(None);

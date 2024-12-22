@@ -9,7 +9,7 @@ pub struct ResolvedType {
     pub is_nullable: bool,
     pub generics: Vec<ResolvedType>,
     pub can_be_error: bool,
-    pub error_type: Option<String>,
+    pub error_type: Option<Box<ResolvedType>>,
 }
 
 impl ResolvedType {
@@ -18,7 +18,7 @@ impl ResolvedType {
         is_nullable: bool,
         generics: Vec<ResolvedType>,
         can_be_error: bool,
-        error_type: Option<String>,
+        error_type: Option<Box<ResolvedType>>,
     ) -> Self {
         Self {
             kind,
@@ -48,12 +48,10 @@ impl ResolvedType {
                 | TypeKind::I16
                 | TypeKind::I32
                 | TypeKind::I64
-                | TypeKind::I128
                 | TypeKind::U8
                 | TypeKind::U16
                 | TypeKind::U32
                 | TypeKind::U64
-                | TypeKind::U128
                 | TypeKind::F32
                 | TypeKind::F64
         )
@@ -78,13 +76,19 @@ impl ResolvedType {
             .into_iter()
             .map(ResolvedType::from_type_annotation)
             .collect();
+        
+        let err_type = if let Some(err_type) = typ.error_type {
+            Some(Box::new(ResolvedType::from_type_annotation(*err_type)))
+        } else {
+            None
+        };
 
         ResolvedType {
             kind: typ.kind,
             is_nullable: typ.is_nullable,
             generics,
             can_be_error: typ.can_be_error,
-            error_type: typ.error_type.map(|t| t.literal()),
+            error_type: err_type,
         }
     }
 

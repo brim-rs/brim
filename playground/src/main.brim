@@ -3,3 +3,7 @@ pub fn main() {
 
     return value;
 };
+
+pub fn add(a: i32, b: i32) -> i32!string {
+    return a + b;
+};

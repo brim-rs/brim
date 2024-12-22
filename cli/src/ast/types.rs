@@ -5,12 +5,10 @@
 //! | `i16`   | 16-bit signed integer          |
 //! | `i32`   | 32-bit signed integer          |
 //! | `i64`   | 64-bit signed integer          |
-//! | `i128`  | 128-bit signed integer         |
 //! | `u8`    | 8-bit unsigned integer         |
 //! | `u16`   | 16-bit unsigned integer        |
 //! | `u32`   | 32-bit unsigned integer        |
 //! | `u64`   | 64-bit unsigned integer        |
-//! | `u128`  | 128-bit unsigned integer       |
 //! | `usize` | Pointer-sized unsigned integer |
 //! | `isize` | Pointer-sized signed integer   |
 //! | `f32`   | 32-bit floating-point number   |
@@ -32,12 +30,10 @@ pub enum TypeKind {
     I16,
     I32,
     I64,
-    I128,
     U8,
     U16,
     U32,
     U64,
-    U128,
     Usize,
     Isize,
     F32,
@@ -59,12 +55,10 @@ impl Display for TypeKind {
             TypeKind::I16 => write!(f, "i16"),
             TypeKind::I32 => write!(f, "i32"),
             TypeKind::I64 => write!(f, "i64"),
-            TypeKind::I128 => write!(f, "i128"),
             TypeKind::U8 => write!(f, "u8"),
             TypeKind::U16 => write!(f, "u16"),
             TypeKind::U32 => write!(f, "u32"),
             TypeKind::U64 => write!(f, "u64"),
-            TypeKind::U128 => write!(f, "u128"),
             TypeKind::Usize => write!(f, "usize"),
             TypeKind::Isize => write!(f, "isize"),
             TypeKind::F32 => write!(f, "f32"),
@@ -92,12 +86,10 @@ impl TypeKind {
             "i16" => TypeKind::I16,
             "i32" => TypeKind::I32,
             "i64" => TypeKind::I64,
-            "i128" => TypeKind::I128,
             "u8" => TypeKind::U8,
             "u16" => TypeKind::U16,
             "u32" => TypeKind::U32,
             "u64" => TypeKind::U64,
-            "u128" => TypeKind::U128,
             "usize" => TypeKind::Usize,
             "isize" => TypeKind::Isize,
             "f32" => TypeKind::F32,
@@ -150,7 +142,6 @@ impl TypeKind {
             I16 => 5,
             I32 => 6,
             I64 => 7,
-            I128 => 8,
             Isize => 9,
             Null => 10,
             String => 11,
@@ -158,7 +149,6 @@ impl TypeKind {
             U16 => 13,
             U32 => 14,
             U64 => 15,
-            U128 => 16,
             Usize => 17,
             Void => 18,
             Undefined => 19,

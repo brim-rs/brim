@@ -10,12 +10,10 @@
 | `i16`   | 16-bit signed integer          |
 | `i32`   | 32-bit signed integer          |
 | `i64`   | 64-bit signed integer          |
-| `i128`  | 128-bit signed integer         |
 | `u8`    | 8-bit unsigned integer         |
 | `u16`   | 16-bit unsigned integer        |
 | `u32`   | 32-bit unsigned integer        |
 | `u64`   | 64-bit unsigned integer        |
-| `u128`  | 128-bit unsigned integer       |
 | `usize` | Pointer-sized unsigned integer |
 | `isize` | Pointer-sized signed integer   |
 | `f32`   | 32-bit floating-point number   |

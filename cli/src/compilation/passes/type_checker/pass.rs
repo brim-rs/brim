@@ -154,26 +154,22 @@ impl<'a> TypeChecker<'a> {
                             TypeKind::I8
                             | TypeKind::I16
                             | TypeKind::I32
-                            | TypeKind::I64
-                            | TypeKind::I128,
+                            | TypeKind::I64,
                             TypeKind::I8
                             | TypeKind::I16
                             | TypeKind::I32
-                            | TypeKind::I64
-                            | TypeKind::I128,
+                            | TypeKind::I64,
                         ) => ResolvedType::base(std::cmp::max(left.kind, right.kind)),
 
                         (
                             TypeKind::U8
                             | TypeKind::U16
                             | TypeKind::U32
-                            | TypeKind::U64
-                            | TypeKind::U128,
+                            | TypeKind::U64,
                             TypeKind::U8
                             | TypeKind::U16
                             | TypeKind::U32
                             | TypeKind::U64
-                            | TypeKind::U128,
                         ) => ResolvedType::base(std::cmp::max(left.kind, right.kind)),
 
                         (TypeKind::F32 | TypeKind::F64, TypeKind::F32 | TypeKind::F64) => {
