@@ -23,6 +23,7 @@ use crate::{
     lexer::tokens::Token,
 };
 use indexmap::IndexMap;
+use crate::ast::statements::EnumVariant;
 use crate::compilation::passes::type_checker::ResolvedType;
 
 idx!(StmtId);
@@ -46,7 +47,7 @@ impl Ast {
         }
     }
 
-    pub fn main_fn(&self) -> Option<Function> {
+    pub fn main_fn(&self) -> Option<StmtId> {
         self.top_level_items.iter().find_map(|item| {
             let stmt_id = self.query_item(item.id).stmt;
             let stmt = self.query_stmt(stmt_id).kind.clone();
@@ -54,7 +55,7 @@ impl Ast {
             match stmt {
                 StmtKind::Fn(ref function) => {
                     if function.name.literal() == "main" {
-                        return Some(function.clone());
+                        return Some(stmt_id);
                     }
 
                     None
@@ -108,6 +109,14 @@ impl Ast {
     pub fn set_type(&mut self, expr_id: ExprId, ty: ResolvedType) {
         let expr = &mut self.expressions[expr_id];
         expr.ty = ty;
+    }
+    
+    // This removes a statement both from the top-level items and the statements list
+    pub fn remove_stmt(&mut self, stmt_id: StmtId) {
+        let item_id = self.top_level_items.iter().find(|item| item.stmt == stmt_id).unwrap().id;
+        println!("Removing statement: {:?}", stmt_id);
+        self.top_level_items.remove(item_id);
+        self.statements.remove(stmt_id);
     }
 }
 
@@ -377,6 +386,7 @@ impl Ast {
         name: Token,
         fields: IndexMap<String, StructField>,
         public: bool,
+        generics: Vec<Token>,
     ) -> StmtId {
         let stmt = self.new_stmt(StmtKind::Struct(Struct {
             struct_token,
@@ -385,6 +395,7 @@ impl Ast {
             public,
             impls: vec![],
             trait_impls: vec![],
+            generics,
         }));
         stmt.id
     }
@@ -460,6 +471,24 @@ impl Ast {
             return_type,
         }));
         expr.id
+    }
+    
+    pub fn new_enum(
+        &mut self,
+        enum_token: Token,
+        name: Token,
+        variants: Vec<EnumVariant>,
+        public: bool,
+        generics: Vec<Token>,
+    ) -> StmtId {
+        let stmt = self.new_stmt(StmtKind::Enum(statements::Enum {
+            enum_token,
+            name,
+            variants,
+            public,
+            generics
+        }));
+        stmt.id
     }
 }
 

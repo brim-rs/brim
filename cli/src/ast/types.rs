@@ -111,6 +111,13 @@ impl TypeKind {
             _ => false,
         }
     }
+    
+    pub fn is_custom(&self) -> (bool, &str) {
+        match self {
+            TypeKind::Custom(name) => (true, name),
+            _ => (false, ""),
+        }
+    }
 }
 
 use std::cmp::Ordering;

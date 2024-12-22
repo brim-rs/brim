@@ -26,6 +26,7 @@ pub mod panic_handler;
 mod parser;
 pub mod path;
 mod tracing;
+pub mod random;
 
 #[tokio::main]
 async fn main() -> Result<()> {

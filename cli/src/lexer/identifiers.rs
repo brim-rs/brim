@@ -38,7 +38,7 @@ impl Identifier {
             "trait" => TokenKind::Trait,
             "then" => TokenKind::Then,
             "const" => TokenKind::Const,
-            "error" => TokenKind::Error,
+            "enum" => TokenKind::Enum,
 
             _ => TokenKind::Identifier,
         })

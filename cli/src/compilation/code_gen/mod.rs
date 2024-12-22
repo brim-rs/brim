@@ -3,6 +3,8 @@ mod generator;
 mod utils;
 mod functions;
 mod expr;
+mod structs;
+mod enums;
 
 use std::fs::{create_dir_all, remove_file, File};
 use std::io::Write;
@@ -25,6 +27,8 @@ pub struct CodeGen<'a> {
     pub current_indent: usize,
     pub needed_imports: Vec<String>,
     pub is_bin: bool,
+    pub fn_return_type: Option<String>,
+    pub generated_main: bool,
 }
 
 impl<'a> CodeGen<'a> {
@@ -39,6 +43,8 @@ impl<'a> CodeGen<'a> {
             current_indent: 0,
             needed_imports: vec![],
             is_bin: false,
+            fn_return_type: None,
+            generated_main: false,
         })
     }
 }
@@ -50,19 +56,30 @@ impl<'a> CodeGen<'a> {
         if self.is_entry_point && self.is_bin {
             let main_fn = self.unit.ast().main_fn();
 
-            if let Some(main_fn) = main_fn {
-                debug!("Found main function: {:?}", main_fn);
+            if let Some(main_fn_id) = main_fn {
+                let main_fn = self.unit.ast().query_stmt(main_fn_id).clone().as_function().clone();
+                self.generate_fn(main_fn)?;
+
+                self.generated_main = true;
             } else {
                 bail!("Entrypoint file must contain a main function.");
             }
         }
+
+        let namespace = &self.unit.namespace;
+        // We wrap every file in a namespace to avoid name collisions... going to have to think about this one
+        self.write_line(format!("namespace {} {{", namespace));
+        self.push_indent();
 
         for item in &self.unit.ast().top_level_items.cloned_indices() {
             let item = self.unit.ast().query_item(*item).clone();
 
             self.generate_item(item)?;
         }
-        
+
+        self.pop_indent();
+        self.write_line("}");
+
         self.inject_imports();
 
         debug!("Generated C++ code: \n{}", String::from_utf8_lossy(&self.buf));

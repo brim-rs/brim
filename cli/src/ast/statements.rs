@@ -37,6 +37,22 @@ pub enum StmtKind {
     StructImpl(StructImpl),
     TraitImpl(TraitImpl),
     Const(Const),
+    Enum(Enum),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Enum {
+    pub enum_token: Token,
+    pub name: Token,
+    pub variants: Vec<EnumVariant>,
+    pub public: bool,
+    pub generics: Vec<Token>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct EnumVariant {
+    pub ident: Token,
+    pub params: Vec<TypeAnnotation>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -52,6 +68,7 @@ pub struct Struct {
     pub name: Token,
     pub fields: IndexMap<String, StructField>,
     pub public: bool,
+    pub generics: Vec<Token>,
     pub impls: Vec<StoredStructImpl>,
     pub trait_impls: Vec<StoredTraitImpl>,
 }
@@ -177,7 +194,7 @@ impl GetSpan for FnParam {
             self.ident.span.clone(),
             self.type_annotation.span(ast),
         ])
-        .unwrap()
+            .unwrap()
     }
 }
 

@@ -11,6 +11,7 @@ use crate::{
 use anyhow::{bail, Result};
 use colored::Colorize;
 use indexmap::IndexMap;
+use crate::ast::statements::EnumVariant;
 
 impl Parser {
     pub fn parse_stmt(&mut self) -> Result<Option<StmtId>> {
@@ -26,6 +27,8 @@ impl Parser {
                     Some(self.parse_trait()?)
                 } else if self.peek_next().kind == TokenKind::Const {
                     Some(self.parse_const()?)
+                } else if self.peek_next().kind == TokenKind::Enum {
+                    Some(self.parse_enum()?)
                 } else {
                     // TODO: return error
                     None
@@ -35,6 +38,7 @@ impl Parser {
             TokenKind::Struct => Some(self.parse_struct()?),
             TokenKind::Trait => Some(self.parse_trait()?),
             TokenKind::Const => Some(self.parse_const()?),
+            TokenKind::Enum => Some(self.parse_enum()?),
             TokenKind::Impl => {
                 let impl_keyword = self.consume();
                 if self.peek().kind == TokenKind::Identifier {
@@ -174,6 +178,20 @@ impl Parser {
         let (struct_token, public) = self.parse_pub(TokenKind::Struct)?;
         let name = self.expect(TokenKind::Identifier)?;
 
+        let mut generics: Vec<Token> = vec![];
+
+        if self.peek().kind == TokenKind::LessThan {
+            self.consume();
+            while self.peek().kind != TokenKind::GreaterThan {
+                let generic = self.expect(TokenKind::Identifier)?;
+                generics.push(generic);
+                if self.peek().kind != TokenKind::GreaterThan {
+                    self.expect(TokenKind::Comma)?;
+                }
+            }
+            self.expect(TokenKind::GreaterThan)?;
+        }
+
         self.expect_punct(TokenKind::LeftBrace)?;
 
         if self.peek().kind != TokenKind::RightBrace && self.peek().kind != TokenKind::Identifier {
@@ -218,7 +236,7 @@ impl Parser {
 
         self.expect_punct(TokenKind::RightBrace)?;
 
-        Ok(self.ast.new_struct(struct_token, name, fields, public))
+        Ok(self.ast.new_struct(struct_token, name, fields, public, generics))
     }
 
     pub fn parse_while(&mut self) -> Result<Option<StmtId>> {
@@ -436,9 +454,9 @@ impl Parser {
     pub fn parse_error_type(&mut self) -> Result<(bool, Option<Box<TypeAnnotation>>)> {
         if self.peek().kind == TokenKind::Bang {
             self.consume();
-            
+
             let typ = self.parse_type_annotation(false)?;
-            
+
             Ok((true, Some(Box::new(typ))))
         } else {
             Ok((false, None))
@@ -581,5 +599,56 @@ impl Parser {
         Ok(self
             .ast
             .new_fn(fn_token, name, params, body, public, return_type, is_static))
+    }
+
+    pub fn parse_enum(&mut self) -> Result<StmtId> {
+        let (enum_token, public) = self.parse_pub(TokenKind::Enum)?;
+
+        let name = self.expect(TokenKind::Identifier)?;
+
+        let generics = if self.peek().kind == TokenKind::LessThan {
+            self.consume();
+            let mut generics = vec![];
+            while self.peek().kind != TokenKind::GreaterThan {
+                let generic = self.expect(TokenKind::Identifier)?;
+                generics.push(generic);
+                if self.peek().kind != TokenKind::GreaterThan {
+                    self.expect(TokenKind::Comma)?;
+                }
+            }
+            self.expect(TokenKind::GreaterThan)?;
+            generics
+        } else {
+            vec![]
+        };
+
+        self.expect_punct(TokenKind::LeftBrace)?;
+
+        let mut variants: Vec<EnumVariant> = vec![];
+
+        while self.peek().kind != TokenKind::RightBrace && !self.is_eof() {
+            let variant_name = self.expect(TokenKind::Identifier)?;
+
+            let mut params: Vec<TypeAnnotation> = vec![];
+            self.expect_punct(TokenKind::LeftParen)?;
+
+            while self.peek().kind != TokenKind::RightParen {
+                let type_annotation = self.parse_type_annotation(false)?;
+                params.push(type_annotation);
+                self.possible_check(TokenKind::Comma);
+            }
+
+            self.expect_punct(TokenKind::RightParen)?;
+            self.possible_check(TokenKind::Comma);
+
+            variants.push(EnumVariant {
+                ident: variant_name,
+                params,
+            });
+        }
+        
+        self.expect_punct(TokenKind::RightBrace)?;
+
+        Ok(self.ast.new_enum(enum_token, name, variants, public, generics))
     }
 }

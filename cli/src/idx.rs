@@ -109,22 +109,26 @@ impl<Index: Idx, T> IdxVec<Index, T> {
     pub fn indices(&self) -> impl Iterator<Item = Index> {
         (0..self.vec.len()).map(|index| Index::new(index))
     }
-}
-
-impl<I: Idx, T> IdxVec<I, Option<T>> {
-    #[inline]
-    pub fn remove(&mut self, index: I) -> Option<T> {
-        self.vec[index.as_index()].take()
-    }
-
-    #[inline]
-    pub fn indexed_iter_as_option(&self) -> impl Iterator<Item = Option<(I, &T)>> {
-        self.vec
-            .iter()
-            .enumerate()
-            .map(|(index, value)| value.as_ref().map(|value| (I::new(index), value)))
+    
+    pub fn remove(&mut self, index: Index) -> T {
+        self.vec.remove(index.as_index())
     }
 }
+
+// impl<I: Idx, T> IdxVec<I, Option<T>> {
+//     #[inline]
+//     pub fn remove(&mut self, index: I) -> Option<T> {
+//         self.vec[index.as_index()].take()
+//     }
+// 
+//     #[inline]
+//     pub fn indexed_iter_as_option(&self) -> impl Iterator<Item = Option<(I, &T)>> {
+//         self.vec
+//             .iter()
+//             .enumerate()
+//             .map(|(index, value)| value.as_ref().map(|value| (I::new(index), value)))
+//     }
+// }
 
 impl<Index, T> std::ops::Index<Index> for IdxVec<Index, T>
 where

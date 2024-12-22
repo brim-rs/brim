@@ -3,6 +3,7 @@ use crate::{
     error::span::TextSpan,
 };
 use std::fmt::Display;
+use crate::ast::statements::Enum;
 
 #[derive(Debug, Clone)]
 pub struct UnitItem {
@@ -18,6 +19,7 @@ pub enum UnitItemKind {
     Struct(Struct),
     Trait(TraitDef),
     Const(Const),
+    Enum(Enum),
 }
 
 impl Display for UnitItemKind {
@@ -27,6 +29,7 @@ impl Display for UnitItemKind {
             UnitItemKind::Struct(_) => write!(f, "struct"),
             UnitItemKind::Trait(_) => write!(f, "trait"),
             UnitItemKind::Const(_) => write!(f, "const"),
+            UnitItemKind::Enum(_) => write!(f, "enum"),
         }
     }
 }
@@ -38,6 +41,7 @@ impl UnitItem {
             UnitItemKind::Struct(s) => s.span(),
             UnitItemKind::Trait(t) => t.span(),
             UnitItemKind::Const(c) => c.ident.span.clone(),
+            UnitItemKind::Enum(e) => e.name.span.clone(),
         }
     }
 }

@@ -35,7 +35,7 @@ impl<'a> CodeGen<'a> {
                     Some(typ)
                 } else {
                     Some(expr.ty.to_type_annotation())
-                });
+                }, vec![]);
 
                 self.write_before(format!("{} {} = ", typ, ident));
                 self.generate_expr(expr)?;
@@ -51,6 +51,8 @@ impl<'a> CodeGen<'a> {
                     self.write("return;\n");
                 }
             }
+            StmtKind::Struct(struct_def) => self.generate_struct_def(struct_def)?,
+            StmtKind::Enum(enum_def) => self.generate_enum(enum_def)?,
             _ => {}
         }
 

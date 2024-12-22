@@ -11,6 +11,8 @@ use crate::{
     Result,
 };
 use std::{collections::HashMap, fs::File, path::PathBuf};
+use crate::compilation::namespace::generate_safe_namespace;
+use crate::random::random_namespace;
 
 #[derive(Debug, Clone)]
 pub struct CompilationUnit {
@@ -19,6 +21,7 @@ pub struct CompilationUnit {
     pub parser: Parser,
     // Units that are used in imports etc
     pub unit_items: HashMap<String, UnitItem>,
+    pub namespace: String,
 }
 
 impl CompilationUnit {
@@ -29,6 +32,7 @@ impl CompilationUnit {
             lexer: Lexer::new(source),
             parser: Parser::new(vec![], Ast::new()),
             unit_items: HashMap::new(),
+            namespace: generate_safe_namespace(random_namespace()),
         })
     }
 
@@ -95,7 +99,7 @@ impl CompilationUnit {
     pub fn ast(&self) -> &Ast {
         &self.parser.ast
     }
-    
+
     pub fn ast_mut(&mut self) -> &mut Ast {
         &mut self.parser.ast
     }

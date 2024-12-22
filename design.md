@@ -208,3 +208,26 @@ fn parse(input: string) -> string !MyError {
      return input
 }
 ```
+
+## Enums
+
+I have a warm place in my heart for rust enums. They are simple and powerful.
+
+Enums can have associated values.
+
+```brim
+enum Result<T, E> {
+    Ok(T),
+    Err(E)
+}
+```
+
+or just a simple enum.
+
+```brim
+enum Color {
+    Red,
+    Green,
+    Blue
+}
+```

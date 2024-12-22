@@ -7,16 +7,23 @@ use crate::context::GlobalContext;
 
 impl<'a> CodeGen<'a> {
     pub fn generate_fn(&mut self, function: Function) -> Result<()> {
-        let mut return_type = self.map_type(function.return_type);
+        // TODO: implement generics for functions
+        let mut return_type = self.map_type(function.return_type, vec![]);
 
-        if function.name.literal() == "main" && self.is_entry_point && self.is_bin {
-            return_type = "int".to_string();
+        if function.name.literal() == "main" && self.is_entry_point {
+            if self.is_bin {
+                return_type = "int".to_string();
+            }
+            
+            if self.generated_main {
+                return Ok(());
+            }
         }
 
         let mut params = vec![];
 
         for param in function.params {
-            let param_type = self.map_type(Some(param.type_annotation));
+            let param_type = self.map_type(Some(param.type_annotation), vec![]);
             params.push(format!("{} {}", param_type, param.ident.literal()));
         }
 
@@ -32,7 +39,9 @@ impl<'a> CodeGen<'a> {
         if let Some(body) = function.body {
             let body = self.unit.ast().query_stmt(body).clone();
 
+            self.fn_return_type = Some(return_type);
             self.generate_stmt(body)?;
+            self.fn_return_type = None;
         }
 
         self.pop_indent();
@@ -41,13 +50,13 @@ impl<'a> CodeGen<'a> {
         Ok(())
     }
 
-    pub fn map_type(&mut self, typ: Option<TypeAnnotation>) -> String {
+    pub fn map_type(&mut self, typ: Option<TypeAnnotation>, generics: Vec<String>) -> String {
         if let Some(typ) = typ {
-            let kind_str = self.map_kind(&typ.kind);
+            let kind_str = self.map_kind(&typ.kind, generics.clone());
 
             if typ.can_be_error {
                 let error_type = if let Some(error_type) = typ.error_type {
-                    self.map_type(Some(*error_type))
+                    self.map_type(Some(*error_type), generics)
                 } else {
                     "Result<(), ()>".to_string()
                 };
@@ -61,7 +70,7 @@ impl<'a> CodeGen<'a> {
         }
     }
 
-    fn map_kind(&mut self, kind: &TypeKind) -> String {
+    fn map_kind(&mut self, kind: &TypeKind, generics: Vec<String>) -> String {
         if kind.is_number() {
             self.needed_imports.push("cstdint".to_string());
         }
@@ -84,6 +93,15 @@ impl<'a> CodeGen<'a> {
 
             TypeKind::Isize => "intptr_t".to_string(),
             TypeKind::Usize => "uintptr_t".to_string(),
+
+            TypeKind::Custom(ident) => {
+                if generics.contains(&ident) {
+                    ident.to_string()
+                } else {
+                    "void".to_string()
+                }
+            }
+
             _ => "void".to_string(),
         }
     }

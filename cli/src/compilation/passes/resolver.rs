@@ -320,6 +320,39 @@ impl<'a> Pass for Resolver<'a> {
                     const_stmt.public,
                 );
             }
+            StmtKind::Enum(enum_stmt) => {
+                for variant in enum_stmt.variants.iter() {
+                    let name = variant.ident.literal();
+
+                    for typ in variant.params.clone() {
+                        let (custom, c_name) = typ.kind.is_custom();
+
+                        if custom && !self.unit.unit_items.contains_key(c_name) {
+                            if enum_stmt.generics.iter().any(|g| g.literal() == c_name) {
+                                continue;
+                            }
+                            
+                            self.diags.new_diagnostic(
+                                Diagnostic::error(
+                                    format!("Type `{}` not found in file {}", c_name, self.unit.path()),
+                                    vec![(typ.span(
+                                        self.unit.ast()
+                                    ).clone(), None)],
+                                    vec![],
+                                ),
+                                Arc::new(self.unit.source.clone()),
+                            );
+                        }
+                    }
+                }
+
+                self.unit.new_item(
+                    enum_stmt.name.literal(),
+                    UnitItemKind::Enum(enum_stmt.clone()),
+                    self.unit.path().to_string(),
+                    enum_stmt.public,
+                );
+            }
             StmtKind::Use(use_stmt) => {
                 let (cache_key, mut unit) =
                     self.loader.load_unit(&use_stmt.from.literal(), self.unit)?;
