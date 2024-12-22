@@ -1,5 +1,5 @@
 use anyhow::Result;
-use crate::ast::expressions::{Expr, ExprKind, LiteralType};
+use crate::ast::expressions::{BinOpKind, Expr, ExprKind, LiteralType};
 use crate::compilation::code_gen::CodeGen;
 
 impl<'a> CodeGen<'a> {
@@ -14,6 +14,59 @@ impl<'a> CodeGen<'a> {
                 LiteralType::Null => self.write("nullptr".to_string()),
             }
             ExprKind::Variable(var) => self.write(var.ident),
+            ExprKind::Parenthesized(expr) => {
+                self.write("(");
+                self.generate_expr(self.unit.ast().query_expr(expr.expr).clone())?;
+                self.write(")");
+            }
+            ExprKind::Binary(bin) => {
+                if matches!(bin.operator, BinOpKind::Power) {
+                    self.needed_imports.push("cmath".to_string());
+
+                    self.write("pow(");
+                    self.generate_expr(self.unit.ast().query_expr(bin.left).clone())?;
+                    self.write(", ");
+                    self.generate_expr(self.unit.ast().query_expr(bin.right).clone())?;
+                    self.write(")");
+
+                    return Ok(());
+                }
+
+                if matches!(bin.operator, BinOpKind::Catch) {
+                    todo!("Implement catch operator");
+                    
+                    return Ok(());
+                }
+
+                self.generate_expr(self.unit.ast().query_expr(bin.left).clone())?;
+
+                match bin.operator {
+                    BinOpKind::Plus => self.write(" + "),
+                    BinOpKind::Minus => self.write(" - "),
+                    BinOpKind::Multiply => self.write(" * "),
+                    BinOpKind::Divide => self.write(" / "),
+                    BinOpKind::Modulo => self.write(" % "),
+                    BinOpKind::And => self.write(" && "),
+                    BinOpKind::Or => self.write(" || "),
+                    BinOpKind::Equals => self.write(" == "),
+                    BinOpKind::BangEquals => self.write(" != "),
+                    BinOpKind::LessThan => self.write(" < "),
+                    BinOpKind::LessThanOrEqual => self.write(" <= "),
+                    BinOpKind::GreaterThan => self.write(" > "),
+                    BinOpKind::GreaterThanOrEqual => self.write(" >= "),
+                    BinOpKind::BitwiseAnd => self.write(" & "),
+                    BinOpKind::BitwiseOr => self.write(" | "),
+                    BinOpKind::BitwiseXor => self.write(" ^ "),
+                    BinOpKind::ShiftLeft => self.write(" << "),
+                    BinOpKind::ShiftRight => self.write(" >> "),
+                    BinOpKind::EqualsEquals => self.write(" == "),
+                    BinOpKind::Increment => self.write("++"),
+                    BinOpKind::Decrement => self.write("--"),
+                    _ => unreachable!()
+                }
+
+                self.generate_expr(self.unit.ast().query_expr(bin.right).clone())?;
+            }
             _ => {}
         }
 

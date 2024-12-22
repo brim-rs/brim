@@ -53,6 +53,39 @@ impl<'a> CodeGen<'a> {
             }
             StmtKind::Struct(struct_def) => self.generate_struct_def(struct_def)?,
             StmtKind::Enum(enum_def) => self.generate_enum(enum_def)?,
+            StmtKind::If(if_stmt) => {
+                let condition = self.unit.ast().query_expr(if_stmt.condition).clone();
+                let then_block = self.unit.ast().query_stmt(if_stmt.then_block).clone();
+
+                self.write_before("if (");
+                self.generate_expr(condition)?;
+                self.write(") {\n");
+                self.push_indent();
+                self.generate_stmt(then_block)?;
+                self.pop_indent();
+                self.write_before("}");
+
+                for else_if in &if_stmt.else_ifs {
+                    self.write(" else if (");
+                    let condition = self.unit.ast().query_expr(else_if.condition).clone();
+                    self.generate_expr(condition)?;
+                    self.write(") {\n");
+                    self.push_indent();
+                    let block = self.unit.ast().query_stmt(else_if.block).clone();
+                    self.generate_stmt(block)?;
+                    self.pop_indent();
+                    self.write_before("}");
+                }
+
+                if let Some(else_block) = &if_stmt.else_block {
+                    self.write(" else {\n");
+                    self.push_indent();
+                    let block = self.unit.ast().query_stmt(else_block.block).clone();
+                    self.generate_stmt(block)?;
+                    self.pop_indent();
+                    self.write_line("}");
+                }
+            }
             _ => {}
         }
 

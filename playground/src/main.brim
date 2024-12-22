@@ -10,6 +10,12 @@ pub enum Result<T, E> {
 pub fn div(a: i32, b: i32) -> i32!string {
     if b == 0 {
         return Result::Err("Division by zero");
+    } else if b == 1 {
+        return Result::Err("Division by one");
+    } else if b == 2 {
+        return Result::Err("Division by two");
+    } else {
+        return Result::Err("Division by something else");
     }
 
     return Result::Ok(a / b);
