@@ -103,6 +103,14 @@ impl TypeKind {
             _ => TypeKind::Custom(s.to_string()),
         }
     }
+    
+    pub fn is_number(&self) -> bool {
+        use TypeKind::*;
+        match self {
+            I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | Usize | Isize | F32 | F64 => true,
+            _ => false,
+        }
+    }
 }
 
 use std::cmp::Ordering;

@@ -1,0 +1,3 @@
+C:/dev/brim/cmake-build-debug/CMakeFiles/brim.dir
+C:/dev/brim/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/dev/brim/cmake-build-debug/CMakeFiles/rebuild_cache.dir

@@ -30,4 +30,18 @@ impl<'a> CodeGen<'a> {
             self.current_indent -= 1;
         }
     }
+
+    pub fn inject_imports(&mut self) {
+        let mut imports = String::new();
+
+        self.needed_imports.sort();
+        self.needed_imports.dedup();
+        for import in &self.needed_imports {
+            imports.push_str(&format!("#include <{}>\n", import));
+        }
+
+        imports.push_str("using namespace std;\n");
+
+        self.buf.splice(0..0, imports.bytes());
+    }
 }

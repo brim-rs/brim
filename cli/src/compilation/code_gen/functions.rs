@@ -62,31 +62,27 @@ impl<'a> CodeGen<'a> {
     }
 
     fn map_kind(&mut self, kind: &TypeKind) -> String {
+        if kind.is_number() {
+            self.needed_imports.push("cstdint".to_string());
+        }
+
         match kind {
             TypeKind::Char => "char".to_string(),
             TypeKind::String => {
-                self.needed_imports.push("std::string".to_string());
+                self.needed_imports.push("string".to_string());
                 "std::string".to_string()
             }
-            TypeKind::U8 => {
-                self.needed_imports.push("<cstdint>".to_string());
-                "uint8_t".to_string()
-            }
+            TypeKind::U8 => "uint8_t".to_string(),
             TypeKind::U16 => "uint16_t".to_string(),
             TypeKind::U32 => "uint32_t".to_string(),
             TypeKind::U64 => "uint64_t".to_string(),
-            TypeKind::I8 => {
-                self.needed_imports.push("<cstdint>".to_string());
-                "int8_t".to_string()
-            }
+
+            TypeKind::I8 => "int8_t".to_string(),
             TypeKind::I16 => "int16_t".to_string(),
             TypeKind::I32 => "int32_t".to_string(),
             TypeKind::I64 => "int64_t".to_string(),
 
-            TypeKind::Isize => {
-                self.needed_imports.push("<cstdint>".to_string());
-                "intptr_t".to_string()
-            }
+            TypeKind::Isize => "intptr_t".to_string(),
             TypeKind::Usize => "uintptr_t".to_string(),
             _ => "void".to_string(),
         }

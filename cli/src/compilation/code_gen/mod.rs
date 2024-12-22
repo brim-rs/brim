@@ -62,6 +62,8 @@ impl<'a> CodeGen<'a> {
 
             self.generate_item(item)?;
         }
+        
+        self.inject_imports();
 
         debug!("Generated C++ code: \n{}", String::from_utf8_lossy(&self.buf));
 

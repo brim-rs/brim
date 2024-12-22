@@ -30,4 +30,4 @@ tracing-subscriber = { version = "0.3.18", features = [
     "chrono",
     "time",
 ] }
-log = "0.4.22"
+itertools = "0.13.0"
