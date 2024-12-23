@@ -28,7 +28,7 @@ pub struct CodeGen<'a> {
     pub needed_imports: Vec<String>,
     pub is_bin: bool,
     pub fn_return_type: Option<String>,
-    pub generated_main: bool,
+    pub main: bool,
 }
 
 impl<'a> CodeGen<'a> {
@@ -44,7 +44,7 @@ impl<'a> CodeGen<'a> {
             needed_imports: vec![],
             is_bin: false,
             fn_return_type: None,
-            generated_main: false,
+            main: false,
         })
     }
 }
@@ -52,7 +52,7 @@ impl<'a> CodeGen<'a> {
 impl<'a> CodeGen<'a> {
     pub fn generate_code(&mut self, global: &mut GlobalContext) -> Result<()> {
         self.is_bin = global.is_bin()?;
-        
+
         let namespace = &self.unit.namespace;
         // We wrap every file in a namespace to avoid name collisions... going to have to think about this one
         self.write_line(format!("namespace {} {{", namespace));
@@ -69,14 +69,14 @@ impl<'a> CodeGen<'a> {
 
         self.inject_imports();
 
+        self.main = true;
+
         if self.is_entry_point && self.is_bin {
             let main_fn = self.unit.ast().main_fn();
 
             if let Some(main_fn_id) = main_fn {
                 let main_fn = self.unit.ast().query_stmt(main_fn_id).clone().as_function().clone();
                 self.generate_fn(main_fn)?;
-
-                self.generated_main = true;
             } else {
                 bail!("Entrypoint file must contain a main function.");
             }

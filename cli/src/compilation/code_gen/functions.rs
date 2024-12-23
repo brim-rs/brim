@@ -1,6 +1,7 @@
 use crate::ast::item::TopLevelItem;
 use crate::compilation::code_gen::CodeGen;
 use anyhow::Result;
+use tracing::debug;
 use crate::ast::statements::{Function, Stmt, StmtKind, TypeAnnotation};
 use crate::ast::types::TypeKind;
 use crate::context::GlobalContext;
@@ -14,8 +15,8 @@ impl<'a> CodeGen<'a> {
             if self.is_bin {
                 return_type = "int".to_string();
             }
-            
-            if self.generated_main {
+
+            if !self.main {
                 return Ok(());
             }
         }
@@ -101,8 +102,15 @@ impl<'a> CodeGen<'a> {
                     "void".to_string()
                 }
             }
+            
+            TypeKind::Bool => "bool".to_string(),
+            
 
-            _ => "void".to_string(),
+            _ => {
+                debug!("Unknown type: {:?}. Defaulting to auto", kind);
+
+                "auto".to_string()
+            },
         }
     }
 }

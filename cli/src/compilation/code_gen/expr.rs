@@ -1,5 +1,5 @@
 use anyhow::Result;
-use crate::ast::expressions::{BinOpKind, Expr, ExprKind, LiteralType};
+use crate::ast::expressions::{BinOpKind, Expr, ExprKind, LiteralType, UnOpKind};
 use crate::compilation::code_gen::CodeGen;
 
 impl<'a> CodeGen<'a> {
@@ -34,7 +34,7 @@ impl<'a> CodeGen<'a> {
 
                 if matches!(bin.operator, BinOpKind::Catch) {
                     todo!("Implement catch operator");
-                    
+
                     return Ok(());
                 }
 
@@ -66,6 +66,15 @@ impl<'a> CodeGen<'a> {
                 }
 
                 self.generate_expr(self.unit.ast().query_expr(bin.right).clone())?;
+            }
+            ExprKind::Unary(unary) => {
+                match unary.operator.kind {
+                    UnOpKind::Minus => self.write("-"),
+                    UnOpKind::LogicalNot => self.write("!"),
+                    UnOpKind::BitwiseNot => self.write("~"),
+                }
+
+                self.generate_expr(self.unit.ast().query_expr(unary.expr).clone())?;
             }
             _ => {}
         }
