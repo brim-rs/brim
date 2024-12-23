@@ -1,5 +1,5 @@
 use anyhow::Result;
-use crate::ast::expressions::{BinOpKind, Expr, ExprKind, LiteralType, UnOpKind};
+use crate::ast::expressions::{AccessKind, BinOpKind, Expr, ExprKind, LiteralType, UnOpKind};
 use crate::compilation::code_gen::CodeGen;
 
 impl<'a> CodeGen<'a> {
@@ -75,6 +75,25 @@ impl<'a> CodeGen<'a> {
                 }
 
                 self.generate_expr(self.unit.ast().query_expr(unary.expr).clone())?;
+            }
+            ExprKind::Access(access) => {
+                self.generate_expr(self.unit.ast().query_expr(access.base).clone())?;
+                
+                match access.access {
+                    AccessKind::Field(ident) => {
+                        self.write(".");
+                        self.generate_expr(self.unit.ast().query_expr(ident).clone())?
+                    }
+                    AccessKind::Index(index) => {
+                        self.write("[");
+                        self.generate_expr(self.unit.ast().query_expr(index).clone())?;
+                        self.write("]");
+                    }
+                    AccessKind::StaticMethod(ident) => {
+                        self.write("::");
+                        self.generate_expr(self.unit.ast().query_expr(ident).clone())?;
+                    }
+                }
             }
             _ => {}
         }
