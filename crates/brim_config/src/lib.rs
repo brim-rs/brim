@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
-use crate::compilation::build_type::BuildType;
+use std::fmt::Display;
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct BrimConfig {
@@ -8,6 +8,23 @@ pub struct BrimConfig {
     pub tasks: Option<HashMap<String, String>>,
     pub dependencies: Option<HashMap<String, Dependency>>,
     pub build: Option<BuildConfig>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum BuildType {
+    #[serde(rename = "debug")]
+    Debug,
+    #[serde(rename = "release")]
+    Release,
+}
+
+impl Display for BuildType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BuildType::Debug => write!(f, "debug"),
+            BuildType::Release => write!(f, "release"),
+        }
+    }
 }
 
 #[derive(Deserialize, Debug, Clone, Serialize)]

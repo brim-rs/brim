@@ -131,6 +131,8 @@ dependencies = [
  "anstyle",
  "anyhow",
  "backtrace",
+ "brim-config",
+ "brim-cpp-compiler",
  "brim-shell",
  "clap",
  "codespan-reporting",
@@ -150,6 +152,25 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "unindent",
+]
+
+[[package]]
+name = "brim-config"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+]
+
+[[package]]
+name = "brim-cpp-compiler"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "brim-config",
+ "clap",
+ "serde",
+ "tokio",
  "which",
 ]
 

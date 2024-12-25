@@ -16,7 +16,6 @@ pub mod commands {
 }
 mod ast;
 mod compilation;
-mod config;
 pub mod context;
 mod error;
 pub mod fs;

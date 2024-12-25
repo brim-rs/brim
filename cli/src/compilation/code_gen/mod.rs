@@ -1,4 +1,3 @@
-pub mod compiler;
 mod generator;
 mod utils;
 mod functions;
@@ -12,7 +11,8 @@ use crate::compilation::imports::UnitLoader;
 use crate::compilation::unit::CompilationUnit;
 use anyhow::{bail, Result};
 use tracing::debug;
-use crate::compilation::build_type::BuildType;
+use brim_config::BuildType;
+use brim_cpp_compiler::CppBuild;
 use crate::context::GlobalContext;
 use crate::path::strip_base;
 
@@ -88,7 +88,7 @@ impl<'a> CodeGen<'a> {
         Ok(())
     }
 
-    pub fn generate_and_write(&mut self, global: &mut GlobalContext) -> Result<()> {
+    pub fn generate_and_write(&mut self, global: &mut GlobalContext, build_cpp: &mut CppBuild) -> Result<()> {
         self.generate_code(global)?;
         let out_dir = global.build_dir()?.join("source");
         let rest_path = strip_base(&self.unit.source.path, &global.cwd);
@@ -101,8 +101,10 @@ impl<'a> CodeGen<'a> {
 
         debug!("Writing generated code to {}", target_path.display());
 
-        let mut file = File::create(target_path)?;
+        let mut file = File::create(target_path.clone())?;
         file.write_all(&self.buf)?;
+
+        build_cpp.file(target_path);
 
         Ok(())
     }

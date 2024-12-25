@@ -124,7 +124,6 @@ impl Ast {
             .find(|item| item.stmt == stmt_id)
             .unwrap()
             .id;
-        println!("Removing statement: {:?}", stmt_id);
         self.top_level_items.remove(item_id);
         self.statements.remove(stmt_id);
     }

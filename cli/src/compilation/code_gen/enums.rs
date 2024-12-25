@@ -5,7 +5,6 @@ impl<'a> CodeGen<'a> {
     pub fn generate_enum(&mut self, enum_def: Enum) -> Result<()> {
         let generics = enum_def.generics.clone();
 
-        println!("{:#?}", enum_def);
         // Generate template declaration if needed
         self.generate_generic(generics.clone());
 
@@ -19,7 +18,6 @@ impl<'a> CodeGen<'a> {
             self.write_line(format!("struct {}Type {{", variant.ident.literal()));
             self.push_indent();
             for (i, typ) in variant.params.iter().enumerate() {
-                println!("{:#?}", typ);
                 let mapped_type = self.map_type(Some(typ.clone()), generics.clone());
                 self.write_line(format!("{} m_{};", mapped_type, i));
             }

@@ -1,0 +1,12 @@
+[package]
+name = "brim-cpp-compiler"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+clap = { workspace = true, features = ["derive"] }
+brim-config = { workspace = true }
+which = "7.0.1"
+tokio = { version = "1.42.0", features = ["rt", "rt-multi-thread", "macros"] }

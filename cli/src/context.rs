@@ -1,5 +1,4 @@
 use crate::{
-    config::BrimConfig,
     fs::walk_for_file,
     path::{canonicalize_path, normalize_without_canonicalize},
 };
@@ -9,6 +8,7 @@ use brim_shell::Shell;
 use colored::Colorize;
 use std::{fs::read_to_string, path::PathBuf, time::Instant};
 use std::fmt::{Debug, Display};
+use brim_config::BrimConfig;
 
 pub struct GlobalContext {
     pub verbose: bool,
@@ -73,11 +73,11 @@ impl GlobalContext {
             _ => unreachable!(),
         }
     }
-    
+
     pub fn is_lib(&self) -> Result<bool> {
         Ok(self.project_type()? == ProjectType::Lib)
     }
-    
+
     pub fn is_bin(&self) -> Result<bool> {
         Ok(self.project_type()? == ProjectType::Bin)
     }

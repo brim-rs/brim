@@ -5,12 +5,12 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 backtrace = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 colored = { workspace = true }
 anstyle = { workspace = true }
 toml = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
 anstream = { workspace = true }
 toml_edit = { workspace = true }
 tokio = { version = "1.42.0", features = ["rt", "rt-multi-thread", "macros"] }
@@ -23,7 +23,6 @@ indexmap = "2.7.0"
 codespan-reporting = "0.11.1"
 unindent = "0.2.3"
 term = "1.0.1"
-which = "7.0.1"
 tracing = { version = "0.1.40", default-features = false, features = ["std"] }
 tracing-subscriber = { version = "0.3.18", features = [
     "env-filter",
@@ -32,3 +31,5 @@ tracing-subscriber = { version = "0.3.18", features = [
 ] }
 itertools = "0.13.0"
 rand = "0.9.0-beta.1"
+brim-config = { workspace = true }
+brim-cpp-compiler = { workspace = true }

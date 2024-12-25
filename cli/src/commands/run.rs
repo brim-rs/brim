@@ -12,8 +12,9 @@ use anyhow::Result;
 use clap::{ArgAction, ArgMatches, Command};
 use std::sync::Arc;
 use tracing::debug;
+use brim_cpp_compiler::build_type::resolve_build_type;
+use brim_cpp_compiler::CppBuild;
 use crate::cli::{debug_mode, release_mode};
-use crate::compilation::build_type::resolve_build_type;
 use crate::compilation::code_gen::CodeGen;
 
 pub fn run_cmd() -> Command {
@@ -36,6 +37,7 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
     }
 
     let loader = &mut UnitLoader::new(ctx.cwd.clone());
+    let build_process = &mut CppBuild::new(None)?;
     let mut unit = CompilationUnit::new(ctx.get_main_file()?)?;
     let diags = &mut Diagnostics::new();
 
@@ -49,13 +51,15 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
                 return Ok(());
             }
 
-            let build_type = resolve_build_type(ctx, args)?;
+            let build_type = resolve_build_type(&ctx.config, args)?;
             debug!("Build type: {:?}", build_type);
+            build_process.build_type(build_type.clone());
             let codegen = &mut CodeGen::new(&mut unit, loader, build_type.clone(), true)?;
 
             ctx.shell.status("Compiling", format!("{} in {} mode", ctx.config.project.name, build_type))?;
 
-            codegen.generate_and_write(ctx)?;
+            codegen.generate_and_write(ctx, build_process)?;
+            println!("{:#?}", build_process);
         }
         Err(e) => {
             if let Some(err) = e.downcast_ref::<BrimError>() {
