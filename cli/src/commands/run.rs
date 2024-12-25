@@ -2,7 +2,7 @@ use std::fmt::format;
 use crate::{
     cli::opt,
     compilation::{imports::UnitLoader, unit::CompilationUnit},
-    context::{GlobalContext, ProjectType},
+    context::{GlobalContext},
     error::{
         diagnostic::{Diagnostic, Diagnostics, Level},
         BrimError,
@@ -12,6 +12,7 @@ use anyhow::Result;
 use clap::{ArgAction, ArgMatches, Command};
 use std::sync::Arc;
 use tracing::debug;
+use brim_config::ProjectType;
 use brim_cpp_compiler::build_type::resolve_build_type;
 use brim_cpp_compiler::CppBuild;
 use crate::cli::{debug_mode, release_mode};

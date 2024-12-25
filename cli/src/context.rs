@@ -8,7 +8,7 @@ use brim_shell::Shell;
 use colored::Colorize;
 use std::{fs::read_to_string, path::PathBuf, time::Instant};
 use std::fmt::{Debug, Display};
-use brim_config::BrimConfig;
+use brim_config::{BrimConfig, ProjectType};
 
 pub struct GlobalContext {
     pub verbose: bool,
@@ -18,11 +18,6 @@ pub struct GlobalContext {
     pub config: BrimConfig,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum ProjectType {
-    Lib,
-    Bin,
-}
 
 impl GlobalContext {
     pub fn load_config(cwd: PathBuf) -> Result<BrimConfig> {
@@ -44,7 +39,7 @@ impl GlobalContext {
         }
 
         let r#type = config.project.r#type.as_ref().unwrap();
-        if r#type != "lib" && r#type != "bin" {
+        if r#type != &ProjectType::Lib && r#type != &ProjectType::Bin {
             return Err(anyhow!(
                 "Invalid project type in [project] in roan.toml. Available types: 'lib', 'bin'"
             ));
@@ -67,11 +62,7 @@ impl GlobalContext {
     }
 
     pub fn project_type(&self) -> Result<ProjectType> {
-        match self.config.project.r#type.as_ref().unwrap().as_str() {
-            "lib" => Ok(ProjectType::Lib),
-            "bin" => Ok(ProjectType::Bin),
-            _ => unreachable!(),
-        }
+        Ok(self.config.project.r#type.clone().unwrap())
     }
 
     pub fn is_lib(&self) -> Result<bool> {

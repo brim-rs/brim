@@ -32,6 +32,14 @@ pub struct BuildConfig {
     pub r#type: Option<BuildType>,
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub enum ProjectType {
+    #[serde(rename = "lib")]
+    Lib,
+    #[serde(rename = "bin")]
+    Bin,
+}
+
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct ProjectConfig {
     pub name: String,
@@ -42,7 +50,7 @@ pub struct ProjectConfig {
     pub repository: Option<String>,
     pub homepage: Option<String>,
     pub keywords: Option<Vec<String>>,
-    pub r#type: Option<String>,
+    pub r#type: Option<ProjectType>,
     pub lib: Option<PathBuf>,
     pub bin: Option<PathBuf>,
 }
