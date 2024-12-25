@@ -1,7 +1,11 @@
-use crate::ast::item::TopLevelItem;
-use crate::compilation::code_gen::CodeGen;
+use crate::{
+    ast::{
+        item::TopLevelItem,
+        statements::{Stmt, StmtKind},
+    },
+    compilation::code_gen::CodeGen,
+};
 use anyhow::Result;
-use crate::ast::statements::{Stmt, StmtKind};
 
 impl<'a> CodeGen<'a> {
     pub fn generate_item(&mut self, item: TopLevelItem) -> Result<()> {
@@ -31,13 +35,17 @@ impl<'a> CodeGen<'a> {
                 let ident = let_stmt.ident.literal();
 
                 let expr = self.unit.ast().query_expr(let_stmt.initializer).clone();
-                let typ = self.map_type(if let Some(typ) = let_stmt.type_annotation {
-                    Some(typ)
-                } else {
-                    Some(expr.ty.to_type_annotation())
-                }, vec![]);
+                // let typ = self.map_type(
+                //     if let Some(typ) = let_stmt.type_annotation {
+                //         Some(typ)
+                //     } else {
+                //         Some(expr.ty.to_type_annotation())
+                //     },
+                //     vec![],
+                // );
 
-                self.write_before(format!("{} {} = ", typ, ident));
+                // auto for now
+                self.write_before(format!("auto {} = ", ident));
                 self.generate_expr(expr)?;
                 self.write(";\n");
             }
