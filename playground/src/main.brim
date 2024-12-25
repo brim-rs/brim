@@ -1,18 +1,20 @@
-pub fn main() {
-    let x = 1;
-    let y = -x;
-    let z = !x;
-};
-
 pub enum Result<T, E> {
     Ok(T),
     Err(E),
 };
 
-pub fn div(a: i32, b: i32) -> i32!string {
+pub fn div<T: i32, E: string>(a: i32, b: i32) -> T!E {
     if b == 0 {
-        return Result::Err("Division by zero");
+        return Result<T, E>::Err("Division by zero");
     }
 
-    return Result::Ok(a / b);
+    return Result<T, E>::Ok(a / b);
+};
+
+pub fn main() {
+    let x = 1;
+    let y = -x;
+    let z = 12;
+
+    let res = div(z, y);
 };

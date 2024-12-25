@@ -3,16 +3,16 @@ use crate::{
     compilation::{
         imports::UnitLoader,
         items::{UnitItem, UnitItemKind},
+        namespace::generate_safe_namespace,
         passes::{resolver::Resolver, type_checker::pass::TypeChecker},
     },
     error::diagnostic::Diagnostics,
     lexer::{source::Source, Lexer},
     parser::Parser,
+    random::random_namespace,
     Result,
 };
 use std::{collections::HashMap, fs::File, path::PathBuf};
-use crate::compilation::namespace::generate_safe_namespace;
-use crate::random::random_namespace;
 
 #[derive(Debug, Clone)]
 pub struct CompilationUnit {
@@ -32,7 +32,7 @@ impl CompilationUnit {
             lexer: Lexer::new(source),
             parser: Parser::new(vec![], Ast::new()),
             unit_items: HashMap::new(),
-            namespace: generate_safe_namespace(random_namespace()),
+            namespace: generate_safe_namespace(random_namespace()?),
         })
     }
 

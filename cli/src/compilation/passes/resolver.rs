@@ -328,16 +328,22 @@ impl<'a> Pass for Resolver<'a> {
                         let (custom, c_name) = typ.kind.is_custom();
 
                         if custom && !self.unit.unit_items.contains_key(c_name) {
-                            if enum_stmt.generics.iter().any(|g| g.literal() == c_name) {
+                            if enum_stmt
+                                .generics
+                                .iter()
+                                .any(|g| g.name.literal() == c_name)
+                            {
                                 continue;
                             }
-                            
+
                             self.diags.new_diagnostic(
                                 Diagnostic::error(
-                                    format!("Type `{}` not found in file {}", c_name, self.unit.path()),
-                                    vec![(typ.span(
-                                        self.unit.ast()
-                                    ).clone(), None)],
+                                    format!(
+                                        "Type `{}` not found in file {}",
+                                        c_name,
+                                        self.unit.path()
+                                    ),
+                                    vec![(typ.span(self.unit.ast()).clone(), None)],
                                     vec![],
                                 ),
                                 Arc::new(self.unit.source.clone()),

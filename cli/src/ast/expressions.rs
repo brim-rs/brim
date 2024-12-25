@@ -4,12 +4,12 @@ use crate::{
         types::TypeKind,
         Ast, ExprId, GetSpan, StmtId,
     },
+    compilation::passes::type_checker::ResolvedType,
     error::span::TextSpan,
     lexer::tokens::{Token, TokenKind},
 };
 use indexmap::IndexMap;
 use std::fmt::{Display, Formatter};
-use crate::compilation::passes::type_checker::ResolvedType;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Expr {
@@ -225,7 +225,7 @@ impl GetSpan for Unary {
             self.operator.token.span.clone(),
             ast.query_expr(self.expr).span(ast),
         ])
-            .unwrap()
+        .unwrap()
     }
 }
 
@@ -233,6 +233,8 @@ impl GetSpan for Unary {
 pub struct Variable {
     pub ident: String,
     pub token: Token,
+    // We allow generics in variable because it can be either an enum or a struct
+    pub generics: Vec<Token>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -450,12 +452,12 @@ impl GetSpan for AccessExpr {
                 self.token.span.clone(),
                 ast.query_expr(*index_expr).span(ast),
             ])
-                .unwrap(), // Span includes '[' , index, and ']'
+            .unwrap(), // Span includes '[' , index, and ']'
             AccessKind::StaticMethod(method) => TextSpan::combine(vec![
                 self.token.span.clone(),
                 ast.query_expr(*method).span(ast),
             ])
-                .unwrap(),
+            .unwrap(),
         };
         TextSpan::combine(vec![base_span, access_span]).unwrap()
     }

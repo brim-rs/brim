@@ -1,4 +1,4 @@
-use crate::compilation::code_gen::CodeGen;
+use crate::{ast::statements::Generic, compilation::code_gen::CodeGen};
 
 impl<'a> CodeGen<'a> {
     pub fn write(&mut self, s: impl Into<String>) {
@@ -43,5 +43,24 @@ impl<'a> CodeGen<'a> {
         imports.push_str("using namespace std;\n");
 
         self.buf.splice(0..0, imports.bytes());
+    }
+
+    pub fn generate_generic(&mut self, generics: Vec<Generic>) {
+        if generics.len() > 0 {
+            let mut text = vec![];
+
+            for generic in &generics {
+                let name = generic.name.literal();
+                if let Some(typ) = generic.type_annotation.clone() {
+                    let typ = self.map_type(Some(typ), vec![]);
+
+                    text.push(format!("typename {} = {}", name, typ));
+                } else {
+                    text.push(format!("typename {}", name));
+                }
+            }
+
+            self.write_line(format!("template <{}>", text.join(", ")));
+        }
     }
 }

@@ -1,19 +1,13 @@
-use crate::ast::statements::Enum;
-use crate::compilation::code_gen::CodeGen;
+use crate::{ast::statements::Enum, compilation::code_gen::CodeGen};
 use anyhow::Result;
 
 impl<'a> CodeGen<'a> {
     pub fn generate_enum(&mut self, enum_def: Enum) -> Result<()> {
-        let generics = enum_def.generics.iter().map(|g| g.literal()).collect::<Vec<_>>();
+        let generics = enum_def.generics.clone();
 
+        println!("{:#?}", enum_def);
         // Generate template declaration if needed
-        if !enum_def.generics.is_empty() {
-            let template_params = generics.iter()
-                .map(|t| format!("typename {}", t))
-                .collect::<Vec<_>>()
-                .join(", ");
-            self.write_line(format!("template <{}>", template_params));
-        }
+        self.generate_generic(generics.clone());
 
         self.needed_imports.push("variant".to_string());
         self.write_line(format!("class {} {{", enum_def.name.literal()));
@@ -25,6 +19,7 @@ impl<'a> CodeGen<'a> {
             self.write_line(format!("struct {}Type {{", variant.ident.literal()));
             self.push_indent();
             for (i, typ) in variant.params.iter().enumerate() {
+                println!("{:#?}", typ);
                 let mapped_type = self.map_type(Some(typ.clone()), generics.clone());
                 self.write_line(format!("{} m_{};", mapped_type, i));
             }
@@ -33,7 +28,9 @@ impl<'a> CodeGen<'a> {
         }
 
         // Generate variant type using the Type suffix
-        let variants = enum_def.variants.iter()
+        let variants = enum_def
+            .variants
+            .iter()
             .map(|v| format!("{}::{}Type", enum_def.name.literal(), v.ident.literal()))
             .collect::<Vec<_>>()
             .join(", ");
@@ -50,7 +47,14 @@ impl<'a> CodeGen<'a> {
         self.push_indent();
 
         let type_generics = if !generics.is_empty() {
-            format!("<{}>", generics.join(", "))
+            format!(
+                "<{}>",
+                generics
+                    .iter()
+                    .map(|g| g.name.literal())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
         } else {
             String::new()
         };
@@ -64,7 +68,10 @@ impl<'a> CodeGen<'a> {
                 .collect();
 
             // Generate constructor parameters
-            let params = variant.params.iter().enumerate()
+            let params = variant
+                .params
+                .iter()
+                .enumerate()
                 .map(|(i, typ)| {
                     let mapped_type = self.map_type(Some(typ.clone()), generics.clone());
                     format!("{} {}", mapped_type, param_names[i])
@@ -72,10 +79,21 @@ impl<'a> CodeGen<'a> {
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            self.write_line(format!("{} {}({}) {{", constructor_base, variant_name, params));
+            self.write_line(format!(
+                "{} {}({}) {{",
+                constructor_base, variant_name, params
+            ));
             self.push_indent();
-            self.write_line(format!("{}{} result;", enum_def.name.literal(), type_generics));
-            self.write_line(format!("result.m_variant = {}Type{{{}}};", variant_name, param_names.join(", ")));
+            self.write_line(format!(
+                "{}{} result;",
+                enum_def.name.literal(),
+                type_generics
+            ));
+            self.write_line(format!(
+                "result.m_variant = {}Type{{{}}};",
+                variant_name,
+                param_names.join(", ")
+            ));
             self.write_line("return result;");
             self.pop_indent();
             self.write_line("}");
@@ -83,23 +101,6 @@ impl<'a> CodeGen<'a> {
 
         self.pop_indent();
         self.write_line("};");
-
-        // Generate deduction guides if there are generics
-        if !generics.is_empty() {
-            self.write_line("");
-            for variant in &enum_def.variants {
-                let variant_name = variant.ident.literal();
-                let guide = format!(
-                    "template<typename {0}> {1}(typename {1}<{2}>::{3}Type) -> {1}<{2}>;",
-                    generics.join(", typename "), // Add "typename" keyword for each generic
-                    enum_def.name.literal(),
-                    generics.join(", "),
-                    variant_name
-                );
-                self.write_line(guide);
-            }
-        }
-
 
         Ok(())
     }

@@ -46,7 +46,7 @@ pub struct Enum {
     pub name: Token,
     pub variants: Vec<EnumVariant>,
     pub public: bool,
-    pub generics: Vec<Token>,
+    pub generics: Vec<Generic>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -68,7 +68,7 @@ pub struct Struct {
     pub name: Token,
     pub fields: IndexMap<String, StructField>,
     pub public: bool,
-    pub generics: Vec<Token>,
+    pub generics: Vec<Generic>,
     pub impls: Vec<StoredStructImpl>,
     pub trait_impls: Vec<StoredTraitImpl>,
 }
@@ -194,7 +194,7 @@ impl GetSpan for FnParam {
             self.ident.span.clone(),
             self.type_annotation.span(ast),
         ])
-            .unwrap()
+        .unwrap()
     }
 }
 
@@ -261,6 +261,12 @@ impl GetSpan for TypeAnnotation {
 }
 
 #[derive(Clone, PartialEq, Debug)]
+pub struct Generic {
+    pub name: Token,
+    pub type_annotation: Option<TypeAnnotation>,
+}
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct Function {
     pub fn_token: Token,
     pub name: Token,
@@ -269,6 +275,7 @@ pub struct Function {
     pub public: bool,
     pub return_type: Option<TypeAnnotation>,
     pub is_static: bool,
+    pub generics: Vec<Generic>,
 }
 
 impl Function {

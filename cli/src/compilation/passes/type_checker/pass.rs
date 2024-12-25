@@ -473,11 +473,89 @@ impl<'a> TypeChecker<'a> {
 
                 ResolvedType::base(TypeKind::Null)
             }
+            ExprKind::Call(ref call) => {
+                let mut args = vec![];
+                for arg in call.args.clone() {
+                    args.push(self.resolve_from_expr(arg)?);
+                }
+
+                let item = self.unit.unit_items.get(&call.callee);
+                // TODO: we should also look for anonymous functions
+                // let x = self.find_variable(&call.callee);
+
+                if let Some(item) = item {
+                    match item.kind.clone() {
+                        UnitItemKind::Function(func) => {
+                            if func.params.len() != args.len() {
+                                self.diags.new_diagnostic(
+                                    Diagnostic::error(
+                                        format!(
+                                            "Expected {} arguments, found {}",
+                                            func.params.len(),
+                                            args.len()
+                                        ),
+                                        vec![(expr.span(self.unit.ast()).clone(), None)],
+                                        vec![],
+                                    ),
+                                    Arc::new(self.unit.source.clone()),
+                                );
+                            } else {
+                                for (param, arg) in func.params.iter().zip(args.iter()) {
+                                    let param_type = ResolvedType::from_type_annotation(param.type_annotation.clone());
+
+                                    if !ResolvedType::matches(&param_type, arg) {
+                                        self.diags.new_diagnostic(
+                                            Diagnostic::error(
+                                                format!(
+                                                    "Expected type '{}', found '{}'",
+                                                    param_type, arg
+                                                ),
+                                                vec![(expr.span(self.unit.ast()).clone(), None)],
+                                                vec![],
+                                            ),
+                                            Arc::new(self.unit.source.clone()),
+                                        );
+                                    }
+                                }
+                            }
+
+                            ResolvedType::from_type_annotation(if let Some(ret) = func.return_type {
+                                ret
+                            } else {
+                                ResolvedType::base(TypeKind::Void).to_type_annotation()
+                            })
+                        }
+                        _ => {
+                            self.diags.new_diagnostic(
+                                Diagnostic::error(
+                                    format!("Attempted to call function '{}' that doesn't exist in this scope", call.callee),
+                                    vec![(expr.span(self.unit.ast()).clone(), None)],
+                                    vec![],
+                                ),
+                                Arc::new(self.unit.source.clone()),
+                            );
+
+                            ResolvedType::base(TypeKind::Null)
+                        }
+                    }
+                } else {
+                    self.diags.new_diagnostic(
+                        Diagnostic::error(
+                            format!("Attempted to call function '{}' that doesn't exist in this scope", call.callee),
+                            vec![(expr.span(self.unit.ast()).clone(), None)],
+                            vec![],
+                        ),
+                        Arc::new(self.unit.source.clone()),
+                    );
+
+                    ResolvedType::base(TypeKind::Null)
+                }
+            }
             _ => todo!("{:?}", expr.kind),
         };
 
         self.unit.ast_mut().set_type(expr.id, result.clone());
-        
+
         Ok(result)
     }
 

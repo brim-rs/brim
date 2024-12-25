@@ -1,6 +1,8 @@
+use crate::{
+    ast::expressions::{AccessKind, BinOpKind, Expr, ExprKind, LiteralType, UnOpKind},
+    compilation::code_gen::CodeGen,
+};
 use anyhow::Result;
-use crate::ast::expressions::{AccessKind, BinOpKind, Expr, ExprKind, LiteralType, UnOpKind};
-use crate::compilation::code_gen::CodeGen;
 
 impl<'a> CodeGen<'a> {
     pub fn generate_expr(&mut self, expr: Expr) -> Result<()> {
@@ -12,8 +14,31 @@ impl<'a> CodeGen<'a> {
                 LiteralType::Float(f) => self.write(f.to_string()),
                 LiteralType::Bool(b) => self.write(b.to_string()),
                 LiteralType::Null => self.write("nullptr".to_string()),
+            },
+            ExprKind::Variable(var) => {
+                if let Some(x) = self.unit.unit_items.get(&var.ident) {
+                    let unit_data = x.unit.clone();
+                    let (_, unit) = self.loader.load_unit(&unit_data, self.unit)?;
+
+                    let namespace = &unit.namespace;
+
+                    if var.generics.len() > 0 {
+                        self.write(format!("{}::{}<", namespace, var.ident));
+                        for (i, generic) in var.generics.iter().enumerate() {
+                            self.write(generic.literal());
+
+                            if i < var.generics.len() - 1 {
+                                self.write(", ");
+                            }
+                        }
+                        self.write(">");
+                    } else {
+                        self.write(var.ident);
+                    }
+                } else {
+                    self.write(var.ident)
+                }
             }
-            ExprKind::Variable(var) => self.write(var.ident),
             ExprKind::Parenthesized(expr) => {
                 self.write("(");
                 self.generate_expr(self.unit.ast().query_expr(expr.expr).clone())?;
@@ -62,7 +87,7 @@ impl<'a> CodeGen<'a> {
                     BinOpKind::EqualsEquals => self.write(" == "),
                     BinOpKind::Increment => self.write("++"),
                     BinOpKind::Decrement => self.write("--"),
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }
 
                 self.generate_expr(self.unit.ast().query_expr(bin.right).clone())?;
@@ -77,8 +102,9 @@ impl<'a> CodeGen<'a> {
                 self.generate_expr(self.unit.ast().query_expr(unary.expr).clone())?;
             }
             ExprKind::Access(access) => {
-                self.generate_expr(self.unit.ast().query_expr(access.base).clone())?;
-                
+                let base = self.unit.ast().query_expr(access.base).clone();
+                self.generate_expr(base)?;
+
                 match access.access {
                     AccessKind::Field(ident) => {
                         self.write(".");
@@ -91,10 +117,12 @@ impl<'a> CodeGen<'a> {
                     }
                     AccessKind::StaticMethod(ident) => {
                         self.write("::");
-                        self.generate_expr(self.unit.ast().query_expr(ident).clone())?;
+                        let x = self.unit.ast().query_expr(ident).clone();
+                        self.generate_expr(x)?;
                     }
                 }
             }
+            ExprKind::Call(call) => self.generate_call(call)?,
             _ => {}
         }
 

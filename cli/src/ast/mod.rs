@@ -12,19 +12,20 @@ use crate::{
         },
         item::TopLevelItem,
         statements::{
-            Block, Const, ElseBlock, FnParam, Function, Let, Loop, Return, Stmt, StmtKind, Struct,
-            StructField, StructImpl, TraitDef, TraitImpl, Try, TypeAnnotation, Use, While,
+            Block, Const, ElseBlock, EnumVariant, FnParam, Function, Let, Loop, Return, Stmt,
+            StmtKind, Struct, StructField, StructImpl, TraitDef, TraitImpl, Try, TypeAnnotation,
+            Use, While,
         },
         types::TypeKind,
     },
+    compilation::passes::type_checker::ResolvedType,
     error::span::TextSpan,
     idx,
     idx::{Idx, IdxVec},
     lexer::tokens::Token,
 };
 use indexmap::IndexMap;
-use crate::ast::statements::EnumVariant;
-use crate::compilation::passes::type_checker::ResolvedType;
+use statements::Generic;
 
 idx!(StmtId);
 idx!(ExprId);
@@ -60,7 +61,7 @@ impl Ast {
 
                     None
                 }
-                _ => None
+                _ => None,
             }
         })
     }
@@ -82,7 +83,11 @@ impl Ast {
     }
 
     pub fn new_expr(&mut self, kind: ExprKind) -> &Expr {
-        let expr = Expr::new(kind, ExprId::new(0), ResolvedType::base(TypeKind::Undefined));
+        let expr = Expr::new(
+            kind,
+            ExprId::new(0),
+            ResolvedType::base(TypeKind::Undefined),
+        );
         let id = self.expressions.push(expr);
         self.expressions[id].id = id;
         &self.expressions[id]
@@ -110,10 +115,15 @@ impl Ast {
         let expr = &mut self.expressions[expr_id];
         expr.ty = ty;
     }
-    
+
     // This removes a statement both from the top-level items and the statements list
     pub fn remove_stmt(&mut self, stmt_id: StmtId) {
-        let item_id = self.top_level_items.iter().find(|item| item.stmt == stmt_id).unwrap().id;
+        let item_id = self
+            .top_level_items
+            .iter()
+            .find(|item| item.stmt == stmt_id)
+            .unwrap()
+            .id;
         println!("Removing statement: {:?}", stmt_id);
         self.top_level_items.remove(item_id);
         self.statements.remove(stmt_id);
@@ -145,8 +155,12 @@ impl Ast {
         expr.id
     }
 
-    pub fn new_variable(&mut self, token: Token, ident: String) -> ExprId {
-        let expr = self.new_expr(ExprKind::Variable(Variable { token, ident }));
+    pub fn new_variable(&mut self, token: Token, ident: String, generics: Vec<Token>) -> ExprId {
+        let expr = self.new_expr(ExprKind::Variable(Variable {
+            token,
+            ident,
+            generics,
+        }));
         expr.id
     }
 
@@ -306,6 +320,7 @@ impl Ast {
         public: bool,
         return_type: Option<TypeAnnotation>,
         is_static: bool,
+        generics: Vec<Generic>,
     ) -> StmtId {
         let stmt = self.new_stmt(StmtKind::Fn(Function {
             fn_token,
@@ -315,6 +330,7 @@ impl Ast {
             public,
             return_type,
             is_static,
+            generics,
         }));
         stmt.id
     }
@@ -386,7 +402,7 @@ impl Ast {
         name: Token,
         fields: IndexMap<String, StructField>,
         public: bool,
-        generics: Vec<Token>,
+        generics: Vec<Generic>,
     ) -> StmtId {
         let stmt = self.new_stmt(StmtKind::Struct(Struct {
             struct_token,
@@ -472,21 +488,21 @@ impl Ast {
         }));
         expr.id
     }
-    
+
     pub fn new_enum(
         &mut self,
         enum_token: Token,
         name: Token,
         variants: Vec<EnumVariant>,
         public: bool,
-        generics: Vec<Token>,
+        generics: Vec<Generic>,
     ) -> StmtId {
         let stmt = self.new_stmt(StmtKind::Enum(statements::Enum {
             enum_token,
             name,
             variants,
             public,
-            generics
+            generics,
         }));
         stmt.id
     }

@@ -124,9 +124,16 @@ impl Parser {
                 self.consume();
 
                 let field_token = self.consume();
-                let mut field_expr = self
-                    .ast
-                    .new_variable(field_token.clone(), field_token.literal());
+
+                let generics = if self.peek().kind == TokenKind::LessThan {
+                    self.parse_generic_arguments()?
+                } else {
+                    vec![]
+                };
+
+                let mut field_expr =
+                    self.ast
+                        .new_variable(field_token.clone(), field_token.literal(), generics);
 
                 if self.peek().kind == TokenKind::LeftParen {
                     field_expr = self.parse_call_expr(field_token)?;
@@ -263,10 +270,26 @@ impl Parser {
                     if self.is_context(&ParseContext::Normal) {
                         self.parse_struct_constructor(token)
                     } else {
-                        Ok(self.ast.new_variable(token.clone(), token.literal()))
+                        let generics = if self.peek().kind == TokenKind::LessThan {
+                            self.parse_generic_arguments()?
+                        } else {
+                            vec![]
+                        };
+
+                        Ok(self
+                            .ast
+                            .new_variable(token.clone(), token.literal(), generics))
                     }
                 } else {
-                    Ok(self.ast.new_variable(token.clone(), token.literal()))
+                    let generics = if self.peek().kind == TokenKind::LessThan {
+                        self.parse_generic_arguments()?
+                    } else {
+                        vec![]
+                    };
+
+                    Ok(self
+                        .ast
+                        .new_variable(token.clone(), token.literal(), generics))
                 }
             }
             TokenKind::LeftParen => {

@@ -1,6 +1,6 @@
 use crate::{
     ast::{
-        statements::{ElseBlock, FnParam, StructField, TypeAnnotation},
+        statements::{ElseBlock, EnumVariant, FnParam, Generic, StructField, TypeAnnotation},
         types::TypeKind,
         StmtId,
     },
@@ -11,7 +11,6 @@ use crate::{
 use anyhow::{bail, Result};
 use colored::Colorize;
 use indexmap::IndexMap;
-use crate::ast::statements::EnumVariant;
 
 impl Parser {
     pub fn parse_stmt(&mut self) -> Result<Option<StmtId>> {
@@ -178,19 +177,11 @@ impl Parser {
         let (struct_token, public) = self.parse_pub(TokenKind::Struct)?;
         let name = self.expect(TokenKind::Identifier)?;
 
-        let mut generics: Vec<Token> = vec![];
-
-        if self.peek().kind == TokenKind::LessThan {
-            self.consume();
-            while self.peek().kind != TokenKind::GreaterThan {
-                let generic = self.expect(TokenKind::Identifier)?;
-                generics.push(generic);
-                if self.peek().kind != TokenKind::GreaterThan {
-                    self.expect(TokenKind::Comma)?;
-                }
-            }
-            self.expect(TokenKind::GreaterThan)?;
-        }
+        let mut generics = if self.peek().kind == TokenKind::LessThan {
+            self.parse_generics()?
+        } else {
+            vec![]
+        };
 
         self.expect_punct(TokenKind::LeftBrace)?;
 
@@ -203,7 +194,7 @@ impl Parser {
                 )],
                 vec![(self.previous().span.clone(), None)],
             )
-                .into());
+            .into());
         }
 
         let mut fields = IndexMap::new();
@@ -228,7 +219,7 @@ impl Parser {
                     )],
                     vec![(self.previous().span.clone(), None)],
                 )
-                    .into());
+                .into());
             } else {
                 self.possible_check(TokenKind::Comma);
             }
@@ -236,7 +227,9 @@ impl Parser {
 
         self.expect_punct(TokenKind::RightBrace)?;
 
-        Ok(self.ast.new_struct(struct_token, name, fields, public, generics))
+        Ok(self
+            .ast
+            .new_struct(struct_token, name, fields, public, generics))
     }
 
     pub fn parse_while(&mut self) -> Result<Option<StmtId>> {
@@ -428,7 +421,7 @@ impl Parser {
                     )],
                     vec![(self.peek().span.clone(), None)],
                 )
-                    .into());
+                .into());
             }
 
             Some(self.expect(TokenKind::Colon)?)
@@ -473,7 +466,7 @@ impl Parser {
                 )],
                 vec![(self.peek().span.clone(), None)],
             )
-                .into());
+            .into());
         } else if self.peek().kind == TokenKind::Bang {
             self.consume();
             let typ = self.parse_type_annotation(false)?;
@@ -527,6 +520,19 @@ impl Parser {
         let (fn_token, public) = self.parse_pub(TokenKind::Fn)?;
 
         let name = self.expect(TokenKind::Identifier)?;
+
+        let mut generics: Vec<Generic> = vec![];
+
+        if self.peek().kind == TokenKind::LessThan {
+            self.consume();
+            while self.peek().kind != TokenKind::GreaterThan {
+                generics.push(self.parse_generic()?);
+                if self.peek().kind != TokenKind::GreaterThan {
+                    self.expect(TokenKind::Comma)?;
+                }
+            }
+            self.expect(TokenKind::GreaterThan)?;
+        }
 
         self.expect(TokenKind::LeftParen)?;
         let mut params = vec![];
@@ -596,9 +602,50 @@ impl Parser {
             Some(block)
         };
 
-        Ok(self
-            .ast
-            .new_fn(fn_token, name, params, body, public, return_type, is_static))
+        Ok(self.ast.new_fn(
+            fn_token,
+            name,
+            params,
+            body,
+            public,
+            return_type,
+            is_static,
+            generics,
+        ))
+    }
+
+    pub fn parse_generic(&mut self) -> Result<Generic> {
+        let name = self.expect(TokenKind::Identifier)?;
+
+        let type_annotation = if self.peek().kind == TokenKind::Colon {
+            self.consume();
+            Some(self.parse_type_annotation(false)?)
+        } else {
+            None
+        };
+
+        Ok(Generic {
+            name,
+            type_annotation,
+        })
+    }
+
+    pub fn parse_generics(&mut self) -> Result<Vec<Generic>> {
+        let mut generics = vec![];
+
+        self.expect_punct(TokenKind::LessThan)?;
+
+        while self.peek().kind != TokenKind::GreaterThan {
+            let generic = self.parse_generic()?;
+            generics.push(generic);
+            if self.peek().kind != TokenKind::GreaterThan {
+                self.expect(TokenKind::Comma)?;
+            }
+        }
+
+        self.expect(TokenKind::GreaterThan)?;
+
+        Ok(generics)
     }
 
     pub fn parse_enum(&mut self) -> Result<StmtId> {
@@ -607,17 +654,7 @@ impl Parser {
         let name = self.expect(TokenKind::Identifier)?;
 
         let generics = if self.peek().kind == TokenKind::LessThan {
-            self.consume();
-            let mut generics = vec![];
-            while self.peek().kind != TokenKind::GreaterThan {
-                let generic = self.expect(TokenKind::Identifier)?;
-                generics.push(generic);
-                if self.peek().kind != TokenKind::GreaterThan {
-                    self.expect(TokenKind::Comma)?;
-                }
-            }
-            self.expect(TokenKind::GreaterThan)?;
-            generics
+            self.parse_generics()?
         } else {
             vec![]
         };
@@ -646,9 +683,29 @@ impl Parser {
                 params,
             });
         }
-        
+
         self.expect_punct(TokenKind::RightBrace)?;
 
-        Ok(self.ast.new_enum(enum_token, name, variants, public, generics))
+        Ok(self
+            .ast
+            .new_enum(enum_token, name, variants, public, generics))
+    }
+
+    pub fn parse_generic_arguments(&mut self) -> Result<Vec<Token>> {
+        let mut generics = vec![];
+
+        self.expect_punct(TokenKind::LessThan)?;
+
+        while self.peek().kind != TokenKind::GreaterThan {
+            let generic = self.expect(TokenKind::Identifier)?;
+            generics.push(generic);
+            if self.peek().kind != TokenKind::GreaterThan {
+                self.expect(TokenKind::Comma)?;
+            }
+        }
+
+        self.expect(TokenKind::GreaterThan)?;
+
+        Ok(generics)
     }
 }

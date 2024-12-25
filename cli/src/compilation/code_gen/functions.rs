@@ -1,15 +1,19 @@
-use crate::ast::item::TopLevelItem;
-use crate::compilation::code_gen::CodeGen;
+use std::vec;
+
+use crate::{
+    ast::{
+        expressions::CallExpr,
+        statements::{Function, Generic, Stmt, StmtKind, TypeAnnotation},
+        types::TypeKind,
+    },
+    compilation::code_gen::CodeGen,
+};
 use anyhow::Result;
 use tracing::debug;
-use crate::ast::statements::{Function, Stmt, StmtKind, TypeAnnotation};
-use crate::ast::types::TypeKind;
-use crate::context::GlobalContext;
 
 impl<'a> CodeGen<'a> {
     pub fn generate_fn(&mut self, function: Function) -> Result<()> {
-        // TODO: implement generics for functions
-        let mut return_type = self.map_type(function.return_type, vec![]);
+        let mut return_type = self.map_type(function.clone().return_type, vec![]);
 
         if function.name.literal() == "main" && self.is_entry_point {
             if self.is_bin {
@@ -26,6 +30,24 @@ impl<'a> CodeGen<'a> {
         for param in function.params {
             let param_type = self.map_type(Some(param.type_annotation), vec![]);
             params.push(format!("{} {}", param_type, param.ident.literal()));
+        }
+
+        let generics = function.generics;
+        if generics.len() > 0 {
+            let mut text = vec![];
+
+            for generic in &generics {
+                let name = generic.name.literal();
+                if let Some(typ) = generic.type_annotation.clone() {
+                    let typ = self.map_type(Some(typ), vec![]);
+
+                    text.push(format!("typename {} = {}", name, typ));
+                } else {
+                    text.push(format!("typename {}", name));
+                }
+            }
+
+            self.write_line(format!("template <{}>", text.join(", ")));
         }
 
         self.write_line(format!(
@@ -51,7 +73,7 @@ impl<'a> CodeGen<'a> {
         Ok(())
     }
 
-    pub fn map_type(&mut self, typ: Option<TypeAnnotation>, generics: Vec<String>) -> String {
+    pub fn map_type(&mut self, typ: Option<TypeAnnotation>, generics: Vec<Generic>) -> String {
         if let Some(typ) = typ {
             let kind_str = self.map_kind(&typ.kind, generics.clone());
 
@@ -71,7 +93,7 @@ impl<'a> CodeGen<'a> {
         }
     }
 
-    fn map_kind(&mut self, kind: &TypeKind, generics: Vec<String>) -> String {
+    fn map_kind(&mut self, kind: &TypeKind, generics: Vec<Generic>) -> String {
         if kind.is_number() {
             self.needed_imports.push("cstdint".to_string());
         }
@@ -96,21 +118,48 @@ impl<'a> CodeGen<'a> {
             TypeKind::Usize => "uintptr_t".to_string(),
 
             TypeKind::Custom(ident) => {
-                if generics.contains(&ident) {
-                    ident.to_string()
+                let generic = generics.iter().find(|g| g.name.literal() == ident.clone());
+                if let Some(generic) = generic
+                    && let Some(typ) = generic.type_annotation.clone()
+                {
+                    self.map_type(Some(typ), generics)
                 } else {
-                    "void".to_string()
+                    ident.to_string()
                 }
             }
-            
+
             TypeKind::Bool => "bool".to_string(),
-            
 
             _ => {
                 debug!("Unknown type: {:?}. Defaulting to auto", kind);
 
                 "auto".to_string()
-            },
+            }
         }
+    }
+
+    pub fn generate_call(&mut self, call: CallExpr) -> Result<()> {
+        if let Some(x) = self.unit.unit_items.get(&call.callee) {
+            let unit_data = x.unit.clone();
+            let (_, unit) = self.loader.load_unit(&unit_data, self.unit)?;
+
+            let namespace = &unit.namespace;
+            self.write(format!("{}::{}(", namespace, call.callee));
+        } else {
+            self.write(format!("{}(", call.callee));
+        }
+
+        for (i, arg) in call.args.iter().enumerate() {
+            let arg = self.unit.ast().query_expr(*arg).clone();
+            self.generate_expr(arg)?;
+
+            if i < call.args.len() - 1 {
+                self.write(", ");
+            }
+        }
+
+        self.write(")");
+
+        Ok(())
     }
 }
