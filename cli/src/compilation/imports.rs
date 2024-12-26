@@ -102,7 +102,7 @@ impl UnitLoader {
                 .join("deps")
                 .join(ident.main_name.clone());
 
-            let global = GlobalContext::from_cwd(project_cwd, ColorChoice::Auto)?;
+            let global = GlobalContext::from_cwd(project_cwd)?;
 
             let parent = global.get_main_dir()?;
             canonicalize_path_with_err_message(parent.join(ident.file_name()), spec)?

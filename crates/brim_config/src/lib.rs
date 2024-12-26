@@ -1,4 +1,5 @@
 pub mod parsed;
+mod errors;
 
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
@@ -10,6 +11,12 @@ pub struct BrimConfig {
     pub tasks: Option<HashMap<String, String>>,
     pub dependencies: Option<HashMap<String, Dependency>>,
     pub build: Option<BuildConfig>,
+}
+
+#[derive(Deserialize, Debug, Clone, Serialize)]
+pub struct BuildConfig {
+    pub level: Option<OptLevel>,
+    pub lib_type: Option<LibType>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -33,12 +40,6 @@ impl Display for OptLevel {
             OptLevel::RelWithDebInfo => write!(f, "rel-with-deb-info"),
         }
     }
-}
-
-#[derive(Deserialize, Debug, Clone, Serialize)]
-pub struct BuildConfig {
-    pub level: Option<OptLevel>,
-    pub lib_type: Option<LibType>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]

@@ -15,7 +15,7 @@ use tracing::debug;
 use brim_config::{LibType, OptLevel, ProjectType};
 use brim_cpp_compiler::CppBuild;
 use brim_shell::Shell;
-use crate::cli::{debug_mode, release_mode};
+use crate::cli::{debug_mode, dynamic_lib_mode, min_size_rel_mode, rel_with_deb_info_mode, release_mode, static_lib_mode};
 use crate::compilation::code_gen::CodeGen;
 
 pub fn run_cmd() -> Command {
@@ -26,6 +26,10 @@ pub fn run_cmd() -> Command {
     )
         .arg(release_mode())
         .arg(debug_mode())
+        .arg(min_size_rel_mode())
+        .arg(rel_with_deb_info_mode())
+        .arg(dynamic_lib_mode())
+        .arg(static_lib_mode())
 }
 
 pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell) -> Result<()> {
@@ -54,9 +58,6 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell
                 return Ok(());
             }
 
-            // TODO: move that to config
-            // let build_type = resolve_build_type(&ctx.config, args)?;
-            // debug!("Build type: {:?}", build_type);
             let build_type = &ctx.config.build.level;
             let codegen = &mut CodeGen::new(&mut unit, loader, build_type.clone(), true)?;
 

@@ -5,7 +5,9 @@ use anyhow::{anyhow, Context};
 use serde::{Deserialize, Serialize};
 use crate::{BrimConfig, Dependency, LibType, OptLevel, ProjectConfig, ProjectType};
 use anyhow::Result;
+use clap::ArgMatches;
 use brim_fs::walk_dir::walk_for_file;
+use crate::errors::ConfigError;
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct ParsedBrimConfig {
@@ -21,41 +23,35 @@ pub struct ParsedBuildConfig {
     pub lib_type: LibType,
 }
 
+
 impl ParsedBrimConfig {
-    pub fn get(cwd: PathBuf) -> Result<Self> {
-        let path = walk_for_file(cwd.clone(), "brim.toml");
+    pub fn get(cwd: PathBuf, args: Option<&ArgMatches>) -> Result<Self> {
+        let path = walk_for_file(cwd, "brim.toml")
+            .ok_or(ConfigError::ConfigFileNotFound)?;
 
-        if path.is_none() {
-            return Err(anyhow!("Failed to find 'brim.toml'. Make sure you are running the command inside project root or in a subdirectory"));
+        let content = read_to_string(&path)
+            .context("Failed to read brim.toml")?;
+
+        let config: BrimConfig = toml::from_str(&content)
+            .context("Failed to parse brim.toml")?;
+
+        let project_type = config.project.r#type
+            .as_ref()
+            .ok_or(ConfigError::MissingProjectType)?;
+
+        if !matches!(project_type, ProjectType::Lib | ProjectType::Bin) {
+            return Err(ConfigError::InvalidProjectType(format!("{:?}", project_type)).into());
         }
 
-        let path = path.unwrap();
-
-        let content = read_to_string(&path).context("Failed to read roan.toml")?;
-        let config = toml::from_str::<BrimConfig>(&content)?;
-
-        if config.project.r#type.is_none() {
-            return Err(anyhow!(
-                "Project type is not specified in [project] in roan.toml. Available types: 'lib', 'bin'"
-            ));
-        }
-
-        let r#type = config.project.r#type.as_ref().unwrap();
-        if r#type != &ProjectType::Lib && r#type != &ProjectType::Bin {
-            return Err(anyhow!(
-                "Invalid project type in [project] in roan.toml. Available types: 'lib', 'bin'"
-            ));
-        }
-
-        Ok(Self::parse(config))
+        Ok(Self::parse(config, args))
     }
 
-    pub fn parse(config: BrimConfig) -> Self {
+    pub fn parse(config: BrimConfig, args: Option<&ArgMatches>) -> Self {
         let project = config.project;
         let tasks = config.tasks;
         let dependencies = config.dependencies;
 
-        let build = if let Some(build) = config.build {
+        let mut build = if let Some(build) = config.build {
             ParsedBuildConfig {
                 level: build.level.unwrap_or(OptLevel::Debug),
                 lib_type: build.lib_type.unwrap_or(LibType::Static),
@@ -67,10 +63,28 @@ impl ParsedBrimConfig {
             }
         };
 
+        if let Some(args) = args {
+            if args.get_flag("release") {
+                build.level = OptLevel::Release;
+            } else if args.get_flag("min-size-rel") {
+                build.level = OptLevel::MinSizeRel;
+            } else if args.get_flag("rel-with-deb-info") {
+                build.level = OptLevel::RelWithDebInfo;
+            } else {
+                build.level = OptLevel::Debug;
+            }
+
+            if args.get_flag("dynamic") {
+                build.lib_type = LibType::Dynamic;
+            } else {
+                build.lib_type = LibType::Static;
+            }
+        }
+
         Self {
             project,
             tasks,
-            dependencies: dependencies.expect("REASON"),
+            dependencies: dependencies.unwrap_or(HashMap::new()),
             build,
         }
     }

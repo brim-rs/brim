@@ -8,6 +8,7 @@ use cli::cli;
 use panic_handler::setup_panic_handler;
 use std::{env, process::exit};
 use ::tracing::debug;
+use anstyle::Color;
 use brim_shell::Shell;
 use crate::tracing::setup_tracing;
 
@@ -55,22 +56,7 @@ async fn main() -> Result<()> {
     };
     let shell = &mut Shell::new(color_choice);
 
-    let mut ctx = match GlobalContext::default(color_choice) {
-        Ok(ctx) => ctx,
-        Err(err) => {
-            if let Some(toml_err) = err.downcast_ref::<toml::de::Error>() {
-                shell.error(&format!("Failed to parse 'brim.toml': {} \n", toml_err))?;
-            } else {
-                shell.error(&format!("{}", err))?;
-            }
-            exit(1);
-        }
-    };
-    ctx.verbose = verbose;
-
-    debug!("Running in context: {:#?}", ctx);
-
-    match execute_command(&mut ctx, cmd, shell).await {
+    match execute_command(cmd, shell, color_choice).await {
         Ok(()) => Ok(()),
         Err(err) => {
             shell.error(&format!("{}", err))?;
@@ -80,9 +66,26 @@ async fn main() -> Result<()> {
     }
 }
 
-pub async fn execute_command(ctx: &mut GlobalContext, cmd: (&str, &ArgMatches), shell: &mut Shell) -> Result<()> {
+pub async fn execute_command(cmd: (&str, &ArgMatches), shell: &mut Shell, color_choice: ColorChoice) -> Result<()> {
     match cmd.0 {
-        "run" => run_command(ctx, cmd.1, shell),
+        "run" => {
+            let mut ctx = &mut match GlobalContext::default(color_choice, Some(&cmd.1)) {
+                Ok(ctx) => ctx,
+                Err(err) => {
+                    if let Some(toml_err) = err.downcast_ref::<toml::de::Error>() {
+                        shell.error(&format!("Failed to parse 'brim.toml': {} \n", toml_err))?;
+                    } else {
+                        shell.error(&format!("{}", err))?;
+                    }
+                    exit(1);
+                }
+            };
+
+            debug!("Running in context: {:#?}", ctx);
+
+            run_command(ctx, cmd.1, shell)?;
+            Ok(())
+        }
         _ => {
             cli().print_help()?;
             exit(1);

@@ -4,4 +4,4 @@ version = "0.1.0"
 type = "bin"
 
 [build]
-lib_type = "staticlib"
+lib_type = "dynamic"

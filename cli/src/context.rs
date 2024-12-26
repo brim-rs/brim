@@ -7,6 +7,7 @@ use brim_shell::Shell;
 use colored::Colorize;
 use std::{fs::read_to_string, path::PathBuf, time::Instant};
 use std::fmt::{Debug, Display};
+use clap::ArgMatches;
 use brim_config::{BrimConfig, ProjectType};
 use brim_config::parsed::ParsedBrimConfig;
 
@@ -18,13 +19,13 @@ pub struct GlobalContext {
 }
 
 impl GlobalContext {
-    pub fn load_config(cwd: PathBuf) -> Result<ParsedBrimConfig> {
-        Ok(ParsedBrimConfig::get(cwd)?)
+    pub fn load_config(cwd: PathBuf, args: Option<&ArgMatches>) -> Result<ParsedBrimConfig> {
+        Ok(ParsedBrimConfig::get(cwd, args)?)
     }
 
-    pub fn default(color_choice: ColorChoice) -> Result<Self> {
+    pub fn default(color_choice: ColorChoice, args: Option<&ArgMatches>) -> Result<Self> {
         let cwd = std::env::current_dir().context("Failed to get current directory")?;
-        let config = GlobalContext::load_config(cwd.clone())?;
+        let config = GlobalContext::load_config(cwd.clone(), args)?;
 
         Ok(Self {
             verbose: false,
@@ -74,8 +75,8 @@ impl GlobalContext {
         Ok(self.get_main_file()?.parent().unwrap().to_path_buf())
     }
 
-    pub fn from_cwd(cwd: PathBuf, color_choice: ColorChoice) -> Result<Self> {
-        let config = GlobalContext::load_config(cwd.clone())?;
+    pub fn from_cwd(cwd: PathBuf) -> Result<Self> {
+        let config = GlobalContext::load_config(cwd.clone(), None)?;
 
         Ok(Self {
             verbose: false,

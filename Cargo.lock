@@ -159,7 +159,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "brim-fs",
+ "clap",
  "serde",
+ "thiserror 2.0.9",
  "toml",
  "toml_edit",
 ]
