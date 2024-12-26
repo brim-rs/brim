@@ -16,6 +16,7 @@ use std::{
     io::{Stderr, Stdout, Write},
     path::PathBuf,
 };
+use terminal_size::{terminal_size, Height, Width};
 
 #[derive(Debug)]
 pub struct ShellOutput {
@@ -141,5 +142,57 @@ impl Shell {
 
     pub fn hyperlink<'a>(&mut self, url: &'a str, text: &'a str) -> Result<Link<'a>> {
         Ok(Link::new(text, url))
+    }
+
+    pub fn cond_print<T: fmt::Display>(&mut self, message: T, err: bool) -> Result<()> {
+        if err {
+            self.output.stderr().write_all(format!("{}", message).as_bytes())?;
+        } else {
+            self.output.stdout().write_all(format!("{}", message).as_bytes())?;
+        }
+        Ok(())
+    }
+
+    pub fn centered<T: fmt::Display>(
+        &mut self,
+        title: &str,
+        message: T,
+        err: bool,
+    ) -> Result<()> {
+        let title = format!(" {} ", title); // Add space before and after the title
+        let stderr = self.output.stderr();
+        let size = terminal_size();
+        if let Some((Width(w), Height(h))) = size {
+            let width = w as usize;
+
+            let message = format!(" {} ", message); // Add space before and after the message
+            let message_len = message.len();
+            let message = if message_len > width {
+                message
+            } else {
+                let padding = (width - message_len) / 2;
+                format!("{:padding$}{}", "", message, padding = padding)
+            };
+
+            let dim_title = anstyle::Style::new() | anstyle::Effects::DIMMED;
+            let reset = anstyle::Style::new() | anstyle::Effects::new();
+            let mut buffer = Vec::new();
+
+            writeln!(buffer, "{dim_title}{:=^1$}{reset:#}", title, width)?;
+            writeln!(buffer, "{:#^1$}", message, width)?;
+
+            if err {
+                stderr.write_all(&buffer)?;
+            } else {
+                self.output.stdout().write_all(&buffer)?;
+            }
+
+            Ok(())
+        } else {
+            self.cond_print(title, err)?;
+            self.cond_print(message, err)?;
+
+            Ok(())
+        }
     }
 }

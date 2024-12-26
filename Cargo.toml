@@ -1,13 +1,13 @@
 [workspace]
 members = [
-    "cli", "crates/brim_config", "crates/brim_cpp_compiler", "crates/shell",
+    "cli", "crates/brim_config", "crates/brim_cpp_compiler", "crates/brim_shell",
 ]
 resolver = "1"
 
 [workspace.dependencies]
 
 # Core dependencies
-brim-shell = { path = "crates/shell", version = "0.1.0" }
+brim-shell = { path = "crates/brim_shell", version = "0.1.0" }
 brim-config = { path = "crates/brim_config", version = "0.1.0" }
 brim-cpp-compiler = { path = "crates/brim_cpp_compiler", version = "0.1.0" }
 
@@ -30,3 +30,9 @@ http-body-util = "0.1.2"
 url = "2.5.4"
 gethostname = "0.5.0"
 ropey = "1.6.1"
+tracing = { version = "0.1.40", default-features = false, features = ["std"] }
+tracing-subscriber = { version = "0.3.18", features = [
+    "env-filter",
+    "chrono",
+    "time",
+] }

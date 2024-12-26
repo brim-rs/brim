@@ -11,7 +11,7 @@ use crate::compilation::imports::UnitLoader;
 use crate::compilation::unit::CompilationUnit;
 use anyhow::{bail, Result};
 use tracing::debug;
-use brim_config::BuildType;
+use brim_config::OptLevel;
 use brim_cpp_compiler::CppBuild;
 use crate::context::GlobalContext;
 use crate::path::strip_base;
@@ -19,7 +19,7 @@ use crate::path::strip_base;
 pub struct CodeGen<'a> {
     pub unit: &'a mut CompilationUnit,
     pub loader: &'a mut UnitLoader,
-    pub build_type: BuildType,
+    pub build_type: OptLevel,
     // If the file is either main.brim or lib.brim
     pub is_entry_point: bool,
     pub buf: Vec<u8>,
@@ -32,7 +32,7 @@ pub struct CodeGen<'a> {
 }
 
 impl<'a> CodeGen<'a> {
-    pub fn new(unit: &'a mut CompilationUnit, loader: &'a mut UnitLoader, build_type: BuildType, entrypoint: bool) -> Result<Self> {
+    pub fn new(unit: &'a mut CompilationUnit, loader: &'a mut UnitLoader, build_type: OptLevel, entrypoint: bool) -> Result<Self> {
         Ok(Self {
             unit,
             loader,
@@ -104,7 +104,7 @@ impl<'a> CodeGen<'a> {
         let mut file = File::create(target_path.clone())?;
         file.write_all(&self.buf)?;
 
-        build_cpp.file(target_path);
+        build_cpp.add_source(target_path);
 
         Ok(())
     }

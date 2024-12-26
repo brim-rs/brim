@@ -11,25 +11,32 @@ pub struct BrimConfig {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum BuildType {
+pub enum OptLevel {
     #[serde(rename = "debug")]
     Debug,
     #[serde(rename = "release")]
     Release,
+    #[serde(rename = "minsizerel")]
+    MinSizeRel,
+    #[serde(rename = "relwithdebinfo")]
+    RelWithDebInfo,
 }
 
-impl Display for BuildType {
+impl Display for OptLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BuildType::Debug => write!(f, "debug"),
-            BuildType::Release => write!(f, "release"),
+            OptLevel::Debug => write!(f, "debug"),
+            OptLevel::Release => write!(f, "release"),
+            OptLevel::MinSizeRel => write!(f, "min-sizerel"),
+            OptLevel::RelWithDebInfo => write!(f, "rel-with-deb-info"),
         }
     }
 }
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct BuildConfig {
-    pub r#type: Option<BuildType>,
+    pub level: Option<OptLevel>,
+    pub lib_type: Option<LibType>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
@@ -38,6 +45,14 @@ pub enum ProjectType {
     Lib,
     #[serde(rename = "bin")]
     Bin,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub enum LibType {
+    #[serde(rename = "static")]
+    Static,
+    #[serde(rename = "dynamic")]
+    Dynamic,
 }
 
 #[derive(Deserialize, Debug, Clone, Serialize)]

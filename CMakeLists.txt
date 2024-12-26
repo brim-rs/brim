@@ -7,5 +7,4 @@ set(CMAKE_CXX_STANDARD 23)
 
 add_executable(brim
         playground/build/source/src/main.cpp
-        playground/build/source/src/test.cpp
 )
