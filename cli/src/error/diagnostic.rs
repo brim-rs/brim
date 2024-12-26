@@ -134,8 +134,10 @@ impl Diagnostics {
             diagnostic.write(source).unwrap();
         }
     }
-    
+
     pub fn has_errors(&self) -> bool {
-        self.diagnostics.iter().any(|(d, _)| d.level == Level::Error)
+        self.diagnostics
+            .iter()
+            .any(|(d, _)| d.level == Level::Error)
     }
 }

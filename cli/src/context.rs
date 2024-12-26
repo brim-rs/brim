@@ -1,15 +1,9 @@
-use crate::{
-    path::{canonicalize_path, normalize_without_canonicalize},
-};
+use crate::path::{canonicalize_path, normalize_without_canonicalize};
 use anstream::ColorChoice;
 use anyhow::{anyhow, Context, Result};
-use brim_shell::Shell;
-use colored::Colorize;
-use std::{fs::read_to_string, path::PathBuf, time::Instant};
-use std::fmt::{Debug, Display};
+use brim_config::{parsed::ParsedBrimConfig, ProjectType};
 use clap::ArgMatches;
-use brim_config::{BrimConfig, ProjectType};
-use brim_config::parsed::ParsedBrimConfig;
+use std::{fmt::Debug, path::PathBuf, time::Instant};
 
 pub struct GlobalContext {
     pub verbose: bool,

@@ -1,9 +1,8 @@
-pub mod parsed;
 mod errors;
+pub mod parsed;
 
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf};
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display, path::PathBuf};
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct BrimConfig {

@@ -1,12 +1,12 @@
-use std::collections::HashMap;
-use std::env;
-use std::fmt::Display;
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
-use anyhow::{anyhow, Context, Result};
-use serde::{Deserialize, Serialize};
-use tracing::{debug, warn};
 use crate::compiler::{Compiler, CompilerKind};
+use anyhow::{Context, Result, anyhow};
+use std::{
+    collections::HashMap,
+    env,
+    path::Path,
+    process::{Command, Stdio},
+};
+use tracing::{debug, warn};
 
 #[cfg(target_os = "windows")]
 pub fn detect_compiler() -> Result<Compiler> {
@@ -72,8 +72,7 @@ fn detect_clang_or_gcc() -> Result<Compiler> {
     debug!("Clang not found, attempting to detect GCC");
     if let Ok(path) = which::which("g++") {
         debug!("Found G++ at: {}", path.display());
-        return Compiler::new(path, CompilerKind::Gcc)
-            .context("Failed to initialize GCC compiler");
+        return Compiler::new(path, CompilerKind::Gcc).context("Failed to initialize GCC compiler");
     }
 
     Err(anyhow!("No suitable C++ compiler found"))
@@ -84,8 +83,7 @@ fn detect_gcc_or_clang() -> Result<Compiler> {
     debug!("Attempting to detect GCC compiler");
     if let Ok(path) = which::which("g++") {
         debug!("Found G++ at: {}", path.display());
-        return Compiler::new(path, CompilerKind::Gcc)
-            .context("Failed to initialize GCC compiler");
+        return Compiler::new(path, CompilerKind::Gcc).context("Failed to initialize GCC compiler");
     }
 
     debug!("GCC not found, attempting to detect Clang");
@@ -99,7 +97,10 @@ fn detect_gcc_or_clang() -> Result<Compiler> {
 }
 
 fn setup_msvc_environment(vcvars_path: &Path) -> Result<HashMap<String, String>> {
-    debug!("Setting up MSVC environment using: {}", vcvars_path.display());
+    debug!(
+        "Setting up MSVC environment using: {}",
+        vcvars_path.display()
+    );
 
     let output = Command::new("cmd")
         .args(&["/C", vcvars_path.to_str().unwrap(), "x64", "&&", "set"])
@@ -123,10 +124,15 @@ fn setup_msvc_environment(vcvars_path: &Path) -> Result<HashMap<String, String>>
     }
 
     if env_vars.is_empty() {
-        return Err(anyhow!("No environment variables were set by vcvars script"));
+        return Err(anyhow!(
+            "No environment variables were set by vcvars script"
+        ));
     }
 
-    debug!("Successfully captured {} environment variables", env_vars.len());
+    debug!(
+        "Successfully captured {} environment variables",
+        env_vars.len()
+    );
     Ok(env_vars)
 }
 
@@ -141,13 +147,10 @@ fn apply_env_vars(env_vars: &HashMap<String, String>) {
 pub fn resolve_from_kind(kind: CompilerKind) -> Result<Compiler> {
     debug!("Resolving compiler of kind: {:?}", kind);
     match kind {
-        CompilerKind::Msvc => {
-            detect_msvc_compiler().context("Failed to resolve MSVC compiler")
-        }
+        CompilerKind::Msvc => detect_msvc_compiler().context("Failed to resolve MSVC compiler"),
         CompilerKind::Gcc => {
             if let Ok(path) = which::which("g++") {
-                Compiler::new(path, CompilerKind::Gcc)
-                    .context("Failed to initialize GCC compiler")
+                Compiler::new(path, CompilerKind::Gcc).context("Failed to initialize GCC compiler")
             } else {
                 Err(anyhow!("GCC compiler not found"))
             }

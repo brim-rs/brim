@@ -103,7 +103,7 @@ impl TypeKind {
             _ => TypeKind::Custom(s.to_string()),
         }
     }
-    
+
     pub fn is_number(&self) -> bool {
         use TypeKind::*;
         match self {
@@ -111,7 +111,7 @@ impl TypeKind {
             _ => false,
         }
     }
-    
+
     pub fn is_custom(&self) -> (bool, &str) {
         match self {
             TypeKind::Custom(name) => (true, name),

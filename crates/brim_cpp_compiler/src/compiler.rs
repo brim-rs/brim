@@ -1,7 +1,9 @@
-use std::fmt::{Display, Formatter};
-use std::path::{Path, PathBuf};
-use std::process::Command;
 use serde::{Deserialize, Serialize};
+use std::{
+    fmt::{Display, Formatter},
+    path::{Path, PathBuf},
+    process::Command,
+};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -65,7 +67,11 @@ impl Display for Compiler {
                 CompilerKind::Clang => "Clang",
             },
             self.version.as_deref().unwrap_or("unknown version"),
-            if self.capabilities.supports_cpp20 { ", C++20" } else { "" },
+            if self.capabilities.supports_cpp20 {
+                ", C++20"
+            } else {
+                ""
+            },
             self.path.display()
         )
     }
@@ -152,8 +158,8 @@ impl Compiler {
         self.capabilities.supports_concepts = output.status.success();
 
         self.capabilities.max_optimization_level = match self.kind {
-            CompilerKind::Msvc => 2,  // /O2
-            _ => 3,  // -O3
+            CompilerKind::Msvc => 2, // /O2
+            _ => 3,                  // -O3
         };
 
         Ok(())
@@ -188,7 +194,7 @@ impl Compiler {
 
         match self.kind {
             CompilerKind::Msvc => {
-                cmd.arg("/nologo");  // Suppress startup banner
+                cmd.arg("/nologo"); // Suppress startup banner
                 if self.capabilities.supports_cpp20 {
                     cmd.arg("/std:c++20");
                 }
@@ -197,8 +203,8 @@ impl Compiler {
                 if self.capabilities.supports_cpp20 {
                     cmd.arg("-std=c++20");
                 }
-                cmd.arg("-Wall")  // Enable all warnings
-                    .arg("-Wextra");  // Enable extra warnings
+                cmd.arg("-Wall") // Enable all warnings
+                    .arg("-Wextra"); // Enable extra warnings
             }
         }
 

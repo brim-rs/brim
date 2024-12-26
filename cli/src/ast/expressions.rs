@@ -1,7 +1,6 @@
 use crate::{
     ast::{
         statements::{FnParam, TypeAnnotation},
-        types::TypeKind,
         Ast, ExprId, GetSpan, StmtId,
     },
     compilation::passes::type_checker::ResolvedType,

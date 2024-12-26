@@ -1,20 +1,23 @@
-mod generator;
-mod utils;
-mod functions;
-mod expr;
-mod structs;
 mod enums;
+mod expr;
+mod functions;
+mod generator;
+mod structs;
+mod utils;
 
-use std::fs::{create_dir_all, remove_file, File};
-use std::io::Write;
-use crate::compilation::imports::UnitLoader;
-use crate::compilation::unit::CompilationUnit;
+use crate::{
+    compilation::{imports::UnitLoader, unit::CompilationUnit},
+    context::GlobalContext,
+    path::strip_base,
+};
 use anyhow::{bail, Result};
-use tracing::debug;
 use brim_config::OptLevel;
 use brim_cpp_compiler::CppBuild;
-use crate::context::GlobalContext;
-use crate::path::strip_base;
+use std::{
+    fs::{create_dir_all, File},
+    io::Write,
+};
+use tracing::debug;
 
 pub struct CodeGen<'a> {
     pub unit: &'a mut CompilationUnit,
@@ -32,7 +35,12 @@ pub struct CodeGen<'a> {
 }
 
 impl<'a> CodeGen<'a> {
-    pub fn new(unit: &'a mut CompilationUnit, loader: &'a mut UnitLoader, build_type: OptLevel, entrypoint: bool) -> Result<Self> {
+    pub fn new(
+        unit: &'a mut CompilationUnit,
+        loader: &'a mut UnitLoader,
+        build_type: OptLevel,
+        entrypoint: bool,
+    ) -> Result<Self> {
         Ok(Self {
             unit,
             loader,
@@ -75,20 +83,32 @@ impl<'a> CodeGen<'a> {
             let main_fn = self.unit.ast().main_fn();
 
             if let Some(main_fn_id) = main_fn {
-                let main_fn = self.unit.ast().query_stmt(main_fn_id).clone().as_function().clone();
+                let main_fn = self
+                    .unit
+                    .ast()
+                    .query_stmt(main_fn_id)
+                    .clone()
+                    .as_function()
+                    .clone();
                 self.generate_fn(main_fn)?;
             } else {
                 bail!("Entrypoint file must contain a main function.");
             }
         }
 
-
-        debug!("Generated C++ code: \n{}", String::from_utf8_lossy(&self.buf));
+        debug!(
+            "Generated C++ code: \n{}",
+            String::from_utf8_lossy(&self.buf)
+        );
 
         Ok(())
     }
 
-    pub fn generate_and_write(&mut self, global: &mut GlobalContext, build_cpp: &mut CppBuild) -> Result<()> {
+    pub fn generate_and_write(
+        &mut self,
+        global: &mut GlobalContext,
+        build_cpp: &mut CppBuild,
+    ) -> Result<()> {
         self.generate_code(global)?;
         let out_dir = global.build_dir()?.join("source");
         let rest_path = strip_base(&self.unit.source.path, &global.cwd);

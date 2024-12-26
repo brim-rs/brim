@@ -1,16 +1,14 @@
 #![feature(let_chains)]
 
-use crate::{commands::run::run_command, context::GlobalContext};
+use crate::{commands::run::run_command, context::GlobalContext, tracing::setup_tracing};
+use ::tracing::debug;
 use anstream::ColorChoice;
 use anyhow::Result;
+use brim_shell::Shell;
 use clap::ArgMatches;
 use cli::cli;
 use panic_handler::setup_panic_handler;
 use std::{env, process::exit};
-use ::tracing::debug;
-use anstyle::Color;
-use brim_shell::Shell;
-use crate::tracing::setup_tracing;
 
 pub mod cli;
 pub mod commands {
@@ -25,8 +23,8 @@ pub mod lexer;
 pub mod panic_handler;
 mod parser;
 pub mod path;
-mod tracing;
 pub mod random;
+mod tracing;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -66,10 +64,14 @@ async fn main() -> Result<()> {
     }
 }
 
-pub async fn execute_command(cmd: (&str, &ArgMatches), shell: &mut Shell, color_choice: ColorChoice) -> Result<()> {
+pub async fn execute_command(
+    cmd: (&str, &ArgMatches),
+    shell: &mut Shell,
+    color_choice: ColorChoice,
+) -> Result<()> {
     match cmd.0 {
         "run" => {
-            let mut ctx = &mut match GlobalContext::default(color_choice, Some(&cmd.1)) {
+            let ctx = &mut match GlobalContext::default(color_choice, Some(&cmd.1)) {
                 Ok(ctx) => ctx,
                 Err(err) => {
                     if let Some(toml_err) = err.downcast_ref::<toml::de::Error>() {

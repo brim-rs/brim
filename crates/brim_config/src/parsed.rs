@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-use std::fs::read_to_string;
-use std::path::PathBuf;
-use anyhow::{anyhow, ensure, Context};
-use serde::{Deserialize, Serialize};
-use crate::{BrimConfig, Dependency, LibType, OptLevel, ProjectConfig, ProjectType};
-use anyhow::Result;
-use clap::ArgMatches;
+use crate::{
+    BrimConfig, Dependency, LibType, OptLevel, ProjectConfig, ProjectType, errors::ConfigError,
+};
+use anyhow::{Context, Result, ensure};
 use brim_fs::walk_dir::walk_for_file;
-use crate::errors::ConfigError;
+use clap::ArgMatches;
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, fs::read_to_string, path::PathBuf};
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct ParsedBrimConfig {
@@ -23,19 +21,17 @@ pub struct ParsedBuildConfig {
     pub lib_type: LibType,
 }
 
-
 impl ParsedBrimConfig {
     pub fn get(cwd: PathBuf, args: Option<&ArgMatches>) -> Result<Self> {
-        let path = walk_for_file(cwd, "brim.toml")
-            .ok_or(ConfigError::ConfigFileNotFound)?;
+        let path = walk_for_file(cwd, "brim.toml").ok_or(ConfigError::ConfigFileNotFound)?;
 
-        let content = read_to_string(&path)
-            .context("Failed to read brim.toml")?;
+        let content = read_to_string(&path).context("Failed to read brim.toml")?;
 
-        let config: BrimConfig = toml::from_str(&content)
-            .context("Failed to parse brim.toml")?;
+        let config: BrimConfig = toml::from_str(&content).context("Failed to parse brim.toml")?;
 
-        let project_type = config.project.r#type
+        let project_type = config
+            .project
+            .r#type
             .as_ref()
             .ok_or(ConfigError::MissingProjectType)?;
 
@@ -50,7 +46,7 @@ impl ParsedBrimConfig {
         let project = config.project;
         let tasks = config.tasks;
         let dependencies = config.dependencies;
-        
+
         ensure!(project.name.len() > 0, "Project name can't be empty");
 
         let mut build = if let Some(build) = config.build {

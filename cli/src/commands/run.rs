@@ -1,29 +1,31 @@
-use std::fmt::format;
 use crate::{
-    cli::opt,
-    compilation::{imports::UnitLoader, unit::CompilationUnit},
-    context::{GlobalContext},
+    cli::{
+        debug_mode, dynamic_lib_mode, min_size_rel_mode, opt, rel_with_deb_info_mode, release_mode,
+        static_lib_mode,
+    },
+    compilation::{code_gen::CodeGen, imports::UnitLoader, unit::CompilationUnit},
+    context::GlobalContext,
     error::{
         diagnostic::{Diagnostic, Diagnostics, Level},
         BrimError,
     },
 };
 use anyhow::Result;
+use brim_config::ProjectType;
+use brim_cpp_compiler::CppBuild;
+use brim_shell::Shell;
 use clap::{ArgAction, ArgMatches, Command};
 use std::sync::Arc;
 use tracing::debug;
-use brim_config::{LibType, OptLevel, ProjectType};
-use brim_cpp_compiler::CppBuild;
-use brim_shell::Shell;
-use crate::cli::{debug_mode, dynamic_lib_mode, min_size_rel_mode, rel_with_deb_info_mode, release_mode, static_lib_mode};
-use crate::compilation::code_gen::CodeGen;
 
 pub fn run_cmd() -> Command {
-    Command::new("run").about("Run a project").arg(
-        opt("time", "Prints the time taken to run the project")
-            .short('t')
-            .action(ArgAction::SetTrue),
-    )
+    Command::new("run")
+        .about("Run a project")
+        .arg(
+            opt("time", "Prints the time taken to run the project")
+                .short('t')
+                .action(ArgAction::SetTrue),
+        )
         .arg(release_mode())
         .arg(debug_mode())
         .arg(min_size_rel_mode())
@@ -44,7 +46,12 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell
     let loader = &mut UnitLoader::new(ctx.cwd.clone());
 
     let lib_type = &ctx.config.build.lib_type;
-    let build_process = &mut CppBuild::new(None, ctx.project_type()?, ctx.build_dir()?, lib_type.clone())?;
+    let build_process = &mut CppBuild::new(
+        None,
+        ctx.project_type()?,
+        ctx.build_dir()?,
+        lib_type.clone(),
+    )?;
     let mut unit = CompilationUnit::new(ctx.get_main_file()?)?;
     let diags = &mut Diagnostics::new();
 
@@ -61,13 +68,14 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell
             let build_type = &ctx.config.build.level;
             let codegen = &mut CodeGen::new(&mut unit, loader, build_type.clone(), true)?;
 
-            shell.status("Compiling", format!("{} in {} mode", ctx.config.project.name, build_type))?;
+            shell.status(
+                "Compiling",
+                format!("{} in {} mode", ctx.config.project.name, build_type),
+            )?;
 
             codegen.generate_and_write(ctx, build_process)?;
 
-            build_process.compile(
-                &ctx.config.project.name, shell,
-            )?;
+            build_process.compile(&ctx.config.project.name, shell)?;
         }
         Err(e) => {
             if let Some(err) = e.downcast_ref::<BrimError>() {

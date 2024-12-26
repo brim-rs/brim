@@ -1,6 +1,5 @@
 use crate::ast::{statements::TypeAnnotation, types::TypeKind};
 use std::fmt::Display;
-use crate::lexer::tokens::Token;
 
 pub mod pass;
 
@@ -77,7 +76,7 @@ impl ResolvedType {
             .into_iter()
             .map(ResolvedType::from_type_annotation)
             .collect();
-        
+
         let err_type = if let Some(err_type) = typ.error_type {
             Some(Box::new(ResolvedType::from_type_annotation(*err_type)))
         } else {
@@ -92,10 +91,14 @@ impl ResolvedType {
             error_type: err_type,
         }
     }
-    
+
     pub fn to_type_annotation(&self) -> TypeAnnotation {
-        let generics = self.generics.iter().map(ResolvedType::to_type_annotation).collect();
-        
+        let generics = self
+            .generics
+            .iter()
+            .map(ResolvedType::to_type_annotation)
+            .collect();
+
         let err_type = if let Some(err_type) = &self.error_type {
             Some(Box::new(err_type.as_ref().to_type_annotation()))
         } else {
@@ -120,7 +123,7 @@ impl ResolvedType {
     pub fn is_string_or_number(&self) -> bool {
         self.is_string_like() || self.is_number()
     }
-    
+
     pub fn array_type(&self) -> ResolvedType {
         match self.kind {
             TypeKind::Array(ref t) => *t.clone(),

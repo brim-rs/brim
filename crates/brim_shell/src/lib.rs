@@ -146,19 +146,18 @@ impl Shell {
 
     pub fn cond_print<T: fmt::Display>(&mut self, message: T, err: bool) -> Result<()> {
         if err {
-            self.output.stderr().write_all(format!("{}", message).as_bytes())?;
+            self.output
+                .stderr()
+                .write_all(format!("{}", message).as_bytes())?;
         } else {
-            self.output.stdout().write_all(format!("{}", message).as_bytes())?;
+            self.output
+                .stdout()
+                .write_all(format!("{}", message).as_bytes())?;
         }
         Ok(())
     }
 
-    pub fn centered<T: fmt::Display>(
-        &mut self,
-        title: &str,
-        message: T,
-        err: bool,
-    ) -> Result<()> {
+    pub fn centered<T: fmt::Display>(&mut self, title: &str, message: T, err: bool) -> Result<()> {
         let title = format!(" {} ", title);
         let stderr = self.output.stderr();
         let size = terminal_size();

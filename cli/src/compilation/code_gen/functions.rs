@@ -3,7 +3,7 @@ use std::vec;
 use crate::{
     ast::{
         expressions::CallExpr,
-        statements::{Function, Generic, Stmt, StmtKind, TypeAnnotation},
+        statements::{Function, Generic, TypeAnnotation},
         types::TypeKind,
     },
     compilation::code_gen::CodeGen,

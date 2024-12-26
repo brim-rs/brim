@@ -177,7 +177,7 @@ impl Parser {
         let (struct_token, public) = self.parse_pub(TokenKind::Struct)?;
         let name = self.expect(TokenKind::Identifier)?;
 
-        let mut generics = if self.peek().kind == TokenKind::LessThan {
+        let generics = if self.peek().kind == TokenKind::LessThan {
             self.parse_generics()?
         } else {
             vec![]

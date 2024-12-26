@@ -1,19 +1,23 @@
 #![feature(let_chains)]
 
-use std::collections::HashSet;
-use std::ffi::OsStr;
-use std::path::{Path, PathBuf};
-use std::process::Command;
-use std::sync::Arc;
-use anyhow::{bail, ensure, Context, Result};
-use tracing::debug;
-use brim_config::{OptLevel, LibType, ProjectType};
+use crate::{
+    compiler::{Compiler, CompilerKind},
+    detect::{detect_compiler, resolve_from_kind},
+};
+use anyhow::{Context, Result, bail, ensure};
+use brim_config::{LibType, OptLevel, ProjectType};
 use brim_shell::Shell;
-use crate::compiler::{Compiler, CompilerKind};
-use crate::detect::{detect_compiler, resolve_from_kind};
+use std::{
+    collections::HashSet,
+    ffi::OsStr,
+    path::{Path, PathBuf},
+    process::Command,
+    sync::Arc,
+};
+use tracing::debug;
 
-pub mod detect;
 pub mod compiler;
+pub mod detect;
 
 #[derive(Debug)]
 pub struct CppBuild {
@@ -39,7 +43,11 @@ impl CppBuild {
         lib_type: LibType,
     ) -> Result<Self> {
         let build_dir = build_dir.as_ref();
-        ensure!(build_dir.exists(), "Build directory does not exist: {}", build_dir.display());
+        ensure!(
+            build_dir.exists(),
+            "Build directory does not exist: {}",
+            build_dir.display()
+        );
 
         let compiler = if let Some(kind) = compiler {
             resolve_from_kind(kind)?
@@ -71,7 +79,7 @@ impl CppBuild {
     /// Adds multiple source files to the build
     pub fn add_sources<I, P>(&mut self, paths: I) -> &mut Self
     where
-        I: IntoIterator<Item=P>,
+        I: IntoIterator<Item = P>,
         P: AsRef<OsStr>,
     {
         for path in paths {
@@ -114,7 +122,8 @@ impl CppBuild {
     pub fn set_cpp_standard(&mut self, standard: u16) -> Result<&mut Self> {
         ensure!(
             matches!(standard, 17 | 20 | 23),
-            "Unsupported C++ standard: {}", standard
+            "Unsupported C++ standard: {}",
+            standard
         );
 
         self.cpp_standard = standard;
@@ -244,28 +253,26 @@ impl CppBuild {
 
     fn configure_output(&self, command: &mut Command, output_name: &OsStr) -> Result<()> {
         match self.project_type {
-            ProjectType::Lib => {
-                match self.lib_type {
-                    LibType::Static => {
-                        if self.compiler.kind() == &CompilerKind::Msvc {
-                            command.arg("/c");
-                            command.arg(format!("/Fo:{}", output_name.to_string_lossy()));
-                        } else {
-                            command.arg("-c");
-                            command.arg("-o").arg(output_name);
-                        }
-                    }
-                    LibType::Dynamic => {
-                        if self.compiler.kind() == &CompilerKind::Msvc {
-                            command.arg("/LD");
-                            command.arg(format!("/Fe:{}", output_name.to_string_lossy()));
-                        } else {
-                            command.arg("-shared");
-                            command.arg("-o").arg(output_name);
-                        }
+            ProjectType::Lib => match self.lib_type {
+                LibType::Static => {
+                    if self.compiler.kind() == &CompilerKind::Msvc {
+                        command.arg("/c");
+                        command.arg(format!("/Fo:{}", output_name.to_string_lossy()));
+                    } else {
+                        command.arg("-c");
+                        command.arg("-o").arg(output_name);
                     }
                 }
-            }
+                LibType::Dynamic => {
+                    if self.compiler.kind() == &CompilerKind::Msvc {
+                        command.arg("/LD");
+                        command.arg(format!("/Fe:{}", output_name.to_string_lossy()));
+                    } else {
+                        command.arg("-shared");
+                        command.arg("-o").arg(output_name);
+                    }
+                }
+            },
             ProjectType::Bin => {
                 if self.compiler.kind() == &CompilerKind::Msvc {
                     command.arg(format!("/Fe:{}", output_name.to_string_lossy()));
@@ -278,16 +285,20 @@ impl CppBuild {
     }
 
     fn get_output_path(&self, output_name: &OsStr) -> PathBuf {
-        self.build_dir.join(output_name).with_extension(
-            match self.project_type {
-                ProjectType::Lib => {
-                    match self.lib_type {
-                        LibType::Static => "lib",
-                        LibType::Dynamic => "dll",
+        self.build_dir
+            .join(output_name)
+            .with_extension(match self.project_type {
+                ProjectType::Lib => match self.lib_type {
+                    LibType::Static => "lib",
+                    LibType::Dynamic => "dll",
+                },
+                ProjectType::Bin => {
+                    if cfg!(windows) {
+                        "exe"
+                    } else {
+                        ""
                     }
                 }
-                ProjectType::Bin => if cfg!(windows) { "exe" } else { "" },
-            }
-        )
+            })
     }
 }

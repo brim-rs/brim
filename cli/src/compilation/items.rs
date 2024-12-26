@@ -1,9 +1,8 @@
 use crate::{
-    ast::statements::{Const, Function, Struct, TraitDef},
+    ast::statements::{Const, Enum, Function, Struct, TraitDef},
     error::span::TextSpan,
 };
 use std::fmt::Display;
-use crate::ast::statements::Enum;
 
 #[derive(Debug, Clone)]
 pub struct UnitItem {

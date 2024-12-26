@@ -2,7 +2,6 @@ use crate::{
     compilation::unit::CompilationUnit, context::GlobalContext,
     path::canonicalize_path_with_err_message,
 };
-use anstream::ColorChoice;
 use anyhow::Result;
 use indexmap::IndexMap;
 use std::path::PathBuf;

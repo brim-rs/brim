@@ -1,12 +1,15 @@
 use crate::{
     ast::{
-        expressions::{AssignOperator, BinOpKind, ExprKind, LiteralType, UnOpKind, Unary},
+        expressions::{
+            AccessKind, AssignOperator, BinOpKind, ExprKind, LiteralType, UnOpKind, Unary,
+        },
         statements::StmtKind,
         types::TypeKind,
         ExprId, GetSpan, StmtId,
     },
     compilation::{
         imports::UnitLoader,
+        items::UnitItemKind,
         passes::{type_checker::ResolvedType, Pass},
         unit::CompilationUnit,
     },
@@ -17,8 +20,6 @@ use crate::{
 };
 use anyhow::Result;
 use std::{collections::HashMap, sync::Arc};
-use crate::ast::expressions::AccessKind;
-use crate::compilation::items::UnitItemKind;
 
 #[derive(Debug)]
 pub struct TypeChecker<'a> {
@@ -84,7 +85,7 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub fn resolve_from_expr(&mut self, expr: ExprId) -> Result<ResolvedType> {
-        let mut expr = self.unit.ast().query_expr(expr).clone();
+        let expr = self.unit.ast().query_expr(expr).clone();
 
         let result = match expr.kind {
             ExprKind::Unary(unary) => self.validate_unary(unary)?,
@@ -143,32 +144,20 @@ impl<'a> TypeChecker<'a> {
                     match (left.kind.clone(), right.kind.clone()) {
                         // Concatenate strings or characters
                         (TypeKind::Char | TypeKind::String, TypeKind::Char | TypeKind::String)
-                        if binary.operator == BinOpKind::Plus =>
-                            {
-                                ResolvedType::base(TypeKind::String)
-                            }
+                            if binary.operator == BinOpKind::Plus =>
+                        {
+                            ResolvedType::base(TypeKind::String)
+                        }
 
                         // Matching types directly
                         (
-                            TypeKind::I8
-                            | TypeKind::I16
-                            | TypeKind::I32
-                            | TypeKind::I64,
-                            TypeKind::I8
-                            | TypeKind::I16
-                            | TypeKind::I32
-                            | TypeKind::I64,
+                            TypeKind::I8 | TypeKind::I16 | TypeKind::I32 | TypeKind::I64,
+                            TypeKind::I8 | TypeKind::I16 | TypeKind::I32 | TypeKind::I64,
                         ) => ResolvedType::base(std::cmp::max(left.kind, right.kind)),
 
                         (
-                            TypeKind::U8
-                            | TypeKind::U16
-                            | TypeKind::U32
-                            | TypeKind::U64,
-                            TypeKind::U8
-                            | TypeKind::U16
-                            | TypeKind::U32
-                            | TypeKind::U64
+                            TypeKind::U8 | TypeKind::U16 | TypeKind::U32 | TypeKind::U64,
+                            TypeKind::U8 | TypeKind::U16 | TypeKind::U32 | TypeKind::U64,
                         ) => ResolvedType::base(std::cmp::max(left.kind, right.kind)),
 
                         (TypeKind::F32 | TypeKind::F64, TypeKind::F32 | TypeKind::F64) => {
@@ -344,10 +333,10 @@ impl<'a> TypeChecker<'a> {
                                             .ast()
                                             .query_expr(expr)
                                             .span(self.unit.ast())
-                                            .clone(), Some("expected number".to_string()))],
-                                    vec![
-                                        "Floats can't be used as array indexes".to_string(),
-                                    ],
+                                            .clone(),
+                                        Some("expected number".to_string()),
+                                    )],
+                                    vec!["Floats can't be used as array indexes".to_string()],
                                 ),
                                 Arc::new(self.unit.source.clone()),
                             );
@@ -358,16 +347,19 @@ impl<'a> TypeChecker<'a> {
                         if !index_type.is_number() {
                             self.diags.new_diagnostic(
                                 Diagnostic::error(
-                                    format!("String index must be a number, found '{}'", index_type),
+                                    format!(
+                                        "String index must be a number, found '{}'",
+                                        index_type
+                                    ),
                                     vec![(
                                         self.unit
                                             .ast()
                                             .query_expr(expr)
                                             .span(self.unit.ast())
-                                            .clone(), Some("expected number".to_string()))],
-                                    vec![
-                                        "Floats can't be used as string indexes".to_string(),
-                                    ],
+                                            .clone(),
+                                        Some("expected number".to_string()),
+                                    )],
+                                    vec!["Floats can't be used as string indexes".to_string()],
                                 ),
                                 Arc::new(self.unit.source.clone()),
                             );
@@ -382,7 +374,14 @@ impl<'a> TypeChecker<'a> {
                                     base.to_string(),
                                     index_type.to_string()
                                 ),
-                                vec![(self.unit.ast().query_expr(expr).span(self.unit.ast()).clone(), None)],
+                                vec![(
+                                    self.unit
+                                        .ast()
+                                        .query_expr(expr)
+                                        .span(self.unit.ast())
+                                        .clone(),
+                                    None,
+                                )],
                                 vec![],
                             ),
                             Arc::new(self.unit.source.clone()),
@@ -415,7 +414,8 @@ impl<'a> TypeChecker<'a> {
                                 if let Some(field_type) = field_type {
                                     let expr_type = self.resolve_from_expr(expr)?;
 
-                                    let field_type = &ResolvedType::from_type_annotation(field_type.clone());
+                                    let field_type =
+                                        &ResolvedType::from_type_annotation(field_type.clone());
                                     if !ResolvedType::matches(&expr_type, field_type) {
                                         let expr = self.unit.ast().query_expr(expr);
 
@@ -438,8 +438,7 @@ impl<'a> TypeChecker<'a> {
                                         Diagnostic::error(
                                             format!(
                                                 "Field '{}' not found in struct '{}'",
-                                                field,
-                                                struct_ctor.name
+                                                field, struct_ctor.name
                                             ),
                                             vec![(expr.span(self.unit.ast()).clone(), None)],
                                             vec![],
@@ -501,7 +500,9 @@ impl<'a> TypeChecker<'a> {
                                 );
                             } else {
                                 for (param, arg) in func.params.iter().zip(args.iter()) {
-                                    let param_type = ResolvedType::from_type_annotation(param.type_annotation.clone());
+                                    let param_type = ResolvedType::from_type_annotation(
+                                        param.type_annotation.clone(),
+                                    );
 
                                     if !ResolvedType::matches(&param_type, arg) {
                                         self.diags.new_diagnostic(
@@ -519,11 +520,13 @@ impl<'a> TypeChecker<'a> {
                                 }
                             }
 
-                            ResolvedType::from_type_annotation(if let Some(ret) = func.return_type {
-                                ret
-                            } else {
-                                ResolvedType::base(TypeKind::Void).to_type_annotation()
-                            })
+                            ResolvedType::from_type_annotation(
+                                if let Some(ret) = func.return_type {
+                                    ret
+                                } else {
+                                    ResolvedType::base(TypeKind::Void).to_type_annotation()
+                                },
+                            )
                         }
                         _ => {
                             self.diags.new_diagnostic(
@@ -541,7 +544,10 @@ impl<'a> TypeChecker<'a> {
                 } else {
                     self.diags.new_diagnostic(
                         Diagnostic::error(
-                            format!("Attempted to call function '{}' that doesn't exist in this scope", call.callee),
+                            format!(
+                                "Attempted to call function '{}' that doesn't exist in this scope",
+                                call.callee
+                            ),
                             vec![(expr.span(self.unit.ast()).clone(), None)],
                             vec![],
                         ),
