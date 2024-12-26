@@ -28,3 +28,4 @@ rand = "0.9.0-beta.1"
 brim-config = { workspace = true }
 brim-cpp-compiler = { workspace = true }
 toml = { workspace = true }
+lazy_static = "1.5.0"

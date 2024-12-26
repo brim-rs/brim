@@ -47,16 +47,16 @@ impl<'a> CodeGen<'a> {
                 // auto for now
                 self.write_before(format!("auto {} = ", ident));
                 self.generate_expr(expr)?;
-                self.write(";\n");
+                self.write("\n");
             }
             StmtKind::Return(ret) => {
                 if let Some(expr) = ret.expr {
                     let expr = self.unit.ast().query_expr(expr).clone();
                     self.write_before("return ");
                     self.generate_expr(expr)?;
-                    self.write(";\n");
+                    self.write("\n");
                 } else {
-                    self.write("return;\n");
+                    self.write("return\n");
                 }
             }
             StmtKind::Struct(struct_def) => self.generate_struct_def(struct_def)?,
@@ -96,6 +96,8 @@ impl<'a> CodeGen<'a> {
             }
             _ => {}
         }
+
+        self.write(";");
 
         Ok(())
     }

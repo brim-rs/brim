@@ -163,11 +163,12 @@ impl Ast {
         expr.id
     }
 
-    pub fn new_call(&mut self, callee: String, args: Vec<ExprId>, token: Token) -> ExprId {
+    pub fn new_call(&mut self, callee: String, args: Vec<ExprId>, token: Token, is_builtin: bool) -> ExprId {
         let expr = self.new_expr(ExprKind::Call(CallExpr {
             callee,
             args,
             token,
+            is_builtin
         }));
         expr.id
     }

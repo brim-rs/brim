@@ -4,6 +4,7 @@ mod functions;
 mod generator;
 mod structs;
 mod utils;
+pub mod built_ins;
 
 use crate::{
     compilation::{imports::UnitLoader, unit::CompilationUnit},
@@ -19,6 +20,7 @@ use std::{
 };
 use tracing::debug;
 
+#[derive(Debug)]
 pub struct CodeGen<'a> {
     pub unit: &'a mut CompilationUnit,
     pub loader: &'a mut UnitLoader,
@@ -29,6 +31,7 @@ pub struct CodeGen<'a> {
     pub ident: usize,
     pub current_indent: usize,
     pub needed_imports: Vec<String>,
+    pub injects: Vec<String>,
     pub is_bin: bool,
     pub fn_return_type: Option<String>,
     pub main: bool,
@@ -53,6 +56,7 @@ impl<'a> CodeGen<'a> {
             is_bin: false,
             fn_return_type: None,
             main: false,
+            injects: vec![],
         })
     }
 }
@@ -74,9 +78,6 @@ impl<'a> CodeGen<'a> {
 
         self.pop_indent();
         self.write_line("}");
-
-        self.inject_imports();
-
         self.main = true;
 
         if self.is_entry_point && self.is_bin {
@@ -95,6 +96,8 @@ impl<'a> CodeGen<'a> {
                 bail!("Entrypoint file must contain a main function.");
             }
         }
+
+        self.inject();
 
         debug!(
             "Generated C++ code: \n{}",

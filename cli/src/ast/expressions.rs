@@ -246,6 +246,7 @@ pub struct CallExpr {
     pub callee: String,
     pub args: Vec<ExprId>,
     pub token: Token,
+    pub is_builtin: bool,
 }
 
 impl GetSpan for CallExpr {

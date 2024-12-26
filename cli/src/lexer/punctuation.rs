@@ -17,6 +17,7 @@ impl Punctuation {
             '[' => TokenKind::LeftBracket,
             ']' => TokenKind::RightBracket,
             ',' => TokenKind::Comma,
+            '@' => TokenKind::At,
             '.' => lexer.lex_potential_triple(
                 '.',
                 TokenKind::Dot,

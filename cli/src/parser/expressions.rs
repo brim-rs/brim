@@ -81,7 +81,7 @@ impl Parser {
 
                 if next_precedence > operator_precedence
                     || (next_precedence == operator_precedence
-                        && next_operator.associativity() == BinOpAssociativity::Right)
+                    && next_operator.associativity() == BinOpAssociativity::Right)
                 {
                     right = self.parse_binary_expression_recurse(right, next_precedence)?;
                 } else {
@@ -123,6 +123,16 @@ impl Parser {
             if token.kind == TokenKind::Dot {
                 self.consume();
 
+                // We cannot use built-in functions as field names (@)
+                if self.peek().kind == TokenKind::At {
+                    bail!(parser_error(
+                        "Built-in functions cannot be used as field names.".to_string(),
+                        vec![(self.peek().span.clone(), None)],
+                        vec![],
+                        None,
+                    ));
+                }
+
                 let field_token = self.consume();
 
                 let generics = if self.peek().kind == TokenKind::LessThan {
@@ -136,7 +146,7 @@ impl Parser {
                         .new_variable(field_token.clone(), field_token.literal(), generics);
 
                 if self.peek().kind == TokenKind::LeftParen {
-                    field_expr = self.parse_call_expr(field_token)?;
+                    field_expr = self.parse_call_expr(field_token, false)?;
                 }
 
                 expr = self.ast.new_field_access(expr, field_expr, token);
@@ -191,6 +201,10 @@ impl Parser {
             TokenKind::True | TokenKind::False => Ok(self
                 .ast
                 .new_boolean(token.as_bool().unwrap(), token.clone())),
+            TokenKind::At => {
+                let callee = self.consume();
+                self.parse_call_expr(callee, true)
+            }
             TokenKind::Pipe => {
                 let mut params = vec![];
 
@@ -265,7 +279,7 @@ impl Parser {
             }
             TokenKind::Identifier => {
                 if self.peek().kind == TokenKind::LeftParen {
-                    self.parse_call_expr(token)
+                    self.parse_call_expr(token, false)
                 } else if self.peek().kind == TokenKind::LeftBrace {
                     if self.is_context(&ParseContext::Normal) {
                         self.parse_struct_constructor(token)
@@ -307,11 +321,11 @@ impl Parser {
                 vec![],
                 None,
             )
-            .into()),
+                .into()),
         }
     }
 
-    pub fn parse_call_expr(&mut self, callee: Token) -> Result<ExprId> {
+    pub fn parse_call_expr(&mut self, callee: Token, builtin: bool) -> Result<ExprId> {
         self.expect(TokenKind::LeftParen)?;
 
         let mut args = vec![];
@@ -330,7 +344,7 @@ impl Parser {
 
         self.expect(TokenKind::RightParen)?;
 
-        Ok(self.ast.new_call(callee.literal(), args, callee))
+        Ok(self.ast.new_call(callee.literal(), args, callee, builtin))
     }
 
     pub fn parse_optional_type_annotation(&mut self) -> Result<Option<TypeAnnotation>> {

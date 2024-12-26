@@ -140,6 +140,10 @@ fn parse(input: string) -> string !MyError {
 
 Built-in functions are functions that are provided by the compiler itself. They are prefixed with the `@` symbol.
 
+| Function | Description                                |
+|----------|--------------------------------------------|
+| `@print` | Prints a value to the provided descriptor. |
+
 ## Errors
 
 ### Errors types

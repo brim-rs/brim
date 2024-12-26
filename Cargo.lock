@@ -141,6 +141,7 @@ dependencies = [
  "http-body-util",
  "indexmap",
  "itertools",
+ "lazy_static",
  "rand",
  "ropey",
  "serde",

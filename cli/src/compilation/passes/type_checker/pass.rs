@@ -20,6 +20,8 @@ use crate::{
 };
 use anyhow::Result;
 use std::{collections::HashMap, sync::Arc};
+use crate::compilation::code_gen::built_ins::BuiltInKind;
+use crate::compilation::code_gen::CodeGen;
 
 #[derive(Debug)]
 pub struct TypeChecker<'a> {
@@ -84,6 +86,7 @@ impl<'a> TypeChecker<'a> {
         Ok(())
     }
 
+    // TODO: change this to Expr so we don't sometimes have to query the expr twice. Same with statements
     pub fn resolve_from_expr(&mut self, expr: ExprId) -> Result<ResolvedType> {
         let expr = self.unit.ast().query_expr(expr).clone();
 
@@ -144,10 +147,10 @@ impl<'a> TypeChecker<'a> {
                     match (left.kind.clone(), right.kind.clone()) {
                         // Concatenate strings or characters
                         (TypeKind::Char | TypeKind::String, TypeKind::Char | TypeKind::String)
-                            if binary.operator == BinOpKind::Plus =>
-                        {
-                            ResolvedType::base(TypeKind::String)
-                        }
+                        if binary.operator == BinOpKind::Plus =>
+                            {
+                                ResolvedType::base(TypeKind::String)
+                            }
 
                         // Matching types directly
                         (
@@ -473,6 +476,48 @@ impl<'a> TypeChecker<'a> {
                 ResolvedType::base(TypeKind::Null)
             }
             ExprKind::Call(ref call) => {
+                if call.is_builtin && let Some(builtin) = BuiltInKind::get_builtin(&call.callee) {
+                    let (return_type, args) = builtin.signature();
+                    let mut resolved_args: Vec<(ResolvedType, TextSpan)> = vec![];
+
+                    for arg in call.args.clone() {
+                        resolved_args.push((self.resolve_from_expr(arg)?, self.unit.ast().query_expr(arg).span(self.unit.ast()).clone()));
+                    }
+
+                    for ((arg, arg_span), expected) in resolved_args.iter().zip(args.iter()) {
+                        if !ResolvedType::matches(arg, expected) {
+                            self.diags.new_diagnostic(
+                                Diagnostic::error(
+                                    format!(
+                                        "Expected type '{}', found '{}'",
+                                        expected, arg
+                                    ),
+                                    vec![(arg_span.clone(), Some(
+                                        "argument with incorrect type".to_string()
+                                    ))],
+                                    vec![],
+                                ),
+                                Arc::new(self.unit.source.clone()),
+                            );
+                        }
+                    }
+
+                    return Ok(return_type);
+                }
+
+                if call.is_builtin {
+                    self.diags.new_diagnostic(
+                        Diagnostic::error(
+                            format!("Attempted to call '{0}' function as a builtin, but builtin '{0}' doesn't exist", call.callee),
+                            vec![(expr.span(self.unit.ast()).clone(), None)],
+                            vec![],
+                        ),
+                        Arc::new(self.unit.source.clone()),
+                    );
+
+                    return Ok(ResolvedType::base(TypeKind::Null));
+                }
+
                 let mut args = vec![];
                 for arg in call.args.clone() {
                     args.push(self.resolve_from_expr(arg)?);

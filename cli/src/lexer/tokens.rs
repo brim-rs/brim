@@ -115,6 +115,7 @@ impl Display for TokenKind {
             TokenKind::DoubleLessThan => write!(f, "<<"),
             TokenKind::DoubleGreaterThan => write!(f, ">>"),
             TokenKind::QuestionMark => write!(f, "?"),
+            TokenKind::At => write!(f, "@"),
 
             // Others
             TokenKind::EOF => write!(f, "EOF"),
@@ -207,7 +208,8 @@ pub enum TokenKind {
     DoubleLessThan,    // <<,
     DoubleGreaterThan, // >>,
     QuestionMark,      // ?
-
+    At,                // @
+    
     EOF,
     Whitespace,
     Bad,

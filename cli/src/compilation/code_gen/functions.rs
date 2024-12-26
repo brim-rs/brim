@@ -139,6 +139,12 @@ impl<'a> CodeGen<'a> {
     }
 
     pub fn generate_call(&mut self, call: CallExpr) -> Result<()> {
+        if call.is_builtin {
+            self.generate_built_in(call)?;
+            
+            return Ok(());
+        }
+
         if let Some(x) = self.unit.unit_items.get(&call.callee) {
             let unit_data = x.unit.clone();
             let (_, unit) = self.loader.load_unit(&unit_data, self.unit)?;

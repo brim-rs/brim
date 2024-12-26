@@ -17,4 +17,5 @@ pub fn main() {
     let z = 12;
 
     let res = div(z, y);
+    @print("Skibidi");
 };
