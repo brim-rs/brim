@@ -14,6 +14,7 @@ use std::sync::Arc;
 use tracing::debug;
 use brim_config::{LibType, OptLevel, ProjectType};
 use brim_cpp_compiler::CppBuild;
+use brim_shell::Shell;
 use crate::cli::{debug_mode, release_mode};
 use crate::compilation::code_gen::CodeGen;
 
@@ -27,19 +28,19 @@ pub fn run_cmd() -> Command {
         .arg(debug_mode())
 }
 
-pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
+pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell) -> Result<()> {
     let start = ctx.start;
     let time = args.get_flag("time");
 
-    // if ctx.project_type()? == ProjectType::Lib {
-    //     ctx.brim_shell.error("Cannot run a library project")?;
-    //     return Ok(());
-    // }
+    if ctx.project_type()? == ProjectType::Lib {
+        shell.error("Cannot run a library project")?;
+        return Ok(());
+    }
 
     let loader = &mut UnitLoader::new(ctx.cwd.clone());
 
-    let lib_type = ctx.config.build.as_ref().and_then(|b| b.lib_type.clone()).unwrap_or(LibType::Static);
-    let build_process = &mut CppBuild::new(None, ctx.project_type()?, ctx.build_dir()?, lib_type)?;
+    let lib_type = &ctx.config.build.lib_type;
+    let build_process = &mut CppBuild::new(None, ctx.project_type()?, ctx.build_dir()?, lib_type.clone())?;
     let mut unit = CompilationUnit::new(ctx.get_main_file()?)?;
     let diags = &mut Diagnostics::new();
 
@@ -56,15 +57,15 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
             // TODO: move that to config
             // let build_type = resolve_build_type(&ctx.config, args)?;
             // debug!("Build type: {:?}", build_type);
-            let build_type = ctx.config.build.as_ref().and_then(|b| b.level.clone()).unwrap_or(OptLevel::Debug);
+            let build_type = &ctx.config.build.level;
             let codegen = &mut CodeGen::new(&mut unit, loader, build_type.clone(), true)?;
 
-            ctx.shell.status("Compiling", format!("{} in {} mode", ctx.config.project.name, build_type))?;
+            shell.status("Compiling", format!("{} in {} mode", ctx.config.project.name, build_type))?;
 
             codegen.generate_and_write(ctx, build_process)?;
 
             build_process.compile(
-                &ctx.config.project.name, &mut ctx.shell,
+                &ctx.config.project.name, shell,
             )?;
         }
         Err(e) => {
@@ -89,7 +90,7 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches) -> Result<()> {
 
     if time {
         let elapsed = start.elapsed();
-        ctx.shell.status("Time taken", &format!("{:?}", elapsed))?;
+        shell.status("Time taken", &format!("{:?}", elapsed))?;
     }
 
     Ok(())

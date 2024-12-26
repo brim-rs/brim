@@ -1,3 +1,5 @@
+pub mod parsed;
+
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 use std::fmt::Display;
@@ -27,7 +29,7 @@ impl Display for OptLevel {
         match self {
             OptLevel::Debug => write!(f, "debug"),
             OptLevel::Release => write!(f, "release"),
-            OptLevel::MinSizeRel => write!(f, "min-sizerel"),
+            OptLevel::MinSizeRel => write!(f, "min-size-rel"),
             OptLevel::RelWithDebInfo => write!(f, "rel-with-deb-info"),
         }
     }

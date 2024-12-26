@@ -6,3 +6,6 @@ edition = "2024"
 [dependencies]
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+toml = { workspace = true }
+toml_edit = { workspace = true }
+brim-fs = { workspace = true }

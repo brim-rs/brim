@@ -159,13 +159,13 @@ impl Shell {
         message: T,
         err: bool,
     ) -> Result<()> {
-        let title = format!(" {} ", title); // Add space before and after the title
+        let title = format!(" {} ", title);
         let stderr = self.output.stderr();
         let size = terminal_size();
         if let Some((Width(w), Height(h))) = size {
             let width = w as usize;
 
-            let message = format!(" {} ", message); // Add space before and after the message
+            let message = format!(" {} ", message);
             let message_len = message.len();
             let message = if message_len > width {
                 message

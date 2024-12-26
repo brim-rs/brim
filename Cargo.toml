@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "cli", "crates/brim_config", "crates/brim_cpp_compiler", "crates/brim_shell",
+    "cli", "crates/brim_config", "crates/brim_cpp_compiler", "crates/brim_fs", "crates/brim_shell",
 ]
 resolver = "1"
 
@@ -10,6 +10,7 @@ resolver = "1"
 brim-shell = { path = "crates/brim_shell", version = "0.1.0" }
 brim-config = { path = "crates/brim_config", version = "0.1.0" }
 brim-cpp-compiler = { path = "crates/brim_cpp_compiler", version = "0.1.0" }
+brim-fs = { path = "crates/brim_fs", version = "0.1.0" }
 
 # Other dependencies
 anyhow = "1.0.94"

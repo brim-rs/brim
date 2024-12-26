@@ -148,7 +148,6 @@ dependencies = [
  "thiserror 2.0.9",
  "tokio",
  "toml",
- "toml_edit",
  "tracing",
  "tracing-subscriber",
  "unindent",
@@ -159,7 +158,10 @@ name = "brim-config"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "brim-fs",
  "serde",
+ "toml",
+ "toml_edit",
 ]
 
 [[package]]
@@ -177,6 +179,10 @@ dependencies = [
  "tracing",
  "which",
 ]
+
+[[package]]
+name = "brim-fs"
+version = "0.1.0"
 
 [[package]]
 name = "brim-shell"

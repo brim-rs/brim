@@ -1,5 +1,4 @@
 use crate::{
-    fs::walk_for_file,
     path::{canonicalize_path, normalize_without_canonicalize},
 };
 use anstream::ColorChoice;
@@ -9,43 +8,18 @@ use colored::Colorize;
 use std::{fs::read_to_string, path::PathBuf, time::Instant};
 use std::fmt::{Debug, Display};
 use brim_config::{BrimConfig, ProjectType};
+use brim_config::parsed::ParsedBrimConfig;
 
 pub struct GlobalContext {
     pub verbose: bool,
     pub cwd: PathBuf,
     pub start: Instant,
-    pub shell: Shell,
-    pub config: BrimConfig,
+    pub config: ParsedBrimConfig,
 }
 
-
 impl GlobalContext {
-    pub fn load_config(cwd: PathBuf) -> Result<BrimConfig> {
-        let path = walk_for_file(cwd.clone(), "brim.toml");
-
-        if path.is_none() {
-            return Err(anyhow!("Failed to find {}. Make sure you are running the command inside project root or in a subdirectory", "brim.toml".bright_magenta()));
-        }
-
-        let path = path.unwrap();
-
-        let content = read_to_string(&path).context("Failed to read roan.toml")?;
-        let config: BrimConfig = toml::from_str(&content)?;
-
-        if config.project.r#type.is_none() {
-            return Err(anyhow!(
-                "Project type is not specified in [project] in roan.toml. Available types: 'lib', 'bin'"
-            ));
-        }
-
-        let r#type = config.project.r#type.as_ref().unwrap();
-        if r#type != &ProjectType::Lib && r#type != &ProjectType::Bin {
-            return Err(anyhow!(
-                "Invalid project type in [project] in roan.toml. Available types: 'lib', 'bin'"
-            ));
-        }
-
-        Ok(config)
+    pub fn load_config(cwd: PathBuf) -> Result<ParsedBrimConfig> {
+        Ok(ParsedBrimConfig::get(cwd)?)
     }
 
     pub fn default(color_choice: ColorChoice) -> Result<Self> {
@@ -56,7 +30,6 @@ impl GlobalContext {
             verbose: false,
             cwd,
             start: Instant::now(),
-            shell: Shell::new(color_choice),
             config,
         })
     }
@@ -108,7 +81,6 @@ impl GlobalContext {
             verbose: false,
             cwd,
             start: Instant::now(),
-            shell: Shell::new(color_choice),
             config,
         })
     }
