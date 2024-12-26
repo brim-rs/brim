@@ -1,3 +1,4 @@
+use std::process;
 use crate::{
     cli::{
         debug_mode, dynamic_lib_mode, min_size_rel_mode, opt, rel_with_deb_info_mode, release_mode,
@@ -32,6 +33,13 @@ pub fn run_cmd() -> Command {
         .arg(rel_with_deb_info_mode())
         .arg(dynamic_lib_mode())
         .arg(static_lib_mode())
+        .trailing_var_arg(true)
+        .arg(
+            clap::Arg::new("args")
+                .num_args(0..)
+                .allow_negative_numbers(true)
+                .trailing_var_arg(true)
+        )
 }
 
 pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell) -> Result<()> {
@@ -74,8 +82,32 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell
             )?;
 
             codegen.generate_and_write(ctx, build_process)?;
+            let final_path = build_process.compile(&ctx.config.project.name, shell)?;
 
-            build_process.compile(&ctx.config.project.name, shell)?;
+
+            let args: Vec<String> = args
+                .get_many::<String>("args")
+                .map(|vals| vals.map(|s| s.to_string()).collect())
+                .unwrap_or_default();
+
+            let mut command = process::Command::new(&final_path);
+            command.args(&args);
+
+            shell.status("Running", format!("`{} {}`", &final_path
+                .to_string_lossy(), &args.iter().map(|s| s.as_str()).collect::<Vec<&str>>().join(" ")
+            ))?;
+
+            match command.spawn() {
+                Ok(mut child) => {
+                    let status = child.wait()?;
+                    if !status.success() {
+                        shell.error("Failed to run the project")?;
+                    }
+                }
+                Err(e) => {
+                    shell.error(&format!("Failed to run the project: {}", e))?;
+                }
+            }
         }
         Err(e) => {
             if let Some(err) = e.downcast_ref::<BrimError>() {

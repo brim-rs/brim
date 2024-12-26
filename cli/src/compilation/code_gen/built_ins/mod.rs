@@ -24,7 +24,7 @@ lazy_static! {
     pub static ref BUILT_INS: Vec<BuiltIn> = vec![
         BuiltIn {
             kind: BuiltInKind::Print,
-            internal_name: "__builtin_print".to_string(),
+            internal_name: "brim_builtin_print".to_string(),
             source: include_str!("definitions/print.cpp").to_string(),
             needed_imports: vec!["iostream".to_string(), "string".to_string()],
         },
