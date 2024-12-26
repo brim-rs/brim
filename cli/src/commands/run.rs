@@ -52,8 +52,8 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell
 
     match unit.compile(loader, diags) {
         Ok(_) => {
-            if diags.diagnostics.len() > 0 {
-                debug!("Found diagnostics. Skipping code generation");
+            if diags.has_errors() {
+                debug!("Found error diagnostics. Skipping code generation");
                 diags.print_diagnostics();
                 return Ok(());
             }
