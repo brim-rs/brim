@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, ensure, Context};
 use serde::{Deserialize, Serialize};
 use crate::{BrimConfig, Dependency, LibType, OptLevel, ProjectConfig, ProjectType};
 use anyhow::Result;
@@ -43,13 +43,15 @@ impl ParsedBrimConfig {
             return Err(ConfigError::InvalidProjectType(format!("{:?}", project_type)).into());
         }
 
-        Ok(Self::parse(config, args))
+        Ok(Self::parse(config, args)?)
     }
 
-    pub fn parse(config: BrimConfig, args: Option<&ArgMatches>) -> Self {
+    pub fn parse(config: BrimConfig, args: Option<&ArgMatches>) -> Result<Self> {
         let project = config.project;
         let tasks = config.tasks;
         let dependencies = config.dependencies;
+        
+        ensure!(project.name.len() > 0, "Project name can't be empty");
 
         let mut build = if let Some(build) = config.build {
             ParsedBuildConfig {
@@ -81,11 +83,11 @@ impl ParsedBrimConfig {
             }
         }
 
-        Self {
+        Ok(Self {
             project,
             tasks,
             dependencies: dependencies.unwrap_or(HashMap::new()),
             build,
-        }
+        })
     }
 }
