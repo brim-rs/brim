@@ -9,10 +9,19 @@ pub fn div(a: i32, b: i32) -> i32!string {
 pub struct Foo {
     x: i32,
     z: i32,
+    p: i32,
     y: i32,
     a: i32,
+    b: i32,
 };
 
 pub fn main() {
-    let x = div(10, 0);
+    let x = Foo {
+        p: 1,
+        x: 1,
+        y: 3,
+        a: 4,
+        b: 5,
+        z: 2,
+    };
 };

@@ -126,34 +126,7 @@ impl<'a> CodeGen<'a> {
                 }
             }
             ExprKind::Call(call) => self.generate_call(call, build_cpp)?,
-            ExprKind::StructConstructor(constructor) => {
-                let struct_ = self.unit.unit_items.get(&constructor.name).unwrap();
-                let unit_data = struct_.unit.clone();
-                let (_, unit) = self.loader.load_unit(&unit_data, self.unit)?;
-
-                self.write(format!("{}::{}{{", unit.namespace, constructor.name));
-
-                // MSVC doesn't support designated initializers
-                if build_cpp.compiler_kind() != &CompilerKind::Msvc {
-                    for (i, (name, expr_id)) in constructor.fields.iter().enumerate() {
-                        let field_value = self.unit.ast().query_expr(*expr_id).clone();
-
-                        self.write(name);
-                        self.write(": ");
-                        self.generate_expr(field_value, build_cpp)?;
-
-                        if i < constructor.fields.len() - 1 {
-                            self.write(", ");
-                        }
-                    }
-                } else {
-                    // We have to specify them in the correct order
-
-                }
-
-
-                self.write("}");
-            }
+            ExprKind::StructConstructor(constructor) => self.generate_struct_constructor(constructor, build_cpp)?,
             _ => {}
         }
 
