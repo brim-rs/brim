@@ -199,13 +199,13 @@ fn parse(input: string) -> string !string {
 
 Look at the [Functions](#functions) section for more information.
 
-### `try` keyword
+### `@try` built-in function
 
 Try evaluates the union type. If it's an error, it returns from the function. If it's a value, it unwraps it.
 
 ```brim
 fn parse(input: string) -> string !MyError {
-     let value = try parse(input) // If parse fails, it returns the error and stops execution of the function.
+     let value = @try(parse(input)) // If parse fails, it returns the error and stops execution of the function.
      println(value)
      return value
 }

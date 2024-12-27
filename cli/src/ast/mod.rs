@@ -13,7 +13,7 @@ use crate::{
         item::TopLevelItem,
         statements::{
             Block, Const, ElseBlock, EnumVariant, FnParam, Function, Let, Loop, Return, Stmt,
-            StmtKind, Struct, StructField, StructImpl, TraitDef, TraitImpl, Try, TypeAnnotation,
+            StmtKind, Struct, StructField, StructImpl, TraitDef, TraitImpl, TypeAnnotation,
             Use, While,
         },
         types::TypeKind,
@@ -168,7 +168,7 @@ impl Ast {
             callee,
             args,
             token,
-            is_builtin
+            is_builtin,
         }));
         expr.id
     }
@@ -378,12 +378,6 @@ impl Ast {
 
     pub fn new_return(&mut self, return_token: Token, expr: Option<ExprId>) -> StmtId {
         let stmt = self.new_stmt(StmtKind::Return(Return { return_token, expr }));
-        stmt.id
-    }
-
-    pub fn new_try(&mut self, token: Token, expr: ExprId) -> StmtId {
-        let stmt = self.new_stmt(StmtKind::Try(Try { token, expr }));
-
         stmt.id
     }
 

@@ -27,7 +27,6 @@ pub enum StmtKind {
     Return(Return),
     Fn(Function),
     Let(Let),
-    Try(Try),
     Break(Token),
     Continue(Token),
     Loop(Loop),
@@ -147,12 +146,6 @@ pub struct Throw {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Try {
-    pub token: Token,
-    pub expr: ExprId,
-}
-
-#[derive(Clone, Debug, PartialEq)]
 pub struct Let {
     pub ident: Token,
     pub initializer: ExprId,
@@ -194,7 +187,7 @@ impl GetSpan for FnParam {
             self.ident.span.clone(),
             self.type_annotation.span(ast),
         ])
-        .unwrap()
+            .unwrap()
     }
 }
 

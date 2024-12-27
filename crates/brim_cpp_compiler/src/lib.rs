@@ -258,7 +258,13 @@ impl CppBuild {
                         command.arg(format!("/Fe:{}", output_name.to_string_lossy()));
                     } else {
                         command.arg("-shared");
-                        command.arg("-o").arg(output_name);
+                        command.arg("-o").arg(
+                            if cfg!(windows) {
+                                PathBuf::from(output_name).with_extension("dll")
+                            } else {
+                                output_name.into()
+                            },
+                        );
                     }
                 }
             },
@@ -266,7 +272,13 @@ impl CppBuild {
                 if self.compiler.kind() == &CompilerKind::Msvc {
                     command.arg(format!("/Fe:{}", output_name.to_string_lossy()));
                 } else {
-                    command.arg("-o").arg(output_name);
+                    command.arg("-o").arg(
+                        if cfg!(windows) {
+                            PathBuf::from(output_name).with_extension("exe")
+                        } else {
+                            output_name.into()
+                        },
+                    );
                 }
             }
         }

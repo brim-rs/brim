@@ -18,6 +18,7 @@ use brim_shell::Shell;
 use clap::{ArgAction, ArgMatches, Command};
 use std::sync::Arc;
 use tracing::debug;
+use brim_cpp_compiler::compiler::CompilerKind;
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -55,7 +56,8 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell
 
     let lib_type = &ctx.config.build.lib_type;
     let build_process = &mut CppBuild::new(
-        None,
+        // msvc still doesn't support compound statements expressions
+        Some(CompilerKind::Clang),
         ctx.project_type()?,
         ctx.build_dir()?,
         lib_type.clone(),
@@ -96,17 +98,7 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell
                 .to_string_lossy(), if args.len() > 0 { " " } else { "" }, &args.iter().map(|s| s.as_str()).collect::<Vec<&str>>().join(" ")
             ))?;
 
-            match command.spawn() {
-                Ok(mut child) => {
-                    let status = child.wait()?;
-                    if !status.success() {
-                        shell.error("Failed to run the project")?;
-                    }
-                }
-                Err(e) => {
-                    shell.error(&format!("Failed to run the project: {}", e))?;
-                }
-            }
+            command.status()?;
         }
         Err(e) => {
             if let Some(err) = e.downcast_ref::<BrimError>() {

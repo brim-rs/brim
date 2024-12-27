@@ -1,4 +1,5 @@
 use crate::{ast::statements::Generic, compilation::code_gen::CodeGen};
+use crate::compilation::code_gen::built_ins::BUILT_INS;
 
 impl<'a> CodeGen<'a> {
     pub fn write(&mut self, s: impl Into<String>) {
@@ -33,6 +34,12 @@ impl<'a> CodeGen<'a> {
 
     pub fn inject(&mut self) {
         let mut str = String::new();
+        for built_in in BUILT_INS.iter() {
+            self.needed_imports.extend(built_in.needed_imports.clone());
+            if let Some(source) = &built_in.source {
+                self.injects.push(source.clone());
+            }
+        }
 
         self.needed_imports.sort();
         self.needed_imports.dedup();
@@ -43,7 +50,7 @@ impl<'a> CodeGen<'a> {
         str.push_str("using namespace std;\n");
 
         for inject in &self.injects {
-            str.push_str(inject);
+            str.push_str(format!("{}\n", inject).as_str());
         }
 
         self.buf.splice(0..0, str.bytes());

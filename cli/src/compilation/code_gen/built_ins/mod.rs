@@ -2,6 +2,7 @@ use std::cmp::PartialEq;
 use crate::compilation::code_gen::CodeGen;
 use anyhow::Result;
 use lazy_static::lazy_static;
+use tracing_subscriber::fmt::writer::EitherWriter::B;
 use brim_cpp_compiler::CppBuild;
 use crate::ast::expressions::CallExpr;
 use crate::ast::types::TypeKind;
@@ -12,6 +13,7 @@ pub enum BuiltInKind {
     Print,
     Ok,
     Err,
+    Try,
 }
 
 #[derive(Debug)]
@@ -43,6 +45,12 @@ lazy_static! {
             source: None,
             needed_imports: vec!["expected".to_string()],
         },
+        BuiltIn {
+            kind: BuiltInKind::Try,
+            internal_name: "brim_builtin_try".to_string(),
+            source: Some(include_str!("definitions/try.cpp").to_string()),
+            needed_imports: vec!["expected".to_string()],
+        }
     ];
 }
 
@@ -53,6 +61,7 @@ impl BuiltInKind {
             BuiltInKind::Print => (true, ResolvedType::base(TypeKind::Void), vec![ResolvedType::base(TypeKind::String)]),
             BuiltInKind::Ok => (false, ResolvedType::base(TypeKind::Void), vec![ResolvedType::base(TypeKind::Void)]),
             BuiltInKind::Err => (false, ResolvedType::base(TypeKind::Void), vec![ResolvedType::base(TypeKind::Void)]),
+            BuiltInKind::Try => (false, ResolvedType::base(TypeKind::Void), vec![ResolvedType::base(TypeKind::Void)]),
         }
     }
 
@@ -61,6 +70,7 @@ impl BuiltInKind {
             "print" => Some(BuiltInKind::Print),
             "ok" => Some(BuiltInKind::Ok),
             "err" => Some(BuiltInKind::Err),
+            "try" => Some(BuiltInKind::Try),
             _ => None,
         }
     }
@@ -73,13 +83,8 @@ impl<'a> CodeGen<'a> {
                 .find(|b| b.kind == BuiltInKind::get_builtin(&call.callee).unwrap())
                 .unwrap();
 
-        for import in &def.needed_imports {
-            self.needed_imports.push(import.clone());
-        }
-
         match def.kind {
             BuiltInKind::Print => {
-                self.injects.push(def.source.clone().unwrap());
                 self.write_line(format!("{}(", def.internal_name));
 
                 for (i, arg) in call.args.iter().enumerate() {
@@ -96,12 +101,18 @@ impl<'a> CodeGen<'a> {
             // While using expected, we can just return the value
             BuiltInKind::Ok => {
                 let arg = self.unit.ast().query_expr(call.args[0]).clone();
-                self.generate_expr(arg, build_cpp)?;                
+                self.generate_expr(arg, build_cpp)?;
             }
             BuiltInKind::Err => {
                 let arg = self.unit.ast().query_expr(call.args[0]).clone();
-        
+
                 self.write_line("std::unexpected(");
+                self.generate_expr(arg, build_cpp)?;
+                self.write(")");
+            }
+            BuiltInKind::Try => {
+                self.write("TRY(");
+                let arg = self.unit.ast().query_expr(call.args[0]).clone();
                 self.generate_expr(arg, build_cpp)?;
                 self.write(")");
             }

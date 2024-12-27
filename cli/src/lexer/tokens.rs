@@ -72,7 +72,6 @@ impl Display for TokenKind {
             TokenKind::Use => write!(f, "use"),
             TokenKind::Pub => write!(f, "pub"),
             TokenKind::From => write!(f, "from"),
-            TokenKind::Try => write!(f, "try"),
             TokenKind::Catch => write!(f, "catch"),
             TokenKind::Loop => write!(f, "loop"),
             TokenKind::True => write!(f, "true"),
@@ -165,7 +164,6 @@ pub enum TokenKind {
     Use,
     Pub,
     From,
-    Try,
     Catch,
     Loop,
     True,
@@ -209,7 +207,7 @@ pub enum TokenKind {
     DoubleGreaterThan, // >>,
     QuestionMark,      // ?
     At,                // @
-    
+
     EOF,
     Whitespace,
     Bad,

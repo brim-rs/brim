@@ -6,22 +6,12 @@ pub fn div(a: i32, b: i32) -> i32!string {
     return @ok(a / b);
 };
 
-pub struct Foo {
-    x: i32,
-    z: i32,
-    p: i32,
-    y: i32,
-    a: i32,
-    b: i32,
+pub fn do_action(a: i32, b: i32, c: i32) -> i32!string {
+    return @try(div(a, b)) + c;
 };
 
 pub fn main() {
-    let x = Foo {
-        p: 1,
-        x: 1,
-        y: 3,
-        a: 4,
-        b: 5,
-        z: 2,
-    };
+    let h = do_action(10, 0, 3);
+
+    @print("daw");
 };

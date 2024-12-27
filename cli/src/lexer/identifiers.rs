@@ -30,7 +30,6 @@ impl Identifier {
             "use" => TokenKind::Use,
             "pub" => TokenKind::Pub,
             "from" => TokenKind::From,
-            "try" => TokenKind::Try,
             "catch" => TokenKind::Catch,
             "loop" => TokenKind::Loop,
             "struct" => TokenKind::Struct,

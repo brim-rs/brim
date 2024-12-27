@@ -57,7 +57,6 @@ impl Parser {
             TokenKind::Use => Some(self.parse_use()?),
             TokenKind::If => Some(self.parse_if()?),
             TokenKind::Let => Some(self.parse_let()?),
-            TokenKind::Try => Some(self.parse_try()?),
             TokenKind::Break => {
                 self.consume();
                 self.possible_check(TokenKind::Semicolon);
@@ -194,7 +193,7 @@ impl Parser {
                 )],
                 vec![(self.previous().span.clone(), None)],
             )
-            .into());
+                .into());
         }
 
         let mut fields = IndexMap::new();
@@ -219,7 +218,7 @@ impl Parser {
                     )],
                     vec![(self.previous().span.clone(), None)],
                 )
-                .into());
+                    .into());
             } else {
                 self.possible_check(TokenKind::Comma);
             }
@@ -244,13 +243,6 @@ impl Parser {
         self.expect_punct(TokenKind::RightBrace)?;
 
         Ok(Some(self.ast.new_while(while_token, condition, block)))
-    }
-
-    pub fn parse_try(&mut self) -> Result<StmtId> {
-        let try_token = self.consume();
-        let try_expression = self.parse_expr()?;
-
-        Ok(self.ast.new_try(try_token, try_expression))
     }
 
     pub fn parse_return(&mut self) -> Result<Option<StmtId>> {
@@ -421,7 +413,7 @@ impl Parser {
                     )],
                     vec![(self.peek().span.clone(), None)],
                 )
-                .into());
+                    .into());
             }
 
             Some(self.expect(TokenKind::Colon)?)
@@ -466,7 +458,7 @@ impl Parser {
                 )],
                 vec![(self.peek().span.clone(), None)],
             )
-            .into());
+                .into());
         } else if self.peek().kind == TokenKind::Bang {
             self.consume();
             let typ = self.parse_type_annotation(false)?;
