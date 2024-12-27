@@ -143,6 +143,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "rand",
+ "regex",
  "ropey",
  "serde",
  "term",

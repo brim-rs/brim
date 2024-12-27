@@ -397,7 +397,9 @@ impl<'a> TypeChecker<'a> {
                     todo!("access field: {:?}", expr);
                 }
                 AccessKind::StaticMethod(expr) => {
-                    todo!("static method access {:?}", expr);
+                    // todo!("static method access {:?}", expr);
+                    
+                    ResolvedType::base(TypeKind::Null)
                 }
             },
             ExprKind::StructConstructor(ref struct_ctor) => {

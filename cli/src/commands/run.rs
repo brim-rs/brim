@@ -84,7 +84,6 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell
             codegen.generate_and_write(ctx, build_process)?;
             let final_path = build_process.compile(&ctx.config.project.name, shell)?;
 
-
             let args: Vec<String> = args
                 .get_many::<String>("args")
                 .map(|vals| vals.map(|s| s.to_string()).collect())

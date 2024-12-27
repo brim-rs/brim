@@ -10,9 +10,11 @@ use crate::{
 };
 use anyhow::Result;
 use tracing::debug;
+use brim_cpp_compiler::CppBuild;
+use crate::context::GlobalContext;
 
 impl<'a> CodeGen<'a> {
-    pub fn generate_fn(&mut self, function: Function) -> Result<()> {
+    pub fn generate_fn(&mut self, function: Function, global: &mut GlobalContext, build_cpp: &mut CppBuild) -> Result<()> {
         let mut return_type = self.map_type(function.clone().return_type, vec![]);
 
         if function.name.literal() == "main" && self.is_entry_point {
@@ -63,7 +65,7 @@ impl<'a> CodeGen<'a> {
             let body = self.unit.ast().query_stmt(body).clone();
 
             self.fn_return_type = Some(return_type);
-            self.generate_stmt(body)?;
+            self.generate_stmt(body, global, build_cpp)?;
             self.fn_return_type = None;
         }
 

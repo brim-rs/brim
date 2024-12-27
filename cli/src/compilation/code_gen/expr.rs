@@ -33,7 +33,7 @@ impl<'a> CodeGen<'a> {
                         }
                         self.write(">");
                     } else {
-                        self.write(var.ident);
+                        self.write(format!("{}::{}", namespace, var.ident));
                     }
                 } else {
                     self.write(var.ident)

@@ -62,7 +62,7 @@ impl<'a> CodeGen<'a> {
 }
 
 impl<'a> CodeGen<'a> {
-    pub fn generate_code(&mut self, global: &mut GlobalContext) -> Result<()> {
+    pub fn generate_code(&mut self, global: &mut GlobalContext, build_cpp: &mut CppBuild) -> Result<()> {
         self.is_bin = global.is_bin()?;
 
         let namespace = &self.unit.namespace;
@@ -73,7 +73,7 @@ impl<'a> CodeGen<'a> {
         for item in &self.unit.ast().top_level_items.cloned_indices() {
             let item = self.unit.ast().query_item(*item).clone();
 
-            self.generate_item(item)?;
+            self.generate_item(item, global, build_cpp)?;
         }
 
         self.pop_indent();
@@ -91,7 +91,7 @@ impl<'a> CodeGen<'a> {
                     .clone()
                     .as_function()
                     .clone();
-                self.generate_fn(main_fn)?;
+                self.generate_fn(main_fn, global, build_cpp)?;
             } else {
                 bail!("Entrypoint file must contain a main function.");
             }
@@ -112,7 +112,7 @@ impl<'a> CodeGen<'a> {
         global: &mut GlobalContext,
         build_cpp: &mut CppBuild,
     ) -> Result<()> {
-        self.generate_code(global)?;
+        self.generate_code(global, build_cpp)?;
         let out_dir = global.build_dir()?.join("source");
         let rest_path = strip_base(&self.unit.source.path, &global.cwd);
 
@@ -126,8 +126,7 @@ impl<'a> CodeGen<'a> {
 
         let mut file = File::create(target_path.clone())?;
         file.write_all(&self.buf)?;
-
-        build_cpp.add_source(target_path);
+        build_cpp.add_source(&target_path);
 
         Ok(())
     }

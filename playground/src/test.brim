@@ -1,0 +1,4 @@
+pub enum Test {
+    X(i32),
+    Y(i32)
+};
