@@ -37,7 +37,7 @@ impl<'a> CodeGen<'a> {
             StmtKind::Expr(expr) => {
                 let expr = self.unit.ast().query_expr(expr).clone();
 
-                self.generate_expr(expr)?;
+                self.generate_expr(expr, build_cpp)?;
             }
             StmtKind::Let(let_stmt) => {
                 let ident = let_stmt.ident.literal();
@@ -54,14 +54,14 @@ impl<'a> CodeGen<'a> {
 
                 // auto for now
                 self.write_before(format!("auto {} = ", ident));
-                self.generate_expr(expr)?;
+                self.generate_expr(expr, build_cpp)?;
                 self.write("\n");
             }
             StmtKind::Return(ret) => {
                 if let Some(expr) = ret.expr {
                     let expr = self.unit.ast().query_expr(expr).clone();
                     self.write_before("return ");
-                    self.generate_expr(expr)?;
+                    self.generate_expr(expr, build_cpp)?;
                     self.write("\n");
                 } else {
                     self.write("return\n");
@@ -74,7 +74,7 @@ impl<'a> CodeGen<'a> {
                 let then_block = self.unit.ast().query_stmt(if_stmt.then_block).clone();
 
                 self.write_before("if (");
-                self.generate_expr(condition)?;
+                self.generate_expr(condition, build_cpp)?;
                 self.write(") {\n");
                 self.push_indent();
                 self.generate_stmt(then_block, global, build_cpp)?;
@@ -84,7 +84,7 @@ impl<'a> CodeGen<'a> {
                 for else_if in &if_stmt.else_ifs {
                     self.write(" else if (");
                     let condition = self.unit.ast().query_expr(else_if.condition).clone();
-                    self.generate_expr(condition)?;
+                    self.generate_expr(condition, build_cpp)?;
                     self.write(") {\n");
                     self.push_indent();
                     let block = self.unit.ast().query_stmt(else_if.block).clone();

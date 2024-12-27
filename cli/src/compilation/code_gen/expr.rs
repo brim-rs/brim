@@ -3,9 +3,12 @@ use crate::{
     compilation::code_gen::CodeGen,
 };
 use anyhow::Result;
+use tracing_subscriber::fmt::format;
+use brim_cpp_compiler::compiler::CompilerKind;
+use brim_cpp_compiler::CppBuild;
 
 impl<'a> CodeGen<'a> {
-    pub fn generate_expr(&mut self, expr: Expr) -> Result<()> {
+    pub fn generate_expr(&mut self, expr: Expr, build_cpp: &mut CppBuild) -> Result<()> {
         match expr.kind {
             ExprKind::Literal(lit) => match lit.value {
                 LiteralType::String(s) => self.write(format!("\"{}\"", s)),
@@ -41,7 +44,7 @@ impl<'a> CodeGen<'a> {
             }
             ExprKind::Parenthesized(expr) => {
                 self.write("(");
-                self.generate_expr(self.unit.ast().query_expr(expr.expr).clone())?;
+                self.generate_expr(self.unit.ast().query_expr(expr.expr).clone(), build_cpp)?;
                 self.write(")");
             }
             ExprKind::Binary(bin) => {
@@ -49,9 +52,9 @@ impl<'a> CodeGen<'a> {
                     self.needed_imports.push("cmath".to_string());
 
                     self.write("pow(");
-                    self.generate_expr(self.unit.ast().query_expr(bin.left).clone())?;
+                    self.generate_expr(self.unit.ast().query_expr(bin.left).clone(), build_cpp)?;
                     self.write(", ");
-                    self.generate_expr(self.unit.ast().query_expr(bin.right).clone())?;
+                    self.generate_expr(self.unit.ast().query_expr(bin.right).clone(), build_cpp)?;
                     self.write(")");
 
                     return Ok(());
@@ -63,7 +66,7 @@ impl<'a> CodeGen<'a> {
                     return Ok(());
                 }
 
-                self.generate_expr(self.unit.ast().query_expr(bin.left).clone())?;
+                self.generate_expr(self.unit.ast().query_expr(bin.left).clone(), build_cpp)?;
 
                 match bin.operator {
                     BinOpKind::Plus => self.write(" + "),
@@ -90,7 +93,7 @@ impl<'a> CodeGen<'a> {
                     _ => unreachable!(),
                 }
 
-                self.generate_expr(self.unit.ast().query_expr(bin.right).clone())?;
+                self.generate_expr(self.unit.ast().query_expr(bin.right).clone(), build_cpp)?;
             }
             ExprKind::Unary(unary) => {
                 match unary.operator.kind {
@@ -99,30 +102,58 @@ impl<'a> CodeGen<'a> {
                     UnOpKind::BitwiseNot => self.write("~"),
                 }
 
-                self.generate_expr(self.unit.ast().query_expr(unary.expr).clone())?;
+                self.generate_expr(self.unit.ast().query_expr(unary.expr).clone(), build_cpp)?;
             }
             ExprKind::Access(access) => {
                 let base = self.unit.ast().query_expr(access.base).clone();
-                self.generate_expr(base)?;
+                self.generate_expr(base, build_cpp)?;
 
                 match access.access {
                     AccessKind::Field(ident) => {
                         self.write(".");
-                        self.generate_expr(self.unit.ast().query_expr(ident).clone())?
+                        self.generate_expr(self.unit.ast().query_expr(ident).clone(), build_cpp)?
                     }
                     AccessKind::Index(index) => {
                         self.write("[");
-                        self.generate_expr(self.unit.ast().query_expr(index).clone())?;
+                        self.generate_expr(self.unit.ast().query_expr(index).clone(), build_cpp)?;
                         self.write("]");
                     }
                     AccessKind::StaticMethod(ident) => {
                         self.write("::");
                         let x = self.unit.ast().query_expr(ident).clone();
-                        self.generate_expr(x)?;
+                        self.generate_expr(x, build_cpp)?;
                     }
                 }
             }
-            ExprKind::Call(call) => self.generate_call(call)?,
+            ExprKind::Call(call) => self.generate_call(call, build_cpp)?,
+            ExprKind::StructConstructor(constructor) => {
+                let struct_ = self.unit.unit_items.get(&constructor.name).unwrap();
+                let unit_data = struct_.unit.clone();
+                let (_, unit) = self.loader.load_unit(&unit_data, self.unit)?;
+
+                self.write(format!("{}::{}{{", unit.namespace, constructor.name));
+
+                // MSVC doesn't support designated initializers
+                if build_cpp.compiler_kind() != &CompilerKind::Msvc {
+                    for (i, (name, expr_id)) in constructor.fields.iter().enumerate() {
+                        let field_value = self.unit.ast().query_expr(*expr_id).clone();
+
+                        self.write(name);
+                        self.write(": ");
+                        self.generate_expr(field_value, build_cpp)?;
+
+                        if i < constructor.fields.len() - 1 {
+                            self.write(", ");
+                        }
+                    }
+                } else {
+                    // We have to specify them in the correct order
+
+                }
+
+
+                self.write("}");
+            }
             _ => {}
         }
 

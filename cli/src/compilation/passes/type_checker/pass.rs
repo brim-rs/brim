@@ -398,7 +398,7 @@ impl<'a> TypeChecker<'a> {
                 }
                 AccessKind::StaticMethod(expr) => {
                     // todo!("static method access {:?}", expr);
-                    
+
                     ResolvedType::base(TypeKind::Null)
                 }
             },
@@ -479,7 +479,25 @@ impl<'a> TypeChecker<'a> {
             }
             ExprKind::Call(ref call) => {
                 if call.is_builtin && let Some(builtin) = BuiltInKind::get_builtin(&call.callee) {
-                    let (return_type, args) = builtin.signature();
+                    let (typecheck, return_type, args) = builtin.signature();
+
+                    if builtin == BuiltInKind::Err || builtin == BuiltInKind::Ok {
+                        if call.args.len() != 1 {
+                            self.diags.new_diagnostic(
+                                Diagnostic::error(
+                                    format!("Built-in '{}' expects 1 argument, found {}", call.callee, call.args.len()),
+                                    vec![(expr.span(self.unit.ast()).clone(), None)],
+                                    vec![],
+                                ),
+                                Arc::new(self.unit.source.clone()),
+                            );
+                        }
+                    }
+                        
+                    if !typecheck {
+                        return Ok(return_type);
+                    }
+
                     let mut resolved_args: Vec<(ResolvedType, TextSpan)> = vec![];
 
                     for arg in call.args.clone() {

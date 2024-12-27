@@ -1,52 +1,49 @@
-# This file specifies the language design of Brim.
+# Brim Language Specification
 
-## Values
+## Types and Values
 
-### Primitives
+### Primitive Types
 
-| Type    | Description                    |
-|---------|--------------------------------|
-| `i8`    | 8-bit signed integer           |
-| `i16`   | 16-bit signed integer          |
-| `i32`   | 32-bit signed integer          |
-| `i64`   | 64-bit signed integer          |
-| `u8`    | 8-bit unsigned integer         |
-| `u16`   | 16-bit unsigned integer        |
-| `u32`   | 32-bit unsigned integer        |
-| `u64`   | 64-bit unsigned integer        |
-| `usize` | Pointer-sized unsigned integer |
-| `isize` | Pointer-sized signed integer   |
-| `f32`   | 32-bit floating-point number   |
-| `f64`   | 64-bit floating-point number   |
-| `bool`  | Boolean. `true` or `false`     |
-| `void`  | No return value                |
-| `char`  | Unicode character              |
+| Category            | Type    | Description                                        |
+|---------------------|---------|----------------------------------------------------|
+| Integers (Signed)   | `i8`    | 8-bit signed integer                               |
+|                     | `i16`   | 16-bit signed integer                              |
+|                     | `i32`   | 32-bit signed integer                              |
+|                     | `i64`   | 64-bit signed integer                              |
+|                     | `isize` | Platform-dependent signed integer (pointer size)   |
+| Integers (Unsigned) | `u8`    | 8-bit unsigned integer                             |
+|                     | `u16`   | 16-bit unsigned integer                            |
+|                     | `u32`   | 32-bit unsigned integer                            |
+|                     | `u64`   | 64-bit unsigned integer                            |
+|                     | `usize` | Platform-dependent unsigned integer (pointer size) |
+| Floating Point      | `f32`   | 32-bit floating-point number                       |
+|                     | `f64`   | 64-bit floating-point number                       |
+| Other               | `bool`  | Boolean (`true` or `false`)                        |
+|                     | `char`  | Unicode character                                  |
+|                     | `void`  | Represents no value                                |
 
-### `undefined` value
+### Special Values
 
-`undefined` is a special value that represents an uninitialized value.
+- `undefined`: Represents an uninitialized value
 
-### Compound types
+### Compound Types
 
 #### Tuples
 
-Tuples are a collection of values of different types.
+Ordered collections of values with different types:
 
 ```brim
-let tuple = (1, "Hello", 3.14)
+let point: (i32, i32) = (10, 20)
+let record: (string, i32, bool) = ("Alice", 25, true)
 ```
 
 #### Arrays
 
-Arrays are a collection of values of the same type with a fixed size.
+Fixed-size collections of same-type values:
 `Vec` is a dynamic array that can change its size. It's a part of the standard library.
 
 ```brim
-let array = [1, 2, 3, 4, 5]
-```
-
-```brim
-let array: int[5] = [1, 2, 3, 4, 5]
+let numbers: i32[5] = [1, 2, 3, 4, 5]
 ```
 
 > Arrays are useful when you know the size of the collection at compile time and know that it won't change.
@@ -58,8 +55,11 @@ let array: int[5] = [1, 2, 3, 4, 5]
 let first = array[0]
 ```
 
-⚠️ **Warning**: Accessing an element outside the bounds of the array will result in a panic. This prevents memory
-issues.
+⚠️ **Array safety**:
+
+- Bounds checking is enforced at runtime
+- Out-of-bounds access triggers a panic
+- Size must be known at compile time
 
 ## Comments
 
@@ -90,7 +90,7 @@ Functions are defined using the `fn`, arguments list, and return type.
 > Public functions are defined by prefixing the function with the `pub` keyword.
 
 ```brim
-fn add(a: int, b: int): int {
+fn add(a: int, b: int) -> int {
     return a + b
 }
 ```
@@ -117,20 +117,41 @@ fn add(a: int, b: int) -> int {
 }
 ```
 
-#### Errors
+### Errors
 
 `!` after the return type denotes that the function can return an error.
 
 ```brim
 fn parse(input: string) -> string !MyError {
      if input.len() <= 0 {
-         return MyError::ParsingError {
+         return @err(MyError::ParsingError {
              message: "Input is empty",
              span: Span::new(0, 0)
-         }
+         })
      }
      
-     return input
+     return @ok(input)
+}
+```
+
+When returning from a non-error function, you can simply return the value.
+
+```brim
+fn add(a: int, b: int) -> int {
+    return a + b
+}
+```
+
+But when returning from an error function, you need to use the `@ok` to return a success value and `@err` to return an
+error.
+
+```brim
+fn div(a: int, b: int) -> int !string {
+    if b == 0 {
+        return @err("Division by zero")
+    }
+     
+    return @ok(a / b)
 }
 ```
 
@@ -140,15 +161,20 @@ fn parse(input: string) -> string !MyError {
 
 Built-in functions are functions that are provided by the compiler itself. They are prefixed with the `@` symbol.
 
-| Function | Description                                |
-|----------|--------------------------------------------|
-| `@print` | Prints a value to the provided descriptor. |
+| Function | Description                                      |
+|----------|--------------------------------------------------|
+| `@print` | Prints a value to the provided descriptor.       |
+| `@ok`    | Creates a success value with the provided value. |
+| `@err`   | Creates an error with the provided value.        |
+| `@panic` | Panics the program with the provided message.    |
 
 ## Errors
 
 ### Errors types
 
-You can return error of any type. It can be a simple string or a custom error type.
+You can return error of any type. It can be a simple string or a custom error type. You can do that using the [
+`@err`](#built-in-functions)
+built-in function.
 
 ```brim
 enum MyError {

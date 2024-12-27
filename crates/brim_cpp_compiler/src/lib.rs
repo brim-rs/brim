@@ -30,7 +30,6 @@ pub struct CppBuild {
     project_type: ProjectType,
     build_dir: Arc<Path>,
     opt_level: OptLevel,
-    cpp_standard: u16,
     defines: HashSet<Arc<OsStr>>,
     lib_type: LibType,
 }
@@ -64,10 +63,13 @@ impl CppBuild {
             project_type,
             build_dir: Arc::from(build_dir),
             opt_level: OptLevel::Debug,
-            cpp_standard: 20, // Default to C++20
             defines: HashSet::new(),
             lib_type,
         })
+    }
+
+    pub fn compiler_kind(&self) -> &CompilerKind {
+        self.compiler.kind()
     }
 
     /// Adds a source file to the build
@@ -79,7 +81,7 @@ impl CppBuild {
     /// Adds multiple source files to the build
     pub fn add_sources<I, P>(&mut self, paths: I) -> &mut Self
     where
-        I: IntoIterator<Item = P>,
+        I: IntoIterator<Item=P>,
         P: AsRef<OsStr>,
     {
         for path in paths {
@@ -118,18 +120,6 @@ impl CppBuild {
         self
     }
 
-    /// Sets the C++ standard to use
-    pub fn set_cpp_standard(&mut self, standard: u16) -> Result<&mut Self> {
-        ensure!(
-            matches!(standard, 17 | 20 | 23),
-            "Unsupported C++ standard: {}",
-            standard
-        );
-
-        self.cpp_standard = standard;
-        Ok(self)
-    }
-
     /// Adds a preprocessor definition
     pub fn define<S: AsRef<OsStr>>(&mut self, define: S) -> &mut Self {
         self.defines.insert(Arc::from(define.as_ref()));
@@ -153,7 +143,6 @@ impl CppBuild {
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
-            // bail!("Compilation failed:\nstdout:\n{}\n\nstderr:\n{}", stdout, stderr);
 
             shell.centered("Output from stderr", stderr, true)?;
             shell.centered("Output from stdout", stdout, true)?;
@@ -242,9 +231,9 @@ impl CppBuild {
 
     fn add_cpp_standard_flag(&self, command: &mut Command) -> Result<()> {
         let flag = if self.compiler.kind() == &CompilerKind::Msvc {
-            format!("/std:c++{}", self.cpp_standard)
+            format!("/std:c++{}", "latest")
         } else {
-            format!("-std=c++{}", self.cpp_standard)
+            format!("-std=c++{}", 23)
         };
 
         command.arg(flag);

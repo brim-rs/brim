@@ -83,10 +83,10 @@ impl<'a> CodeGen<'a> {
                 let error_type = if let Some(error_type) = typ.error_type {
                     self.map_type(Some(*error_type), generics)
                 } else {
-                    "Result<(), ()>".to_string()
+                    "std::expected<(), ()>".to_string()
                 };
 
-                format!("Result<{}, {}>", kind_str, error_type)
+                format!("std::expected<{}, {}>", kind_str, error_type)
             } else {
                 kind_str
             }
@@ -140,9 +140,9 @@ impl<'a> CodeGen<'a> {
         }
     }
 
-    pub fn generate_call(&mut self, call: CallExpr) -> Result<()> {
+    pub fn generate_call(&mut self, call: CallExpr, build_cpp: &mut CppBuild) -> Result<()> {
         if call.is_builtin {
-            self.generate_built_in(call)?;
+            self.generate_built_in(call, build_cpp)?;
             
             return Ok(());
         }
@@ -159,7 +159,7 @@ impl<'a> CodeGen<'a> {
 
         for (i, arg) in call.args.iter().enumerate() {
             let arg = self.unit.ast().query_expr(*arg).clone();
-            self.generate_expr(arg)?;
+            self.generate_expr(arg, build_cpp)?;
 
             if i < call.args.len() - 1 {
                 self.write(", ");

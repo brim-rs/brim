@@ -1,25 +1,18 @@
-use { Test } from "test.brim";
-
-pub enum Result<T, E> {
-    Ok(T),
-    Err(E),
-};
-
-pub fn div<T: i32, E: string>(a: i32, b: i32) -> T!E {
+pub fn div(a: i32, b: i32) -> i32!string {
     if b == 0 {
-        return Result<T, E>::Err("Division by zero");
+        return @err("Division by zero");
     }
 
-    let x = Test::X(1);
+    return @ok(a / b);
+};
 
-    return Result<T, E>::Ok(a / b);
+pub struct Foo {
+    x: i32,
+    z: i32,
+    y: i32,
+    a: i32,
 };
 
 pub fn main() {
-    let x = 1;
-    let y = -x;
-    let z = 12;
-
-    let res = div(z, y);
-    @print("Skibidi");
+    let x = div(10, 0);
 };
