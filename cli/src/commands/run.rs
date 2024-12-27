@@ -92,8 +92,8 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell
             let mut command = process::Command::new(&final_path);
             command.args(&args);
 
-            shell.status("Running", format!("`{} {}`", &final_path
-                .to_string_lossy(), &args.iter().map(|s| s.as_str()).collect::<Vec<&str>>().join(" ")
+            shell.status("Running", format!("`{}{}{}`", &final_path
+                .to_string_lossy(), if args.len() > 0 { " " } else { "" }, &args.iter().map(|s| s.as_str()).collect::<Vec<&str>>().join(" ")
             ))?;
 
             match command.spawn() {
