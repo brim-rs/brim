@@ -3,58 +3,19 @@
 use std::str::FromStr;
 use termcolor::{ColorChoice, WriteColor};
 
-use crate::diagnostic::Diagnostic;
-use crate::files::Files;
-
 mod config;
 mod renderer;
 mod views;
 
-pub use termcolor;
-
+use crate::reporting::diagnostic::Diagnostic;
+use crate::reporting::files::Files;
 pub use self::config::{Chars, Config, DisplayStyle, Styles};
 
-/// A command line argument that configures the coloring of the output.
-///
-/// This can be used with command line argument parsers like [`clap`] or [`structopt`].
-///
-/// [`clap`]: https://crates.io/crates/clap
-/// [`structopt`]: https://crates.io/crates/structopt
-///
-/// # Example
-///
-/// ```rust
-/// use codespan_reporting::term::termcolor::StandardStream;
-/// use codespan_reporting::term::ColorArg;
-/// use structopt::StructOpt;
-///
-/// #[derive(Debug, StructOpt)]
-/// #[structopt(name = "groovey-app")]
-/// pub struct Opts {
-///     /// Configure coloring of output
-///     #[structopt(
-///         long = "color",
-///         default_value = "auto",
-///         possible_values = ColorArg::VARIANTS,
-///         case_insensitive = true,
-///     )]
-///     pub color: ColorArg,
-/// }
-///
-/// let opts = Opts::from_args();
-/// let writer = StandardStream::stderr(opts.color.into());
-/// ```
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ColorArg(pub ColorChoice);
 
 impl ColorArg {
-    /// Allowed values the argument.
-    ///
-    /// This is useful for generating documentation via [`clap`] or `structopt`'s
-    /// `possible_values` configuration.
-    ///
-    /// [`clap`]: https://crates.io/crates/clap
-    /// [`structopt`]: https://crates.io/crates/structopt
     pub const VARIANTS: &'static [&'static str] = &["auto", "always", "ansi", "never"];
 }
 
@@ -78,12 +39,6 @@ impl From<ColorArg> for ColorChoice {
     }
 }
 
-/// Emit a diagnostic using the given writer, context, config, and files.
-///
-/// The return value covers all error cases. These error case can arise if:
-/// * a file was removed from the file database.
-/// * a file was changed so that it is too small to have an index
-/// * IO fails
 pub fn emit<'files, F: Files<'files>>(
     writer: &mut dyn WriteColor,
     config: &Config,
@@ -101,21 +56,3 @@ pub fn emit<'files, F: Files<'files>>(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use crate::diagnostic::Label;
-    use crate::files::SimpleFiles;
-
-    #[test]
-    fn unsized_emit() {
-        let mut files = SimpleFiles::new();
-
-        let id = files.add("test", "");
-        let mut writer = termcolor::NoColor::new(Vec::<u8>::new());
-        let diagnostic = Diagnostic::bug().with_labels(vec![Label::primary(id, 0..0)]);
-
-        emit(&mut writer, &Config::default(), &files, &diagnostic).unwrap();
-    }
-}

@@ -38,3 +38,4 @@ tracing-subscriber = { version = "0.3.18", features = [
     "chrono",
     "time",
 ] }
+termcolor = "1.4.1"

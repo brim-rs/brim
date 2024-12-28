@@ -1,36 +1,21 @@
-//! Wrapper types that specify positions in a source file
-
-#[cfg(feature = "serialization")]
-use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 
-/// The raw, untyped index. We use a 32-bit integer here for space efficiency,
-/// assuming we won't be working with sources larger than 4GB.
+
 pub type RawIndex = u32;
 
-/// The raw, untyped offset.
 pub type RawOffset = i64;
 
-/// A zero-indexed line offset into a source file
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "serialization", derive(Deserialize, Serialize))]
 pub struct LineIndex(pub RawIndex);
 
 impl LineIndex {
-    /// The 1-indexed line number. Useful for pretty printing source locations.
-    ///
-    /// ```rust
-    /// use codespan::{LineIndex, LineNumber};
-    ///
-    /// assert_eq!(format!("{}", LineIndex(0).number()), "1");
-    /// assert_eq!(format!("{}", LineIndex(3).number()), "4");
-    /// ```
     pub const fn number(self) -> LineNumber {
         LineNumber(self.0 + 1)
     }
 
-    /// Convert the index into a `usize`, for use in array indexing
+
     pub const fn to_usize(self) -> usize {
         self.0 as usize
     }
@@ -56,13 +41,11 @@ impl fmt::Display for LineIndex {
     }
 }
 
-/// A 1-indexed line number. Useful for pretty printing source locations.
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "serialization", derive(Deserialize, Serialize))]
 pub struct LineNumber(RawIndex);
 
 impl LineNumber {
-    /// Convert the number into a `usize`
     pub const fn to_usize(self) -> usize {
         self.0 as usize
     }
@@ -82,9 +65,8 @@ impl fmt::Display for LineNumber {
     }
 }
 
-/// A line offset in a source file
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "serialization", derive(Deserialize, Serialize))]
 pub struct LineOffset(pub RawOffset);
 
 impl Default for LineOffset {
@@ -107,25 +89,16 @@ impl fmt::Display for LineOffset {
     }
 }
 
-/// A zero-indexed column offset into a source file
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "serialization", derive(Deserialize, Serialize))]
 pub struct ColumnIndex(pub RawIndex);
 
 impl ColumnIndex {
-    /// The 1-indexed column number. Useful for pretty printing source locations.
-    ///
-    /// ```rust
-    /// use codespan::{ColumnIndex, ColumnNumber};
-    ///
-    /// assert_eq!(format!("{}", ColumnIndex(0).number()), "1");
-    /// assert_eq!(format!("{}", ColumnIndex(3).number()), "4");
-    /// ```
     pub const fn number(self) -> ColumnNumber {
         ColumnNumber(self.0 + 1)
     }
 
-    /// Convert the index into a `usize`, for use in array indexing
+
     pub const fn to_usize(self) -> usize {
         self.0 as usize
     }
@@ -151,9 +124,8 @@ impl fmt::Display for ColumnIndex {
     }
 }
 
-/// A 1-indexed column number. Useful for pretty printing source locations.
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "serialization", derive(Deserialize, Serialize))]
 pub struct ColumnNumber(RawIndex);
 
 impl fmt::Debug for ColumnNumber {
@@ -170,9 +142,8 @@ impl fmt::Display for ColumnNumber {
     }
 }
 
-/// A column offset in a source file
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "serialization", derive(Deserialize, Serialize))]
 pub struct ColumnOffset(pub RawOffset);
 
 impl Default for ColumnOffset {
@@ -195,13 +166,11 @@ impl fmt::Display for ColumnOffset {
     }
 }
 
-/// A byte position in a source file.
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "serialization", derive(Deserialize, Serialize))]
 pub struct ByteIndex(pub RawIndex);
 
 impl ByteIndex {
-    /// Convert the position into a `usize`, for use in array indexing
     pub const fn to_usize(self) -> usize {
         self.0 as usize
     }
@@ -227,41 +196,21 @@ impl fmt::Display for ByteIndex {
     }
 }
 
-/// A byte offset in a source file
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "serialization", derive(Deserialize, Serialize))]
 pub struct ByteOffset(pub RawOffset);
 
 impl ByteOffset {
-    /// Create a byte offset from a UTF8-encoded character
-    ///
-    /// ```rust
-    /// use codespan::ByteOffset;
-    ///
-    /// assert_eq!(ByteOffset::from_char_len('A').to_usize(), 1);
-    /// assert_eq!(ByteOffset::from_char_len('ß').to_usize(), 2);
-    /// assert_eq!(ByteOffset::from_char_len('ℝ').to_usize(), 3);
-    /// assert_eq!(ByteOffset::from_char_len('💣').to_usize(), 4);
-    /// ```
     pub fn from_char_len(ch: char) -> ByteOffset {
         ByteOffset(ch.len_utf8() as RawOffset)
     }
 
-    /// Create a byte offset from a UTF- encoded string
-    ///
-    /// ```rust
-    /// use codespan::ByteOffset;
-    ///
-    /// assert_eq!(ByteOffset::from_str_len("A").to_usize(), 1);
-    /// assert_eq!(ByteOffset::from_str_len("ß").to_usize(), 2);
-    /// assert_eq!(ByteOffset::from_str_len("ℝ").to_usize(), 3);
-    /// assert_eq!(ByteOffset::from_str_len("💣").to_usize(), 4);
-    /// ```
+
     pub fn from_str_len(value: &str) -> ByteOffset {
         ByteOffset(value.len() as RawOffset)
     }
 
-    /// Convert the offset into a `usize`, for use in array indexing
+
     pub const fn to_usize(self) -> usize {
         self.0 as usize
     }
@@ -288,30 +237,26 @@ impl fmt::Display for ByteOffset {
     }
 }
 
-/// A relative offset between two indices
-///
-/// These can be thought of as 1-dimensional vectors
+
 pub trait Offset: Copy + Ord
 where
-    Self: Neg<Output = Self>,
-    Self: Add<Self, Output = Self>,
+    Self: Neg<Output=Self>,
+    Self: Add<Self, Output=Self>,
     Self: AddAssign<Self>,
-    Self: Sub<Self, Output = Self>,
+    Self: Sub<Self, Output=Self>,
     Self: SubAssign<Self>,
 {
     const ZERO: Self;
 }
 
-/// Index types
-///
-/// These can be thought of as 1-dimensional points
+
 pub trait Index: Copy + Ord
 where
-    Self: Add<<Self as Index>::Offset, Output = Self>,
+    Self: Add<<Self as Index>::Offset, Output=Self>,
     Self: AddAssign<<Self as Index>::Offset>,
-    Self: Sub<<Self as Index>::Offset, Output = Self>,
+    Self: Sub<<Self as Index>::Offset, Output=Self>,
     Self: SubAssign<<Self as Index>::Offset>,
-    Self: Sub<Self, Output = <Self as Index>::Offset>,
+    Self: Sub<Self, Output=<Self as Index>::Offset>,
 {
     type Offset: Offset;
 }
