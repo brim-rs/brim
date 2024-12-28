@@ -199,6 +199,10 @@ name = "brim-fs"
 version = "0.1.0"
 
 [[package]]
+name = "brim-lexer"
+version = "0.1.0"
+
+[[package]]
 name = "brim-shell"
 version = "0.1.0"
 dependencies = [
