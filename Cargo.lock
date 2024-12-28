@@ -185,6 +185,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "brim-diagnostics"
+version = "0.1.0"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "anyhow",
+ "gethostname",
+ "terminal_size",
+ "url",
+]
+
+[[package]]
 name = "brim-fs"
 version = "0.1.0"
 

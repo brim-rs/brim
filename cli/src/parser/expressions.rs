@@ -384,10 +384,6 @@ impl Parser {
             let operator = AssignOperator::from_token_kind(assign_op);
             return Ok(self.ast.new_assignment(expr, operator, right));
         }
-        // TODO: move this to binary expressions
-        else if self.peek().kind == TokenKind::Catch {
-            panic!("Catch not implemented");
-        }
 
         Ok(expr)
     }
