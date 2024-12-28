@@ -7,14 +7,19 @@ use crate::{
         types::TypeKind,
     },
     compilation::code_gen::CodeGen,
+    context::GlobalContext,
 };
 use anyhow::Result;
-use tracing::debug;
 use brim_cpp_compiler::CppBuild;
-use crate::context::GlobalContext;
+use tracing::debug;
 
 impl<'a> CodeGen<'a> {
-    pub fn generate_fn(&mut self, function: Function, global: &mut GlobalContext, build_cpp: &mut CppBuild) -> Result<()> {
+    pub fn generate_fn(
+        &mut self,
+        function: Function,
+        global: &mut GlobalContext,
+        build_cpp: &mut CppBuild,
+    ) -> Result<()> {
         let mut return_type = self.map_type(function.clone().return_type, vec![]);
 
         if function.name.literal() == "main" && self.is_entry_point {
@@ -143,7 +148,7 @@ impl<'a> CodeGen<'a> {
     pub fn generate_call(&mut self, call: CallExpr, build_cpp: &mut CppBuild) -> Result<()> {
         if call.is_builtin {
             self.generate_built_in(call, build_cpp)?;
-            
+
             return Ok(());
         }
 

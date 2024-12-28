@@ -1,5 +1,5 @@
-use termcolor::{Color, ColorSpec};
 use crate::reporting::diagnostic::{LabelStyle, Severity};
+use termcolor::{Color, ColorSpec};
 
 #[derive(Clone, Debug)]
 pub struct Config {
@@ -28,7 +28,6 @@ impl Default for Config {
     }
 }
 
-
 #[derive(Clone, Debug)]
 pub enum DisplayStyle {
     Rich,
@@ -37,7 +36,6 @@ pub enum DisplayStyle {
 
     Short,
 }
-
 
 #[derive(Clone, Debug)]
 pub struct Styles {
@@ -82,7 +80,6 @@ impl Styles {
             Severity::Help => &self.header_help,
         }
     }
-
 
     pub fn label(&self, severity: Severity, label_style: LabelStyle) -> &ColorSpec {
         match (label_style, severity) {
@@ -132,7 +129,6 @@ impl Default for Styles {
     }
 }
 
-
 #[derive(Clone, Debug)]
 pub struct Chars {
     pub snippet_start: String,
@@ -180,7 +176,6 @@ impl Chars {
             pointer_left: '│',
         }
     }
-
 
     pub fn ascii() -> Chars {
         Chars {

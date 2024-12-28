@@ -187,7 +187,7 @@ impl GetSpan for FnParam {
             self.ident.span.clone(),
             self.type_annotation.span(ast),
         ])
-            .unwrap()
+        .unwrap()
     }
 }
 

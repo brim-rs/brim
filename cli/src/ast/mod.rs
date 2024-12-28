@@ -13,8 +13,8 @@ use crate::{
         item::TopLevelItem,
         statements::{
             Block, Const, ElseBlock, EnumVariant, FnParam, Function, Let, Loop, Return, Stmt,
-            StmtKind, Struct, StructField, StructImpl, TraitDef, TraitImpl, TypeAnnotation,
-            Use, While,
+            StmtKind, Struct, StructField, StructImpl, TraitDef, TraitImpl, TypeAnnotation, Use,
+            While,
         },
         types::TypeKind,
     },
@@ -163,7 +163,13 @@ impl Ast {
         expr.id
     }
 
-    pub fn new_call(&mut self, callee: String, args: Vec<ExprId>, token: Token, is_builtin: bool) -> ExprId {
+    pub fn new_call(
+        &mut self,
+        callee: String,
+        args: Vec<ExprId>,
+        token: Token,
+        is_builtin: bool,
+    ) -> ExprId {
         let expr = self.new_expr(ExprKind::Call(CallExpr {
             callee,
             args,

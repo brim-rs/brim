@@ -81,7 +81,7 @@ impl Parser {
 
                 if next_precedence > operator_precedence
                     || (next_precedence == operator_precedence
-                    && next_operator.associativity() == BinOpAssociativity::Right)
+                        && next_operator.associativity() == BinOpAssociativity::Right)
                 {
                     right = self.parse_binary_expression_recurse(right, next_precedence)?;
                 } else {
@@ -321,10 +321,9 @@ impl Parser {
                 vec![],
                 None,
             )
-                .into()),
+            .into()),
         }
     }
-
 
     pub fn parse_call_expr(&mut self, callee: Token, builtin: bool) -> Result<ExprId> {
         self.expect(TokenKind::LeftParen)?;

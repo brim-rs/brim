@@ -224,7 +224,7 @@ impl GetSpan for Unary {
             self.operator.token.span.clone(),
             ast.query_expr(self.expr).span(ast),
         ])
-            .unwrap()
+        .unwrap()
     }
 }
 
@@ -452,12 +452,12 @@ impl GetSpan for AccessExpr {
                 self.token.span.clone(),
                 ast.query_expr(*index_expr).span(ast),
             ])
-                .unwrap(), // Span includes '[' , index, and ']'
+            .unwrap(), // Span includes '[' , index, and ']'
             AccessKind::StaticMethod(method) => TextSpan::combine(vec![
                 self.token.span.clone(),
                 ast.query_expr(*method).span(ast),
             ])
-                .unwrap(),
+            .unwrap(),
         };
         TextSpan::combine(vec![base_span, access_span]).unwrap()
     }

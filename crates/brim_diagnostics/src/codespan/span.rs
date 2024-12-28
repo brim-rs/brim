@@ -1,12 +1,8 @@
-#[cfg(feature = "serialization")]
-use serde::{Deserialize, Serialize};
-use std::fmt;
-use std::ops::Range;
+use std::{fmt, ops::Range};
 
 use crate::codespan::index::{ByteIndex, RawIndex};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "serialization", derive(Deserialize, Serialize))]
 pub struct Span {
     start: ByteIndex,
     end: ByteIndex,
@@ -22,7 +18,6 @@ impl Span {
         Span { start, end }
     }
 
-
     pub const fn initial() -> Span {
         Span {
             start: ByteIndex(0),
@@ -30,11 +25,9 @@ impl Span {
         }
     }
 
-
     pub fn from_str(s: &str) -> Span {
         Span::new(0, s.len() as u32)
     }
-
 
     pub fn merge(self, other: Span) -> Span {
         use std::cmp::{max, min};
@@ -43,7 +36,6 @@ impl Span {
         let end = max(self.end, other.end);
         Span::new(start, end)
     }
-
 
     pub fn disjoint(self, other: Span) -> bool {
         let (first, last) = if self.end < other.end {
@@ -54,11 +46,9 @@ impl Span {
         first.end <= last.start
     }
 
-
     pub fn start(self) -> ByteIndex {
         self.start
     }
-
 
     pub fn end(self) -> ByteIndex {
         self.end

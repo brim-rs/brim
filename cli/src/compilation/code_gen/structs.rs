@@ -1,11 +1,10 @@
-use std::collections::HashMap;
-use crate::{ast::statements::Struct, compilation::code_gen::CodeGen};
+use crate::{
+    ast::{expressions::StructConstructor, statements::Struct},
+    compilation::{code_gen::CodeGen, items::UnitItemKind},
+};
 use anyhow::Result;
+use brim_cpp_compiler::{compiler::CompilerKind, CppBuild};
 use indexmap::IndexMap;
-use brim_cpp_compiler::compiler::CompilerKind;
-use brim_cpp_compiler::CppBuild;
-use crate::ast::expressions::StructConstructor;
-use crate::compilation::items::UnitItemKind;
 
 impl<'a> CodeGen<'a> {
     pub fn generate_struct_def(&mut self, struct_def: Struct) -> Result<()> {
@@ -26,7 +25,11 @@ impl<'a> CodeGen<'a> {
         Ok(())
     }
 
-    pub fn generate_struct_constructor(&mut self, constructor: StructConstructor, build_cpp: &mut CppBuild) -> Result<()> {
+    pub fn generate_struct_constructor(
+        &mut self,
+        constructor: StructConstructor,
+        build_cpp: &mut CppBuild,
+    ) -> Result<()> {
         // First, collect all the data we need before any mutable borrows
         let struct_ = self.unit.unit_items.get(&constructor.name).unwrap();
         let unit_data = struct_.unit.clone();

@@ -1,4 +1,3 @@
-use std::process;
 use crate::{
     cli::{
         debug_mode, dynamic_lib_mode, min_size_rel_mode, opt, rel_with_deb_info_mode, release_mode,
@@ -13,12 +12,11 @@ use crate::{
 };
 use anyhow::Result;
 use brim_config::ProjectType;
-use brim_cpp_compiler::CppBuild;
+use brim_cpp_compiler::{compiler::CompilerKind, CppBuild};
 use brim_shell::Shell;
 use clap::{ArgAction, ArgMatches, Command};
-use std::sync::Arc;
+use std::{process, sync::Arc};
 use tracing::debug;
-use brim_cpp_compiler::compiler::CompilerKind;
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -39,7 +37,7 @@ pub fn run_cmd() -> Command {
             clap::Arg::new("args")
                 .num_args(0..)
                 .allow_negative_numbers(true)
-                .trailing_var_arg(true)
+                .trailing_var_arg(true),
         )
 }
 
@@ -94,9 +92,19 @@ pub fn run_command(ctx: &mut GlobalContext, args: &ArgMatches, shell: &mut Shell
             let mut command = process::Command::new(&final_path);
             command.args(&args);
 
-            shell.status("Running", format!("`{}{}{}`", &final_path
-                .to_string_lossy(), if args.len() > 0 { " " } else { "" }, &args.iter().map(|s| s.as_str()).collect::<Vec<&str>>().join(" ")
-            ))?;
+            shell.status(
+                "Running",
+                format!(
+                    "`{}{}{}`",
+                    &final_path.to_string_lossy(),
+                    if args.len() > 0 { " " } else { "" },
+                    &args
+                        .iter()
+                        .map(|s| s.as_str())
+                        .collect::<Vec<&str>>()
+                        .join(" ")
+                ),
+            )?;
 
             command.status()?;
         }

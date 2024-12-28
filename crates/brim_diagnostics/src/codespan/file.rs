@@ -1,11 +1,15 @@
-#[cfg(feature = "serialization")]
-use serde::{Deserialize, Serialize};
-use std::ffi::{OsStr, OsString};
-use std::num::NonZeroU32;
-use crate::codespan::index::{ByteIndex, ColumnIndex, LineIndex, LineOffset, RawIndex};
-use crate::codespan::location::Location;
-use crate::codespan::span::Span;
-use crate::reporting::files::Error;
+use crate::{
+    codespan::{
+        index::{ByteIndex, ColumnIndex, LineIndex, LineOffset, RawIndex},
+        location::Location,
+        span::Span,
+    },
+    reporting::files::Error,
+};
+use std::{
+    ffi::{OsStr, OsString},
+    num::NonZeroU32,
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FileId(NonZeroU32);
@@ -21,7 +25,6 @@ impl FileId {
         (self.0.get() - Self::OFFSET) as usize
     }
 }
-
 
 #[derive(Clone, Debug)]
 pub struct Files<Source> {
@@ -45,33 +48,27 @@ where
         Files::<Source>::default()
     }
 
-
     pub fn add(&mut self, name: impl Into<OsString>, source: Source) -> FileId {
         let file_id = FileId::new(self.files.len());
         self.files.push(File::new(name.into(), source));
         file_id
     }
 
-
     pub fn update(&mut self, file_id: FileId, source: Source) {
         self.get_mut(file_id).update(source)
     }
-
 
     fn get(&self, file_id: FileId) -> &File<Source> {
         &self.files[file_id.get()]
     }
 
-
     fn get_mut(&mut self, file_id: FileId) -> &mut File<Source> {
         &mut self.files[file_id.get()]
     }
 
-
     pub fn name(&self, file_id: FileId) -> &OsStr {
         self.get(file_id).name()
     }
-
 
     pub fn line_span(
         &self,
@@ -81,11 +78,9 @@ where
         self.get(file_id).line_span(line_index.into())
     }
 
-
     pub fn line_index(&self, file_id: FileId, byte_index: impl Into<ByteIndex>) -> LineIndex {
         self.get(file_id).line_index(byte_index.into())
     }
-
 
     pub fn location(
         &self,
@@ -95,16 +90,13 @@ where
         self.get(file_id).location(byte_index.into())
     }
 
-
     pub fn source(&self, file_id: FileId) -> &Source {
         self.get(file_id).source()
     }
 
-
     pub fn source_span(&self, file_id: FileId) -> Span {
         self.get(file_id).source_span()
     }
-
 
     pub fn source_slice(&self, file_id: FileId, span: impl Into<Span>) -> Result<&str, Error> {
         self.get(file_id).source_slice(span.into())
@@ -143,7 +135,6 @@ where
         Ok(span.start().to_usize()..span.end().to_usize())
     }
 }
-
 
 #[derive(Debug, Clone)]
 struct File<Source> {
@@ -261,7 +252,6 @@ where
     }
 }
 
-
-fn line_starts(source: &str) -> impl '_ + Iterator<Item=usize> {
+fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }

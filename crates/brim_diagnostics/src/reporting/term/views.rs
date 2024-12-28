@@ -1,9 +1,13 @@
 use std::ops::Range;
 
-use crate::reporting::diagnostic::{Diagnostic, LabelStyle};
-use crate::reporting::files::{Error, Files, Location};
-use crate::reporting::term::Config;
-use crate::reporting::term::renderer::{Locus, MultiLabel, Renderer, SingleLabel};
+use crate::reporting::{
+    diagnostic::{Diagnostic, LabelStyle},
+    files::{Error, Files, Location},
+    term::{
+        renderer::{Locus, MultiLabel, Renderer, SingleLabel},
+        Config,
+    },
+};
 
 fn count_digits(n: usize) -> usize {
     (n.saturating_add(1) as f64).log10().ceil() as usize
@@ -28,7 +32,7 @@ where
 
     pub fn render<'files>(
         &self,
-        files: &'files impl Files<'files, FileId=FileId>,
+        files: &'files impl Files<'files, FileId = FileId>,
         renderer: &mut Renderer<'_, '_>,
     ) -> Result<(), Error>
     where
@@ -93,7 +97,7 @@ where
                 Some(labeled_file) => {
                     if labeled_file.max_label_style > label.style
                         || (labeled_file.max_label_style == label.style
-                        && labeled_file.start > label.range.start)
+                            && labeled_file.start > label.range.start)
                     {
                         labeled_file.start = label.range.start;
                         labeled_file.location = files.location(label.file_id, label.range.start)?;
@@ -199,10 +203,9 @@ where
                     line.multi_labels
                         .push((label_index, label.style, MultiLabel::Left));
 
-                    line.must_render |=
-                        line_index - start_line_index <= self.config.start_context_lines
-                            ||
-                            end_line_index - line_index <= self.config.end_context_lines;
+                    line.must_render |= line_index - start_line_index
+                        <= self.config.start_context_lines
+                        || end_line_index - line_index <= self.config.end_context_lines;
                 }
 
                 let label_end = label.range.end - end_line_range.start;
@@ -301,7 +304,8 @@ where
                 }
             }
 
-            if labeled_files.peek().is_none() && self.diagnostic.notes.is_empty() {} else {
+            if labeled_files.peek().is_none() && self.diagnostic.notes.is_empty() {
+            } else {
                 renderer.render_snippet_empty(
                     outer_padding,
                     self.diagnostic.severity,
@@ -339,7 +343,7 @@ where
 
     pub fn render<'files>(
         &self,
-        files: &'files impl Files<'files, FileId=FileId>,
+        files: &'files impl Files<'files, FileId = FileId>,
         renderer: &mut Renderer<'_, '_>,
     ) -> Result<(), Error>
     where

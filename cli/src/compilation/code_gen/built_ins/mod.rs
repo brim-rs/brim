@@ -1,12 +1,11 @@
-use std::cmp::PartialEq;
-use crate::compilation::code_gen::CodeGen;
+use crate::{
+    ast::{expressions::CallExpr, types::TypeKind},
+    compilation::{code_gen::CodeGen, passes::type_checker::ResolvedType},
+};
 use anyhow::Result;
-use lazy_static::lazy_static;
-use tracing_subscriber::fmt::writer::EitherWriter::B;
 use brim_cpp_compiler::CppBuild;
-use crate::ast::expressions::CallExpr;
-use crate::ast::types::TypeKind;
-use crate::compilation::passes::type_checker::ResolvedType;
+use lazy_static::lazy_static;
+use std::cmp::PartialEq;
 
 #[derive(Debug, PartialEq)]
 pub enum BuiltInKind {
@@ -23,7 +22,6 @@ pub struct BuiltIn {
     pub needed_imports: Vec<String>,
     pub internal_name: String,
 }
-
 
 lazy_static! {
     pub static ref BUILT_INS: Vec<BuiltIn> = vec![
@@ -58,10 +56,26 @@ impl BuiltInKind {
     //                       typecheck?  return type  arguments
     pub fn signature(&self) -> (bool, ResolvedType, Vec<ResolvedType>) {
         match self {
-            BuiltInKind::Print => (true, ResolvedType::base(TypeKind::Void), vec![ResolvedType::base(TypeKind::String)]),
-            BuiltInKind::Ok => (false, ResolvedType::base(TypeKind::Void), vec![ResolvedType::base(TypeKind::Void)]),
-            BuiltInKind::Err => (false, ResolvedType::base(TypeKind::Void), vec![ResolvedType::base(TypeKind::Void)]),
-            BuiltInKind::Try => (false, ResolvedType::base(TypeKind::Void), vec![ResolvedType::base(TypeKind::Void)]),
+            BuiltInKind::Print => (
+                true,
+                ResolvedType::base(TypeKind::Void),
+                vec![ResolvedType::base(TypeKind::String)],
+            ),
+            BuiltInKind::Ok => (
+                false,
+                ResolvedType::base(TypeKind::Void),
+                vec![ResolvedType::base(TypeKind::Void)],
+            ),
+            BuiltInKind::Err => (
+                false,
+                ResolvedType::base(TypeKind::Void),
+                vec![ResolvedType::base(TypeKind::Void)],
+            ),
+            BuiltInKind::Try => (
+                false,
+                ResolvedType::base(TypeKind::Void),
+                vec![ResolvedType::base(TypeKind::Void)],
+            ),
         }
     }
 
@@ -78,10 +92,10 @@ impl BuiltInKind {
 
 impl<'a> CodeGen<'a> {
     pub fn generate_built_in(&mut self, call: CallExpr, build_cpp: &mut CppBuild) -> Result<()> {
-        let def =
-            BUILT_INS.iter()
-                .find(|b| b.kind == BuiltInKind::get_builtin(&call.callee).unwrap())
-                .unwrap();
+        let def = BUILT_INS
+            .iter()
+            .find(|b| b.kind == BuiltInKind::get_builtin(&call.callee).unwrap())
+            .unwrap();
 
         match def.kind {
             BuiltInKind::Print => {

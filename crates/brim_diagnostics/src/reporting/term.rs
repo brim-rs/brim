@@ -7,10 +7,8 @@ mod config;
 mod renderer;
 mod views;
 
-use crate::reporting::diagnostic::Diagnostic;
-use crate::reporting::files::Files;
 pub use self::config::{Chars, Config, DisplayStyle, Styles};
-
+use crate::reporting::{diagnostic::Diagnostic, files::Files};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ColorArg(pub ColorChoice);
@@ -45,8 +43,10 @@ pub fn emit<'files, F: Files<'files>>(
     files: &'files F,
     diagnostic: &Diagnostic<F::FileId>,
 ) -> Result<(), super::files::Error> {
-    use self::renderer::Renderer;
-    use self::views::{RichDiagnostic, ShortDiagnostic};
+    use self::{
+        renderer::Renderer,
+        views::{RichDiagnostic, ShortDiagnostic},
+    };
 
     let mut renderer = Renderer::new(writer, config);
     match config.display_style {
@@ -55,4 +55,3 @@ pub fn emit<'files, F: Files<'files>>(
         DisplayStyle::Short => ShortDiagnostic::new(diagnostic, false).render(files, &mut renderer),
     }
 }
-

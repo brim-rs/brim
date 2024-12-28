@@ -1,10 +1,10 @@
+pub mod built_ins;
 mod enums;
 mod expr;
 mod functions;
 mod generator;
 mod structs;
 mod utils;
-pub mod built_ins;
 
 use crate::{
     compilation::{imports::UnitLoader, unit::CompilationUnit},
@@ -62,7 +62,11 @@ impl<'a> CodeGen<'a> {
 }
 
 impl<'a> CodeGen<'a> {
-    pub fn generate_code(&mut self, global: &mut GlobalContext, build_cpp: &mut CppBuild) -> Result<()> {
+    pub fn generate_code(
+        &mut self,
+        global: &mut GlobalContext,
+        build_cpp: &mut CppBuild,
+    ) -> Result<()> {
         self.is_bin = global.is_bin()?;
 
         let namespace = &self.unit.namespace;

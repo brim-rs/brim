@@ -1,5 +1,4 @@
-use std::ops::Range;
-use std::string::ToString;
+use std::{ops::Range, string::ToString};
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Severity {

@@ -193,7 +193,7 @@ impl Parser {
                 )],
                 vec![(self.previous().span.clone(), None)],
             )
-                .into());
+            .into());
         }
 
         let mut fields = IndexMap::new();
@@ -218,7 +218,7 @@ impl Parser {
                     )],
                     vec![(self.previous().span.clone(), None)],
                 )
-                    .into());
+                .into());
             } else {
                 self.possible_check(TokenKind::Comma);
             }
@@ -413,7 +413,7 @@ impl Parser {
                     )],
                     vec![(self.peek().span.clone(), None)],
                 )
-                    .into());
+                .into());
             }
 
             Some(self.expect(TokenKind::Colon)?)
@@ -458,7 +458,7 @@ impl Parser {
                 )],
                 vec![(self.peek().span.clone(), None)],
             )
-                .into());
+            .into());
         } else if self.peek().kind == TokenKind::Bang {
             self.consume();
             let typ = self.parse_type_annotation(false)?;

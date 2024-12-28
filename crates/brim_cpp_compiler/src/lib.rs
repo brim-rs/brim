@@ -81,7 +81,7 @@ impl CppBuild {
     /// Adds multiple source files to the build
     pub fn add_sources<I, P>(&mut self, paths: I) -> &mut Self
     where
-        I: IntoIterator<Item=P>,
+        I: IntoIterator<Item = P>,
         P: AsRef<OsStr>,
     {
         for path in paths {
@@ -258,13 +258,11 @@ impl CppBuild {
                         command.arg(format!("/Fe:{}", output_name.to_string_lossy()));
                     } else {
                         command.arg("-shared");
-                        command.arg("-o").arg(
-                            if cfg!(windows) {
-                                PathBuf::from(output_name).with_extension("dll")
-                            } else {
-                                output_name.into()
-                            },
-                        );
+                        command.arg("-o").arg(if cfg!(windows) {
+                            PathBuf::from(output_name).with_extension("dll")
+                        } else {
+                            output_name.into()
+                        });
                     }
                 }
             },
@@ -272,13 +270,11 @@ impl CppBuild {
                 if self.compiler.kind() == &CompilerKind::Msvc {
                     command.arg(format!("/Fe:{}", output_name.to_string_lossy()));
                 } else {
-                    command.arg("-o").arg(
-                        if cfg!(windows) {
-                            PathBuf::from(output_name).with_extension("exe")
-                        } else {
-                            output_name.into()
-                        },
-                    );
+                    command.arg("-o").arg(if cfg!(windows) {
+                        PathBuf::from(output_name).with_extension("exe")
+                    } else {
+                        output_name.into()
+                    });
                 }
             }
         }

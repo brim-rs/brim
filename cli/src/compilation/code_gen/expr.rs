@@ -3,8 +3,6 @@ use crate::{
     compilation::code_gen::CodeGen,
 };
 use anyhow::Result;
-use tracing_subscriber::fmt::format;
-use brim_cpp_compiler::compiler::CompilerKind;
 use brim_cpp_compiler::CppBuild;
 
 impl<'a> CodeGen<'a> {
@@ -126,7 +124,9 @@ impl<'a> CodeGen<'a> {
                 }
             }
             ExprKind::Call(call) => self.generate_call(call, build_cpp)?,
-            ExprKind::StructConstructor(constructor) => self.generate_struct_constructor(constructor, build_cpp)?,
+            ExprKind::StructConstructor(constructor) => {
+                self.generate_struct_constructor(constructor, build_cpp)?
+            }
             _ => {}
         }
 

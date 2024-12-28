@@ -8,6 +8,7 @@ use crate::{
         ExprId, GetSpan, StmtId,
     },
     compilation::{
+        code_gen::built_ins::BuiltInKind,
         imports::UnitLoader,
         items::UnitItemKind,
         passes::{type_checker::ResolvedType, Pass},
@@ -20,8 +21,6 @@ use crate::{
 };
 use anyhow::Result;
 use std::{collections::HashMap, sync::Arc};
-use crate::compilation::code_gen::built_ins::BuiltInKind;
-use crate::compilation::code_gen::CodeGen;
 
 #[derive(Debug)]
 pub struct TypeChecker<'a> {
@@ -147,10 +146,10 @@ impl<'a> TypeChecker<'a> {
                     match (left.kind.clone(), right.kind.clone()) {
                         // Concatenate strings or characters
                         (TypeKind::Char | TypeKind::String, TypeKind::Char | TypeKind::String)
-                        if binary.operator == BinOpKind::Plus =>
-                            {
-                                ResolvedType::base(TypeKind::String)
-                            }
+                            if binary.operator == BinOpKind::Plus =>
+                        {
+                            ResolvedType::base(TypeKind::String)
+                        }
 
                         // Matching types directly
                         (
@@ -478,14 +477,20 @@ impl<'a> TypeChecker<'a> {
                 ResolvedType::base(TypeKind::Null)
             }
             ExprKind::Call(ref call) => {
-                if call.is_builtin && let Some(builtin) = BuiltInKind::get_builtin(&call.callee) {
+                if call.is_builtin
+                    && let Some(builtin) = BuiltInKind::get_builtin(&call.callee)
+                {
                     let (typecheck, return_type, args) = builtin.signature();
 
                     if builtin == BuiltInKind::Err || builtin == BuiltInKind::Ok {
                         if call.args.len() != 1 {
                             self.diags.new_diagnostic(
                                 Diagnostic::error(
-                                    format!("Built-in '{}' expects 1 argument, found {}", call.callee, call.args.len()),
+                                    format!(
+                                        "Built-in '{}' expects 1 argument, found {}",
+                                        call.callee,
+                                        call.args.len()
+                                    ),
                                     vec![(expr.span(self.unit.ast()).clone(), None)],
                                     vec![],
                                 ),
@@ -493,7 +498,7 @@ impl<'a> TypeChecker<'a> {
                             );
                         }
                     }
-                        
+
                     if !typecheck {
                         return Ok(return_type);
                     }
@@ -501,20 +506,25 @@ impl<'a> TypeChecker<'a> {
                     let mut resolved_args: Vec<(ResolvedType, TextSpan)> = vec![];
 
                     for arg in call.args.clone() {
-                        resolved_args.push((self.resolve_from_expr(arg)?, self.unit.ast().query_expr(arg).span(self.unit.ast()).clone()));
+                        resolved_args.push((
+                            self.resolve_from_expr(arg)?,
+                            self.unit
+                                .ast()
+                                .query_expr(arg)
+                                .span(self.unit.ast())
+                                .clone(),
+                        ));
                     }
 
                     for ((arg, arg_span), expected) in resolved_args.iter().zip(args.iter()) {
                         if !ResolvedType::matches(arg, expected) {
                             self.diags.new_diagnostic(
                                 Diagnostic::error(
-                                    format!(
-                                        "Expected type '{}', found '{}'",
-                                        expected, arg
-                                    ),
-                                    vec![(arg_span.clone(), Some(
-                                        "argument with incorrect type".to_string()
-                                    ))],
+                                    format!("Expected type '{}', found '{}'", expected, arg),
+                                    vec![(
+                                        arg_span.clone(),
+                                        Some("argument with incorrect type".to_string()),
+                                    )],
                                     vec![],
                                 ),
                                 Arc::new(self.unit.source.clone()),

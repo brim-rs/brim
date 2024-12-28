@@ -1,5 +1,7 @@
-use crate::{ast::statements::Generic, compilation::code_gen::CodeGen};
-use crate::compilation::code_gen::built_ins::BUILT_INS;
+use crate::{
+    ast::statements::Generic,
+    compilation::code_gen::{built_ins::BUILT_INS, CodeGen},
+};
 
 impl<'a> CodeGen<'a> {
     pub fn write(&mut self, s: impl Into<String>) {

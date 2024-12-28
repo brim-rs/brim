@@ -1,11 +1,11 @@
-use std::fmt;
-use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
-
+use std::{
+    fmt,
+    ops::{Add, AddAssign, Neg, Sub, SubAssign},
+};
 
 pub type RawIndex = u32;
 
 pub type RawOffset = i64;
-
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct LineIndex(pub RawIndex);
@@ -14,7 +14,6 @@ impl LineIndex {
     pub const fn number(self) -> LineNumber {
         LineNumber(self.0 + 1)
     }
-
 
     pub const fn to_usize(self) -> usize {
         self.0 as usize
@@ -41,7 +40,6 @@ impl fmt::Display for LineIndex {
     }
 }
 
-
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct LineNumber(RawIndex);
 
@@ -64,7 +62,6 @@ impl fmt::Display for LineNumber {
         self.0.fmt(f)
     }
 }
-
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct LineOffset(pub RawOffset);
@@ -89,7 +86,6 @@ impl fmt::Display for LineOffset {
     }
 }
 
-
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ColumnIndex(pub RawIndex);
 
@@ -97,7 +93,6 @@ impl ColumnIndex {
     pub const fn number(self) -> ColumnNumber {
         ColumnNumber(self.0 + 1)
     }
-
 
     pub const fn to_usize(self) -> usize {
         self.0 as usize
@@ -124,7 +119,6 @@ impl fmt::Display for ColumnIndex {
     }
 }
 
-
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ColumnNumber(RawIndex);
 
@@ -141,7 +135,6 @@ impl fmt::Display for ColumnNumber {
         self.0.fmt(f)
     }
 }
-
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ColumnOffset(pub RawOffset);
@@ -165,7 +158,6 @@ impl fmt::Display for ColumnOffset {
         self.0.fmt(f)
     }
 }
-
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ByteIndex(pub RawIndex);
@@ -196,7 +188,6 @@ impl fmt::Display for ByteIndex {
     }
 }
 
-
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ByteOffset(pub RawOffset);
 
@@ -205,11 +196,9 @@ impl ByteOffset {
         ByteOffset(ch.len_utf8() as RawOffset)
     }
 
-
     pub fn from_str_len(value: &str) -> ByteOffset {
         ByteOffset(value.len() as RawOffset)
     }
-
 
     pub const fn to_usize(self) -> usize {
         self.0 as usize
@@ -237,26 +226,24 @@ impl fmt::Display for ByteOffset {
     }
 }
 
-
 pub trait Offset: Copy + Ord
 where
-    Self: Neg<Output=Self>,
-    Self: Add<Self, Output=Self>,
+    Self: Neg<Output = Self>,
+    Self: Add<Self, Output = Self>,
     Self: AddAssign<Self>,
-    Self: Sub<Self, Output=Self>,
+    Self: Sub<Self, Output = Self>,
     Self: SubAssign<Self>,
 {
     const ZERO: Self;
 }
 
-
 pub trait Index: Copy + Ord
 where
-    Self: Add<<Self as Index>::Offset, Output=Self>,
+    Self: Add<<Self as Index>::Offset, Output = Self>,
     Self: AddAssign<<Self as Index>::Offset>,
-    Self: Sub<<Self as Index>::Offset, Output=Self>,
+    Self: Sub<<Self as Index>::Offset, Output = Self>,
     Self: SubAssign<<Self as Index>::Offset>,
-    Self: Sub<Self, Output=<Self as Index>::Offset>,
+    Self: Sub<Self, Output = <Self as Index>::Offset>,
 {
     type Offset: Offset;
 }

@@ -45,7 +45,6 @@ impl std::error::Error for Error {
     }
 }
 
-
 pub trait Files<'a> {
     type FileId: 'a + Copy + PartialEq;
     type Name: 'a + std::fmt::Display;
@@ -101,7 +100,7 @@ pub fn column_index(source: &str, line_range: Range<usize>, byte_index: usize) -
         .count()
 }
 
-pub fn line_starts(source: &str) -> impl '_ + Iterator<Item=usize> {
+pub fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }
 

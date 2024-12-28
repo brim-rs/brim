@@ -4,7 +4,12 @@ use crate::{
         GetSpan, StmtId,
     },
     commands::run::compile_unit,
-    compilation::{imports::UnitLoader, items::UnitItemKind, passes::Pass, unit::CompilationUnit},
+    compilation::{
+        imports::{remove_surrounding_quotes, UnitLoader},
+        items::UnitItemKind,
+        passes::Pass,
+        unit::CompilationUnit,
+    },
     error::{
         diagnostic::{Diagnostic, Diagnostics, Level},
         span::TextSpan,
@@ -13,7 +18,6 @@ use crate::{
 };
 use anyhow::Result;
 use std::sync::Arc;
-use crate::compilation::imports::remove_surrounding_quotes;
 
 #[derive(Debug)]
 pub struct Resolver<'a> {
@@ -367,7 +371,10 @@ impl<'a> Pass for Resolver<'a> {
                 compile_unit(&mut unit, self.diags, self.loader)?;
                 self.loader.units.insert(cache_key, unit.clone());
                 // TODO: improve whatever this is
-                self.loader.units.insert(remove_surrounding_quotes(&use_stmt.from.literal()).to_string(), unit.clone());
+                self.loader.units.insert(
+                    remove_surrounding_quotes(&use_stmt.from.literal()).to_string(),
+                    unit.clone(),
+                );
 
                 for item in use_stmt.items {
                     let name = item.literal();
