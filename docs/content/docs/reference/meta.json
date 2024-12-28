@@ -1,0 +1,10 @@
+{
+  "title": "Language specification",
+  "description": "Specification of the Brim language",
+  "icon": "Library",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "index"
+  ]
+}

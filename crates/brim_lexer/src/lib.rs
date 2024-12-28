@@ -16,4 +16,6 @@ pub enum PrimitiveTokenKind {
     Ident,
     /// Any valid whitespace
     Whitespace,
+    /// Literals. eg:
+    Literal { kind: LiteralKind, suffix_start: u32 },
 }
