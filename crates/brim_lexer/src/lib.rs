@@ -1,16 +1,17 @@
 //! Implementation is based on rustc_lexer
 
+use crate::{
+    PrimitiveTokenKind::*,
+    cursor::Cursor,
+    idents::{is_identifier_start, is_valid_ident_continue},
+    whitespace::is_whitespace,
+};
 use std::cmp::PartialEq;
 use unicode_properties::UnicodeEmoji;
-use crate::cursor::Cursor;
-use crate::idents::{is_identifier_start, is_valid_ident_continue};
-use crate::LiteralKind::{Byte, ByteStr, RawByteStr};
-use crate::PrimitiveTokenKind::*;
-use crate::whitespace::is_whitespace;
 
 mod cursor;
-mod whitespace;
 mod idents;
+mod whitespace;
 
 #[derive(Debug)]
 pub struct PrimitiveToken {
@@ -24,12 +25,19 @@ impl PrimitiveToken {
     }
 }
 
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RawStrError {
-    InvalidStarter { bad_char: char },
-    NoTerminator { expected: u32, found: u32, possible_terminator_offset: Option<u32> },
-    TooManyDelimiters { found: u32 },
+    InvalidStarter {
+        bad_char: char,
+    },
+    NoTerminator {
+        expected: u32,
+        found: u32,
+        possible_terminator_offset: Option<u32>,
+    },
+    TooManyDelimiters {
+        found: u32,
+    },
 }
 
 #[cfg(debug_assertions)]
@@ -93,10 +101,15 @@ pub enum PrimitiveTokenKind {
     /// Any valid whitespace
     Whitespace,
     /// Literals. eg:
-    Literal { kind: LiteralKind, suffix_start: u32 },
+    Literal {
+        kind: LiteralKind,
+        suffix_start: u32,
+    },
 
     /// Comment, doc or plain
-    Comment { doc: bool },
+    Comment {
+        doc: bool,
+    },
 
     /// +
     Plus,
@@ -158,7 +171,6 @@ pub enum PrimitiveTokenKind {
     Unknown,
     InvalidIdent,
     UnknownPrefix,
-
 }
 
 impl<'a> Cursor<'a> {
@@ -175,8 +187,8 @@ impl<'a> Cursor<'a> {
 
             '/' => match self.first() {
                 '/' => self.comment(),
-                _ => Slash
-            }
+                _ => Slash,
+            },
 
             '+' => Plus,
             '-' => Minus,
@@ -210,7 +222,10 @@ impl<'a> Cursor<'a> {
                 if terminated {
                     self.eat_identifier();
                 }
-                Literal { kind: LiteralKind::Str { terminated }, suffix_start }
+                Literal {
+                    kind: LiteralKind::Str { terminated },
+                    suffix_start,
+                }
             }
             '\'' => {
                 let terminated = self.single_quoted_string();
@@ -218,12 +233,15 @@ impl<'a> Cursor<'a> {
                 if terminated {
                     self.eat_identifier();
                 }
-                Literal { kind: LiteralKind::Char { terminated }, suffix_start }
+                Literal {
+                    kind: LiteralKind::Char { terminated },
+                    suffix_start,
+                }
             }
 
             c if is_identifier_start(c) => self.ident_or_unknown_prefix(),
 
-            _ => Unknown
+            _ => Unknown,
         };
 
         let token = PrimitiveToken {
@@ -264,16 +282,18 @@ impl<'a> Cursor<'a> {
                     return true;
                 }
                 '\\' => {
-                    self.bump();  // Skip escape char
-                    self.bump();  // Skip next char
+                    self.bump(); // Skip escape char
+                    self.bump(); // Skip next char
                 }
                 '/' | '\n' => return false,
-                _ => { self.bump(); }
+                _ => {
+                    self.bump();
+                }
             }
         }
         false
     }
-    
+
     fn ident_or_unknown_prefix(&mut self) -> PrimitiveTokenKind {
         self.eat_while(is_valid_ident_continue);
         match self.first() {
@@ -286,7 +306,9 @@ impl<'a> Cursor<'a> {
     fn invalid_ident(&mut self) -> PrimitiveTokenKind {
         self.eat_while(|c| {
             const ZERO_WIDTH_JOINER: char = '\u{200d}';
-            is_valid_ident_continue(c) || (!c.is_ascii() && c.is_emoji_char()) || c == ZERO_WIDTH_JOINER
+            is_valid_ident_continue(c)
+                || (!c.is_ascii() && c.is_emoji_char())
+                || c == ZERO_WIDTH_JOINER
         });
         InvalidIdent
     }
@@ -295,7 +317,9 @@ impl<'a> Cursor<'a> {
         while let Some(c) = self.bump() {
             match c {
                 '"' => return true,
-                '\\' if self.first() == '\\' || self.first() == '"' => { self.bump(); }
+                '\\' if self.first() == '\\' || self.first() == '"' => {
+                    self.bump();
+                }
                 _ => (),
             }
         }
@@ -312,16 +336,19 @@ impl<'a> Cursor<'a> {
     }
 }
 
-
-pub fn tokenize(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
+pub fn tokenize(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
     let mut cursor = Cursor::new(input);
     std::iter::from_fn(move || {
         let token = cursor.next_token();
-        if token.kind != PrimitiveTokenKind::Eof { Some(token) } else { None }
+        if token.kind != PrimitiveTokenKind::Eof {
+            Some(token)
+        } else {
+            None
+        }
     })
 }
 
-pub fn tokens_no_whitespace(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
+pub fn tokens_no_whitespace(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
     tokenize(input).filter(|t| t.kind != Whitespace)
 }
 
@@ -335,15 +362,28 @@ pub fn tokens(input: &str, whitespace: bool) -> Vec<PrimitiveToken> {
 
 #[cfg(test)]
 mod tests {
-    use crate::LiteralKind::{RawStr, Str};
     use super::*;
+    use crate::LiteralKind::Str;
 
     #[test]
     fn test_tokenize() {
         let input = "fn main() { println(\"Hello, world!\"); }";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
         assert_eq!(tokens, [
-            Ident, Ident, OpenParen, CloseParen, OpenBrace, Ident, OpenParen, Literal { kind: Str { terminated: true }, suffix_start: 15 }, CloseParen, Semicolon, CloseBrace
+            Ident,
+            Ident,
+            OpenParen,
+            CloseParen,
+            OpenBrace,
+            Ident,
+            OpenParen,
+            Literal {
+                kind: Str { terminated: true },
+                suffix_start: 15
+            },
+            CloseParen,
+            Semicolon,
+            CloseBrace
         ]);
     }
 }
