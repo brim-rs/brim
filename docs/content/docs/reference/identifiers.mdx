@@ -10,12 +10,13 @@ In Brim, identifiers are used to name variables, functions, modules, and other l
 ## **Rules for Identifiers**
 
 1. **Characters**:
-- Identifiers may consist of letters, digits, and underscores (`_`).
+- Identifiers may consist of letters, digits, dollar signs (`$`) and underscores (`_`).
 - They must begin with a letter or an underscore, not a digit.
 
 ```brim
 valid_name    // Valid
 _privateVar   // Valid although will warn because of the non-snake case
+$variable     // Valid
 123name       // Invalid (cannot start with a digit)
 ```
 
