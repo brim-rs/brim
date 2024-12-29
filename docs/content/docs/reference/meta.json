@@ -5,6 +5,10 @@
   "root": true,
   "pages": [
     "---Introduction---",
-    "index"
+    "index",
+    "---Lexical structure---",
+    "keywords",
+    "identifiers",
+    "comments"
   ]
 }

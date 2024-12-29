@@ -1,0 +1,74 @@
+---
+title: Identifiers
+icon: KeyRound
+---
+
+In Brim, identifiers are used to name variables, functions, modules, and other language elements. Identifiers must adhere to specific rules to ensure clarity and consistency in your codebase.
+
+---
+
+## **Rules for Identifiers**
+
+1. **Characters**:
+- Identifiers may consist of letters, digits, and underscores (`_`).
+- They must begin with a letter or an underscore, not a digit.
+
+```brim
+valid_name    // Valid
+_privateVar   // Valid although will warn because of the non-snake case
+123name       // Invalid (cannot start with a digit)
+```
+
+2. **Case Sensitivity**:
+
+Identifiers are case-sensitive. This means `myVar` and `MyVar` are considered different identifiers.
+
+```brim
+myVar = 10
+MyVar = 20
+
+print(myVar)  // 10
+print(MyVar)  // 20
+```
+
+3. **Reserved Keywords**:
+
+Identifiers cannot be a keyword or a reserved word in Brim. For example, you cannot name a variable `fn` or `let`.
+
+```brim
+let fn = 10  // Invalid
+let let = 20 // Invalid
+```
+
+## **Naming Conventions**
+
+While Brim does not enforce strict naming conventions, the program will warn you about these rules.
+Following these practices can make your code more readable and maintainable:
+
+1. **Variables and Functions**:
+- Use `snake_case` for variable and function names.
+```brim
+fn calculate_area(width: i32, height: i32) {
+    let max_value = 100;
+    return width * height;
+};
+```
+
+2. **Constants**:
+- Use `UPPER_SNAKE_CASE` for constants.
+```brim
+const PI = 3.14159;
+```
+
+4. **Types and Traits**:
+- Use `PascalCase` for structs and traits.
+```brim
+struct Rectangle {
+    width: Int
+    height: Int
+};
+
+trait Drawable {
+    fn draw();
+};
+```
