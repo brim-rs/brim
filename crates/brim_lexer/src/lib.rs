@@ -8,6 +8,8 @@ use crate::{
 };
 use std::cmp::PartialEq;
 use unicode_properties::UnicodeEmoji;
+use crate::cursor::EOF_CHAR;
+use crate::LiteralKind::{Byte, ByteStr, Float, Int};
 
 mod cursor;
 mod idents;
@@ -82,15 +84,6 @@ pub enum LiteralKind {
     /// C-compatible string literals with c-prefix
     /// Examples: `c"hello"`, `c"null-terminated"`
     CStr { terminated: bool },
-    /// Raw string literals using $, with optional nesting level
-    /// Examples: `$hello$`, `$2$nested text$2$`
-    RawStr { n_level: Option<u8> },
-    /// Raw byte string literals with b-prefix and $ delimiters
-    /// Examples: `b$"raw bytes"$`, `b$2$"raw bytes"$2$`
-    RawByteStr { n_level: Option<u8> },
-    /// Raw C string literals with c-prefix and $ delimiters
-    /// Examples: `c$raw c string$`, `c$2$raw c string$2$`
-    RawCStr { n_level: Option<u8> },
 }
 
 /// Multiple-character symbols are made later in the [Lexer](crate::lexer::Lexer)
@@ -216,7 +209,50 @@ impl<'a> Cursor<'a> {
             ';' => Semicolon,
             '$' => Dollar,
 
+            c @ '0'..='9' => {
+                let literal_kind = self.number(c);
+                let suffix_start = self.pos_within_token();
+                self.eat_literal_suffix();
+                PrimitiveTokenKind::Literal { kind: literal_kind, suffix_start }
+            }
+
+            'b' => match self.first() {
+                '\'' => {
+                    self.bump();
+                    let terminated = self.single_quoted_string();
+                    let suffix_start = self.pos_within_token();
+                    if terminated {
+                        self.eat_identifier();
+                    }
+                    Literal { kind: Byte { terminated }, suffix_start }
+                }
+                '"' => {
+                    self.bump();
+                    let terminated = self.double_quoted_string();
+                    let suffix_start = self.pos_within_token();
+                    if terminated {
+                        self.eat_identifier();
+                    }
+                    Literal { kind: ByteStr { terminated }, suffix_start }
+                }
+                _ => self.ident_or_unknown_prefix(),
+            },
+
+            'c' => match self.first() {
+                '"' => {
+                    self.bump();
+                    let terminated = self.double_quoted_string();
+                    let suffix_start = self.pos_within_token();
+                    if terminated {
+                        self.eat_identifier();
+                    }
+                    Literal { kind: LiteralKind::CStr { terminated }, suffix_start }
+                }
+                _ => self.ident_or_unknown_prefix(),
+            }
+
             '"' => {
+                self.bump();
                 let terminated = self.double_quoted_string();
                 let suffix_start = self.pos_within_token();
                 if terminated {
@@ -251,6 +287,68 @@ impl<'a> Cursor<'a> {
 
         self.reset_pos_within_token();
         token
+    }
+
+    fn number(&mut self, first_digit: char) -> LiteralKind {
+        let mut base = Base::Decimal;
+        if first_digit == '0' {
+            match self.first() {
+                'b' => {
+                    base = Base::Binary;
+                    self.bump();
+                    if !self.eat_decimal_digits() {
+                        return Int { base, empty_int: true };
+                    }
+                }
+                'o' => {
+                    base = Base::Octal;
+                    self.bump();
+                    if !self.eat_decimal_digits() {
+                        return Int { base, empty_int: true };
+                    }
+                }
+                'x' => {
+                    base = Base::Hexadecimal;
+                    self.bump();
+                    if !self.eat_hexadecimal_digits() {
+                        return Int { base, empty_int: true };
+                    }
+                }
+                '0'..='9' | '_' => {
+                    self.eat_decimal_digits();
+                }
+
+                '.' | 'e' | 'E' => {}
+
+                _ => return Int { base, empty_int: false },
+            }
+        } else {
+            self.eat_decimal_digits();
+        };
+
+        match self.first() {
+            '.' if self.second() != '.' && !is_identifier_start(self.second()) => {
+                self.bump();
+                let mut empty_exponent = false;
+                if self.first().is_ascii_digit() {
+                    self.eat_decimal_digits();
+                    match self.first() {
+                        'e' | 'E' => {
+                            self.bump();
+                            empty_exponent = !self.eat_float_exponent();
+                        }
+                        _ => (),
+                    }
+                }
+                Float { base, empty_exponent }
+            }
+            'e' | 'E' => {
+                self.bump();
+                let empty_exponent = !self.eat_float_exponent();
+                Float { base, empty_exponent }
+            }
+            _ => Int { base, empty_int: false },
+        }
     }
 
     pub fn comment(&mut self) -> PrimitiveTokenKind {
@@ -334,9 +432,55 @@ impl<'a> Cursor<'a> {
 
         self.eat_while(is_valid_ident_continue);
     }
+
+    fn eat_decimal_digits(&mut self) -> bool {
+        let mut has_digits = false;
+        loop {
+            match self.first() {
+                '_' => {
+                    self.bump();
+                }
+                '0'..='9' => {
+                    has_digits = true;
+                    self.bump();
+                }
+                _ => break,
+            }
+        }
+        has_digits
+    }
+
+    fn eat_hexadecimal_digits(&mut self) -> bool {
+        let mut has_digits = false;
+        loop {
+            match self.first() {
+                '_' => {
+                    self.bump();
+                }
+                '0'..='9' | 'a'..='f' | 'A'..='F' => {
+                    has_digits = true;
+                    self.bump();
+                }
+                _ => break,
+            }
+        }
+        has_digits
+    }
+
+    fn eat_float_exponent(&mut self) -> bool {
+        debug_assert!(self.prev() == 'e' || self.prev() == 'E');
+        if self.first() == '-' || self.first() == '+' {
+            self.bump();
+        }
+        self.eat_decimal_digits()
+    }
+
+    fn eat_literal_suffix(&mut self) {
+        self.eat_identifier();
+    }
 }
 
-pub fn tokenize(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
+pub fn tokenize(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
     let mut cursor = Cursor::new(input);
     std::iter::from_fn(move || {
         let token = cursor.next_token();
@@ -348,7 +492,7 @@ pub fn tokenize(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
     })
 }
 
-pub fn tokens_no_whitespace(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
+pub fn tokens_no_whitespace(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
     tokenize(input).filter(|t| t.kind != Whitespace)
 }
 
@@ -384,6 +528,198 @@ mod tests {
             CloseParen,
             Semicolon,
             CloseBrace
+        ]);
+    }
+
+    #[test]
+    fn test_byte_string() {
+        let input = "b\"hello\"";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: ByteStr { terminated: true },
+                suffix_start: 8
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_byte_string_escaped() {
+        let input = "b\"hello\\n\"";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: ByteStr { terminated: true },
+                suffix_start: 10
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_str() {
+        let input = "\"hello\"";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: Str { terminated: true },
+                suffix_start: 7
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_str_escaped() {
+        let input = "\"hello\\n\"";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: Str { terminated: true },
+                suffix_start: 9
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_char() {
+        let input = "'a'";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: LiteralKind::Char { terminated: true },
+                suffix_start: 3
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_char_escaped() {
+        let input = "'\\n'";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: LiteralKind::Char { terminated: true },
+                suffix_start: 4
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_c_str() {
+        let input = "c\"hello\"";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: LiteralKind::CStr { terminated: true },
+                suffix_start: 8
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_c_str_escaped() {
+        let input = "c\"hello\\n\"";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: LiteralKind::CStr { terminated: true },
+                suffix_start: 10
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_int() {
+        let input = "123";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: Int { base: Base::Decimal, empty_int: false },
+                suffix_start: 3
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_int_bin() {
+        let input = "0b101";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: Int { base: Base::Binary, empty_int: false },
+                suffix_start: 5
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_int_octal() {
+        let input = "0o123";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: Int { base: Base::Octal, empty_int: false },
+                suffix_start: 5
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_int_hex() {
+        let input = "0x123abc";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: Int { base: Base::Hexadecimal, empty_int: false },
+                suffix_start: 8
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_float() {
+        let input = "1.23";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: Float { base: Base::Decimal, empty_exponent: false },
+                suffix_start: 4
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_float_exp() {
+        let input = "1.23e5";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: Float { base: Base::Decimal, empty_exponent: false },
+                suffix_start: 6
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_float_exp_neg() {
+        let input = "1.23e-5";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: Float { base: Base::Decimal, empty_exponent: false },
+                suffix_start: 7
+            }
+        ]);
+    }
+
+    #[test]
+    fn test_float_exp_pos() {
+        let input = "1.23e+5";
+        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
+        assert_eq!(tokens, [
+            Literal {
+                kind: Float { base: Base::Decimal, empty_exponent: false },
+                suffix_start: 7
+            }
         ]);
     }
 }

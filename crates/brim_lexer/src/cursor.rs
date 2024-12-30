@@ -1,5 +1,6 @@
 use std::str::Chars;
 
+#[derive(Debug)]
 pub struct Cursor<'a> {
     len_remaining: usize,
     chars: Chars<'a>,
