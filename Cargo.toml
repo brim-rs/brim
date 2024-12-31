@@ -1,5 +1,5 @@
 [workspace]
-members = ["cli", "crates/brim_config", "crates/brim_cpp_compiler", "crates/brim_fs", "crates/brim_shell", "crates/brim_diagnostics/lib", "crates/brim_diagnostics/playground", "crates/brim_lexer"]
+members = ["cli", "crates/brim_config", "crates/brim_cpp_compiler", "crates/brim_fs", "crates/brim_shell", "crates/brim_diagnostics/lib", "crates/brim_diagnostics/playground", "crates/brim_lexer", "crates/brim"]
 resolver = "1"
 
 [workspace.dependencies]
