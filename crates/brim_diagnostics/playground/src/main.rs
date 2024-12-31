@@ -31,7 +31,7 @@ fn main() -> Result<()> {
         ),
     );
 
-    let diagnostic = Diagnostic::error()
+    let mut diagnostic = Diagnostic::error()
         .with_message("`case` clauses have incompatible types")
         .with_code("E0308")
         .with_labels(vec![
@@ -45,7 +45,7 @@ fn main() -> Result<()> {
         ",
         )]);
 
-    for label in &diagnostic.labels {
+    for label in &mut diagnostic.labels {
         match label.style {
             LabelStyle::Add(to_add) => {
                 let range = label.range.start..label.range.start;
@@ -56,6 +56,9 @@ fn main() -> Result<()> {
                 let source = source[..range.start].to_string() + &to_add.bright_green().to_string() + &source[range.end..];
 
                 files.update(label.file_id, file.name(), source);
+
+                // Update the range to include the added code
+                label.range = label.range.start..label.range.start + to_add.len() + 1;
             }
             _ => {}
         }
