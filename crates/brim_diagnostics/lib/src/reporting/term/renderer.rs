@@ -7,14 +7,14 @@ use std::{
     io::{self, Write},
     ops::Range,
 };
-use termcolor::{ColorSpec, WriteColor};
+use anstyle::Style;
 
 pub struct Locus {
     pub name: String,
     pub location: Location,
 }
 
-pub type SingleLabel<'diagnostic> = (LabelStyle, Range<usize>, &'diagnostic str);
+pub type SingleLabel<'diagnostic> = (LabelStyle<'diagnostic>, Range<usize>, &'diagnostic str);
 
 pub enum MultiLabel<'diagnostic> {
     Top(usize),
@@ -30,16 +30,16 @@ enum VerticalBound {
     Bottom,
 }
 
-type Underline = (LabelStyle, VerticalBound);
+type Underline<'diag> = (LabelStyle<'diag>, VerticalBound);
 
 pub struct Renderer<'writer, 'config> {
-    writer: &'writer mut dyn WriteColor,
+    writer: &'writer mut dyn Write,
     config: &'config Config,
 }
 
 impl<'writer, 'config> Renderer<'writer, 'config> {
     pub fn new(
-        writer: &'writer mut dyn WriteColor,
+        writer: &'writer mut dyn Write,
         config: &'config Config,
     ) -> Renderer<'writer, 'config> {
         Renderer { writer, config }
@@ -133,10 +133,10 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                     Some((label_index, label_style, label)) if *label_index == label_column => {
                         match label {
                             MultiLabel::Top(start)
-                                if *start <= source.len() - source.trim_start().len() =>
-                            {
-                                self.label_multi_top_left(severity, *label_style)?;
-                            }
+                            if *start <= source.len() - source.trim_start().len() =>
+                                {
+                                    self.label_multi_top_left(severity, *label_style)?;
+                                }
                             MultiLabel::Top(..) => self.inner_gutter_space()?,
                             MultiLabel::Left | MultiLabel::Bottom(..) => {
                                 self.label_multi_left(severity, *label_style, None)?;
@@ -158,10 +158,10 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                 }) || multi_labels.iter().any(|(_, ls, label)| {
                     *ls == LabelStyle::Primary
                         && match label {
-                            MultiLabel::Top(start) => column_range.start >= *start,
-                            MultiLabel::Left => true,
-                            MultiLabel::Bottom(start, _) => column_range.end <= *start,
-                        }
+                        MultiLabel::Top(start) => column_range.start >= *start,
+                        MultiLabel::Left => true,
+                        MultiLabel::Bottom(start, _) => column_range.end <= *start,
+                    }
                 });
 
                 if is_primary && !in_primary {
@@ -185,11 +185,8 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
 
         if !single_labels.is_empty() {
             let mut num_messages = 0;
-
             let mut max_label_start = 0;
-
             let mut max_label_end = 0;
-
             let mut trailing_label = None;
 
             for (label_index, label) in single_labels.iter().enumerate() {
@@ -251,8 +248,10 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
 
                 let caret_ch = match current_label_style {
                     Some(LabelStyle::Primary) => Some(self.chars().single_primary_caret),
-                    // Some(LabelStyle::Secondary) => Some(self.chars().single_secondary_caret),
-                    _ => Some(self.chars().single_secondary_caret),
+                    Some(LabelStyle::Error) => Some(self.chars().single_primary_caret),
+                    Some(LabelStyle::Warning) => Some(self.chars().single_primary_caret),
+                    Some(LabelStyle::Add(_)) => Some(self.chars().plus),
+
                     None if metrics.byte_index < max_label_end => Some(' '),
                     None => None,
                 };
@@ -316,7 +315,6 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         for (multi_label_index, (_, label_style, label)) in multi_labels.iter().enumerate() {
             let (label_style, range, bottom_message) = match label {
                 MultiLabel::Left => continue,
-
                 MultiLabel::Top(start) if *start <= source.len() - source.trim_start().len() => {
                     continue
                 }
@@ -423,8 +421,8 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
 
     fn char_metrics(
         &self,
-        char_indices: impl Iterator<Item = (usize, char)>,
-    ) -> impl Iterator<Item = (Metrics, char)> {
+        char_indices: impl Iterator<Item=(usize, char)>,
+    ) -> impl Iterator<Item=(Metrics, char)> {
         use unicode_width::UnicodeWidthChar;
 
         let tab_width = self.config.tab_width;
@@ -498,7 +496,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         max_label_start: usize,
         single_labels: &[SingleLabel<'_>],
         trailing_label: Option<(usize, &SingleLabel<'_>)>,
-        char_indices: impl Iterator<Item = (usize, char)>,
+        char_indices: impl Iterator<Item=(usize, char)>,
     ) -> Result<(), Error> {
         for (metrics, ch) in self.char_metrics(char_indices) {
             let column_range = metrics.byte_index..(metrics.byte_index + ch.len_utf8());
@@ -589,9 +587,11 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
 
         let caret_start = match label_style {
             LabelStyle::Primary => self.config.chars.multi_primary_caret_start,
-            // LabelStyle::Secondary => self.config.chars.multi_secondary_caret_start,
-            _ => todo!(),
+            LabelStyle::Error => self.config.chars.single_primary_caret,
+            LabelStyle::Warning => self.config.chars.single_primary_caret,
+            LabelStyle::Add(_) => self.config.chars.plus,
         };
+
         write!(self, "{}", caret_start)?;
         self.reset()?;
         writeln!(self)?;
@@ -618,8 +618,9 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
 
         let caret_end = match label_style {
             LabelStyle::Primary => self.config.chars.multi_primary_caret_start,
-            // LabelStyle::Secondary => self.config.chars.multi_secondary_caret_start,
-            _ => todo!(),
+            LabelStyle::Error => self.config.chars.single_primary_caret,
+            LabelStyle::Warning => self.config.chars.single_primary_caret,
+            LabelStyle::Add(_) => self.config.chars.plus,
         };
         write!(self, "{}", caret_end)?;
         if !message.is_empty() {
@@ -692,21 +693,17 @@ impl<'writer, 'config> Write for Renderer<'writer, 'config> {
     }
 }
 
-impl<'writer, 'config> WriteColor for Renderer<'writer, 'config> {
-    fn supports_color(&self) -> bool {
-        self.writer.supports_color()
-    }
-
-    fn set_color(&mut self, spec: &ColorSpec) -> io::Result<()> {
-        self.writer.set_color(spec)
+impl<'writer, 'config> Renderer<'writer, 'config> {
+    fn set_color(&mut self, spec: &Style) -> io::Result<()> {
+        self.writer.write(spec.to_string().as_bytes())?;
+        
+        Ok(())
     }
 
     fn reset(&mut self) -> io::Result<()> {
-        self.writer.reset()
-    }
-
-    fn is_synchronous(&self) -> bool {
-        self.writer.is_synchronous()
+        self.writer.write(b"\x1b[0m")?;
+        
+        Ok(())
     }
 }
 
@@ -723,16 +720,17 @@ fn is_overlapping(range0: &Range<usize>, range1: &Range<usize>) -> bool {
 
 fn label_priority_key(label_style: &LabelStyle) -> u8 {
     match label_style {
-        // LabelStyle::Secondary => 0,
-        LabelStyle::Primary => 1,
-        _ => todo!("label_priority_key"),
+        LabelStyle::Add(_) => 1,
+        LabelStyle::Warning => 2,
+        LabelStyle::Primary => 3,
+        LabelStyle::Error => 4
     }
 }
 
 fn hanging_labels<'labels, 'diagnostic>(
     single_labels: &'labels [SingleLabel<'diagnostic>],
     trailing_label: Option<(usize, &'labels SingleLabel<'diagnostic>)>,
-) -> impl 'labels + DoubleEndedIterator<Item = &'labels SingleLabel<'diagnostic>> {
+) -> impl 'labels + DoubleEndedIterator<Item=&'labels SingleLabel<'diagnostic>> {
     single_labels
         .iter()
         .enumerate()

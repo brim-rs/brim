@@ -1,0 +1,12 @@
+[package]
+name = "diag-playground"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+brim-diagnostics = { workspace = true }
+unindent = "0.2.3"
+term = "1.0.1"
+anyhow = { workspace = true }
+termcolor = "1.4.1"
+colored = "2.2.0"

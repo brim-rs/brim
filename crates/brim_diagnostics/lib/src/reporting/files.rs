@@ -205,6 +205,10 @@ where
     pub fn get(&self, file_id: usize) -> Result<&SimpleFile<Name, Source>, Error> {
         self.files.get(file_id).ok_or(Error::FileMissing)
     }
+    
+    pub fn update(&mut self, file_id: usize, name: Name, source: Source) {
+        self.files[file_id] = SimpleFile::new(name, source);
+    }
 }
 
 impl<'a, Name, Source> Files<'a> for SimpleFiles<Name, Source>

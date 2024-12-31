@@ -1,13 +1,14 @@
 //! Terminal back-end for emitting diagnostics.
 
+use std::io::Write;
 use std::str::FromStr;
-use termcolor::{ColorChoice, WriteColor};
+use anstream::ColorChoice;
 
 mod config;
 mod renderer;
 mod views;
 
-pub use self::config::{Chars, Config, DisplayStyle, Styles};
+pub use self::config::{Chars, Config, Styles};
 use crate::reporting::{diagnostic::Diagnostic, files::Files};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -38,20 +39,16 @@ impl From<ColorArg> for ColorChoice {
 }
 
 pub fn emit<'files, F: Files<'files>>(
-    writer: &mut dyn WriteColor,
+    writer: &mut dyn Write,
     config: &Config,
     files: &'files F,
     diagnostic: &Diagnostic<F::FileId>,
 ) -> Result<(), super::files::Error> {
     use self::{
         renderer::Renderer,
-        views::{RichDiagnostic, ShortDiagnostic},
+        views::{RichDiagnostic},
     };
 
     let mut renderer = Renderer::new(writer, config);
-    match config.display_style {
-        DisplayStyle::Rich => RichDiagnostic::new(diagnostic, config).render(files, &mut renderer),
-        DisplayStyle::Medium => ShortDiagnostic::new(diagnostic, true).render(files, &mut renderer),
-        DisplayStyle::Short => ShortDiagnostic::new(diagnostic, false).render(files, &mut renderer),
-    }
+    RichDiagnostic::new(diagnostic, config).render(files, &mut renderer)
 }

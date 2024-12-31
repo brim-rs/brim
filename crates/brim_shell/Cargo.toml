@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 anstyle = { workspace = true }
+anstream = { workspace = true }
 anyhow = { workspace = true }
 url = { workspace = true }
-anstream = { workspace = true }
 gethostname = { workspace = true }
 terminal_size = "0.4.1"

@@ -13,9 +13,8 @@ fn count_digits(n: usize) -> usize {
     (n.saturating_add(1) as f64).log10().ceil() as usize
 }
 
-/// Output a richly formatted diagnostic, with source code previews.
 pub struct RichDiagnostic<'diagnostic, 'config, FileId> {
-    diagnostic: &'diagnostic Diagnostic<FileId>,
+    diagnostic: &'diagnostic Diagnostic<'diagnostic, FileId>,
     config: &'config Config,
 }
 
@@ -47,7 +46,7 @@ where
             location: Location,
             num_multi_labels: usize,
             lines: BTreeMap<usize, Line<'diagnostic>>,
-            max_label_style: LabelStyle,
+            max_label_style: LabelStyle<'diagnostic>,
         }
 
         impl<'diagnostic, FileId> LabeledFile<'diagnostic, FileId> {
@@ -72,7 +71,7 @@ where
             range: std::ops::Range<usize>,
             // TODO: How do we reuse these allocations?
             single_labels: Vec<SingleLabel<'diagnostic>>,
-            multi_labels: Vec<(usize, LabelStyle, MultiLabel<'diagnostic>)>,
+            multi_labels: Vec<(usize, LabelStyle<'diagnostic>, MultiLabel<'diagnostic>)>,
             must_render: bool,
         }
 
@@ -319,67 +318,5 @@ where
             renderer.render_snippet_note(outer_padding, note)?;
         }
         renderer.render_empty()
-    }
-}
-
-pub struct ShortDiagnostic<'diagnostic, FileId> {
-    diagnostic: &'diagnostic Diagnostic<FileId>,
-    show_notes: bool,
-}
-
-impl<'diagnostic, FileId> ShortDiagnostic<'diagnostic, FileId>
-where
-    FileId: Copy + PartialEq,
-{
-    pub fn new(
-        diagnostic: &'diagnostic Diagnostic<FileId>,
-        show_notes: bool,
-    ) -> ShortDiagnostic<'diagnostic, FileId> {
-        ShortDiagnostic {
-            diagnostic,
-            show_notes,
-        }
-    }
-
-    pub fn render<'files>(
-        &self,
-        files: &'files impl Files<'files, FileId = FileId>,
-        renderer: &mut Renderer<'_, '_>,
-    ) -> Result<(), Error>
-    where
-        FileId: 'files,
-    {
-        let mut primary_labels_encountered = 0;
-        let labels = self.diagnostic.labels.iter();
-        for label in labels.filter(|label| label.style == LabelStyle::Primary) {
-            primary_labels_encountered += 1;
-
-            renderer.render_header(
-                Some(&Locus {
-                    name: files.name(label.file_id)?.to_string(),
-                    location: files.location(label.file_id, label.range.start)?,
-                }),
-                self.diagnostic.severity,
-                self.diagnostic.code.as_deref(),
-                self.diagnostic.message.as_str(),
-            )?;
-        }
-
-        if primary_labels_encountered == 0 {
-            renderer.render_header(
-                None,
-                self.diagnostic.severity,
-                self.diagnostic.code.as_deref(),
-                self.diagnostic.message.as_str(),
-            )?;
-        }
-
-        if self.show_notes {
-            for note in &self.diagnostic.notes {
-                renderer.render_snippet_note(0, note)?;
-            }
-        }
-
-        Ok(())
     }
 }
