@@ -7,7 +7,7 @@ use brim_span::files::SimpleFiles;
 
 fn main() -> Result<()> {
     let mut files = SimpleFiles::new();
-    
+
     let file_id = files.add(
         "FizzBuzz.fun".into(),
         unindent::unindent(
@@ -65,7 +65,7 @@ fn main() -> Result<()> {
     }
 
     let writer = termcolor::StandardStream::stderr(ColorChoice::Always);
-    let mut config = brim_diagnostics::term::Config::default();
+    let mut config = brim_diagnostics::term::DiagConfig::default();
 
     brim_diagnostics::term::emit(&mut writer.lock(), &config, &files, &diagnostic)?;
 

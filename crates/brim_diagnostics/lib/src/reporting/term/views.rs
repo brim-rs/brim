@@ -4,7 +4,7 @@ use crate::reporting::{
     diagnostic::{Diagnostic, LabelStyle},
     term::{
         renderer::{Locus, MultiLabel, Renderer, SingleLabel},
-        Config,
+        DiagConfig,
     },
 };
 
@@ -14,7 +14,7 @@ fn count_digits(n: usize) -> usize {
 
 pub struct RichDiagnostic<'diagnostic, 'config, FileId> {
     diagnostic: &'diagnostic Diagnostic<'diagnostic, FileId>,
-    config: &'config Config,
+    config: &'config DiagConfig,
 }
 
 impl<'diagnostic, 'config, FileId> RichDiagnostic<'diagnostic, 'config, FileId>
@@ -23,14 +23,14 @@ where
 {
     pub fn new(
         diagnostic: &'diagnostic Diagnostic<FileId>,
-        config: &'config Config,
+        config: &'config DiagConfig,
     ) -> RichDiagnostic<'diagnostic, 'config, FileId> {
         RichDiagnostic { diagnostic, config }
     }
 
     pub fn render<'files>(
         &self,
-        files: &'files impl Files<'files, FileId = FileId>,
+        files: &'files impl Files<'files, FileId=FileId>,
         renderer: &mut Renderer<'_, '_>,
     ) -> Result<(), Error>
     where
@@ -95,7 +95,7 @@ where
                 Some(labeled_file) => {
                     if labeled_file.max_label_style > label.style
                         || (labeled_file.max_label_style == label.style
-                            && labeled_file.start > label.range.start)
+                        && labeled_file.start > label.range.start)
                     {
                         labeled_file.start = label.range.start;
                         labeled_file.location = files.location(label.file_id, label.range.start)?;
@@ -302,8 +302,7 @@ where
                 }
             }
 
-            if labeled_files.peek().is_none() && self.diagnostic.notes.is_empty() {
-            } else {
+            if labeled_files.peek().is_none() && self.diagnostic.notes.is_empty() {} else {
                 renderer.render_snippet_empty(
                     outer_padding,
                     self.diagnostic.severity,

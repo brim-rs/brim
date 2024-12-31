@@ -1,6 +1,6 @@
 use crate::reporting::{
     diagnostic::{LabelStyle, Severity},
-    term::{Chars, Config, Styles},
+    term::{Chars, DiagConfig, Styles},
 };
 use std::{
     io::{self, Write},
@@ -34,13 +34,13 @@ type Underline<'diag> = (LabelStyle<'diag>, VerticalBound);
 
 pub struct Renderer<'writer, 'config> {
     writer: &'writer mut dyn Write,
-    config: &'config Config,
+    config: &'config DiagConfig,
 }
 
 impl<'writer, 'config> Renderer<'writer, 'config> {
     pub fn new(
         writer: &'writer mut dyn Write,
-        config: &'config Config,
+        config: &'config DiagConfig,
     ) -> Renderer<'writer, 'config> {
         Renderer { writer, config }
     }

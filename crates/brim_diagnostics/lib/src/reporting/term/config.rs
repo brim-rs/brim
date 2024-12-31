@@ -2,7 +2,7 @@ use anstyle::{AnsiColor, Color, Style};
 use crate::reporting::diagnostic::{LabelStyle, Severity};
 
 #[derive(Clone, Debug)]
-pub struct Config {
+pub struct DiagConfig {
     pub tab_width: usize,
     pub styles: Styles,
     pub chars: Chars,
@@ -12,9 +12,9 @@ pub struct Config {
     pub after_label_lines: usize,
 }
 
-impl Default for Config {
-    fn default() -> Config {
-        Config {
+impl Default for DiagConfig {
+    fn default() -> DiagConfig {
+        DiagConfig {
             tab_width: 4,
             styles: Styles::default(),
             chars: Chars::default(),
