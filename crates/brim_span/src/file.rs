@@ -2,6 +2,7 @@ use std::{
     ffi::{OsStr, OsString},
     num::NonZeroU32,
 };
+use std::path::PathBuf;
 use crate::files::{Error};
 use crate::index::{ByteIndex, ColumnIndex, LineIndex, LineOffset, RawIndex};
 use crate::location::Location;
@@ -104,13 +105,12 @@ where
     Source: AsRef<str>,
 {
     type FileId = FileId;
-    type Name = String;
     type Source = &'a str;
 
-    fn name(&self, id: FileId) -> Result<String, Error> {
+    fn name(&self, id: FileId) -> Result<PathBuf, Error> {
         use std::path::PathBuf;
 
-        Ok(PathBuf::from(self.name(id)).display().to_string())
+        Ok(PathBuf::from(self.name(id)))
     }
 
     fn source(&'a self, id: FileId) -> Result<&str, Error> {

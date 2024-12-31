@@ -9,7 +9,7 @@ fn main() -> Result<()> {
     let mut files = SimpleFiles::new();
     
     let file_id = files.add(
-        "FizzBuzz.fun",
+        "FizzBuzz.fun".into(),
         unindent::unindent(
             r#"
             pub fn div(a: i32, b: i32) -> i32!string {
@@ -55,7 +55,7 @@ fn main() -> Result<()> {
                 // Insert code to add between the range
                 let source = source[..range.start].to_string() + &to_add.bright_green().to_string() + &source[range.end..];
 
-                files.update(label.file_id, file.name(), source);
+                files.update(label.file_id, file.name().clone(), source);
 
                 // Update the range to include the added code
                 label.range = label.range.start..label.range.start + to_add.len() + 1;

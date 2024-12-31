@@ -1,3 +1,5 @@
+#![feature(associated_type_defaults)]
+
 pub mod file;
 pub mod index;
 pub mod location;

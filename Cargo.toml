@@ -13,6 +13,7 @@ brim-fs = { path = "crates/brim_fs", version = "0.1.0" }
 brim-diagnostics = { path = "crates/brim_diagnostics/lib", version = "0.1.0" }
 brim-lexer = { path = "crates/brim_lexer", version = "0.1.0" }
 brim-span = { path = "crates/brim_span", version = "0.1.0" }
+brim = { path = "crates/brim", version = "0.1.0" }
 
 # Other dependencies
 anyhow = "1.0.94"

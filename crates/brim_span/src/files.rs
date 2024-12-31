@@ -1,4 +1,5 @@
 use std::ops::Range;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 #[non_exhaustive]
@@ -47,10 +48,9 @@ impl std::error::Error for Error {
 
 pub trait Files<'a> {
     type FileId: 'a + Copy + PartialEq;
-    type Name: 'a + std::fmt::Display;
     type Source: 'a + AsRef<str>;
 
-    fn name(&'a self, id: Self::FileId) -> Result<Self::Name, Error>;
+    fn name(&'a self, id: Self::FileId) -> Result<PathBuf, Error>;
 
     fn source(&'a self, id: Self::FileId) -> Result<Self::Source, Error>;
 
@@ -100,23 +100,19 @@ pub fn column_index(source: &str, line_range: Range<usize>, byte_index: usize) -
         .count()
 }
 
-pub fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
+pub fn line_starts(source: &str) -> impl '_ + Iterator<Item=usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }
 
 #[derive(Debug, Clone)]
-pub struct SimpleFile<Name, Source> {
-    name: Name,
-    source: Source,
+pub struct SimpleFile {
+    name: PathBuf,
+    source: String,
     line_starts: Vec<usize>,
 }
 
-impl<Name, Source> SimpleFile<Name, Source>
-where
-    Name: std::fmt::Display,
-    Source: AsRef<str>,
-{
-    pub fn new(name: Name, source: Source) -> SimpleFile<Name, Source> {
+impl SimpleFile {
+    pub fn new(name: PathBuf, source: String) -> SimpleFile {
         SimpleFile {
             name,
             line_starts: line_starts(source.as_ref()).collect(),
@@ -124,11 +120,11 @@ where
         }
     }
 
-    pub fn name(&self) -> &Name {
+    pub fn name(&self) -> &PathBuf {
         &self.name
     }
 
-    pub fn source(&self) -> &Source {
+    pub fn source(&self) -> &String {
         &self.source
     }
 
@@ -141,7 +137,7 @@ where
                 .get(line_index)
                 .cloned()
                 .expect("failed despite previous check")),
-            Ordering::Equal => Ok(self.source.as_ref().len()),
+            Ordering::Equal => Ok(self.source.len()),
             Ordering::Greater => Err(Error::LineTooLarge {
                 given: line_index,
                 max: self.line_starts.len() - 1,
@@ -150,16 +146,11 @@ where
     }
 }
 
-impl<'a, Name, Source> Files<'a> for SimpleFile<Name, Source>
-where
-    Name: 'a + std::fmt::Display + Clone,
-    Source: 'a + AsRef<str>,
-{
+impl<'a> Files<'a> for SimpleFile {
     type FileId = ();
-    type Name = Name;
     type Source = &'a str;
 
-    fn name(&self, (): ()) -> Result<Name, Error> {
+    fn name(&self, (): ()) -> Result<PathBuf, Error> {
         Ok(self.name.clone())
     }
 
@@ -183,48 +174,44 @@ where
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct SimpleFiles<Name, Source> {
-    files: Vec<SimpleFile<Name, Source>>,
+pub struct SimpleFiles {
+    files: Vec<SimpleFile>,
 }
 
-impl<Name, Source> SimpleFiles<Name, Source>
-where
-    Name: std::fmt::Display + std::cmp::PartialEq,
-    Source: AsRef<str>,
-{
-    pub fn new() -> SimpleFiles<Name, Source> {
+impl SimpleFiles {
+    pub fn new() -> SimpleFiles {
         SimpleFiles { files: Vec::new() }
     }
 
-    pub fn add(&mut self, name: Name, source: Source) -> usize {
+    pub fn add(&mut self, name: PathBuf, source: String) -> usize {
         let file_id = self.files.len();
         self.files.push(SimpleFile::new(name, source));
         file_id
     }
 
-    pub fn get(&self, file_id: usize) -> Result<&SimpleFile<Name, Source>, Error> {
+    pub fn get(&self, file_id: usize) -> Result<&SimpleFile, Error> {
         self.files.get(file_id).ok_or(Error::FileMissing)
     }
+    
+    pub fn get_by_name(&self, name: &PathBuf) -> Result<&SimpleFile, Error> {
+        self.files.iter().find(|file| file.name() == name).ok_or(Error::FileMissing)
+    }
 
-    pub fn get_index_by_name(&self, name: &Name) -> Result<usize, Error> {
+    pub fn get_index_by_name(&self, name: &PathBuf) -> Result<usize, Error> {
         self.files.iter().position(|file| file.name() == name).ok_or(Error::FileMissing)
     }
 
-    pub fn update(&mut self, file_id: usize, name: Name, source: Source) {
+    pub fn update(&mut self, file_id: usize, name: PathBuf, source: String) {
         self.files[file_id] = SimpleFile::new(name, source);
     }
 }
 
-impl<'a, Name, Source> Files<'a> for SimpleFiles<Name, Source>
-where
-    Name: 'a + std::fmt::Display + Clone + std::cmp::PartialEq,
-    Source: 'a + AsRef<str>,
-{
+
+impl<'a> Files<'a> for SimpleFiles {
     type FileId = usize;
-    type Name = Name;
     type Source = &'a str;
 
-    fn name(&self, file_id: usize) -> Result<Name, Error> {
+    fn name(&self, file_id: usize) -> Result<PathBuf, Error> {
         Ok(self.get(file_id)?.name().clone())
     }
 

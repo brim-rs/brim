@@ -107,7 +107,7 @@ where
                     labeled_files.push(LabeledFile {
                         file_id: label.file_id,
                         start: label.range.start,
-                        name: files.name(label.file_id)?.to_string(),
+                        name: files.name(label.file_id)?.display().to_string(),
                         location: files.location(label.file_id, label.range.start)?,
                         num_multi_labels: 0,
                         lines: BTreeMap::new(),

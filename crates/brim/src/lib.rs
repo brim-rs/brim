@@ -1,3 +1,5 @@
+extern crate core;
+
 pub mod barrel;
 pub mod session;
 pub mod diag_ctx;

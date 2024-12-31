@@ -1,2 +1,2 @@
 pub mod walk_dir;
-mod loader;
+pub mod loader;
