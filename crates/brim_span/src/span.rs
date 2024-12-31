@@ -1,6 +1,5 @@
 use std::{fmt, ops::Range};
-
-use crate::codespan::index::{ByteIndex, RawIndex};
+use crate::index::{ByteIndex, RawIndex};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Span {

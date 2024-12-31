@@ -10,3 +10,4 @@ term = "1.0.1"
 anyhow = { workspace = true }
 termcolor = "1.4.1"
 colored = "2.2.0"
+brim-span = { workspace = true }

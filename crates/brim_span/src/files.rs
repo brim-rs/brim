@@ -189,7 +189,7 @@ pub struct SimpleFiles<Name, Source> {
 
 impl<Name, Source> SimpleFiles<Name, Source>
 where
-    Name: std::fmt::Display,
+    Name: std::fmt::Display + std::cmp::PartialEq,
     Source: AsRef<str>,
 {
     pub fn new() -> SimpleFiles<Name, Source> {
@@ -205,7 +205,11 @@ where
     pub fn get(&self, file_id: usize) -> Result<&SimpleFile<Name, Source>, Error> {
         self.files.get(file_id).ok_or(Error::FileMissing)
     }
-    
+
+    pub fn get_index_by_name(&self, name: &Name) -> Result<usize, Error> {
+        self.files.iter().position(|file| file.name() == name).ok_or(Error::FileMissing)
+    }
+
     pub fn update(&mut self, file_id: usize, name: Name, source: Source) {
         self.files[file_id] = SimpleFile::new(name, source);
     }
@@ -213,7 +217,7 @@ where
 
 impl<'a, Name, Source> Files<'a> for SimpleFiles<Name, Source>
 where
-    Name: 'a + std::fmt::Display + Clone,
+    Name: 'a + std::fmt::Display + Clone + std::cmp::PartialEq,
     Source: 'a + AsRef<str>,
 {
     type FileId = usize;
@@ -236,3 +240,4 @@ where
         self.get(file_id)?.line_range((), line_index)
     }
 }
+

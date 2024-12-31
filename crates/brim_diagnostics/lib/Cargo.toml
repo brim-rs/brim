@@ -9,3 +9,4 @@ terminal_size = "0.4.1"
 unicode-width = "0.2.0"
 anstyle = { workspace = true }
 anstream = { workspace = true }
+brim-span = { workspace = true }

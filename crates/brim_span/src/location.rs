@@ -1,4 +1,4 @@
-use crate::codespan::index::{ColumnIndex, LineIndex};
+use crate::index::{ColumnIndex, LineIndex};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Location {

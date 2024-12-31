@@ -1,8 +1,7 @@
 use std::ops::Range;
-
+use brim_span::files::{Error, Files, Location};
 use crate::reporting::{
     diagnostic::{Diagnostic, LabelStyle},
-    files::{Error, Files, Location},
     term::{
         renderer::{Locus, MultiLabel, Renderer, SingleLabel},
         Config,

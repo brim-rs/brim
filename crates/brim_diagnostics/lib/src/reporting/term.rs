@@ -3,13 +3,14 @@
 use std::io::Write;
 use std::str::FromStr;
 use anstream::ColorChoice;
+use brim_span::files::Files;
 
 mod config;
 mod renderer;
 mod views;
 
 pub use self::config::{Chars, Config, Styles};
-use crate::reporting::{diagnostic::Diagnostic, files::Files};
+use crate::reporting::{diagnostic::Diagnostic};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ColorArg(pub ColorChoice);
@@ -43,7 +44,7 @@ pub fn emit<'files, F: Files<'files>>(
     config: &Config,
     files: &'files F,
     diagnostic: &Diagnostic<F::FileId>,
-) -> Result<(), super::files::Error> {
+) -> Result<(), brim_span::files::Error> {
     use self::{
         renderer::Renderer,
         views::{RichDiagnostic},

@@ -1,6 +1,5 @@
 use crate::reporting::{
     diagnostic::{LabelStyle, Severity},
-    files::{Error, Location},
     term::{Chars, Config, Styles},
 };
 use std::{
@@ -8,6 +7,7 @@ use std::{
     ops::Range,
 };
 use anstyle::Style;
+use brim_span::files::{Error, Location};
 
 pub struct Locus {
     pub name: String,
@@ -696,13 +696,13 @@ impl<'writer, 'config> Write for Renderer<'writer, 'config> {
 impl<'writer, 'config> Renderer<'writer, 'config> {
     fn set_color(&mut self, spec: &Style) -> io::Result<()> {
         self.writer.write(spec.to_string().as_bytes())?;
-        
+
         Ok(())
     }
 
     fn reset(&mut self) -> io::Result<()> {
         self.writer.write(b"\x1b[0m")?;
-        
+
         Ok(())
     }
 }

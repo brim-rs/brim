@@ -128,6 +128,7 @@ name = "brim"
 version = "0.1.0"
 dependencies = [
  "brim-diagnostics",
+ "brim-span",
 ]
 
 [[package]]
@@ -198,6 +199,7 @@ dependencies = [
  "anstream",
  "anstyle",
  "anyhow",
+ "brim-span",
  "terminal_size",
  "unicode-width 0.2.0",
 ]
@@ -224,6 +226,10 @@ dependencies = [
  "terminal_size",
  "url",
 ]
+
+[[package]]
+name = "brim-span"
+version = "0.1.0"
 
 [[package]]
 name = "bumpalo"
@@ -357,6 +363,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "brim-diagnostics",
+ "brim-span",
  "colored",
  "term",
  "termcolor",

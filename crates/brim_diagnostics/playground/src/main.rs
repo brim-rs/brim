@@ -1,13 +1,13 @@
 use termcolor::ColorChoice;
 use brim_diagnostics::diagnostic::{Diagnostic, Label, LabelStyle};
-use brim_diagnostics::files::SimpleFiles;
 use anyhow::Result;
 use colored::Colorize;
 use term::color::Color;
+use brim_span::files::SimpleFiles;
 
 fn main() -> Result<()> {
     let mut files = SimpleFiles::new();
-
+    
     let file_id = files.add(
         "FizzBuzz.fun",
         unindent::unindent(

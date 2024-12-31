@@ -1,15 +1,11 @@
-use crate::{
-    codespan::{
-        index::{ByteIndex, ColumnIndex, LineIndex, LineOffset, RawIndex},
-        location::Location,
-        span::Span,
-    },
-    reporting::files::Error,
-};
 use std::{
     ffi::{OsStr, OsString},
     num::NonZeroU32,
 };
+use crate::files::{Error};
+use crate::index::{ByteIndex, ColumnIndex, LineIndex, LineOffset, RawIndex};
+use crate::location::Location;
+use crate::span::Span;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FileId(NonZeroU32);
@@ -103,7 +99,7 @@ where
     }
 }
 
-impl<'a, Source> crate::reporting::files::Files<'a> for Files<Source>
+impl<'a, Source> crate::files::Files<'a> for Files<Source>
 where
     Source: AsRef<str>,
 {
@@ -252,6 +248,7 @@ where
     }
 }
 
-fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
+fn line_starts(source: &str) -> impl '_ + Iterator<Item=usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }
+
