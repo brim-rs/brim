@@ -4,6 +4,7 @@ use anyhow::Result;
 use tracing::debug;
 use brim::cursor::Cursor;
 use brim::{PrimitiveToken, PrimitiveTokenKind};
+use crate::lexer::Lexer;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -11,13 +12,15 @@ pub struct Parser<'a> {
     pub file: &'a SimpleFile,
     pub cursor: Cursor<'a>,
     pub primitives: Vec<PrimitiveToken>,
+    /// Used for documentation generation to keep comments in the AST. Only in `brim doc`.
+    pub keep_comments: bool,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(sess: &'a Session<'a>, file: &'a SimpleFile) -> Self {
         let cursor = Cursor::new(file.source());
 
-        Self { sess, file, cursor, primitives: vec![] }
+        Self { sess, file, cursor, primitives: vec![], keep_comments: false }
     }
 
     pub fn parse_barrel(&mut self) -> Result<()> {
@@ -31,8 +34,22 @@ impl<'a> Parser<'a> {
             }
         }
 
-        println!("{:#?}", self.primitives);
+        let mut lexer = Lexer::new(self.sess, self.file, &mut self.primitives);
+        let mut tokens = vec![];
 
+        while let Some(token) = lexer.next_token() {
+            if token.kind == PrimitiveTokenKind::Eof {
+                break;
+            }
+
+            if token.kind == PrimitiveTokenKind::Whitespace ||
+                matches!(token.kind, PrimitiveTokenKind::Comment { doc: true }) {
+                continue;
+            }
+
+            tokens.push(token);
+        }
+        
         Ok(())
     }
 }
