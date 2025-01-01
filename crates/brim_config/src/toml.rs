@@ -69,7 +69,7 @@ pub struct ProjectConfig {
     pub repository: Option<String>,
     pub homepage: Option<String>,
     pub keywords: Option<Vec<String>>,
-    pub r#type: Option<ProjectType>,
+    pub r#type: ProjectType,
     pub lib: Option<PathBuf>,
     pub bin: Option<PathBuf>,
 }
@@ -106,9 +106,7 @@ impl Config {
 
         let project_type = config
             .project
-            .r#type
-            .as_ref()
-            .ok_or(ConfigError::MissingProjectType)?;
+            .r#type.clone();
 
         if !matches!(project_type, ProjectType::Lib | ProjectType::Bin) {
             return Err(ConfigError::InvalidProjectType(format!("{:?}", project_type)).into());

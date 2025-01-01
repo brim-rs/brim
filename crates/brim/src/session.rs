@@ -1,9 +1,11 @@
 use std::path::PathBuf;
 use std::time::Instant;
 use anstream::ColorChoice;
-use brim_config::toml::Config;
+use anyhow::bail;
+use brim_config::toml::{Config, ProjectType};
 use brim_shell::Shell;
 use brim_span::files::{SimpleFile, SimpleFiles};
+use anyhow::Result;
 
 #[derive(Debug)]
 pub struct Session {
@@ -12,7 +14,8 @@ pub struct Session {
     cwd: PathBuf,
     shell: Shell,
     color_choice: ColorChoice,
-    pub start: Instant
+    pub start: Instant,
+    pub measure_time: bool,
 }
 
 impl Session {
@@ -23,7 +26,8 @@ impl Session {
             cwd,
             color_choice,
             shell: Shell::new(color_choice),
-            start: Instant::now()
+            start: Instant::now(),
+            measure_time: false,
         }
     }
 
@@ -44,8 +48,29 @@ impl Session {
     pub fn get_file_by_name(&self, name: &PathBuf) -> Option<&SimpleFile> {
         self.files.get_by_name(name).ok()
     }
-    
+
     pub fn shell(&mut self) -> &mut Shell {
         &mut self.shell
+    }
+
+    /// Assert that the current project is of a certain type
+    pub fn assert_type(&self, typ: ProjectType, message: impl Into<String>) -> Result<()> {
+        if self.config.project.r#type != typ {
+            bail!("{}", message.into());
+        }
+
+        Ok(())
+    }
+
+    /// Measure the time taken to run a closure and print it to the shell
+    pub fn measure_time(&mut self, f: impl FnOnce(
+        &mut Session,
+    ) -> Result<()>, msg: impl Into<String>) -> Result<()> {
+        let start = Instant::now();
+        f(self)?;
+        let elapsed = start.elapsed();
+        self.shell().status("Took", format!("{:?} {}", elapsed, msg.into()))?;
+
+        Ok(())
     }
 }

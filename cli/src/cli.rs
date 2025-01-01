@@ -87,5 +87,11 @@ pub fn cli() -> Command {
                 .action(ArgAction::SetTrue)
                 .global(true),
         )
+        .arg(
+            opt("time", "Prints the time taken to run the project")
+                .short('t')
+                .action(ArgAction::SetTrue)
+                .global(true),
+        )
         .subcommand(run_cmd())
 }

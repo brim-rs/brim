@@ -9,15 +9,11 @@ use clap::{ArgAction, ArgMatches, Command};
 use std::{process, sync::Arc};
 use tracing::debug;
 use brim::session::Session;
+use brim::toml::ProjectType;
 
 pub fn run_cmd() -> Command {
     Command::new("run")
         .about("Run a project")
-        .arg(
-            opt("time", "Prints the time taken to run the project")
-                .short('t')
-                .action(ArgAction::SetTrue),
-        )
         .arg(release_mode())
         .arg(debug_mode())
         .arg(min_size_rel_mode())
@@ -34,13 +30,11 @@ pub fn run_cmd() -> Command {
 }
 
 pub fn run_command(sess: &mut Session, args: &ArgMatches) -> Result<()> {
-    let start = sess.start;
-    let time = args.get_flag("time");
+    sess.measure_time(|sess| {
+        sess.assert_type(ProjectType::Bin, "Can only use `run` command on binary projects")?;
 
-    if time {
-        let elapsed = start.elapsed();
-        sess.shell().status("Time taken", &format!("{:?}", elapsed))?;
-    }
+        Ok(())
+    }, "to execute project")?;
 
     Ok(())
 }
