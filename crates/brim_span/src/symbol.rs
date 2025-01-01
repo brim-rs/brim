@@ -1,43 +1,87 @@
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
 use std::collections::HashMap;
+use brim_index::index_type;
+
+index_type! {
+    /// A unique identifier for a symbol interned in the global interner.
+    pub struct SymbolIndex {}
+}
+
+/// A symbol representing an interned string.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Symbol(SymbolIndex);
+
+impl Symbol {
+    /// Creates a symbol from a string by interning it.
+    #[inline]
+    pub fn new(s: &str) -> Self {
+        Self(SymbolIndex::from_usize(intern(s)))
+    }
+
+    /// Resolves this symbol back to its original string.
+    #[inline]
+    pub fn as_str(&self) -> Option<String> {
+        resolve(self.0.as_usize())
+    }
+}
 
 #[derive(Debug)]
 pub struct SymbolInterner {
-    strings: HashMap<String, usize>,
-    indices: Vec<String>,
+    strings: HashMap<String, SymbolIndex>,
+    symbols: Vec<String>,
 }
 
 impl SymbolInterner {
     pub fn new() -> Self {
         Self {
             strings: HashMap::new(),
-            indices: Vec::new(),
+            symbols: Vec::new(),
         }
     }
 
-    pub fn intern(&mut self, s: &str) -> usize {
+    pub fn intern(&mut self, s: &str) -> SymbolIndex {
         if let Some(&index) = self.strings.get(s) {
             index
         } else {
-            let index = self.indices.len();
-            self.indices.push(s.to_string());
+            let index = SymbolIndex::from_usize(self.symbols.len());
+            self.symbols.push(s.to_string());
             self.strings.insert(s.to_string(), index);
             index
         }
     }
 
-    pub fn resolve(&self, symbol: usize) -> Option<&str> {
-        self.indices.get(symbol).map(String::as_str)
+    pub fn resolve(&self, symbol: SymbolIndex) -> Option<&str> {
+        self.symbols.get(symbol.as_usize()).map(String::as_str)
+    }
+
+    /// Returns the number of interned symbols
+    pub fn len(&self) -> usize {
+        self.symbols.len()
+    }
+
+    /// Returns true if no symbols have been interned
+    pub fn is_empty(&self) -> bool {
+        self.symbols.is_empty()
     }
 }
 
 pub static GLOBAL_INTERNER: Lazy<Mutex<SymbolInterner>> = Lazy::new(|| Mutex::new(SymbolInterner::new()));
 
-pub fn intern(s: &str) -> usize {
-    GLOBAL_INTERNER.lock().unwrap().intern(s)
+/// Interns a string in the global interner and returns its index.
+#[inline]
+fn intern(s: &str) -> usize {
+    GLOBAL_INTERNER.lock()
+        .expect("Failed to lock global interner")
+        .intern(s)
+        .as_usize()
 }
 
-pub fn resolve(symbol: usize) -> Option<String> {
-    GLOBAL_INTERNER.lock().unwrap().resolve(symbol).map(|s| s.to_string())
+/// Resolves a symbol index to its original string.
+#[inline]
+fn resolve(index: usize) -> Option<String> {
+    GLOBAL_INTERNER.lock()
+        .expect("Failed to lock global interner")
+        .resolve(SymbolIndex::from_usize(index))
+        .map(ToOwned::to_owned)
 }

@@ -208,6 +208,10 @@ name = "brim-fs"
 version = "0.1.0"
 
 [[package]]
+name = "brim-index"
+version = "0.1.0"
+
+[[package]]
 name = "brim-lexer"
 version = "0.1.0"
 dependencies = [
@@ -239,6 +243,7 @@ dependencies = [
 name = "brim-span"
 version = "0.1.0"
 dependencies = [
+ "brim-index",
  "once_cell",
 ]
 

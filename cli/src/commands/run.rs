@@ -9,7 +9,7 @@ use clap::{ArgAction, ArgMatches, Command};
 use std::{process, sync::Arc};
 use tracing::debug;
 use brim::session::Session;
-use brim::symbol::intern;
+use brim::symbol::{Symbol};
 use brim::toml::ProjectType;
 use brim_parser::parser_from_simple_file;
 
