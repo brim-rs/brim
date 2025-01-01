@@ -9,6 +9,7 @@ use clap::{ArgAction, ArgMatches, Command};
 use std::{process, sync::Arc};
 use tracing::debug;
 use brim::session::Session;
+use brim::symbol::intern;
 use brim::toml::ProjectType;
 use brim_parser::parser_from_simple_file;
 
@@ -38,7 +39,7 @@ pub fn run_command(sess: &mut Session, args: &ArgMatches) -> Result<()> {
 
         let mut parser = parser_from_simple_file(sess, source_file)?;
         let barrel = parser.parse_barrel()?;
-        
+
         Ok(())
     }, "to execute project")?;
 

@@ -4,6 +4,7 @@ use anyhow::Result;
 use tracing::debug;
 use brim::cursor::Cursor;
 use brim::{PrimitiveToken, PrimitiveTokenKind};
+use brim::symbol::{intern, resolve, GLOBAL_INTERNER};
 use crate::lexer::Lexer;
 
 #[derive(Debug)]
@@ -49,7 +50,7 @@ impl<'a> Parser<'a> {
 
             tokens.push(token);
         }
-        
+
         Ok(())
     }
 }

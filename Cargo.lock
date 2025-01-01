@@ -129,6 +129,7 @@ version = "0.1.0"
 dependencies = [
  "anstream",
  "anyhow",
+ "brim-ast",
  "brim-config",
  "brim-diagnostics",
  "brim-fs",
@@ -136,6 +137,13 @@ dependencies = [
  "brim-shell",
  "brim-span",
  "tracing",
+]
+
+[[package]]
+name = "brim-ast"
+version = "0.1.0"
+dependencies = [
+ "brim-span",
 ]
 
 [[package]]
@@ -230,6 +238,9 @@ dependencies = [
 [[package]]
 name = "brim-span"
 version = "0.1.0"
+dependencies = [
+ "once_cell",
+]
 
 [[package]]
 name = "bumpalo"

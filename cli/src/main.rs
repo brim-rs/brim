@@ -5,6 +5,7 @@ use std::{env, process::exit};
 use anstream::ColorChoice;
 use anyhow::Result;
 use clap::ArgMatches;
+use brim::compiler::CompilerContext;
 use brim::session::Session;
 use brim::toml::Config;
 use crate::commands::run::run_command;
@@ -44,7 +45,8 @@ fn main() -> Result<()> {
     match cmd.0 {
         "run" => {
             let config = Config::get(&dir, Some(&cmd.1))?;
-            let sess = &mut Session::new(dir, config, color_choice);
+            let comp = CompilerContext::new();
+            let sess = &mut Session::new(dir, config, color_choice, &comp);
 
             if args.get_flag("time") {
                 sess.measure_time = true;
