@@ -68,8 +68,11 @@ impl Session {
     ) -> Result<()>, msg: impl Into<String>) -> Result<()> {
         let start = Instant::now();
         f(self)?;
-        let elapsed = start.elapsed();
-        self.shell().status("Took", format!("{:?} {}", elapsed, msg.into()))?;
+
+        if self.measure_time {
+            let elapsed = start.elapsed();
+            self.shell().status("Took", format!("{:?} {}", elapsed, msg.into()))?;
+        }
 
         Ok(())
     }
