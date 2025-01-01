@@ -10,3 +10,5 @@ brim-config = { workspace = true }
 anyhow = { workspace = true }
 brim-shell = { workspace = true }
 anstream = { workspace = true }
+brim-fs = { workspace = true }
+tracing = { workspace = true }

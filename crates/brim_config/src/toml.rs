@@ -159,4 +159,20 @@ impl Config {
             build,
         })
     }
+
+    pub fn is_bin(&self) -> bool {
+        matches!(self.project.r#type, ProjectType::Bin)
+    }
+    
+    pub fn is_lib(&self) -> bool {
+        matches!(self.project.r#type, ProjectType::Lib)
+    }
+    
+    pub fn binary_path(&self, default: PathBuf) -> PathBuf {
+        self.project.bin.clone().unwrap_or(default)
+    }
+    
+    pub fn library_path(&self, default: PathBuf) -> PathBuf {
+        self.project.lib.clone().unwrap_or(default)
+    }
 }

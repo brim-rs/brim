@@ -32,6 +32,10 @@ pub fn run_cmd() -> Command {
 pub fn run_command(sess: &mut Session, args: &ArgMatches) -> Result<()> {
     sess.measure_time(|sess| {
         sess.assert_type(ProjectType::Bin, "Can only use `run` command on binary projects")?;
+        let main_file = sess.main_file()?;
+        let source_file = sess.get_file(main_file).unwrap();
+
+        println!("Running project: {:?}", source_file);
 
         Ok(())
     }, "to execute project")?;

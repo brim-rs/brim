@@ -131,8 +131,10 @@ dependencies = [
  "anyhow",
  "brim-config",
  "brim-diagnostics",
+ "brim-fs",
  "brim-shell",
  "brim-span",
+ "tracing",
 ]
 
 [[package]]

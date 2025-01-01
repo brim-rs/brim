@@ -6,6 +6,10 @@ use brim_config::toml::{Config, ProjectType};
 use brim_shell::Shell;
 use brim_span::files::{SimpleFile, SimpleFiles};
 use anyhow::Result;
+use tracing::debug;
+use brim_fs::loader::{BrimFileLoader, FileLoader};
+use brim_fs::path;
+use brim_span::file::FileId;
 
 #[derive(Debug)]
 pub struct Session {
@@ -16,6 +20,7 @@ pub struct Session {
     color_choice: ColorChoice,
     pub start: Instant,
     pub measure_time: bool,
+    pub file_loader: BrimFileLoader,
 }
 
 impl Session {
@@ -28,6 +33,7 @@ impl Session {
             shell: Shell::new(color_choice),
             start: Instant::now(),
             measure_time: false,
+            file_loader: BrimFileLoader,
         }
     }
 
@@ -55,6 +61,8 @@ impl Session {
 
     /// Assert that the current project is of a certain type
     pub fn assert_type(&self, typ: ProjectType, message: impl Into<String>) -> Result<()> {
+        debug!("asserting project type: {:?}", typ);
+
         if self.config.project.r#type != typ {
             bail!("{}", message.into());
         }
@@ -75,5 +83,19 @@ impl Session {
         }
 
         Ok(())
+    }
+
+    pub fn main_file(&mut self) -> Result<usize> {
+        let file = if self.config.is_bin() {
+            self.config.binary_path(path(vec!["src", "main.brim"]))
+        } else {
+            self.config.library_path(path(vec!["src", "lib.brim"]))
+        };
+
+        let path = self.cwd.join(&file);
+        self.file_loader.check_if_exists(&path)?;
+
+        debug!("main file: {:?}", path);
+        Ok(self.add_file(path.clone(), self.file_loader.read_file(&path)?))
     }
 }

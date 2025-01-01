@@ -8,6 +8,7 @@ pub trait FileLoader {
     fn read_file(&self, path: &Path) -> io::Result<String>;
 }
 
+#[derive(Debug)]
 pub struct BrimFileLoader;
 
 impl BrimFileLoader {
@@ -27,5 +28,16 @@ impl FileLoader for BrimFileLoader {
         }
         
         std::fs::read_to_string(path)
+    }
+}
+
+impl BrimFileLoader {
+    /// We return a custom error because the os messages can be in different languages. It's really annoying for me.
+    pub fn check_if_exists(&self, path: &Path) -> io::Result<()> {
+        if !self.file_exists(path) {
+            return Err(io::Error::new(io::ErrorKind::NotFound, format!("file not found: {:?}", path)));
+        }
+
+        Ok(())
     }
 }
