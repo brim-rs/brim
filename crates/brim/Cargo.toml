@@ -8,3 +8,5 @@ brim-diagnostics = { workspace = true }
 brim-span = { workspace = true }
 brim-config = { workspace = true }
 anyhow = { workspace = true }
+brim-shell = { workspace = true }
+anstream = { workspace = true }

@@ -1,5 +1,8 @@
 use std::path::PathBuf;
+use std::time::Instant;
+use anstream::ColorChoice;
 use brim_config::toml::Config;
+use brim_shell::Shell;
 use brim_span::files::{SimpleFile, SimpleFiles};
 
 #[derive(Debug)]
@@ -7,14 +10,20 @@ pub struct Session {
     files: SimpleFiles,
     config: Config,
     cwd: PathBuf,
+    shell: Shell,
+    color_choice: ColorChoice,
+    pub start: Instant
 }
 
 impl Session {
-    pub fn new(cwd: PathBuf, config: Config) -> Self {
+    pub fn new(cwd: PathBuf, config: Config, color_choice: ColorChoice) -> Self {
         Self {
             files: SimpleFiles::new(),
             config,
             cwd,
+            color_choice,
+            shell: Shell::new(color_choice),
+            start: Instant::now()
         }
     }
 
@@ -34,5 +43,9 @@ impl Session {
 
     pub fn get_file_by_name(&self, name: &PathBuf) -> Option<&SimpleFile> {
         self.files.get_by_name(name).ok()
+    }
+    
+    pub fn shell(&mut self) -> &mut Shell {
+        &mut self.shell
     }
 }

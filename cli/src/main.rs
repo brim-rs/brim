@@ -1,16 +1,54 @@
-use std::path::PathBuf;
+#![feature(let_chains)]
+
+use cli::cli;
+use std::{env, process::exit};
+use anstream::ColorChoice;
+use anyhow::Result;
 use brim::session::Session;
+use brim::toml::Config;
 
-fn main() {
-    let mut sess = Session::default();
-    let main_path= PathBuf::from("main.brim");
+pub mod cli;
+mod commands;
 
-    sess.add_file(main_path.clone(), "fn main() {}".to_string());
-    println!("{:?}", sess);
+fn main() -> Result<()> {
+    // setup_panic_handler();
+    let args = cli().try_get_matches().unwrap_or_else(|err| {
+        err.print().expect("Error printing error");
+        exit(1);
+    });
+    let verbose = args.get_flag("verbose");
 
-    sess.add_file(main_path.clone(), "fn mai) {}".to_string());
-    println!("{:?}", sess);
+    unsafe { env::set_var("BRIM_LOG", if verbose { "trace" } else { "info" }) };
+    // setup_tracing(verbose);
 
-    let file = sess.get_file_by_name(&main_path).unwrap();
-    println!("{:?}", file);
+    let cmd = match args.subcommand() {
+        Some((cmd, args)) => (cmd, args),
+        None => {
+            cli().print_help()?;
+
+            return Ok(());
+        }
+    };
+
+    let color_choice = if args.get_flag("no-color") {
+        ColorChoice::Never
+    } else {
+        ColorChoice::Auto
+    };
+    let dir = env::current_dir()?;
+
+    match cmd.0 {
+        "run" => {
+            let config = Config::get(&dir, Some(&cmd.1))?;
+            let sess = &mut Session::new(dir, config, color_choice);
+
+            commands::run::run_command(sess, cmd.1)?;
+        }
+        _ => {
+            eprintln!("Unknown command: {}", cmd.0);
+            exit(1);
+        }
+    }
+
+    Ok(())
 }

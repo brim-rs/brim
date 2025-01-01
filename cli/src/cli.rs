@@ -1,6 +1,6 @@
-use crate::commands::run::run_cmd;
-use brim_shell::styles::*;
 use clap::{builder::Styles, Arg, ArgAction, Command};
+use brim::styles::{ERROR, HEADER, INVALID, LITERAL, PLACEHOLDER, USAGE, VALID};
+use crate::commands::run::run_cmd;
 
 pub fn opt(name: &'static str, help: &'static str) -> Arg {
     Arg::new(name).long(name).help(help).action(ArgAction::Set)

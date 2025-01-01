@@ -97,8 +97,8 @@ pub struct ParsedBuildConfig {
 }
 
 impl Config {
-    pub fn get(cwd: PathBuf, args: Option<&ArgMatches>) -> Result<Self> {
-        let path = walk_for_file(cwd, "brim.toml").ok_or(ConfigError::ConfigFileNotFound)?;
+    pub fn get(cwd: &PathBuf, args: Option<&ArgMatches>) -> Result<Self> {
+        let path = walk_for_file(cwd.clone(), "brim.toml").ok_or(ConfigError::ConfigFileNotFound)?;
 
         let content = read_to_string(&path).context("Failed to read brim.toml")?;
 
