@@ -8,12 +8,14 @@ use clap::ArgMatches;
 use brim::session::Session;
 use brim::toml::Config;
 use crate::commands::run::run_command;
+use crate::panic::setup_panic_handler;
 
 pub mod cli;
 mod commands;
+mod panic;
 
 fn main() -> Result<()> {
-    // setup_panic_handler();
+    setup_panic_handler();
     let args = cli().try_get_matches().unwrap_or_else(|err| {
         err.print().expect("Error printing error");
         exit(1);
@@ -43,7 +45,7 @@ fn main() -> Result<()> {
         "run" => {
             let config = Config::get(&dir, Some(&cmd.1))?;
             let sess = &mut Session::new(dir, config, color_choice);
-            
+
             if args.get_flag("time") {
                 sess.measure_time = true;
             }
