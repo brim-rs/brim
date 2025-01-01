@@ -10,6 +10,7 @@ use std::{process, sync::Arc};
 use tracing::debug;
 use brim::session::Session;
 use brim::toml::ProjectType;
+use brim_parser::parser_from_simple_file;
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -35,8 +36,9 @@ pub fn run_command(sess: &mut Session, args: &ArgMatches) -> Result<()> {
         let main_file = sess.main_file()?;
         let source_file = sess.get_file(main_file).unwrap();
 
-        println!("Running project: {:?}", source_file);
-
+        let mut parser = parser_from_simple_file(sess, source_file)?;
+        let barrel = parser.parse_barrel()?;
+        
         Ok(())
     }, "to execute project")?;
 

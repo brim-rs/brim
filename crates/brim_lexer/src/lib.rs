@@ -11,11 +11,11 @@ use unicode_properties::UnicodeEmoji;
 use crate::cursor::EOF_CHAR;
 use crate::LiteralKind::{Byte, ByteStr, Float, Int};
 
-mod cursor;
-mod idents;
-mod whitespace;
+pub mod cursor;
+pub mod idents;
+pub mod whitespace;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PrimitiveToken {
     pub kind: PrimitiveTokenKind,
     pub len: u32,
@@ -468,7 +468,6 @@ impl<'a> Cursor<'a> {
     }
 
     fn eat_float_exponent(&mut self) -> bool {
-        debug_assert!(self.prev() == 'e' || self.prev() == 'E');
         if self.first() == '-' || self.first() == '+' {
             self.bump();
         }

@@ -12,3 +12,4 @@ brim-shell = { workspace = true }
 anstream = { workspace = true }
 brim-fs = { workspace = true }
 tracing = { workspace = true }
+brim-lexer = { workspace = true }

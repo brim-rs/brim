@@ -10,20 +10,22 @@ use tracing::debug;
 use brim_fs::loader::{BrimFileLoader, FileLoader};
 use brim_fs::path;
 use brim_span::file::FileId;
+use crate::diag_ctx::DiagnosticContext;
 
 #[derive(Debug)]
-pub struct Session {
+pub struct Session<'a> {
     files: SimpleFiles,
     config: Config,
     cwd: PathBuf,
     shell: Shell,
     color_choice: ColorChoice,
+    dcx: DiagnosticContext<'a>,
     pub start: Instant,
     pub measure_time: bool,
     pub file_loader: BrimFileLoader,
 }
 
-impl Session {
+impl<'a> Session<'a> {
     pub fn new(cwd: PathBuf, config: Config, color_choice: ColorChoice) -> Self {
         Self {
             files: SimpleFiles::new(),
@@ -34,6 +36,7 @@ impl Session {
             start: Instant::now(),
             measure_time: false,
             file_loader: BrimFileLoader,
+            dcx: DiagnosticContext::new()
         }
     }
 
@@ -97,5 +100,9 @@ impl Session {
 
         debug!("main file: {:?}", path);
         Ok(self.add_file(path.clone(), self.file_loader.read_file(&path)?))
+    }
+
+    pub fn dcx(&mut self) -> &mut DiagnosticContext<'a> {
+        &mut self.dcx
     }
 }

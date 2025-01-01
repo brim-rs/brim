@@ -4,8 +4,6 @@ use std::str::Chars;
 pub struct Cursor<'a> {
     len_remaining: usize,
     chars: Chars<'a>,
-    #[cfg(debug_assertions)]
-    prev: char,
 }
 
 pub(crate) const EOF_CHAR: char = '\0';
@@ -15,21 +13,11 @@ impl<'a> Cursor<'a> {
         Self {
             len_remaining: input.len(),
             chars: input.chars(),
-            #[cfg(debug_assertions)]
-            prev: EOF_CHAR,
         }
     }
 
     pub fn as_str(&self) -> &'a str {
         self.chars.as_str()
-    }
-
-    pub(crate) fn prev(&self) -> char {
-        if cfg!(debug_assertions) {
-            self.prev
-        } else {
-            EOF_CHAR
-        }
     }
 
     pub fn first(&self) -> char {
@@ -63,10 +51,6 @@ impl<'a> Cursor<'a> {
 
     pub(crate) fn bump(&mut self) -> Option<char> {
         let c = self.chars.next()?;
-        #[cfg(debug_assertions)]
-        {
-            self.prev = c;
-        }
         Some(c)
     }
 

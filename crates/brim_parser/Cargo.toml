@@ -1,0 +1,9 @@
+[package]
+name = "brim-parser"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+brim = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }

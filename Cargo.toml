@@ -1,6 +1,6 @@
 [workspace]
 members = ["cli", "crates/brim_config", "crates/brim_cpp_compiler", "crates/brim_fs", "crates/brim_shell", "crates/brim_diagnostics/lib",
-    "crates/brim_diagnostics/playground", "crates/brim_lexer", "crates/brim", "crates/brim_span", "crates/brim_span"]
+    "crates/brim_diagnostics/playground", "crates/brim_lexer", "crates/brim", "crates/brim_span", "crates/brim_span", "crates/brim_parser"]
 resolver = "1"
 
 [workspace.dependencies]
@@ -14,6 +14,7 @@ brim-diagnostics = { path = "crates/brim_diagnostics/lib", version = "0.1.0" }
 brim-lexer = { path = "crates/brim_lexer", version = "0.1.0" }
 brim-span = { path = "crates/brim_span", version = "0.1.0" }
 brim = { path = "crates/brim", version = "0.1.0" }
+brim-parser = { path = "crates/brim_parser", version = "0.1.0" }
 
 # Other dependencies
 anyhow = "1.0.95"

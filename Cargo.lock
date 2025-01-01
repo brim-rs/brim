@@ -132,6 +132,7 @@ dependencies = [
  "brim-config",
  "brim-diagnostics",
  "brim-fs",
+ "brim-lexer",
  "brim-shell",
  "brim-span",
  "tracing",
@@ -145,6 +146,7 @@ dependencies = [
  "anyhow",
  "backtrace",
  "brim",
+ "brim-parser",
  "clap",
  "colored",
  "toml",
@@ -202,6 +204,15 @@ name = "brim-lexer"
 version = "0.1.0"
 dependencies = [
  "unicode-properties",
+]
+
+[[package]]
+name = "brim-parser"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "brim",
+ "tracing",
 ]
 
 [[package]]
