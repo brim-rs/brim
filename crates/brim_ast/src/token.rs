@@ -8,7 +8,7 @@ pub struct Token {
 }
 
 #[derive(PartialEq, Debug, Clone)]
-pub enum Delimeter {
+pub enum Delimiter {
     /// `( ... )`
     Paren,
     /// `{ ... }`
@@ -26,7 +26,7 @@ pub enum Orientation {
 #[derive(PartialEq, Debug, Clone)]
 pub enum TokenKind {
     // Symbols
-    Delimeter(Delimeter, Orientation),
+    Delimiter(Delimiter, Orientation),
     /// `;`
     Colon,
     /// `,`
