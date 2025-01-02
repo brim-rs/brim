@@ -163,7 +163,6 @@ pub enum PrimitiveTokenKind {
     /// Unknown token
     Unknown,
     InvalidIdent,
-    UnknownPrefix,
 }
 
 impl<'a> Cursor<'a> {
@@ -395,7 +394,6 @@ impl<'a> Cursor<'a> {
     fn ident_or_unknown_prefix(&mut self) -> PrimitiveTokenKind {
         self.eat_while(is_valid_ident_continue);
         match self.first() {
-            '#' | '"' | '\'' => UnknownPrefix,
             c if !c.is_ascii() && c.is_emoji_char() => self.invalid_ident(),
             _ => Ident,
         }

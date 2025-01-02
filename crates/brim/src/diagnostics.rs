@@ -17,3 +17,7 @@ impl Diagnostic<'_> {
         }
     }
 }
+
+pub trait IntoDiagnostic {
+    fn into_diagnostic(self) -> Diagnostic<'static>;
+}

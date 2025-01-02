@@ -1,3 +1,7 @@
+mod identifiers;
+mod unicode;
+mod errors;
+
 use brim::cursor::Cursor;
 use brim::files::SimpleFile;
 use brim::index::{ByteIndex, ByteOffset, RawOffset};
@@ -7,6 +11,8 @@ use brim::span::Span;
 use brim::symbol::Symbol;
 use brim::token::{BinOpToken, Delimiter, Orientation, Token, TokenKind};
 use brim::token::TokenKind::BinOp;
+use crate::lexer::identifiers::nfc_normalize;
+use crate::lexer::unicode::UNICODE_ARRAY;
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -47,6 +53,20 @@ impl Lexer<'_> {
                 let content = self.content_from(comment_start);
 
                 TokenKind::DocComment(Symbol::new(content))
+            }
+
+            PrimitiveTokenKind::Ident => self.ident(start),
+
+            PrimitiveTokenKind::InvalidIdent if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
+                let sym = self.content_from(start);
+                sym.chars().count() == 1 && c == sym.chars().next().unwrap()
+            }) => {
+                let sym = nfc_normalize(self.content_from(start));
+                let span = Span::new(start, self.pos);
+                
+                // self.session.dcx()
+
+                TokenKind::Ident(sym)
             }
 
             // Delimiters
