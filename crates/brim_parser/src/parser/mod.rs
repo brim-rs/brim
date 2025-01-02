@@ -5,6 +5,7 @@ use tracing::debug;
 use brim::cursor::Cursor;
 use brim::{PrimitiveToken, PrimitiveTokenKind};
 use brim::symbol::{GLOBAL_INTERNER};
+use brim::token::TokenKind;
 use crate::lexer::Lexer;
 
 #[derive(Debug)]
@@ -39,18 +40,21 @@ impl<'a> Parser<'a> {
         let mut tokens = vec![];
 
         while let Some(token) = lexer.next_token() {
-            if token.kind == PrimitiveTokenKind::Eof {
+            if token.kind == TokenKind::Eof {
                 break;
             }
 
-            if token.kind == PrimitiveTokenKind::Whitespace ||
-                matches!(token.kind, PrimitiveTokenKind::Comment { doc: true }) {
+            if token.kind == TokenKind::Skipable {
                 continue;
             }
 
             tokens.push(token);
         }
 
+        for token in tokens {
+            println!("{:?}", token);
+        }
+        
         Ok(())
     }
 }

@@ -1,3 +1,4 @@
+/// dwadw
 pub fn div(a: i32, b: i32) -> i32!string {
     if b == 0 {
         return @err("Division by zero");

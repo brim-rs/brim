@@ -1,4 +1,5 @@
 use brim_span::span::Span;
+use brim_span::symbol::Symbol;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Token {
@@ -67,12 +68,61 @@ pub enum TokenKind {
     /// `~`
     Tilde,
 
-    // Literal(Lit),
+    Literal(Lit),
+
+    /// Identifier
+    Ident(Symbol),
+
+    /// Binary operator
+    BinOp(BinOpToken),
+
+    Skipable,
+    DocComment(Symbol),
+
+    Eof,
 }
 
-// #[derive(Clone, Copy, PartialEq, Debug)]
-// pub struct Lit {
-//     pub kind: LitKind,
-//     pub symbol: Symbol,
-//     pub suffix: Option<Symbol>,
-// }
+#[derive(Clone, PartialEq, Hash, Debug, Copy)]
+pub enum BinOpToken {
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Percent,
+    Caret,
+    And,
+    Or,
+    ShiftLeft,
+    ShiftRight,
+}
+
+impl Token {
+    pub fn new(kind: TokenKind, span: Span) -> Self {
+        Self { kind, span }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct Lit {
+    pub kind: LitKind,
+    pub symbol: Symbol,
+    pub suffix: Option<Symbol>,
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum LitKind {
+    Bool,
+    Integer,
+    Float,
+    Char,
+    Byte,
+    Str,
+    ByteStr,
+    CStr,
+}
+
+impl Lit {
+    pub fn new(kind: LitKind, symbol: Symbol, suffix: Option<Symbol>) -> Self {
+        Self { kind, symbol, suffix }
+    }
+}
