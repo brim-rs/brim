@@ -195,3 +195,9 @@ impl Shell {
         }
     }
 }
+
+impl Default for Shell {
+    fn default() -> Self {
+        Self::new(ColorChoice::Auto)
+    }
+}

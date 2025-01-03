@@ -5,6 +5,7 @@ mod literals;
 
 use crate::lexer::{errors::EmojiIdentifier, identifiers::nfc_normalize, unicode::UNICODE_ARRAY};
 use brim::{PrimitiveToken, PrimitiveTokenKind, files::SimpleFile, index::{ByteIndex, ByteOffset, RawOffset}, session::Session, span::Span, symbol::Symbol, token::{BinOpToken, Delimiter, Orientation, Token, TokenKind}, LiteralKind};
+use brim::compiler::CompilerContext;
 use brim::token::Lit;
 
 #[derive(Debug)]
@@ -25,7 +26,7 @@ impl Lexer<'_> {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn next_token(&mut self, session: &mut Session) -> Option<Token> {
+    pub fn next_token(&mut self, comp: &mut CompilerContext) -> Option<Token> {
         if self.primitives.is_empty() {
             return None;
         }

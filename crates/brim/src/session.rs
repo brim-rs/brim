@@ -15,15 +15,13 @@ use brim_ast::ErrorEmitted;
 
 #[derive(Debug)]
 pub struct Session<'a> {
-    files: SimpleFiles,
+    files: &'a mut SimpleFiles,
     config: Config,
     cwd: PathBuf,
     color_choice: ColorChoice,
-    dcx: DiagnosticContext,
     start: Instant,
     pub measure_time: bool,
     file_loader: BrimFileLoader,
-    compiler: &'a CompilerContext,
     shell: Shell,
 }
 
@@ -32,10 +30,10 @@ impl<'a> Session<'a> {
         cwd: PathBuf,
         config: Config,
         color_choice: ColorChoice,
-        comp: &'a CompilerContext,
+        files: &'a mut SimpleFiles,
     ) -> Self {
         Self {
-            files: SimpleFiles::new(),
+            files,
             config,
             cwd,
             color_choice,
@@ -43,8 +41,6 @@ impl<'a> Session<'a> {
             measure_time: false,
             file_loader: BrimFileLoader,
             shell: Shell::new(color_choice),
-            dcx: DiagnosticContext::new(),
-            compiler: comp,
         }
     }
 
@@ -111,16 +107,6 @@ impl<'a> Session<'a> {
 
         debug!("main file: {:?}", path);
         Ok(self.add_file(path.clone(), self.file_loader.read_file(&path)?))
-    }
-
-    pub fn dcx(&mut self) -> &mut DiagnosticContext {
-        &mut self.dcx
-    }
-
-    pub fn emit(&mut self, diag: impl ToDiagnostic<'a>) -> ErrorEmitted {
-        self.dcx.emit(diag, &self.files);
-        
-        ErrorEmitted::new()
     }
 }
 

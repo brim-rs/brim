@@ -1,0 +1,10 @@
+[package]
+name = "snap"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+brim-shell = { workspace = true }
+anyhow = { workspace = true }
+glob = "0.3.2"
+brim = { workspace = true }

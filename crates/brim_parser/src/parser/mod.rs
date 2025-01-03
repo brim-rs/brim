@@ -5,6 +5,7 @@ use brim::{
     token::TokenKind,
 };
 use tracing::debug;
+use brim::compiler::CompilerContext;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -27,7 +28,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_barrel(&mut self, sess: &mut Session) -> Result<()> {
+    pub fn parse_barrel(&mut self, comp: &mut CompilerContext) -> Result<()> {
         debug!("Lexing primitive tokens for a barrel");
         loop {
             let token = self.cursor.next_token();
@@ -41,7 +42,7 @@ impl<'a> Parser<'a> {
         let mut lexer = Lexer::new(self.file, &mut self.primitives);
         let mut tokens = vec![];
 
-        while let Some(token) = lexer.next_token(sess) {
+        while let Some(token) = lexer.next_token(comp) {
             if token.kind == TokenKind::Eof {
                 break;
             }

@@ -7,6 +7,7 @@ use brim::{Shell, compiler::CompilerContext, session::Session, toml::Config};
 use clap::ArgMatches;
 use cli::cli;
 use std::{env, process::exit};
+use brim::files::SimpleFiles;
 
 pub mod cli;
 mod commands;
@@ -41,14 +42,15 @@ fn main() -> Result<()> {
     match cmd.0 {
         "run" => {
             let config = Config::get(&dir, Some(&cmd.1))?;
-            let comp = CompilerContext::new();
-            let sess = &mut Session::new(dir, config, color_choice, &comp);
+            let files = &mut SimpleFiles::new();
+            let comp = &mut CompilerContext::new(files);
+            let sess = &mut Session::new(dir, config, color_choice, files);
 
             if args.get_flag("time") {
                 sess.measure_time = true;
             }
 
-            exec_command(sess, &cmd.1, run_command)?;
+            exec_command(sess, comp, run_command)?;
         }
         _ => {
             eprintln!("Unknown command: {}", cmd.0);
@@ -61,10 +63,10 @@ fn main() -> Result<()> {
 
 pub fn exec_command<'a>(
     sess: &'a mut Session<'a>,
-    args: &ArgMatches,
-    func: impl FnOnce(&mut Session, &ArgMatches) -> Result<()>,
+    comp: &'a mut CompilerContext<'a>,
+    func: impl FnOnce(&mut Session, &mut CompilerContext) -> Result<()>,
 ) -> Result<()> {
-    match func(sess, args) {
+    match func(sess, comp) {
         Ok(_) => Ok(()),
         Err(err) => {
             sess.shell().error(err)?;

@@ -6,6 +6,7 @@ use anyhow::Result;
 use brim::{session::Session, toml::ProjectType};
 use brim_parser::parser_from_simple_file;
 use clap::{ArgMatches, Command};
+use brim::compiler::CompilerContext;
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -25,7 +26,7 @@ pub fn run_cmd() -> Command {
         )
 }
 
-pub fn run_command(sess: &mut Session, args: &ArgMatches) -> Result<()> {
+pub fn run_command(sess: &mut Session, comp: &mut CompilerContext) -> Result<()> {
     sess.measure_time(
         |sess| {
             sess.assert_type(
@@ -36,7 +37,7 @@ pub fn run_command(sess: &mut Session, args: &ArgMatches) -> Result<()> {
             let source_file = sess.get_file(main_file).unwrap();
 
             let mut parser = parser_from_simple_file(&source_file)?;
-            let barrel = parser.parse_barrel(sess)?;
+            let barrel = parser.parse_barrel(comp)?;
 
             Ok(())
         },

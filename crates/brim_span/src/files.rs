@@ -219,6 +219,14 @@ impl SimpleFiles {
     }
 }
 
+impl Iterator for SimpleFiles {
+    type Item = SimpleFile;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.files.pop()
+    }
+}
+
 impl<'a> Files<'a> for SimpleFiles {
     type FileId = usize;
     type Source = &'a str;
