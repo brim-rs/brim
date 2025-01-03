@@ -1,5 +1,3 @@
-use std::ops::Range;
-use brim_span::files::{Error, Files, Location};
 use crate::reporting::{
     diagnostic::{Diagnostic, LabelStyle},
     term::{
@@ -7,6 +5,8 @@ use crate::reporting::{
         DiagConfig,
     },
 };
+use brim_span::files::{Error, Files, Location};
+use std::ops::Range;
 
 fn count_digits(n: usize) -> usize {
     (n.saturating_add(1) as f64).log10().ceil() as usize
@@ -30,7 +30,7 @@ where
 
     pub fn render<'files>(
         &self,
-        files: &'files impl Files<'files, FileId=FileId>,
+        files: &'files impl Files<'files, FileId = FileId>,
         renderer: &mut Renderer<'_, '_>,
     ) -> Result<(), Error>
     where
@@ -95,7 +95,7 @@ where
                 Some(labeled_file) => {
                     if labeled_file.max_label_style > label.style
                         || (labeled_file.max_label_style == label.style
-                        && labeled_file.start > label.range.start)
+                            && labeled_file.start > label.range.start)
                     {
                         labeled_file.start = label.range.start;
                         labeled_file.location = files.location(label.file_id, label.range.start)?;
@@ -302,7 +302,8 @@ where
                 }
             }
 
-            if labeled_files.peek().is_none() && self.diagnostic.notes.is_empty() {} else {
+            if labeled_files.peek().is_none() && self.diagnostic.notes.is_empty() {
+            } else {
                 renderer.render_snippet_empty(
                     outer_padding,
                     self.diagnostic.severity,

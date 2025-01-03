@@ -1,5 +1,5 @@
-use std::{fmt, ops::Range};
 use crate::index::{ByteIndex, RawIndex};
+use std::{fmt, ops::Range};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Span {

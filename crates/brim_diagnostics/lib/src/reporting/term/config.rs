@@ -1,5 +1,5 @@
-use anstyle::{AnsiColor, Color, Style};
 use crate::reporting::diagnostic::{LabelStyle, Severity};
+use anstyle::{AnsiColor, Color, Style};
 
 #[derive(Clone, Debug)]
 pub struct DiagConfig {
@@ -25,7 +25,6 @@ impl Default for DiagConfig {
         }
     }
 }
-
 
 #[derive(Clone, Debug)]
 pub struct Styles {
@@ -80,9 +79,7 @@ impl Styles {
     }
 
     pub fn new(blue: Color) -> Styles {
-        let header = Style::new()
-            .bold()
-            .effects(anstyle::Effects::BOLD);
+        let header = Style::new().bold().effects(anstyle::Effects::BOLD);
 
         Styles {
             header_bug: header.fg_color(Some(Color::Ansi(AnsiColor::Red))),

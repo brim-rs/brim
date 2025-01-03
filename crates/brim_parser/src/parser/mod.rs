@@ -1,16 +1,13 @@
-use brim::files::SimpleFile;
-use brim::session::Session;
-use anyhow::Result;
-use tracing::debug;
-use brim::cursor::Cursor;
-use brim::{PrimitiveToken, PrimitiveTokenKind};
-use brim::symbol::{GLOBAL_INTERNER};
-use brim::token::TokenKind;
 use crate::lexer::Lexer;
+use anyhow::Result;
+use brim::{
+    PrimitiveToken, PrimitiveTokenKind, cursor::Cursor, files::SimpleFile, session::Session,
+    token::TokenKind,
+};
+use tracing::debug;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
-    pub sess: &'a Session<'a>,
     pub file: &'a SimpleFile,
     pub cursor: Cursor<'a>,
     pub primitives: Vec<PrimitiveToken>,
@@ -19,13 +16,18 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(sess: &'a Session<'a>, file: &'a SimpleFile) -> Self {
+    pub fn new(file: &'a SimpleFile) -> Self {
         let cursor = Cursor::new(file.source());
 
-        Self { sess, file, cursor, primitives: vec![], keep_comments: false }
+        Self {
+            file,
+            cursor,
+            primitives: vec![],
+            keep_comments: false,
+        }
     }
 
-    pub fn parse_barrel(&mut self) -> Result<()> {
+    pub fn parse_barrel(&mut self, sess: &mut Session) -> Result<()> {
         debug!("Lexing primitive tokens for a barrel");
         loop {
             let token = self.cursor.next_token();
@@ -36,10 +38,10 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let mut lexer = Lexer::new(self.sess, self.file, &mut self.primitives);
+        let mut lexer = Lexer::new(self.file, &mut self.primitives);
         let mut tokens = vec![];
 
-        while let Some(token) = lexer.next_token() {
+        while let Some(token) = lexer.next_token(sess) {
             if token.kind == TokenKind::Eof {
                 break;
             }
@@ -54,7 +56,7 @@ impl<'a> Parser<'a> {
         for token in tokens {
             println!("{:?}", token);
         }
-        
+
         Ok(())
     }
 }

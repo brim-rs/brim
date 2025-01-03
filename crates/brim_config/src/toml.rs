@@ -1,10 +1,9 @@
+use crate::errors::ConfigError;
 use anyhow::{Context, Result, ensure};
 use brim_fs::walk_dir::walk_for_file;
-use clap::{ArgMatches, ColorChoice};
+use clap::ArgMatches;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::read_to_string, path::PathBuf};
-use std::fmt::Display;
-use crate::errors::ConfigError;
+use std::{collections::HashMap, fmt::Display, fs::read_to_string, path::PathBuf};
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct BrimConfig {
@@ -98,15 +97,14 @@ pub struct ParsedBuildConfig {
 
 impl Config {
     pub fn get(cwd: &PathBuf, args: Option<&ArgMatches>) -> Result<Self> {
-        let path = walk_for_file(cwd.clone(), "brim.toml").ok_or(ConfigError::ConfigFileNotFound)?;
+        let path =
+            walk_for_file(cwd.clone(), "brim.toml").ok_or(ConfigError::ConfigFileNotFound)?;
 
         let content = read_to_string(&path).context("Failed to read brim.toml")?;
 
         let config: BrimConfig = toml::from_str(&content).context("Failed to parse brim.toml")?;
 
-        let project_type = config
-            .project
-            .r#type.clone();
+        let project_type = config.project.r#type.clone();
 
         if !matches!(project_type, ProjectType::Lib | ProjectType::Bin) {
             return Err(ConfigError::InvalidProjectType(format!("{:?}", project_type)).into());
@@ -163,15 +161,15 @@ impl Config {
     pub fn is_bin(&self) -> bool {
         matches!(self.project.r#type, ProjectType::Bin)
     }
-    
+
     pub fn is_lib(&self) -> bool {
         matches!(self.project.r#type, ProjectType::Lib)
     }
-    
+
     pub fn binary_path(&self, default: PathBuf) -> PathBuf {
         self.project.bin.clone().unwrap_or(default)
     }
-    
+
     pub fn library_path(&self, default: PathBuf) -> PathBuf {
         self.project.lib.clone().unwrap_or(default)
     }

@@ -2,12 +2,12 @@ use crate::reporting::{
     diagnostic::{LabelStyle, Severity},
     term::{Chars, DiagConfig, Styles},
 };
+use anstyle::Style;
+use brim_span::files::{Error, Location};
 use std::{
     io::{self, Write},
     ops::Range,
 };
-use anstyle::Style;
-use brim_span::files::{Error, Location};
 
 pub struct Locus {
     pub name: String,
@@ -133,10 +133,10 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                     Some((label_index, label_style, label)) if *label_index == label_column => {
                         match label {
                             MultiLabel::Top(start)
-                            if *start <= source.len() - source.trim_start().len() =>
-                                {
-                                    self.label_multi_top_left(severity, *label_style)?;
-                                }
+                                if *start <= source.len() - source.trim_start().len() =>
+                            {
+                                self.label_multi_top_left(severity, *label_style)?;
+                            }
                             MultiLabel::Top(..) => self.inner_gutter_space()?,
                             MultiLabel::Left | MultiLabel::Bottom(..) => {
                                 self.label_multi_left(severity, *label_style, None)?;
@@ -158,10 +158,10 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                 }) || multi_labels.iter().any(|(_, ls, label)| {
                     *ls == LabelStyle::Primary
                         && match label {
-                        MultiLabel::Top(start) => column_range.start >= *start,
-                        MultiLabel::Left => true,
-                        MultiLabel::Bottom(start, _) => column_range.end <= *start,
-                    }
+                            MultiLabel::Top(start) => column_range.start >= *start,
+                            MultiLabel::Left => true,
+                            MultiLabel::Bottom(start, _) => column_range.end <= *start,
+                        }
                 });
 
                 if is_primary && !in_primary {
@@ -421,8 +421,8 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
 
     fn char_metrics(
         &self,
-        char_indices: impl Iterator<Item=(usize, char)>,
-    ) -> impl Iterator<Item=(Metrics, char)> {
+        char_indices: impl Iterator<Item = (usize, char)>,
+    ) -> impl Iterator<Item = (Metrics, char)> {
         use unicode_width::UnicodeWidthChar;
 
         let tab_width = self.config.tab_width;
@@ -496,7 +496,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         max_label_start: usize,
         single_labels: &[SingleLabel<'_>],
         trailing_label: Option<(usize, &SingleLabel<'_>)>,
-        char_indices: impl Iterator<Item=(usize, char)>,
+        char_indices: impl Iterator<Item = (usize, char)>,
     ) -> Result<(), Error> {
         for (metrics, ch) in self.char_metrics(char_indices) {
             let column_range = metrics.byte_index..(metrics.byte_index + ch.len_utf8());
@@ -723,14 +723,14 @@ fn label_priority_key(label_style: &LabelStyle) -> u8 {
         LabelStyle::Add(_) => 1,
         LabelStyle::Warning => 2,
         LabelStyle::Primary => 3,
-        LabelStyle::Error => 4
+        LabelStyle::Error => 4,
     }
 }
 
 fn hanging_labels<'labels, 'diagnostic>(
     single_labels: &'labels [SingleLabel<'diagnostic>],
     trailing_label: Option<(usize, &'labels SingleLabel<'diagnostic>)>,
-) -> impl 'labels + DoubleEndedIterator<Item=&'labels SingleLabel<'diagnostic>> {
+) -> impl 'labels + DoubleEndedIterator<Item = &'labels SingleLabel<'diagnostic>> {
     single_labels
         .iter()
         .enumerate()

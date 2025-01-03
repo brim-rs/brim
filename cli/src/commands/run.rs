@@ -1,17 +1,11 @@
-use crate::{
-    cli::{
-        debug_mode, dynamic_lib_mode, min_size_rel_mode, opt, rel_with_deb_info_mode, release_mode,
-        static_lib_mode,
-    },
+use crate::cli::{
+    debug_mode, dynamic_lib_mode, min_size_rel_mode, rel_with_deb_info_mode, release_mode,
+    static_lib_mode,
 };
 use anyhow::Result;
-use clap::{ArgAction, ArgMatches, Command};
-use std::{process, sync::Arc};
-use tracing::debug;
-use brim::session::Session;
-use brim::symbol::{Symbol};
-use brim::toml::ProjectType;
+use brim::{session::Session, toml::ProjectType};
 use brim_parser::parser_from_simple_file;
+use clap::{ArgMatches, Command};
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -32,17 +26,22 @@ pub fn run_cmd() -> Command {
 }
 
 pub fn run_command(sess: &mut Session, args: &ArgMatches) -> Result<()> {
-    sess.measure_time(|sess| {
-        sess.assert_type(ProjectType::Bin, "Can only use `run` command on binary projects")?;
-        let main_file = sess.main_file()?;
-        let source_file = sess.get_file(main_file).unwrap();
+    sess.measure_time(
+        |sess| {
+            sess.assert_type(
+                ProjectType::Bin,
+                "Can only use `run` command on binary projects",
+            )?;
+            let main_file = sess.main_file()?;
+            let source_file = sess.get_file(main_file).unwrap();
 
-        let mut parser = parser_from_simple_file(sess, source_file)?;
-        let barrel = parser.parse_barrel()?;
+            let mut parser = parser_from_simple_file(&source_file)?;
+            let barrel = parser.parse_barrel(sess)?;
 
-        Ok(())
-    }, "to execute project")?;
+            Ok(())
+        },
+        "to execute project",
+    )?;
 
     Ok(())
 }
-

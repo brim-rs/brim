@@ -1,7 +1,7 @@
-use once_cell::sync::Lazy;
-use std::sync::Mutex;
-use std::collections::HashMap;
 use brim_index::index_type;
+use once_cell::sync::Lazy;
+use std::{collections::HashMap, sync::Mutex};
+use std::fmt::Display;
 
 index_type! {
     /// A unique identifier for a symbol interned in the global interner.
@@ -66,12 +66,14 @@ impl SymbolInterner {
     }
 }
 
-pub static GLOBAL_INTERNER: Lazy<Mutex<SymbolInterner>> = Lazy::new(|| Mutex::new(SymbolInterner::new()));
+pub static GLOBAL_INTERNER: Lazy<Mutex<SymbolInterner>> =
+    Lazy::new(|| Mutex::new(SymbolInterner::new()));
 
 /// Interns a string in the global interner and returns its index.
 #[inline]
 fn intern(s: &str) -> usize {
-    GLOBAL_INTERNER.lock()
+    GLOBAL_INTERNER
+        .lock()
         .expect("Failed to lock global interner")
         .intern(s)
         .as_usize()
@@ -80,8 +82,19 @@ fn intern(s: &str) -> usize {
 /// Resolves a symbol index to its original string.
 #[inline]
 fn resolve(index: usize) -> Option<String> {
-    GLOBAL_INTERNER.lock()
+    GLOBAL_INTERNER
+        .lock()
         .expect("Failed to lock global interner")
         .resolve(SymbolIndex::from_usize(index))
         .map(ToOwned::to_owned)
+}
+
+impl Display for Symbol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(s) = self.as_str() {
+            write!(f, "{}", s)
+        } else {
+            write!(f, "<symbol>")
+        }
+    }
 }

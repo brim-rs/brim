@@ -51,7 +51,11 @@ impl<'a, FileId> Label<'a, FileId> {
         Label::new(LabelStyle::Warning, file_id, range)
     }
 
-    pub fn add(file_id: FileId, to_add: impl Into<&'a str>, range: impl Into<Range<usize>>) -> Label<'a, FileId> {
+    pub fn add(
+        file_id: FileId,
+        to_add: impl Into<&'a str>,
+        range: impl Into<Range<usize>>,
+    ) -> Label<'a, FileId> {
         Label::new(LabelStyle::Add(to_add.into()), file_id, range)
     }
 
@@ -70,8 +74,8 @@ pub struct Diagnostic<'a, FileId> {
     pub notes: Vec<String>,
 }
 
-impl<'a,FileId> Diagnostic<'a,FileId> {
-    pub fn new(severity: Severity) -> Diagnostic<'a,FileId> {
+impl<'a, FileId> Diagnostic<'a, FileId> {
+    pub fn new(severity: Severity) -> Diagnostic<'a, FileId> {
         Diagnostic {
             severity,
             code: None,
@@ -81,43 +85,59 @@ impl<'a,FileId> Diagnostic<'a,FileId> {
         }
     }
 
-    pub fn bug() -> Diagnostic<'a,FileId> {
+    pub fn bug() -> Diagnostic<'a, FileId> {
         Diagnostic::new(Severity::Bug)
     }
 
-    pub fn error() -> Diagnostic<'a,FileId> {
+    pub fn error() -> Diagnostic<'a, FileId> {
         Diagnostic::new(Severity::Error)
     }
 
-    pub fn warning() -> Diagnostic<'a,FileId> {
+    pub fn warning() -> Diagnostic<'a, FileId> {
         Diagnostic::new(Severity::Warning)
     }
 
-    pub fn note() -> Diagnostic<'a,FileId> {
+    pub fn note() -> Diagnostic<'a, FileId> {
         Diagnostic::new(Severity::Note)
     }
 
-    pub fn help() -> Diagnostic<'a,FileId> {
+    pub fn help() -> Diagnostic<'a, FileId> {
         Diagnostic::new(Severity::Help)
     }
 
-    pub fn with_code(mut self, code: impl ToString) -> Diagnostic<'a,FileId> {
+    pub fn with_code(mut self, code: impl ToString) -> Diagnostic<'a, FileId> {
         self.code = Some(code.to_string());
         self
     }
 
-    pub fn with_message(mut self, message: impl ToString) -> Diagnostic<'a,FileId> {
+    pub fn with_message(mut self, message: impl ToString) -> Diagnostic<'a, FileId> {
         self.message = message.to_string();
         self
     }
 
-    pub fn with_labels(mut self, mut labels: Vec<Label<'a, FileId>>) -> Diagnostic<'a,FileId> {
+    pub fn with_labels(mut self, mut labels: Vec<Label<'a, FileId>>) -> Diagnostic<'a, FileId> {
         self.labels.append(&mut labels);
         self
     }
 
-    pub fn with_notes(mut self, mut notes: Vec<String>) -> Diagnostic<'a,FileId> {
+    pub fn with_notes(mut self, mut notes: Vec<String>) -> Diagnostic<'a, FileId> {
         self.notes.append(&mut notes);
         self
+    }
+}
+
+pub trait ToDiagnostic<'a> {
+    fn message(&self) -> String;
+    fn code(&self) -> Option<String>;
+    fn severity(&self) -> Severity;
+    fn labels(&self) -> Vec<Label<'a, usize>>;
+    fn notes(&self) -> Vec<String>;
+
+    fn to_diagnostic(&self) -> Diagnostic<'a, usize> {
+        Diagnostic::new(self.severity())
+            .with_code(self.code().unwrap_or_default())
+            .with_message(self.message())
+            .with_labels(self.labels())
+            .with_notes(self.notes())
     }
 }

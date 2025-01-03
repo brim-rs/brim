@@ -1,40 +1,41 @@
+mod errors;
 mod identifiers;
 mod unicode;
-mod errors;
 
-use brim::cursor::Cursor;
-use brim::files::SimpleFile;
-use brim::index::{ByteIndex, ByteOffset, RawOffset};
-use brim::{PrimitiveToken, PrimitiveTokenKind};
-use brim::session::Session;
-use brim::span::Span;
-use brim::symbol::Symbol;
-use brim::token::{BinOpToken, Delimiter, Orientation, Token, TokenKind};
-use brim::token::TokenKind::BinOp;
-use crate::lexer::identifiers::nfc_normalize;
-use crate::lexer::unicode::UNICODE_ARRAY;
+use crate::lexer::{identifiers::nfc_normalize, unicode::UNICODE_ARRAY};
+use brim::{
+    PrimitiveToken, PrimitiveTokenKind,
+    files::SimpleFile,
+    index::{ByteIndex, ByteOffset, RawOffset},
+    session::Session,
+    span::Span,
+    symbol::Symbol,
+    token::{BinOpToken, Delimiter, Orientation, Token, TokenKind},
+};
+use crate::lexer::errors::{EmojiIdentifier};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
     pos: ByteIndex,
-    session: &'a Session<'a>,
     file: &'a SimpleFile,
     primitives: &'a mut Vec<PrimitiveToken>,
 }
 
 impl Lexer<'_> {
-    pub fn new<'a>(session: &'a Session<'a>, file: &'a SimpleFile, primitives: &'a mut Vec<PrimitiveToken>) -> Lexer<'a> {
+    pub fn new<'a>(
+        file: &'a SimpleFile,
+        primitives: &'a mut Vec<PrimitiveToken>,
+    ) -> Lexer<'a> {
         Lexer {
             pos: ByteIndex::default(),
-            session,
             file,
             primitives,
         }
     }
 }
 
-impl Lexer<'_> {
-    pub fn next_token(&mut self) -> Option<Token> {
+impl<'a> Lexer<'a> {
+    pub fn next_token(&mut self, session: &mut Session) -> Option<Token> {
         if self.primitives.is_empty() {
             return None;
         }
@@ -45,9 +46,9 @@ impl Lexer<'_> {
         self.pos = start + ByteOffset(token.len as RawOffset);
 
         let kind = match token.kind {
-            PrimitiveTokenKind::Whitespace | PrimitiveTokenKind::Comment {
-                doc: false,
-            } => TokenKind::Skipable,
+            PrimitiveTokenKind::Whitespace | PrimitiveTokenKind::Comment { doc: false } => {
+                TokenKind::Skipable
+            }
             PrimitiveTokenKind::Comment { doc: true } => {
                 let comment_start = start + ByteOffset(3);
                 let content = self.content_from(comment_start);
@@ -57,25 +58,39 @@ impl Lexer<'_> {
 
             PrimitiveTokenKind::Ident => self.ident(start),
 
-            PrimitiveTokenKind::InvalidIdent if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
+            PrimitiveTokenKind::InvalidIdent
+            if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
                 let sym = self.content_from(start);
                 sym.chars().count() == 1 && c == sym.chars().next().unwrap()
-            }) => {
-                let sym = nfc_normalize(self.content_from(start));
-                let span = Span::new(start, self.pos);
-                
-                // self.session.dcx()
+            }) =>
+                {
+                    let symbol = nfc_normalize(self.content_from(start));
+                    let span = Span::new(start, self.pos);
 
-                TokenKind::Ident(sym)
-            }
+                    session.emit(EmojiIdentifier { ident: symbol });
+
+                    TokenKind::Ident(symbol)
+                }
 
             // Delimiters
-            PrimitiveTokenKind::OpenParen => TokenKind::Delimiter(Delimiter::Paren, Orientation::Open),
-            PrimitiveTokenKind::CloseParen => TokenKind::Delimiter(Delimiter::Paren, Orientation::Close),
-            PrimitiveTokenKind::OpenBrace => TokenKind::Delimiter(Delimiter::Brace, Orientation::Open),
-            PrimitiveTokenKind::CloseBrace => TokenKind::Delimiter(Delimiter::Brace, Orientation::Close),
-            PrimitiveTokenKind::OpenBracket => TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open),
-            PrimitiveTokenKind::CloseBracket => TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close),
+            PrimitiveTokenKind::OpenParen => {
+                TokenKind::Delimiter(Delimiter::Paren, Orientation::Open)
+            }
+            PrimitiveTokenKind::CloseParen => {
+                TokenKind::Delimiter(Delimiter::Paren, Orientation::Close)
+            }
+            PrimitiveTokenKind::OpenBrace => {
+                TokenKind::Delimiter(Delimiter::Brace, Orientation::Open)
+            }
+            PrimitiveTokenKind::CloseBrace => {
+                TokenKind::Delimiter(Delimiter::Brace, Orientation::Close)
+            }
+            PrimitiveTokenKind::OpenBracket => {
+                TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open)
+            }
+            PrimitiveTokenKind::CloseBracket => {
+                TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close)
+            }
 
             // Binary ops
             PrimitiveTokenKind::Minus => TokenKind::BinOp(BinOpToken::Minus),
@@ -103,16 +118,14 @@ impl Lexer<'_> {
             PrimitiveTokenKind::LessThan => TokenKind::Lt,
             PrimitiveTokenKind::GreaterThan => TokenKind::Gt,
 
-            _ => TokenKind::Skipable
+            _ => TokenKind::Skipable,
         };
 
         let span = Span::new(start, self.pos);
         Some(Token::new(kind, span))
     }
 
-    pub fn content_from_to(
-        &self, start: ByteIndex, end: ByteIndex,
-    ) -> &str {
+    pub fn content_from_to(&self, start: ByteIndex, end: ByteIndex) -> &str {
         let start = start.to_usize();
         let end = end.to_usize();
         &self.file.source()[start..end]

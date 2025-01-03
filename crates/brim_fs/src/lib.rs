@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-pub mod walk_dir;
 pub mod loader;
+pub mod walk_dir;
 
 /// Makes it easy to specify the path with platform-specific separators.
 ///

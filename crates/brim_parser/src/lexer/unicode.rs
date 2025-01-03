@@ -2,11 +2,6 @@
 //! <https://www.unicode.org/Public/security/10.0.0/confusables.txt>
 //! This code was taken from the Rust compiler, specifically from the `rustc_parse` crate.
 
-use brim::index::{ByteIndex, ByteOffset, RawOffset};
-use brim::span::Span;
-use brim::token::{BinOpToken, Delimiter, Orientation, TokenKind};
-use super::Lexer;
-
 #[rustfmt::skip] // for line breaks
 pub(super) const UNICODE_ARRAY: &[(char, &str, &str)] = &[
     (' ', "Line Separator", " "),

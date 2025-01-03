@@ -1,15 +1,12 @@
 #![feature(let_chains)]
 
-use cli::cli;
-use std::{env, process::exit};
+use crate::{commands::run::run_command, panic::setup_panic_handler};
 use anstream::ColorChoice;
 use anyhow::Result;
+use brim::{compiler::CompilerContext, session::Session, toml::Config, Shell};
 use clap::ArgMatches;
-use brim::compiler::CompilerContext;
-use brim::session::Session;
-use brim::toml::Config;
-use crate::commands::run::run_command;
-use crate::panic::setup_panic_handler;
+use cli::cli;
+use std::{env, process::exit};
 
 pub mod cli;
 mod commands;
@@ -41,7 +38,6 @@ fn main() -> Result<()> {
         ColorChoice::Auto
     };
     let dir = env::current_dir()?;
-
     match cmd.0 {
         "run" => {
             let config = Config::get(&dir, Some(&cmd.1))?;
@@ -63,11 +59,13 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-pub fn exec_command(sess: &mut Session, args: &ArgMatches, func: impl FnOnce(&mut Session, &ArgMatches) -> Result<()>) -> Result<()> {
+pub fn exec_command<'a>(
+    sess: &'a mut Session<'a>,
+    args: &ArgMatches,
+    func: impl FnOnce(&mut Session, &ArgMatches) -> Result<()>,
+) -> Result<()> {
     match func(sess, args) {
-        Ok(_) => {
-            Ok(())
-        }
+        Ok(_) => Ok(()),
         Err(err) => {
             sess.shell().error(err)?;
             exit(1);

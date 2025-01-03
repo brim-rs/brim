@@ -1,5 +1,4 @@
-use std::ops::Range;
-use std::path::{Path, PathBuf};
+use std::{ops::Range, path::PathBuf};
 
 #[derive(Debug)]
 #[non_exhaustive]
@@ -100,7 +99,7 @@ pub fn column_index(source: &str, line_range: Range<usize>, byte_index: usize) -
         .count()
 }
 
-pub fn line_starts(source: &str) -> impl '_ + Iterator<Item=usize> {
+pub fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }
 
@@ -192,20 +191,25 @@ impl SimpleFiles {
     pub fn get(&self, file_id: usize) -> Result<&SimpleFile, Error> {
         self.files.get(file_id).ok_or(Error::FileMissing)
     }
-    
+
     pub fn get_by_name(&self, name: &PathBuf) -> Result<&SimpleFile, Error> {
-        self.files.iter().find(|file| file.name() == name).ok_or(Error::FileMissing)
+        self.files
+            .iter()
+            .find(|file| file.name() == name)
+            .ok_or(Error::FileMissing)
     }
 
     pub fn get_index_by_name(&self, name: &PathBuf) -> Result<usize, Error> {
-        self.files.iter().position(|file| file.name() == name).ok_or(Error::FileMissing)
+        self.files
+            .iter()
+            .position(|file| file.name() == name)
+            .ok_or(Error::FileMissing)
     }
 
     pub fn update(&mut self, file_id: usize, name: PathBuf, source: String) {
         self.files[file_id] = SimpleFile::new(name, source);
     }
 }
-
 
 impl<'a> Files<'a> for SimpleFiles {
     type FileId = usize;
@@ -227,4 +231,3 @@ impl<'a> Files<'a> for SimpleFiles {
         self.get(file_id)?.line_range((), line_index)
     }
 }
-

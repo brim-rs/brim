@@ -1,4 +1,2 @@
 #[derive(Debug)]
-pub struct Barrel {
-    
-}
+pub struct Barrel {}

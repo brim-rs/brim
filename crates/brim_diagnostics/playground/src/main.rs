@@ -1,9 +1,8 @@
-use termcolor::ColorChoice;
-use brim_diagnostics::diagnostic::{Diagnostic, Label, LabelStyle};
 use anyhow::Result;
-use colored::Colorize;
-use term::color::Color;
+use brim_diagnostics::diagnostic::{Diagnostic, Label, LabelStyle};
 use brim_span::files::SimpleFiles;
+use colored::Colorize;
+use termcolor::ColorChoice;
 
 fn main() -> Result<()> {
     let mut files = SimpleFiles::new();
@@ -35,7 +34,8 @@ fn main() -> Result<()> {
         .with_message("`case` clauses have incompatible types")
         .with_code("E0308")
         .with_labels(vec![
-            Label::error(file_id, 30..40).with_message("function must return the value of the same type"),
+            Label::error(file_id, 30..40)
+                .with_message("function must return the value of the same type"),
             Label::add(file_id, ".clone()", 217..222).with_message("add safe cast to i32"),
         ])
         .with_notes(vec![unindent::unindent(
@@ -53,7 +53,9 @@ fn main() -> Result<()> {
                 let file = files.get(label.file_id)?;
                 let source = file.source().as_str();
                 // Insert code to add between the range
-                let source = source[..range.start].to_string() + &to_add.bright_green().to_string() + &source[range.end..];
+                let source = source[..range.start].to_string()
+                    + &to_add.bright_green().to_string()
+                    + &source[range.end..];
 
                 files.update(label.file_id, file.name().clone(), source);
 
@@ -65,7 +67,7 @@ fn main() -> Result<()> {
     }
 
     let writer = termcolor::StandardStream::stderr(ColorChoice::Always);
-    let mut config = brim_diagnostics::term::DiagConfig::default();
+    let config = brim_diagnostics::term::DiagConfig::default();
 
     brim_diagnostics::term::emit(&mut writer.lock(), &config, &files, &diagnostic)?;
 

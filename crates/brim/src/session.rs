@@ -1,45 +1,49 @@
-use std::path::PathBuf;
-use std::time::Instant;
+use crate::{compiler::CompilerContext, diag_ctx::DiagnosticContext};
 use anstream::ColorChoice;
-use anyhow::bail;
+use anyhow::{Result, bail};
 use brim_config::toml::{Config, ProjectType};
+use brim_fs::{
+    loader::{BrimFileLoader, FileLoader},
+    path,
+};
 use brim_shell::Shell;
 use brim_span::files::{SimpleFile, SimpleFiles};
-use anyhow::Result;
+use std::{path::PathBuf, time::Instant};
 use tracing::debug;
-use brim_fs::loader::{BrimFileLoader, FileLoader};
-use brim_fs::path;
-use brim_span::file::FileId;
-use crate::compiler::CompilerContext;
-use crate::diag_ctx::DiagnosticContext;
+use brim_diagnostics::diagnostic::ToDiagnostic;
 
 #[derive(Debug)]
 pub struct Session<'a> {
     files: SimpleFiles,
     config: Config,
     cwd: PathBuf,
-    shell: Shell,
     color_choice: ColorChoice,
-    dcx: DiagnosticContext<'a>,
-    pub start: Instant,
+    dcx: DiagnosticContext,
+    start: Instant,
     pub measure_time: bool,
-    pub file_loader: BrimFileLoader,
-    pub compiler: &'a CompilerContext
+    file_loader: BrimFileLoader,
+    compiler: &'a CompilerContext,
+    shell: Shell,
 }
 
 impl<'a> Session<'a> {
-    pub fn new(cwd: PathBuf, config: Config, color_choice: ColorChoice, comp: &'a CompilerContext) -> Self {
+    pub fn new(
+        cwd: PathBuf,
+        config: Config,
+        color_choice: ColorChoice,
+        comp: &'a CompilerContext,
+    ) -> Self {
         Self {
             files: SimpleFiles::new(),
             config,
             cwd,
             color_choice,
-            shell: Shell::new(color_choice),
             start: Instant::now(),
             measure_time: false,
             file_loader: BrimFileLoader,
+            shell: Shell::new(color_choice),
             dcx: DiagnosticContext::new(),
-            compiler: comp
+            compiler: comp,
         }
     }
 
@@ -53,8 +57,8 @@ impl<'a> Session<'a> {
         self.files.add(name, source)
     }
 
-    pub fn get_file(&self, file: usize) -> Option<&SimpleFile> {
-        self.files.get(file).ok()
+    pub fn get_file(&self, file: usize) -> Option<SimpleFile> {
+        self.files.get(file).ok().cloned()
     }
 
     pub fn get_file_by_name(&self, name: &PathBuf) -> Option<&SimpleFile> {
@@ -77,15 +81,18 @@ impl<'a> Session<'a> {
     }
 
     /// Measure the time taken to run a closure and print it to the shell
-    pub fn measure_time(&mut self, f: impl FnOnce(
-        &mut Session,
-    ) -> Result<()>, msg: impl Into<String>) -> Result<()> {
+    pub fn measure_time(
+        &mut self,
+        f: impl FnOnce(&mut Session) -> Result<()>,
+        msg: impl Into<String>,
+    ) -> Result<()> {
         let start = Instant::now();
         f(self)?;
 
         if self.measure_time {
             let elapsed = start.elapsed();
-            self.shell().status("Took", format!("{:?} {}", elapsed, msg.into()))?;
+            self.shell()
+                .status("Took", format!("{:?} {}", elapsed, msg.into()))?;
         }
 
         Ok(())
@@ -105,7 +112,11 @@ impl<'a> Session<'a> {
         Ok(self.add_file(path.clone(), self.file_loader.read_file(&path)?))
     }
 
-    pub fn dcx(&mut self) -> &mut DiagnosticContext<'a> {
+    pub fn dcx(&mut self) -> &mut DiagnosticContext {
         &mut self.dcx
+    }
+
+    pub fn emit(&mut self, diag: impl ToDiagnostic<'a>) {
+        self.dcx.emit(diag, &self.files);
     }
 }

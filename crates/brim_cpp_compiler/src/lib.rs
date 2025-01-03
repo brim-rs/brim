@@ -5,7 +5,7 @@ use crate::{
     detect::{detect_compiler, resolve_from_kind},
 };
 use anyhow::{Context, Result, bail, ensure};
-use brim_config::{LibType, OptLevel, ProjectType};
+use brim_config::toml::{LibType, OptLevel, ProjectType};
 use brim_shell::Shell;
 use std::{
     collections::HashSet,

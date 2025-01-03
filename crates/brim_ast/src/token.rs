@@ -1,5 +1,4 @@
-use brim_span::span::Span;
-use brim_span::symbol::Symbol;
+use brim_span::{span::Span, symbol::Symbol};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Token {
@@ -123,6 +122,10 @@ pub enum LitKind {
 
 impl Lit {
     pub fn new(kind: LitKind, symbol: Symbol, suffix: Option<Symbol>) -> Self {
-        Self { kind, symbol, suffix }
+        Self {
+            kind,
+            symbol,
+            suffix,
+        }
     }
 }

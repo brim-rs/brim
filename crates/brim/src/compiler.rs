@@ -1,5 +1,3 @@
-use brim_span::symbol::SymbolInterner;
-
 #[derive(Debug)]
 pub struct CompilerContext {}
 
