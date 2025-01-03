@@ -82,7 +82,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         self.set_color(&Style::new().dimmed())?;
         self.write(b": ")?;
         self.reset()?;
-        writeln!(self, "{}", message)?;
+        write!(self, "{}", message)?;
 
         writeln!(self)?;
 
