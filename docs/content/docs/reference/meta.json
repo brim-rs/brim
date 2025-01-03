@@ -9,6 +9,7 @@
     "---Lexical structure---",
     "keywords",
     "identifiers",
-    "comments"
+    "comments",
+    "whitespace"
   ]
 }
