@@ -1,7 +1,6 @@
 use brim_index::index_type;
 use once_cell::sync::Lazy;
-use std::{collections::HashMap, sync::Mutex};
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display, sync::Mutex};
 
 index_type! {
     /// A unique identifier for a symbol interned in the global interner.

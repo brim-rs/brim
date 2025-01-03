@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 
 use quote::quote;
-use syn::{DeriveInput, parse_macro_input, Expr};
+use syn::{DeriveInput, Expr, parse_macro_input};
 use thiserror::Error;
 
 use std::iter::Iterator;
@@ -43,24 +43,50 @@ pub fn macro_derive_impl(item: TokenStream) -> TokenStream {
         let attrs = &ast.attrs;
         let struct_name = &ast.ident;
 
-        let diagnostic_attrs = attrs.iter()
-            .find(|attr| {
-                let ident = attr.path().segments.last().unwrap().ident.to_string().to_lowercase();
-                matches!(ident.as_str(), "help" | "note" | "warning" | "error" | "bug")
-            });
+        let diagnostic_attrs = attrs.iter().find(|attr| {
+            let ident = attr
+                .path()
+                .segments
+                .last()
+                .unwrap()
+                .ident
+                .to_string()
+                .to_lowercase();
+            matches!(
+                ident.as_str(),
+                "help" | "note" | "warning" | "error" | "bug"
+            )
+        });
 
         if diagnostic_attrs.is_none() {
-            macro_compile_error!(ast.span(), "One of help, note, warning, error, or bug attribute is required");
+            macro_compile_error!(
+                ast.span(),
+                "One of help, note, warning, error, or bug attribute is required"
+            );
         }
 
         let attr = diagnostic_attrs.unwrap();
-        let severity = attr.path().segments.last().unwrap().ident.to_string().to_lowercase();
-        let severity_variant = severity.chars().next().unwrap().to_uppercase().collect::<String>() + &severity[1..];
+        let severity = attr
+            .path()
+            .segments
+            .last()
+            .unwrap()
+            .ident
+            .to_string()
+            .to_lowercase();
+        let severity_variant = severity
+            .chars()
+            .next()
+            .unwrap()
+            .to_uppercase()
+            .collect::<String>()
+            + &severity[1..];
 
         let expr = attr.parse_args::<Expr>().unwrap();
         let error_string = get_string_literal(&expr);
 
-        let error_code = attrs.iter()
+        let error_code = attrs
+            .iter()
             .find(|attr| attr.path().segments.last().unwrap().ident == "code")
             .map(|attr| {
                 let expr = attr.parse_args::<Expr>().unwrap();
@@ -84,7 +110,9 @@ pub fn macro_derive_impl(item: TokenStream) -> TokenStream {
             _ => macro_compile_error!(ast.span(), "Only structs are supported"),
         };
 
-        let field_names = fields.named.iter()
+        let field_names = fields
+            .named
+            .iter()
             .map(|field| &field.ident)
             .collect::<Vec<_>>()
             .iter()
@@ -117,5 +145,6 @@ pub fn macro_derive_impl(item: TokenStream) -> TokenStream {
                 }
             }
         }))
-    }.unwrap_or_else(|err| err)
+    }
+    .unwrap_or_else(|err| err)
 }

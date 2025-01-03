@@ -1,7 +1,8 @@
-use brim::Diagnostic;
-use brim::diagnostic::Severity;
-use brim::diagnostic::ToDiagnostic;
-use brim::symbol::Symbol;
+use brim::{
+    Diagnostic,
+    diagnostic::{Severity, ToDiagnostic},
+    symbol::Symbol,
+};
 
 #[derive(Diagnostic)]
 #[error("Emojis can't be used in identifiers: `{ident}`")]

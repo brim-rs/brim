@@ -2,6 +2,7 @@ use crate::{compiler::CompilerContext, diag_ctx::DiagnosticContext};
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim_config::toml::{Config, ProjectType};
+use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_fs::{
     loader::{BrimFileLoader, FileLoader},
     path,
@@ -10,7 +11,6 @@ use brim_shell::Shell;
 use brim_span::files::{SimpleFile, SimpleFiles};
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
-use brim_diagnostics::diagnostic::ToDiagnostic;
 
 #[derive(Debug)]
 pub struct Session<'a> {

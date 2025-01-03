@@ -1,9 +1,9 @@
-use std::io::stderr;
-use brim_diagnostics::diagnostic::{Diagnostic, ToDiagnostic};
-use brim_diagnostics::term::{emit, DiagConfig};
-use brim_shell::Shell;
-use brim_span::file::FileId;
+use brim_diagnostics::{
+    diagnostic::ToDiagnostic,
+    term::{DiagConfig, emit},
+};
 use brim_span::files::SimpleFiles;
+use std::io::stderr;
 
 #[derive(Debug)]
 pub struct DiagnosticContext {

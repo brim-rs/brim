@@ -2,7 +2,7 @@ mod errors;
 mod identifiers;
 mod unicode;
 
-use crate::lexer::{identifiers::nfc_normalize, unicode::UNICODE_ARRAY};
+use crate::lexer::{errors::EmojiIdentifier, identifiers::nfc_normalize, unicode::UNICODE_ARRAY};
 use brim::{
     PrimitiveToken, PrimitiveTokenKind,
     files::SimpleFile,
@@ -12,7 +12,6 @@ use brim::{
     symbol::Symbol,
     token::{BinOpToken, Delimiter, Orientation, Token, TokenKind},
 };
-use crate::lexer::errors::{EmojiIdentifier};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -22,10 +21,7 @@ pub struct Lexer<'a> {
 }
 
 impl Lexer<'_> {
-    pub fn new<'a>(
-        file: &'a SimpleFile,
-        primitives: &'a mut Vec<PrimitiveToken>,
-    ) -> Lexer<'a> {
+    pub fn new<'a>(file: &'a SimpleFile, primitives: &'a mut Vec<PrimitiveToken>) -> Lexer<'a> {
         Lexer {
             pos: ByteIndex::default(),
             file,
@@ -59,18 +55,18 @@ impl<'a> Lexer<'a> {
             PrimitiveTokenKind::Ident => self.ident(start),
 
             PrimitiveTokenKind::InvalidIdent
-            if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
-                let sym = self.content_from(start);
-                sym.chars().count() == 1 && c == sym.chars().next().unwrap()
-            }) =>
-                {
-                    let symbol = nfc_normalize(self.content_from(start));
-                    let span = Span::new(start, self.pos);
+                if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
+                    let sym = self.content_from(start);
+                    sym.chars().count() == 1 && c == sym.chars().next().unwrap()
+                }) =>
+            {
+                let symbol = nfc_normalize(self.content_from(start));
+                let span = Span::new(start, self.pos);
 
-                    session.emit(EmojiIdentifier { ident: symbol });
+                session.emit(EmojiIdentifier { ident: symbol });
 
-                    TokenKind::Ident(symbol)
-                }
+                TokenKind::Ident(symbol)
+            }
 
             // Delimiters
             PrimitiveTokenKind::OpenParen => {

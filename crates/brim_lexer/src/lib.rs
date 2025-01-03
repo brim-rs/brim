@@ -510,7 +510,7 @@ impl<'a> Cursor<'a> {
     }
 }
 
-pub fn tokenize(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
+pub fn tokenize(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
     let mut cursor = Cursor::new(input);
     std::iter::from_fn(move || {
         let token = cursor.next_token();
@@ -522,7 +522,7 @@ pub fn tokenize(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
     })
 }
 
-pub fn tokens_no_whitespace(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
+pub fn tokens_no_whitespace(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
     tokenize(input).filter(|t| t.kind != Whitespace)
 }
 
