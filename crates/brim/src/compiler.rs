@@ -1,19 +1,17 @@
 use brim_ast::ErrorEmitted;
 use brim_diagnostics::diagnostic::ToDiagnostic;
-use brim_span::files::SimpleFiles;
+use brim_span::files::{files, SimpleFiles};
 use crate::diag_ctx::DiagnosticContext;
 
 #[derive(Debug)]
-pub struct CompilerContext<'a> {
+pub struct CompilerContext {
     dcx: DiagnosticContext,
-    files: &'a mut SimpleFiles,
 }
 
-impl<'a> CompilerContext<'a> {
-    pub fn new(files: &'a mut SimpleFiles) -> Self {
+impl CompilerContext {
+    pub fn new() -> Self {
         Self {
             dcx: DiagnosticContext::new(),
-            files,
         }
     }
 
@@ -21,9 +19,9 @@ impl<'a> CompilerContext<'a> {
         &mut self.dcx
     }
 
-    pub fn emit(&mut self, diag: impl ToDiagnostic<'a>) -> ErrorEmitted {
-        self.dcx.emit(diag, &self.files);
-
+    pub fn emit<'a>(&mut self, diag: impl ToDiagnostic<'a>) -> ErrorEmitted {
+        self.dcx.emit(diag, &SimpleFiles::from_files(files()));
+        
         ErrorEmitted::new()
     }
 }

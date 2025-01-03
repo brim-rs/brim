@@ -58,7 +58,7 @@ impl<'a> Lexer<'a> {
                     let symbol = nfc_normalize(self.content_from(start));
                     let span = Span::new(start, self.pos);
 
-                    session.emit(EmojiIdentifier { ident: symbol, label: (span, self.file.id()) });
+                    comp.emit(EmojiIdentifier { ident: symbol, label: (span, self.file.id()) });
 
                     TokenKind::Ident(symbol)
                 }
@@ -68,7 +68,7 @@ impl<'a> Lexer<'a> {
                 suffix_start,
             } => {
                 let suffix_start = start + ByteOffset(suffix_start as RawOffset);
-                let (kind, symbol) = self.lex_literal(kind, start, suffix_start, session);
+                let (kind, symbol) = self.lex_literal(kind, start, suffix_start, comp);
                 let suffix = if suffix_start < self.pos {
                     let string = self.content_from(suffix_start);
                     if string == "_" {

@@ -8,14 +8,13 @@ use brim_fs::{
     path,
 };
 use brim_shell::Shell;
-use brim_span::files::{SimpleFile, SimpleFiles};
+use brim_span::files::{add_file, get_file, get_file_by_name, get_index_by_name, update_file, SimpleFile, SimpleFiles};
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
 use brim_ast::ErrorEmitted;
 
 #[derive(Debug)]
-pub struct Session<'a> {
-    files: &'a mut SimpleFiles,
+pub struct Session {
     config: Config,
     cwd: PathBuf,
     color_choice: ColorChoice,
@@ -25,15 +24,13 @@ pub struct Session<'a> {
     shell: Shell,
 }
 
-impl<'a> Session<'a> {
+impl Session {
     pub fn new(
         cwd: PathBuf,
         config: Config,
         color_choice: ColorChoice,
-        files: &'a mut SimpleFiles,
     ) -> Self {
         Self {
-            files,
             config,
             cwd,
             color_choice,
@@ -45,21 +42,21 @@ impl<'a> Session<'a> {
     }
 
     pub fn add_file(&mut self, name: PathBuf, source: String) -> usize {
-        if let Ok(file) = self.files.get_index_by_name(&name) {
-            self.files.update(file, name, source);
+        if let Ok(file) = get_index_by_name(&name) {
+            update_file(file, name, source);
 
             return file;
         }
 
-        self.files.add(name, source)
+        add_file(name, source)
     }
 
     pub fn get_file(&self, file: usize) -> Option<SimpleFile> {
-        self.files.get(file).ok().cloned()
+        get_file(file).ok()
     }
 
-    pub fn get_file_by_name(&self, name: &PathBuf) -> Option<&SimpleFile> {
-        self.files.get_by_name(name).ok()
+    pub fn get_file_by_name(&self, name: &PathBuf) -> Option<SimpleFile> {
+        get_file_by_name(name).ok()
     }
 
     pub fn shell(&mut self) -> &mut Shell {

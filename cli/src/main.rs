@@ -42,9 +42,8 @@ fn main() -> Result<()> {
     match cmd.0 {
         "run" => {
             let config = Config::get(&dir, Some(&cmd.1))?;
-            let files = &mut SimpleFiles::new();
-            let comp = &mut CompilerContext::new(files);
-            let sess = &mut Session::new(dir, config, color_choice, files);
+            let comp = &mut CompilerContext::new();
+            let sess = &mut Session::new(dir, config, color_choice);
 
             if args.get_flag("time") {
                 sess.measure_time = true;
@@ -62,8 +61,8 @@ fn main() -> Result<()> {
 }
 
 pub fn exec_command<'a>(
-    sess: &'a mut Session<'a>,
-    comp: &'a mut CompilerContext<'a>,
+    sess: &'a mut Session,
+    comp: &'a mut CompilerContext,
     func: impl FnOnce(&mut Session, &mut CompilerContext) -> Result<()>,
 ) -> Result<()> {
     match func(sess, comp) {

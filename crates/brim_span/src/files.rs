@@ -1,4 +1,9 @@
-use std::{ops::Range, path::PathBuf};
+use std::path::PathBuf;
+use std::ops::Range;
+use std::sync::Mutex;
+use std::slice::Iter;
+use once_cell::sync::Lazy;
+use thiserror::Error;
 
 #[derive(Debug)]
 #[non_exhaustive]
@@ -145,7 +150,7 @@ impl SimpleFile {
             }),
         }
     }
-    
+
     pub fn id(&self) -> usize {
         self.id
     }
@@ -178,44 +183,105 @@ impl<'a> Files<'a> for SimpleFile {
     }
 }
 
+#[derive(Error, Debug, Clone, PartialEq)]
+pub enum FileError {
+    #[error("File not found")]
+    FileMissing,
+    #[error("Lock acquisition failed: {0}")]
+    LockError(String),
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct SimpleFiles {
     files: Vec<SimpleFile>,
+    next_id: usize,  // Track next available ID separately
 }
 
 impl SimpleFiles {
-    pub fn new() -> SimpleFiles {
-        SimpleFiles { files: Vec::new() }
+    /// Creates a new empty SimpleFiles collection
+    pub fn new() -> Self {
+        Self {
+            files: Vec::new(),
+            next_id: 0,
+        }
+    }
+    
+    pub fn from_files(files: Vec<SimpleFile>) -> Self {
+        let next_id = files.iter().map(|f| f.id).max().unwrap_or(0) + 1;
+        Self {
+            files,
+            next_id,
+        }
     }
 
+    /// Adds a new file to the collection
+    ///
+    /// Returns the ID of the newly added file
     pub fn add(&mut self, name: PathBuf, source: String) -> usize {
-        let file_id = self.files.len();
-        let mut file = SimpleFile::new(name, source);
-        file.id = file_id;
+        let file_id = self.next_id;
+        self.next_id += 1;
+
+        let file = SimpleFile {
+            id: file_id,
+            name,
+            source: source.clone(),
+            line_starts: compute_line_starts(&source),
+        };
+
         self.files.push(file);
         file_id
     }
 
+    /// Retrieves a file by its ID
     pub fn get(&self, file_id: usize) -> Result<&SimpleFile, Error> {
-        self.files.get(file_id).ok_or(Error::FileMissing)
+        self.files
+            .iter()
+            .find(|file| file.id == file_id)
+            .ok_or(Error::FileMissing)
     }
 
+    /// Retrieves a file by its name
     pub fn get_by_name(&self, name: &PathBuf) -> Result<&SimpleFile, Error> {
         self.files
             .iter()
-            .find(|file| file.name() == name)
+            .find(|file| file.name == *name)
             .ok_or(Error::FileMissing)
     }
 
+    /// Gets the index of a file by its name
     pub fn get_index_by_name(&self, name: &PathBuf) -> Result<usize, Error> {
         self.files
             .iter()
-            .position(|file| file.name() == name)
+            .position(|file| file.name == *name)
             .ok_or(Error::FileMissing)
     }
 
+    /// Updates an existing file
     pub fn update(&mut self, file_id: usize, name: PathBuf, source: String) {
-        self.files[file_id] = SimpleFile::new(name, source);
+        if let Some(file) = self.files.iter_mut().find(|f| f.id == file_id) {
+            file.name = name;
+            file.source = source;
+            file.line_starts = compute_line_starts(&file.source);
+        }
+    }
+
+    /// Returns the number of files in the collection
+    pub fn len(&self) -> usize {
+        self.files.len()
+    }
+
+    /// Returns true if the collection is empty
+    pub fn is_empty(&self) -> bool {
+        self.files.is_empty()
+    }
+
+    /// Removes a file by ID
+    pub fn remove(&mut self, file_id: usize) -> Result<SimpleFile, Error> {
+        let position = self.files
+            .iter()
+            .position(|file| file.id == file_id)
+            .ok_or(Error::FileMissing)?;
+        Ok(self.files.remove(position))
     }
 }
 
@@ -224,6 +290,15 @@ impl Iterator for SimpleFiles {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.files.pop()
+    }
+}
+
+impl<'a> IntoIterator for &'a SimpleFiles {
+    type Item = &'a SimpleFile;
+    type IntoIter = Iter<'a, SimpleFile>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.files.iter()
     }
 }
 
@@ -246,4 +321,70 @@ impl<'a> Files<'a> for SimpleFiles {
     fn line_range(&self, file_id: usize, line_index: usize) -> Result<Range<usize>, Error> {
         self.get(file_id)?.line_range((), line_index)
     }
+}
+
+/// Helper function to compute line start positions
+fn compute_line_starts(source: &str) -> Vec<usize> {
+    let mut starts = vec![0];
+    starts.extend(
+        source
+            .match_indices('\n')
+            .map(|(i, _)| i + 1)
+    );
+    starts
+}
+
+/// Global instance of SimpleFiles protected by a mutex
+pub static GLOBAL_FILES: Lazy<Mutex<SimpleFiles>> = Lazy::new(|| Mutex::new(SimpleFiles::new()));
+
+// Global helper functions
+pub fn add_file(name: PathBuf, source: String) -> usize {
+    GLOBAL_FILES
+        .lock()
+        .expect("Failed to lock global files")
+        .add(name, source)
+}
+
+pub fn get_file(file_id: usize) -> Result<SimpleFile, Error> {
+    GLOBAL_FILES
+        .lock()
+        .expect("Failed to lock global files")
+        .get(file_id)
+        .cloned()
+}
+
+pub fn get_file_by_name(name: &PathBuf) -> Result<SimpleFile, Error> {
+    GLOBAL_FILES
+        .lock()
+        .expect("Failed to lock global files")
+        .get_by_name(name)
+        .cloned()
+}
+
+pub fn get_index_by_name(name: &PathBuf) -> Result<usize, Error> {
+    GLOBAL_FILES
+        .lock()
+        .expect("Failed to lock global files")
+        .get_index_by_name(name)
+}
+
+pub fn update_file(file_id: usize, name: PathBuf, source: String) {
+    GLOBAL_FILES
+        .lock()
+        .expect("Failed to lock global files")
+        .update(file_id, name, source)
+}
+
+pub fn remove_file(file_id: usize) -> Result<SimpleFile, Error> {
+    GLOBAL_FILES
+        .lock()
+        .expect("Failed to lock global files")
+        .remove(file_id)
+}
+
+pub fn files() -> Vec<SimpleFile> {
+    GLOBAL_FILES
+        .lock()
+        .expect("Failed to lock global files")
+        .files.clone()
 }

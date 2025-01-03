@@ -260,6 +260,7 @@ version = "0.1.0"
 dependencies = [
  "brim-index",
  "once_cell",
+ "thiserror",
 ]
 
 [[package]]
@@ -948,6 +949,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "brim",
+ "brim-parser",
  "brim-shell",
  "glob",
 ]
