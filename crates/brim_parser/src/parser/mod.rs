@@ -53,10 +53,6 @@ impl<'a> Parser<'a> {
             tokens.push(token);
         }
 
-        // for token in tokens {
-        //     println!("{:?}", token);
-        // }
-
         Ok(())
     }
 }

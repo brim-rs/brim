@@ -97,3 +97,15 @@ impl Display for Symbol {
         }
     }
 }
+
+impl From<String> for Symbol {
+    fn from(s: String) -> Self {
+        Symbol::new(&s)
+    }
+}
+
+impl From<&str> for Symbol {
+    fn from(s: &str) -> Self {
+        Symbol::new(s)
+    }
+}

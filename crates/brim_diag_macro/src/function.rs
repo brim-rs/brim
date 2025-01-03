@@ -103,7 +103,6 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
         )),
     };
 
-    // Collect regular fields for message formatting
     let message_fields: Vec<_> = fields
         .named
         .iter()
@@ -121,7 +120,6 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
         })
         .collect();
 
-    // Process span fields and their attributes
     let span_fields: Vec<_> = fields
         .named
         .iter()
@@ -146,8 +144,11 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
                 .ident
                 .to_string()
                 .to_lowercase();
-            let expr = attr.parse_args::<Expr>().ok()?;
-            let message = get_string_literal(&expr).ok()?;
+
+            let message = attr.parse_args::<Expr>().ok()
+                .and_then(|expr| get_string_literal(&expr).ok())
+                .unwrap_or_default();
+
             Some((field.ident.clone(), message, severity))
         })
         .collect();
@@ -158,15 +159,12 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
         if let Some(ident) = field_ident {
             let label_style = get_label_style(severity);
             quote! {
-                {
-                    let span = self.#ident.0;
-                    Label::new(
-                        #label_style,
-                        self.#ident.1,
-                        span.range()
-                    )
-                    .with_message(#message.to_string())
-                }
+                Label::new(
+                    #label_style,
+                    self.#ident.1,
+                    self.#ident.0.range()
+                )
+                .with_message(#message.to_string())
             }
         } else {
             quote! {}

@@ -1,0 +1,61 @@
+use brim::index::{ByteIndex, ByteOffset};
+use brim::{Base, LiteralKind};
+use brim::session::Session;
+use brim::span::Span;
+use brim::symbol::Symbol;
+use brim::token::{LitKind, TokenKind};
+use crate::lexer::errors::{InvalidDigitLiteral, NoDigitsLiteral};
+use crate::lexer::Lexer;
+
+impl Lexer<'_> {
+    pub fn lex_literal(&mut self, lit: LiteralKind, start: ByteIndex, end: ByteIndex, sess: &mut Session) -> (LitKind, Symbol) {
+        match lit {
+            LiteralKind::Int { base, empty_int } => {
+                let content = self.content_from_to(start, end);
+                let symbol = Symbol::from(content);
+
+                let kind = if empty_int {
+                    self.handle_empty_int(start, end, sess)
+                } else if matches!(base, Base::Binary | Base::Octal) {
+                    // Get the slice without the prefix (0b or 0o)
+                    let digits = &content[2..];
+                    self.validate_digits(start, base as u32, digits, sess)
+                } else {
+                    LitKind::Integer
+                };
+
+                (kind, symbol)
+            }
+            _ => todo!("other literals")
+        }
+    }
+
+    fn handle_empty_int(&self, start: ByteIndex, end: ByteIndex, sess: &mut Session) -> LitKind {
+        let span = Span::new(start, end);
+        let emitted = sess.emit(NoDigitsLiteral { span: (span, self.file.id()) });
+        LitKind::Err(emitted)
+    }
+
+    fn validate_digits(&self, start: ByteIndex, base: u32, digits: &str, sess: &mut Session) -> LitKind {
+        let mut kind = LitKind::Integer;
+
+        for (idx, c) in digits.char_indices() {
+            if c == '_' {
+                continue;
+            }
+
+            if c.to_digit(base).is_none() {
+                let span = Span::new(
+                    start + ByteOffset::from_usize(2 + idx),
+                    start + ByteOffset::from_usize(2 + idx + c.len_utf8()),
+                );
+                kind = LitKind::Err(sess.emit(InvalidDigitLiteral {
+                    span: (span, self.file.id()),
+                    base,
+                }));
+            }
+        }
+
+        kind
+    }
+}

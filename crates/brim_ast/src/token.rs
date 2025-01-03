@@ -1,4 +1,5 @@
 use brim_span::{span::Span, symbol::Symbol};
+use crate::ErrorEmitted;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Token {
@@ -118,6 +119,7 @@ pub enum LitKind {
     Str,
     ByteStr,
     CStr,
+    Err(ErrorEmitted)
 }
 
 impl Lit {

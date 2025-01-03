@@ -11,6 +11,7 @@ use brim_shell::Shell;
 use brim_span::files::{SimpleFile, SimpleFiles};
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
+use brim_ast::ErrorEmitted;
 
 #[derive(Debug)]
 pub struct Session<'a> {
@@ -116,7 +117,10 @@ impl<'a> Session<'a> {
         &mut self.dcx
     }
 
-    pub fn emit(&mut self, diag: impl ToDiagnostic<'a>) {
+    pub fn emit(&mut self, diag: impl ToDiagnostic<'a>) -> ErrorEmitted {
         self.dcx.emit(diag, &self.files);
+        
+        ErrorEmitted::new()
     }
 }
+

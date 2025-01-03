@@ -1,17 +1,11 @@
 mod errors;
 mod identifiers;
 mod unicode;
+mod literals;
 
 use crate::lexer::{errors::EmojiIdentifier, identifiers::nfc_normalize, unicode::UNICODE_ARRAY};
-use brim::{
-    PrimitiveToken, PrimitiveTokenKind,
-    files::SimpleFile,
-    index::{ByteIndex, ByteOffset, RawOffset},
-    session::Session,
-    span::Span,
-    symbol::Symbol,
-    token::{BinOpToken, Delimiter, Orientation, Token, TokenKind},
-};
+use brim::{PrimitiveToken, PrimitiveTokenKind, files::SimpleFile, index::{ByteIndex, ByteOffset, RawOffset}, session::Session, span::Span, symbol::Symbol, token::{BinOpToken, Delimiter, Orientation, Token, TokenKind}, LiteralKind};
+use brim::token::Lit;
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -67,6 +61,28 @@ impl<'a> Lexer<'a> {
 
                     TokenKind::Ident(symbol)
                 }
+
+            PrimitiveTokenKind::Literal {
+                kind,
+                suffix_start,
+            } => {
+                let suffix_start = start + ByteOffset(suffix_start as RawOffset);
+                let (kind, symbol) = self.lex_literal(kind, start, suffix_start, session);
+                let suffix = if suffix_start < self.pos {
+                    let string = self.content_from(suffix_start);
+                    if string == "_" {
+                        // self.dcx().emit_err(errors::UnderscoreLiteralSuffix {
+                        //     span: Span::new(suffix_start, self.pos),
+                        // });
+                        None
+                    } else {
+                        Some(Symbol::new(string))
+                    }
+                } else {
+                    None
+                };
+                TokenKind::Literal(Lit { kind, symbol, suffix })
+            }
 
             // Delimiters
             PrimitiveTokenKind::OpenParen => {
