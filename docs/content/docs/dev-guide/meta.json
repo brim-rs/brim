@@ -1,0 +1,12 @@
+{
+  "title": "Developer guide",
+  "description": "Guide for developers",
+  "icon": "AppWindow",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "index",
+    "---Getting started---",
+    "compiler"
+  ]
+}

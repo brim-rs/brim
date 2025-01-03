@@ -40,3 +40,6 @@ run args='':
 
 docs:
     cd docs; bun dev
+
+setup:
+    cd cli; cargo build; cd ../docs; pnpm install

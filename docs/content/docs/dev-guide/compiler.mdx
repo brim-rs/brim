@@ -1,0 +1,34 @@
+---
+title: Building the compiler
+description: Page about building the Brim compiler
+icon: Hammer
+---
+
+Building the compiler is pretty straightforward. The compiler is written in Rust, so you need to have Rust installed on your system. If you don't have it already, you can follow the instructions on the [Rust website](https://www.rust-lang.org/tools/install).
+
+We don't believe the compiler will be mature enough in the near future to be able to bootstrap itself. So for now you will need Rust installed on your system.
+
+## Prerequisites
+
+- [Rust](https://www.rust-lang.org/tools/install)
+- [just](https://github.com/casey/just)
+- [pnpm](https://pnpm.io/) - to install documentation dependencies
+
+We use `just` as a task runner for the project. Some more advanced tasks like running compiler tests are defined in the internal build tool called [`snap`](/docs/dev-guide/snap).
+
+## Clone the repository
+
+```bash
+git clone https://github.com/brim-rs/brim
+```
+
+## Build the compiler
+
+```bash
+just setup
+```
+
+What does this do?
+
+1. Builds the compiler for debug mode
+2. Install the documentation dependencies
