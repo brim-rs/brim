@@ -99,7 +99,7 @@ pub fn column_index(source: &str, line_range: Range<usize>, byte_index: usize) -
         .count()
 }
 
-pub fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
+pub fn line_starts(source: &str) -> impl '_ + Iterator<Item=usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }
 
@@ -108,6 +108,7 @@ pub struct SimpleFile {
     name: PathBuf,
     source: String,
     line_starts: Vec<usize>,
+    id: usize,
 }
 
 impl SimpleFile {
@@ -116,6 +117,7 @@ impl SimpleFile {
             name,
             line_starts: line_starts(source.as_ref()).collect(),
             source,
+            id: 0,
         }
     }
 
@@ -142,6 +144,10 @@ impl SimpleFile {
                 max: self.line_starts.len() - 1,
             }),
         }
+    }
+    
+    pub fn id(&self) -> usize {
+        self.id
     }
 }
 
@@ -184,7 +190,9 @@ impl SimpleFiles {
 
     pub fn add(&mut self, name: PathBuf, source: String) -> usize {
         let file_id = self.files.len();
-        self.files.push(SimpleFile::new(name, source));
+        let mut file = SimpleFile::new(name, source);
+        file.id = file_id;
+        self.files.push(file);
         file_id
     }
 

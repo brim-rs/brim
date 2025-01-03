@@ -1,50 +1,144 @@
 use proc_macro::TokenStream;
-
 use quote::quote;
-use syn::{DeriveInput, Expr, parse_macro_input};
+use syn::{parse_macro_input, spanned::Spanned, DeriveInput, Expr};
 use thiserror::Error;
-
-use std::iter::Iterator;
-use syn::spanned::Spanned;
 
 #[derive(Debug, Error)]
 pub enum MacroFunctionError {
     #[error("Parse error: {0}")]
     ParseError(#[from] syn::Error),
+    #[error("Invalid attribute: {0}")]
+    InvalidAttribute(String),
+    #[error("Missing required attribute")]
+    MissingAttribute,
 }
 
-macro_rules! macro_compile_error {
-    ($span:expr, $($arg:tt)*) => {
-        return TokenStream::from(syn::Error::new(
-            $span,
-            format!($($arg)*),
-        ).to_compile_error())
-    };
+const VALID_SEVERITIES: &[&str] = &["help", "note", "warning", "error", "bug"];
 
-    () => {};
-}
-
-pub fn get_string_literal(expr: &Expr) -> String {
+fn get_string_literal(expr: &Expr) -> Result<String, MacroFunctionError> {
     match expr {
         Expr::Lit(expr_lit) => {
             if let syn::Lit::Str(lit_str) = &expr_lit.lit {
-                lit_str.value()
+                Ok(lit_str.value())
             } else {
-                panic!("Message must be a string literal");
+                Err(MacroFunctionError::InvalidAttribute(
+                    "Message must be a string literal".to_string(),
+                ))
             }
         }
-        _ => panic!("Message must be a string literal"),
+        _ => Err(MacroFunctionError::InvalidAttribute(
+            "Message must be a string literal".to_string(),
+        )),
+    }
+}
+
+fn is_valid_severity(ident: &str) -> bool {
+    VALID_SEVERITIES.contains(&ident.to_lowercase().as_str())
+}
+
+fn get_label_style(severity: &str) -> proc_macro2::TokenStream {
+    match severity.to_lowercase().as_str() {
+        "error" => quote! { LabelStyle::Error },
+        "warning" => quote! { LabelStyle::Warning },
+        _ => quote! { LabelStyle::Primary },
     }
 }
 
 pub fn macro_derive_impl(item: TokenStream) -> TokenStream {
-    {
-        let ast = parse_macro_input!(item as DeriveInput);
-        let attrs = &ast.attrs;
-        let struct_name = &ast.ident;
+    let ast = parse_macro_input!(item as DeriveInput);
+    let result = impl_diagnostic_derive(&ast);
 
-        let diagnostic_attrs = attrs.iter().find(|attr| {
+    match result {
+        Ok(token_stream) => token_stream,
+        Err(error) => TokenStream::from(
+            syn::Error::new(ast.span(), error.to_string()).to_compile_error(),
+        ),
+    }
+}
+
+fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctionError> {
+    let attrs = &ast.attrs;
+    let struct_name = &ast.ident;
+
+    let diagnostic_attr = attrs
+        .iter()
+        .find(|attr| {
             let ident = attr
+                .path()
+                .segments
+                .last()
+                .map(|seg| seg.ident.to_string().to_lowercase())
+                .unwrap_or_default();
+            is_valid_severity(&ident)
+        })
+        .ok_or(MacroFunctionError::MissingAttribute)?;
+
+    let severity = diagnostic_attr
+        .path()
+        .segments
+        .last()
+        .unwrap()
+        .ident
+        .to_string()
+        .to_lowercase();
+
+    let severity_variant = format!(
+        "{}{}",
+        severity.chars().next().unwrap().to_uppercase(),
+        &severity[1..]
+    );
+
+    let expr = diagnostic_attr.parse_args::<Expr>()?;
+    let error_string = get_string_literal(&expr)?;
+
+    let fields = match &ast.data {
+        syn::Data::Struct(data) => match &data.fields {
+            syn::Fields::Named(fields) => fields,
+            _ => return Err(MacroFunctionError::InvalidAttribute(
+                "Only named fields are supported".to_string(),
+            )),
+        },
+        _ => return Err(MacroFunctionError::InvalidAttribute(
+            "Only structs are supported".to_string(),
+        )),
+    };
+
+    // Collect regular fields for message formatting
+    let message_fields: Vec<_> = fields
+        .named
+        .iter()
+        .filter_map(|field| {
+            if field.attrs.iter().all(|attr| {
+                attr.path()
+                    .segments
+                    .last()
+                    .map_or(true, |seg| !is_valid_severity(&seg.ident.to_string()))
+            }) {
+                field.ident.as_ref()
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // Process span fields and their attributes
+    let span_fields: Vec<_> = fields
+        .named
+        .iter()
+        .filter_map(|field| {
+            let attr = field.attrs.iter().find(|attr| {
+                let ident = attr
+                    .path()
+                    .segments
+                    .last()
+                    .unwrap()
+                    .ident
+                    .to_string()
+                    .to_lowercase();
+                is_valid_severity(&ident)
+            })?;
+
+            let severity = attr
                 .path()
                 .segments
                 .last()
@@ -52,99 +146,59 @@ pub fn macro_derive_impl(item: TokenStream) -> TokenStream {
                 .ident
                 .to_string()
                 .to_lowercase();
-            matches!(
-                ident.as_str(),
-                "help" | "note" | "warning" | "error" | "bug"
-            )
-        });
+            let expr = attr.parse_args::<Expr>().ok()?;
+            let message = get_string_literal(&expr).ok()?;
+            Some((field.ident.clone(), message, severity))
+        })
+        .collect();
 
-        if diagnostic_attrs.is_none() {
-            macro_compile_error!(
-                ast.span(),
-                "One of help, note, warning, error, or bug attribute is required"
-            );
-        }
+    let message_field_names = message_fields.iter().map(|&ident| quote! { #ident });
 
-        let attr = diagnostic_attrs.unwrap();
-        let severity = attr
-            .path()
-            .segments
-            .last()
-            .unwrap()
-            .ident
-            .to_string()
-            .to_lowercase();
-        let severity_variant = severity
-            .chars()
-            .next()
-            .unwrap()
-            .to_uppercase()
-            .collect::<String>()
-            + &severity[1..];
-
-        let expr = attr.parse_args::<Expr>().unwrap();
-        let error_string = get_string_literal(&expr);
-
-        let error_code = attrs
-            .iter()
-            .find(|attr| attr.path().segments.last().unwrap().ident == "code")
-            .map(|attr| {
-                let expr = attr.parse_args::<Expr>().unwrap();
-                get_string_literal(&expr)
-            });
-
-        let code_expr = if let Some(code) = error_code {
-            quote! { Some(#code.to_string()) }
+    let label_implementations = span_fields.iter().map(|(field_ident, message, severity)| {
+        if let Some(ident) = field_ident {
+            let label_style = get_label_style(severity);
+            quote! {
+                {
+                    let span = self.#ident.0;
+                    Label::new(
+                        #label_style,
+                        self.#ident.1,
+                        span.range()
+                    )
+                    .with_message(#message.to_string())
+                }
+            }
         } else {
-            quote! { None }
-        };
+            quote! {}
+        }
+    });
 
-        let fields = match &ast.data {
-            syn::Data::Struct(data) => {
-                if let syn::Fields::Named(fields) = &data.fields {
-                    fields
-                } else {
-                    macro_compile_error!(ast.span(), "Only named fields are supported");
-                }
+    let severity_ident = syn::Ident::new(&severity_variant, proc_macro2::Span::call_site());
+
+    Ok(TokenStream::from(quote! {
+        impl<'a> ToDiagnostic<'a> for #struct_name {
+            fn message(&self) -> String {
+                #(let #message_field_names = &self.#message_field_names;)*
+                format!(#error_string)
             }
-            _ => macro_compile_error!(ast.span(), "Only structs are supported"),
-        };
 
-        let field_names = fields
-            .named
-            .iter()
-            .map(|field| &field.ident)
-            .collect::<Vec<_>>()
-            .iter()
-            .map(|ident| quote! { #ident })
-            .collect::<Vec<_>>();
-
-        let severity_ident = syn::Ident::new(&severity_variant, proc_macro2::Span::call_site());
-
-        Ok::<TokenStream, TokenStream>(Into::into(quote! {
-            impl<'a> ToDiagnostic<'a> for #struct_name {
-                fn message(&self) -> String {
-                    let #(#field_names = self.#field_names;)*
-                    format!(#error_string)
-                }
-
-                fn labels(&self) -> Vec<brim::diagnostic::Label<'a, usize>> {
-                    vec![]
-                }
-
-                fn severity(&self) -> Severity {
-                    Severity::#severity_ident
-                }
-
-                fn code(&self) -> Option<String> {
-                    #code_expr
-                }
-
-                fn notes(&self) -> Vec<String> {
-                    vec![]
-                }
+            fn labels(&self) -> Vec<Label<'a, usize>> {
+                vec![
+                    #(#label_implementations,)*
+                ]
             }
-        }))
-    }
-    .unwrap_or_else(|err| err)
+
+            fn severity(&self) -> Severity {
+                Severity::#severity_ident
+            }
+
+            fn code(&self) -> Option<String> {
+                None
+            }
+
+            fn notes(&self) -> Vec<String> {
+                vec![]
+            }
+        }
+    }))
 }

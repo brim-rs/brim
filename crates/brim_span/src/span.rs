@@ -52,6 +52,10 @@ impl Span {
     pub fn end(self) -> ByteIndex {
         self.end
     }
+    
+    pub fn range(self) -> Range<usize> {
+        self.into()
+    }
 }
 
 impl Default for Span {

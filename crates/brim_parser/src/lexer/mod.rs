@@ -55,18 +55,18 @@ impl<'a> Lexer<'a> {
             PrimitiveTokenKind::Ident => self.ident(start),
 
             PrimitiveTokenKind::InvalidIdent
-                if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
-                    let sym = self.content_from(start);
-                    sym.chars().count() == 1 && c == sym.chars().next().unwrap()
-                }) =>
-            {
-                let symbol = nfc_normalize(self.content_from(start));
-                let span = Span::new(start, self.pos);
+            if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
+                let sym = self.content_from(start);
+                sym.chars().count() == 1 && c == sym.chars().next().unwrap()
+            }) =>
+                {
+                    let symbol = nfc_normalize(self.content_from(start));
+                    let span = Span::new(start, self.pos);
 
-                session.emit(EmojiIdentifier { ident: symbol });
+                    session.emit(EmojiIdentifier { ident: symbol, label: (span, self.file.id()) });
 
-                TokenKind::Ident(symbol)
-            }
+                    TokenKind::Ident(symbol)
+                }
 
             // Delimiters
             PrimitiveTokenKind::OpenParen => {
