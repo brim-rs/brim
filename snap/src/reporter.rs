@@ -31,21 +31,23 @@ pub fn report_results(start: Instant) -> Result<()> {
             "(some tests failed)".red()
         })?;
 
-        for res in results {
-            let icon = if res.result.is_ok() {
-                SUCCESS_ICON.bright_green()
-            } else {
-                ERROR_ICON.bright_red()
-            };
+        if results.len() > 1 {
+            for res in results {
+                let icon = if res.result.is_ok() {
+                    SUCCESS_ICON.bright_green()
+                } else {
+                    ERROR_ICON.bright_red()
+                };
 
-            writeln!(buf, "    {} {}", icon, res.comment.dimmed())?;
-            
-            if let Err(fail) = &res.result {
-                writeln!(buf, "        {}", fail.reason.bright_red())?;
+                writeln!(buf, "    {} {}", icon, res.comment.dimmed())?;
+
+                if let Err(fail) = &res.result {
+                    writeln!(buf, "        {}", fail.reason.bright_red())?;
+                }
             }
         }
     }
-    
+
     let passed_string = format!("{} passed", suite.passed_tests).bright_green().bold();
     let failed = suite.total_tests - suite.passed_tests;
     let failed_string = format!("{} failed", failed).bright_red().bold();
