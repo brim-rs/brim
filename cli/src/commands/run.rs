@@ -3,10 +3,9 @@ use crate::cli::{
     static_lib_mode,
 };
 use anyhow::Result;
-use brim::{session::Session, toml::ProjectType};
+use brim::{compiler::CompilerContext, session::Session, toml::ProjectType};
 use brim_parser::parser_from_simple_file;
 use clap::{ArgMatches, Command};
-use brim::compiler::CompilerContext;
 
 pub fn run_cmd() -> Command {
     Command::new("run")

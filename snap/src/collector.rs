@@ -1,8 +1,7 @@
-use std::env::current_dir;
-use std::path::PathBuf;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
+use brim::files::{SimpleFiles, add_file};
 use glob::glob;
-use brim::files::{add_file, SimpleFiles};
+use std::{env::current_dir, path::PathBuf};
 
 pub fn collect_files() -> Result<()> {
     let path = current_dir()?.join("tests");

@@ -3,11 +3,10 @@
 use crate::{commands::run::run_command, panic::setup_panic_handler};
 use anstream::ColorChoice;
 use anyhow::Result;
-use brim::{Shell, compiler::CompilerContext, session::Session, toml::Config};
+use brim::{Shell, compiler::CompilerContext, files::SimpleFiles, session::Session, toml::Config};
 use clap::ArgMatches;
 use cli::cli;
 use std::{env, process::exit};
-use brim::files::SimpleFiles;
 
 pub mod cli;
 mod commands;

@@ -203,7 +203,7 @@ impl ByteOffset {
     pub const fn to_usize(self) -> usize {
         self.0 as usize
     }
-    
+
     pub fn from_usize(value: usize) -> ByteOffset {
         ByteOffset(value as RawOffset)
     }

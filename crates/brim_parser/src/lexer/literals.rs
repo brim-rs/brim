@@ -1,15 +1,24 @@
-use brim::index::{ByteIndex, ByteOffset};
-use brim::{Base, LiteralKind};
-use brim::compiler::CompilerContext;
-use brim::session::Session;
-use brim::span::Span;
-use brim::symbol::Symbol;
-use brim::token::{LitKind, TokenKind};
-use crate::lexer::errors::{InvalidDigitLiteral, NoDigitsLiteral};
-use crate::lexer::Lexer;
+use crate::lexer::{
+    Lexer,
+    errors::{InvalidDigitLiteral, NoDigitsLiteral},
+};
+use brim::{
+    Base, LiteralKind,
+    compiler::CompilerContext,
+    index::{ByteIndex, ByteOffset},
+    span::Span,
+    symbol::Symbol,
+    token::LitKind,
+};
 
 impl Lexer<'_> {
-    pub fn lex_literal(&mut self, lit: LiteralKind, start: ByteIndex, end: ByteIndex, comp: &mut CompilerContext) -> (LitKind, Symbol) {
+    pub fn lex_literal(
+        &mut self,
+        lit: LiteralKind,
+        start: ByteIndex,
+        end: ByteIndex,
+        comp: &mut CompilerContext,
+    ) -> (LitKind, Symbol) {
         match lit {
             LiteralKind::Int { base, empty_int } => {
                 let content = self.content_from_to(start, end);
@@ -27,17 +36,30 @@ impl Lexer<'_> {
 
                 (kind, symbol)
             }
-            _ => todo!("other literals")
+            _ => todo!("other literals"),
         }
     }
 
-    fn handle_empty_int(&self, start: ByteIndex, end: ByteIndex, comp: &mut CompilerContext) -> LitKind {
+    fn handle_empty_int(
+        &self,
+        start: ByteIndex,
+        end: ByteIndex,
+        comp: &mut CompilerContext,
+    ) -> LitKind {
         let span = Span::new(start, end);
-        let emitted = comp.emit(NoDigitsLiteral { span: (span, self.file.id()) });
+        let emitted = comp.emit(NoDigitsLiteral {
+            span: (span, self.file.id()),
+        });
         LitKind::Err(emitted)
     }
 
-    fn validate_digits(&self, start: ByteIndex, base: u32, digits: &str, comp: &mut CompilerContext) -> LitKind {
+    fn validate_digits(
+        &self,
+        start: ByteIndex,
+        base: u32,
+        digits: &str,
+        comp: &mut CompilerContext,
+    ) -> LitKind {
         let mut kind = LitKind::Integer;
 
         for (idx, c) in digits.char_indices() {

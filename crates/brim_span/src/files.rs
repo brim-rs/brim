@@ -1,8 +1,5 @@
-use std::path::PathBuf;
-use std::ops::Range;
-use std::sync::Mutex;
-use std::slice::Iter;
 use once_cell::sync::Lazy;
+use std::{ops::Range, path::PathBuf, slice::Iter, sync::Mutex};
 use thiserror::Error;
 
 #[derive(Debug)]
@@ -104,7 +101,7 @@ pub fn column_index(source: &str, line_range: Range<usize>, byte_index: usize) -
         .count()
 }
 
-pub fn line_starts(source: &str) -> impl '_ + Iterator<Item=usize> {
+pub fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }
 
@@ -194,7 +191,7 @@ pub enum FileError {
 #[derive(Debug, Default, Clone)]
 pub struct SimpleFiles {
     files: Vec<SimpleFile>,
-    next_id: usize,  // Track next available ID separately
+    next_id: usize, // Track next available ID separately
 }
 
 impl SimpleFiles {
@@ -205,13 +202,10 @@ impl SimpleFiles {
             next_id: 0,
         }
     }
-    
+
     pub fn from_files(files: Vec<SimpleFile>) -> Self {
         let next_id = files.iter().map(|f| f.id).max().unwrap_or(0) + 1;
-        Self {
-            files,
-            next_id,
-        }
+        Self { files, next_id }
     }
 
     /// Adds a new file to the collection
@@ -277,7 +271,8 @@ impl SimpleFiles {
 
     /// Removes a file by ID
     pub fn remove(&mut self, file_id: usize) -> Result<SimpleFile, Error> {
-        let position = self.files
+        let position = self
+            .files
             .iter()
             .position(|file| file.id == file_id)
             .ok_or(Error::FileMissing)?;
@@ -326,11 +321,7 @@ impl<'a> Files<'a> for SimpleFiles {
 /// Helper function to compute line start positions
 fn compute_line_starts(source: &str) -> Vec<usize> {
     let mut starts = vec![0];
-    starts.extend(
-        source
-            .match_indices('\n')
-            .map(|(i, _)| i + 1)
-    );
+    starts.extend(source.match_indices('\n').map(|(i, _)| i + 1));
     starts
 }
 
@@ -386,5 +377,6 @@ pub fn files() -> Vec<SimpleFile> {
     GLOBAL_FILES
         .lock()
         .expect("Failed to lock global files")
-        .files.clone()
+        .files
+        .clone()
 }

@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, spanned::Spanned, DeriveInput, Expr};
+use syn::{DeriveInput, Expr, parse_macro_input, spanned::Spanned};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -50,9 +50,9 @@ pub fn macro_derive_impl(item: TokenStream) -> TokenStream {
 
     match result {
         Ok(token_stream) => token_stream,
-        Err(error) => TokenStream::from(
-            syn::Error::new(ast.span(), error.to_string()).to_compile_error(),
-        ),
+        Err(error) => {
+            TokenStream::from(syn::Error::new(ast.span(), error.to_string()).to_compile_error())
+        }
     }
 }
 
@@ -94,13 +94,17 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
     let fields = match &ast.data {
         syn::Data::Struct(data) => match &data.fields {
             syn::Fields::Named(fields) => fields,
-            _ => return Err(MacroFunctionError::InvalidAttribute(
-                "Only named fields are supported".to_string(),
-            )),
+            _ => {
+                return Err(MacroFunctionError::InvalidAttribute(
+                    "Only named fields are supported".to_string(),
+                ));
+            }
         },
-        _ => return Err(MacroFunctionError::InvalidAttribute(
-            "Only structs are supported".to_string(),
-        )),
+        _ => {
+            return Err(MacroFunctionError::InvalidAttribute(
+                "Only structs are supported".to_string(),
+            ));
+        }
     };
 
     let message_fields: Vec<_> = fields
@@ -145,7 +149,9 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
                 .to_string()
                 .to_lowercase();
 
-            let message = attr.parse_args::<Expr>().ok()
+            let message = attr
+                .parse_args::<Expr>()
+                .ok()
                 .and_then(|expr| get_string_literal(&expr).ok())
                 .unwrap_or_default();
 

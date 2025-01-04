@@ -1,10 +1,9 @@
 mod collector;
 mod runner;
 
-use anyhow::{bail, Result};
+use crate::{collector::collect_files, runner::run_tests};
+use anyhow::{Result, bail};
 use brim_shell::Shell;
-use crate::collector::collect_files;
-use crate::runner::run_tests;
 
 fn main() -> Result<()> {
     let mut shell = &mut Shell::default();

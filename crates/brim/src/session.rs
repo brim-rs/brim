@@ -1,17 +1,16 @@
-use crate::{compiler::CompilerContext, diag_ctx::DiagnosticContext};
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim_config::toml::{Config, ProjectType};
-use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_fs::{
     loader::{BrimFileLoader, FileLoader},
     path,
 };
 use brim_shell::Shell;
-use brim_span::files::{add_file, get_file, get_file_by_name, get_index_by_name, update_file, SimpleFile, SimpleFiles};
+use brim_span::files::{
+    SimpleFile, add_file, get_file, get_file_by_name, get_index_by_name, update_file,
+};
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
-use brim_ast::ErrorEmitted;
 
 #[derive(Debug)]
 pub struct Session {
@@ -25,11 +24,7 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(
-        cwd: PathBuf,
-        config: Config,
-        color_choice: ColorChoice,
-    ) -> Self {
+    pub fn new(cwd: PathBuf, config: Config, color_choice: ColorChoice) -> Self {
         Self {
             config,
             cwd,
@@ -106,4 +101,3 @@ impl Session {
         Ok(self.add_file(path.clone(), self.file_loader.read_file(&path)?))
     }
 }
-

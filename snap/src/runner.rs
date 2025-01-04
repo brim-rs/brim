@@ -1,15 +1,18 @@
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
-use anyhow::{bail, Result};
-use brim::compiler::CompilerContext;
-use brim::files::{files, SimpleFile, SimpleFiles};
-use brim::symbol::{Symbol, SymbolInterner};
-use brim::token::TokenKind;
-use brim_parser::parser::Parser;
-use brim_parser::parser_from_simple_file;
+use anyhow::{Result, bail};
+use brim::{
+    compiler::CompilerContext,
+    files::{SimpleFile, SimpleFiles, files},
+    span::Span,
+    symbol::{Symbol, SymbolInterner},
+    token::TokenKind,
+};
+use brim_parser::{parser::Parser, parser_from_simple_file};
 use brim_shell::Shell;
 use once_cell::sync::Lazy;
-use brim::span::Span;
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
 static TEST_RESULTS: Lazy<Arc<Mutex<TestSuite>>> =
     Lazy::new(|| Arc::new(Mutex::new(TestSuite::new())));
@@ -87,6 +90,8 @@ pub fn run_tests(shell: &mut Shell) -> Result<()> {
 
     // Print final summary
     let test_suite = TEST_RESULTS.lock().unwrap();
+
+    Ok(())
 }
 
 fn run_file_tests(file: &SimpleFile, shell: &mut Shell) -> Result<()> {
@@ -137,7 +142,12 @@ pub fn directive_comments(parser: &Parser) -> Vec<Comment> {
         .collect()
 }
 
-pub fn run_comment_directive(comment: &Comment, comp: &mut CompilerContext, shell: &mut Shell, file: &SimpleFile) -> Result<()> {
+pub fn run_comment_directive(
+    comment: &Comment,
+    comp: &mut CompilerContext,
+    shell: &mut Shell,
+    file: &SimpleFile,
+) -> Result<()> {
     let result = match &comment.directive {
         Directive::ExpectError => {
             let expected_message = &comment.comment;
@@ -156,14 +166,15 @@ pub fn run_comment_directive(comment: &Comment, comp: &mut CompilerContext, shel
             }
 
             if !found_message {
-                bail!("Directive 'expect_error' failed: expected error message '{}' but got none", expected_message);
+                bail!(
+                    "Directive 'expect_error' failed: expected error message '{}' but got none",
+                    expected_message
+                );
             }
 
             Ok(())
         }
-        Directive::Unknown(directive) => {
-            Err(anyhow::anyhow!("Unknown directive: {}", directive))
-        }
+        Directive::Unknown(directive) => Err(anyhow::anyhow!("Unknown directive: {}", directive)),
     };
 
     let test_result = TestResult {

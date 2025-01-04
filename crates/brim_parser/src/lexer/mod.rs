@@ -1,12 +1,18 @@
 mod errors;
 mod identifiers;
-mod unicode;
 mod literals;
+mod unicode;
 
 use crate::lexer::{errors::EmojiIdentifier, identifiers::nfc_normalize, unicode::UNICODE_ARRAY};
-use brim::{PrimitiveToken, PrimitiveTokenKind, files::SimpleFile, index::{ByteIndex, ByteOffset, RawOffset}, session::Session, span::Span, symbol::Symbol, token::{BinOpToken, Delimiter, Orientation, Token, TokenKind}, LiteralKind};
-use brim::compiler::CompilerContext;
-use brim::token::Lit;
+use brim::{
+    PrimitiveToken, PrimitiveTokenKind,
+    compiler::CompilerContext,
+    files::SimpleFile,
+    index::{ByteIndex, ByteOffset, RawOffset},
+    span::Span,
+    symbol::Symbol,
+    token::{BinOpToken, Delimiter, Lit, Orientation, Token, TokenKind},
+};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -50,23 +56,23 @@ impl<'a> Lexer<'a> {
             PrimitiveTokenKind::Ident => self.ident(start),
 
             PrimitiveTokenKind::InvalidIdent
-            if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
-                let sym = self.content_from(start);
-                sym.chars().count() == 1 && c == sym.chars().next().unwrap()
-            }) =>
-                {
-                    let symbol = nfc_normalize(self.content_from(start));
-                    let span = Span::new(start, self.pos);
+                if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
+                    let sym = self.content_from(start);
+                    sym.chars().count() == 1 && c == sym.chars().next().unwrap()
+                }) =>
+            {
+                let symbol = nfc_normalize(self.content_from(start));
+                let span = Span::new(start, self.pos);
 
-                    comp.emit(EmojiIdentifier { ident: symbol, label: (span, self.file.id()) });
+                comp.emit(EmojiIdentifier {
+                    ident: symbol,
+                    label: (span, self.file.id()),
+                });
 
-                    TokenKind::Ident(symbol)
-                }
+                TokenKind::Ident(symbol)
+            }
 
-            PrimitiveTokenKind::Literal {
-                kind,
-                suffix_start,
-            } => {
+            PrimitiveTokenKind::Literal { kind, suffix_start } => {
                 let suffix_start = start + ByteOffset(suffix_start as RawOffset);
                 let (kind, symbol) = self.lex_literal(kind, start, suffix_start, comp);
                 let suffix = if suffix_start < self.pos {
@@ -82,7 +88,11 @@ impl<'a> Lexer<'a> {
                 } else {
                     None
                 };
-                TokenKind::Literal(Lit { kind, symbol, suffix })
+                TokenKind::Literal(Lit {
+                    kind,
+                    symbol,
+                    suffix,
+                })
             }
 
             // Delimiters
