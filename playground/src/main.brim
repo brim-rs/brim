@@ -11,5 +11,5 @@
 //};
 
 pub fn main() {
-    let abc😄 = 0o1238;
+    let abc = 0o0.0;
 };

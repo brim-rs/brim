@@ -10,6 +10,8 @@ use brim::{
     symbol::Symbol,
     token::LitKind,
 };
+use brim::token::TokenKind;
+use crate::lexer::errors::{EmptyExponent, UnsupportedFloatBase};
 
 impl Lexer<'_> {
     pub fn lex_literal(
@@ -35,6 +37,25 @@ impl Lexer<'_> {
                 };
 
                 (kind, symbol)
+            }
+            LiteralKind::Float { base, empty_exponent } => {
+                let mut kind = LitKind::Float;
+
+                if empty_exponent {
+                    let span = Span::new(start, end);
+                    let emitted = comp.emit(EmptyExponent {
+                        span: (span, self.file.id()),
+                    });
+                    kind = LitKind::Err(emitted);
+                }
+
+                if base != Base::Decimal {
+                    let span = Span::new(start, end);
+                    let emitted =
+                        comp.emit(UnsupportedFloatBase { span: (span, self.file.id()), base });
+                    kind = LitKind::Err(emitted)
+                }
+                (kind, Symbol::new(self.content_from_to(start, end)))
             }
             _ => todo!("other literals"),
         }

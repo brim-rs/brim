@@ -8,6 +8,7 @@ use crate::{
     whitespace::is_whitespace,
 };
 use std::cmp::PartialEq;
+use std::fmt::Display;
 use unicode_properties::UnicodeEmoji;
 
 pub mod cursor;
@@ -58,6 +59,17 @@ pub enum Base {
     Decimal = 10,
     /// Literal starts with "0x".
     Hexadecimal = 16,
+}
+
+impl Display for Base {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Base::Binary => write!(f, "binary"),
+            Base::Octal => write!(f, "octal"),
+            Base::Decimal => write!(f, "decimal"),
+            Base::Hexadecimal => write!(f, "hexadecimal"),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]

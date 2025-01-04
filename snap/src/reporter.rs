@@ -31,7 +31,9 @@ pub fn report_results(start: Instant) -> Result<()> {
             "(some tests failed)".red()
         })?;
 
-        if results.len() > 1 {
+        // get all failed tests
+        let x = results.iter().filter(|res| res.result.is_err()).collect::<Vec<_>>();
+        if !x.is_empty() || results.len() > 1 {
             for res in results {
                 let icon = if res.result.is_ok() {
                     SUCCESS_ICON.bright_green()

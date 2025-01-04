@@ -1,0 +1,5 @@
+/// @expect_error: Found empty float exponent. Expected at least one digit.
+
+pub fn main() {
+    let abc = 1.0e;
+};
