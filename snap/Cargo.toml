@@ -11,3 +11,4 @@ brim = { workspace = true, features = ["snap"] }
 brim-parser = { workspace = true }
 once_cell = "1.20.2"
 colored = { workspace = true }
+indexmap = { workspace = true }

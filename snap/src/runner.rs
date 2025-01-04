@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::{Result, bail, anyhow};
 use brim::{
     compiler::CompilerContext,
     files::{SimpleFile, SimpleFiles, files},
@@ -84,10 +84,7 @@ pub fn run_tests(shell: &mut Shell, start: Instant) -> Result<()> {
     let mut overall_success = true;
 
     for file in files() {
-        if let Err(e) = run_file_tests(&file, shell) {
-            eprintln!("Error testing file {:?}: {}", file, e);
-            overall_success = false;
-        }
+        run_file_tests(&file, shell)?;
     }
 
     report_results(start)?;
@@ -148,34 +145,33 @@ pub fn run_comment_directive(
     shell: &mut Shell,
     file: &SimpleFile,
 ) -> Result<()> {
-    let result = match &comment.directive {
-        Directive::ExpectError => {
-            let expected_message = &comment.comment;
-            let diagnostics = &comp.emitted;
+    let result = || -> Result<()> {
+        match &comment.directive {
+            Directive::ExpectError => {
+                let expected_message = &comment.comment;
+                let diagnostics = &comp.emitted;
 
-            if diagnostics.is_empty() {
-                return Err(anyhow::anyhow!("Expected error message but got none"));
-            }
-
-            let mut found_message = false;
-            for diagnostic in diagnostics {
-                if diagnostic.message.contains(expected_message) {
-                    found_message = true;
-                    break;
+                if diagnostics.is_empty() {
+                    return Err(anyhow::anyhow!("Expected error message but got none"));
                 }
-            }
 
-            if !found_message {
-                bail!(
-                    "Directive 'expect_error' failed: expected error message '{}' but got none",
-                    expected_message
-                );
-            }
+                let mut found_message = false;
+                for diagnostic in diagnostics {
+                    if diagnostic.message.contains(expected_message) {
+                        found_message = true;
+                        break;
+                    }
+                }
 
-            Ok(())
+                if !found_message {
+                    return Err(anyhow!("Directive 'expect_error' failed: expected error message \"{}\" but got one of: {}", expected_message, diagnostics.iter().map(|d| format!("\"{}\"", d.message.as_str())).collect::<Vec<_>>().join(", ")));
+                }
+
+                Ok(())
+            }
+            Directive::Unknown(directive) => Err(anyhow::anyhow!("Unknown directive: {}", directive)),
         }
-        Directive::Unknown(directive) => Err(anyhow::anyhow!("Unknown directive: {}", directive)),
-    };
+    }();
 
     let test_result = TestResult {
         directive: comment.directive.clone(),

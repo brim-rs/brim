@@ -953,6 +953,7 @@ dependencies = [
  "brim-shell",
  "colored",
  "glob",
+ "indexmap",
  "once_cell",
 ]
 
