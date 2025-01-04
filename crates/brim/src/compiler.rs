@@ -3,6 +3,9 @@ use brim_ast::ErrorEmitted;
 use brim_diagnostics::diagnostic::{Diagnostic, ToDiagnostic};
 use std::marker::PhantomData;
 
+#[cfg(not(feature = "snap"))]
+use brim_span::files::{files, SimpleFiles};
+
 #[derive(Debug)]
 pub struct CompilerContext<'a> {
     dcx: DiagnosticContext,

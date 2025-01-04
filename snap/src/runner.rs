@@ -13,8 +13,10 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
+use std::time::Instant;
+use crate::reporter::report_results;
 
-static TEST_RESULTS: Lazy<Arc<Mutex<TestSuite>>> =
+pub static TEST_RESULTS: Lazy<Arc<Mutex<TestSuite>>> =
     Lazy::new(|| Arc::new(Mutex::new(TestSuite::new())));
 
 #[derive(Debug, Clone)]
@@ -78,7 +80,7 @@ impl TestSuite {
     }
 }
 
-pub fn run_tests(shell: &mut Shell) -> Result<()> {
+pub fn run_tests(shell: &mut Shell, start: Instant) -> Result<()> {
     let mut overall_success = true;
 
     for file in files() {
@@ -88,9 +90,7 @@ pub fn run_tests(shell: &mut Shell) -> Result<()> {
         }
     }
 
-    // Print final summary
-    let test_suite = TEST_RESULTS.lock().unwrap();
-
+    report_results(start)?;
     Ok(())
 }
 

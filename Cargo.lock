@@ -951,6 +951,7 @@ dependencies = [
  "brim",
  "brim-parser",
  "brim-shell",
+ "colored",
  "glob",
  "once_cell",
 ]
