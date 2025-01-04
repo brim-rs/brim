@@ -35,5 +35,21 @@ pub struct EmptyExponent {
 pub struct UnsupportedFloatBase {
     #[error]
     pub span: (Span, usize),
-    pub base: Base
+    pub base: Base,
+}
+
+#[derive(Diagnostic)]
+#[error("Unterminated `{type_}` literal")]
+pub struct UnterminatedLiteral {
+    #[error]
+    pub span: (Span, usize),
+    pub type_: &'static str,
+}
+
+#[derive(Diagnostic)]
+#[error("Failed to unescape string. {error}")]
+pub struct UnescapeError {
+    #[error]
+    pub span: (Span, usize),
+    pub error: String,
 }

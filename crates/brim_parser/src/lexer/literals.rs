@@ -10,8 +10,9 @@ use brim::{
     symbol::Symbol,
     token::LitKind,
 };
+use brim::index::RawOffset;
 use brim::token::TokenKind;
-use crate::lexer::errors::{EmptyExponent, UnsupportedFloatBase};
+use crate::lexer::errors::{EmptyExponent, UnescapeError, UnsupportedFloatBase, UnterminatedLiteral};
 
 impl Lexer<'_> {
     pub fn lex_literal(
@@ -38,27 +39,82 @@ impl Lexer<'_> {
 
                 (kind, symbol)
             }
-            LiteralKind::Float { base, empty_exponent } => {
-                let mut kind = LitKind::Float;
-
-                if empty_exponent {
-                    let span = Span::new(start, end);
-                    let emitted = comp.emit(EmptyExponent {
-                        span: (span, self.file.id()),
-                    });
-                    kind = LitKind::Err(emitted);
-                }
-
-                if base != Base::Decimal {
-                    let span = Span::new(start, end);
-                    let emitted =
-                        comp.emit(UnsupportedFloatBase { span: (span, self.file.id()), base });
-                    kind = LitKind::Err(emitted)
-                }
-                (kind, Symbol::new(self.content_from_to(start, end)))
-            }
+            LiteralKind::Float { base, empty_exponent } => self.handle_float(base, empty_exponent, start, end, comp),
+            // TODO: In the future, validate the content of the string. Unescape etc.
+            LiteralKind::Byte { terminated } => self.handle_byte(terminated, start, end, comp),
+            LiteralKind::ByteStr { terminated } => self.handle_byte_str(terminated, start, end, comp),
             _ => todo!("other literals"),
         }
+    }
+
+    fn handle_float(
+        &self,
+        base: Base,
+        empty_exponent: bool,
+        start: ByteIndex,
+        end: ByteIndex,
+        comp: &mut CompilerContext,
+    ) -> (LitKind, Symbol) {
+        let mut kind = LitKind::Float;
+
+        if empty_exponent {
+            let span = Span::new(start, end);
+            let emitted = comp.emit(EmptyExponent {
+                span: (span, self.file.id()),
+            });
+            kind = LitKind::Err(emitted);
+        }
+
+        if base != Base::Decimal {
+            let span = Span::new(start, end);
+            let emitted =
+                comp.emit(UnsupportedFloatBase { span: (span, self.file.id()), base });
+            kind = LitKind::Err(emitted)
+        }
+        (kind, Symbol::new(self.content_from_to(start, end)))
+    }
+
+    fn handle_byte_str(
+        &self,
+        terminated: bool,
+        start: ByteIndex,
+        end: ByteIndex,
+        comp: &mut CompilerContext,
+    ) -> (LitKind, Symbol) {
+        let kind = if !terminated {
+            let span = Span::new(start, end);
+            let emitted = comp.emit(UnterminatedLiteral {
+                span: (span, self.file.id()),
+                type_: "byte string",
+            });
+            LitKind::Err(emitted)
+        } else {
+            LitKind::ByteStr
+        };
+
+        let content = self.content_from_to(start + ByteOffset::from_usize(2), end - ByteOffset::from_usize(1));
+        (kind, Symbol::new(content))
+    }
+
+    fn handle_byte(
+        &self,
+        terminated: bool,
+        start: ByteIndex,
+        end: ByteIndex,
+        comp: &mut CompilerContext,
+    ) -> (LitKind, Symbol) {
+        let kind = if !terminated {
+            let span = Span::new(start, end);
+            let emitted = comp.emit(UnterminatedLiteral {
+                span: (span, self.file.id()),
+                type_: "byte",
+            });
+            LitKind::Err(emitted)
+        } else {
+            LitKind::Byte
+        };
+
+        (kind, Symbol::new(self.content_from_to(start + ByteOffset::from_usize(2), end - ByteOffset::from_usize(1))))
     }
 
     fn handle_empty_int(
