@@ -1,3 +1,5 @@
+/// @expect_error: Emojis can't be used in identifiers: `abc😄`
+
 pub fn main() {
-    let abc😄 = "Test";
+    let abc😄 = 123;
 };

@@ -7,8 +7,8 @@ use crate::collector::collect_files;
 use crate::runner::run_tests;
 
 fn main() -> Result<()> {
-    let mut shell = Shell::default();
-    match run() {
+    let mut shell = &mut Shell::default();
+    match run(shell) {
         Ok(_) => Ok(()),
         Err(e) => {
             shell.error(format!("{}", e))?;
@@ -17,16 +17,10 @@ fn main() -> Result<()> {
     }
 }
 
-fn run() -> Result<()> {
+fn run(shell: &mut Shell) -> Result<()> {
     collect_files()?;
 
-    // We will use local version of brim to run the tests. We look for the executable in the target/debug directory.
-    let brim = std::env::current_dir()?.join("target").join("debug").join(if cfg!(windows) { "brim-cli.exe" } else { "brim-cli" });
-    if !brim.exists() {
-        bail!("Brim executable not found at {:?}. Make sure to build it before with `cargo build -p brim-cli`", brim);
-    }
+    run_tests(shell)?;
 
-    run_tests(brim)?;
-    
     Ok(())
 }

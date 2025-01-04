@@ -8,7 +8,7 @@ use crate::diag_ctx::DiagnosticContext;
 pub struct CompilerContext<'a> {
     dcx: DiagnosticContext,
     #[cfg(feature = "snap")]
-    emitted: Vec<Diagnostic<'a, usize>>,
+    pub emitted: Vec<Diagnostic<'a, usize>>,
     /// Required while snap is not enabled
     marker: PhantomData<&'a ()>
 }

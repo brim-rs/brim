@@ -7,6 +7,15 @@ pub struct Token {
     pub span: Span,
 }
 
+impl Token {
+    pub fn as_comment(&self) -> &Symbol {
+        match &self.kind {
+            TokenKind::DocComment(comment) => comment,
+            _ => panic!("Token is not a comment"),
+        }
+    }
+}
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum Delimiter {
     /// `( ... )`
@@ -119,7 +128,7 @@ pub enum LitKind {
     Str,
     ByteStr,
     CStr,
-    Err(ErrorEmitted)
+    Err(ErrorEmitted),
 }
 
 impl Lit {

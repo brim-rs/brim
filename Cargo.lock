@@ -952,6 +952,7 @@ dependencies = [
  "brim-parser",
  "brim-shell",
  "glob",
+ "once_cell",
 ]
 
 [[package]]
