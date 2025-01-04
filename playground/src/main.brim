@@ -11,5 +11,4 @@
 //};
 
 pub fn main() {
-    let abc = b"hello \z"
 };

@@ -1,0 +1,7 @@
+/// @expect_error: Found unknown token `#`
+/// @expect_error: Found unknown token `\`
+
+pub fn main() {
+    let abc = #;
+    let def = \;
+};

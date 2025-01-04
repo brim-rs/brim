@@ -53,3 +53,11 @@ pub struct UnescapeError {
     pub span: (Span, usize),
     pub error: String,
 }
+
+#[derive(Diagnostic)]
+#[error("Found unknown token `{token}`")]
+pub struct UnknownToken {
+    #[error]
+    pub span: (Span, usize),
+    pub token: String,
+}
