@@ -4,6 +4,7 @@ mod runner;
 use anyhow::{bail, Result};
 use brim_shell::Shell;
 use crate::collector::collect_files;
+use crate::runner::run_tests;
 
 fn main() -> Result<()> {
     let mut shell = Shell::default();
@@ -17,7 +18,7 @@ fn main() -> Result<()> {
 }
 
 fn run() -> Result<()> {
-    let files = collect_files()?;
+    collect_files()?;
 
     // We will use local version of brim to run the tests. We look for the executable in the target/debug directory.
     let brim = std::env::current_dir()?.join("target").join("debug").join(if cfg!(windows) { "brim-cli.exe" } else { "brim-cli" });
@@ -25,5 +26,7 @@ fn run() -> Result<()> {
         bail!("Brim executable not found at {:?}. Make sure to build it before with `cargo build -p brim-cli`", brim);
     }
 
+    run_tests(brim)?;
+    
     Ok(())
 }

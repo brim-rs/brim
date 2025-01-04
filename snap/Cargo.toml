@@ -7,5 +7,5 @@ edition = "2024"
 brim-shell = { workspace = true }
 anyhow = { workspace = true }
 glob = "0.3.2"
-brim = { workspace = true }
+brim = { workspace = true, features = ["snap"] }
 brim-parser = { workspace = true }

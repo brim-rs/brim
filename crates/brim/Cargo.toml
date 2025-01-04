@@ -15,3 +15,6 @@ tracing = { workspace = true }
 brim-lexer = { workspace = true }
 brim-ast = { workspace = true }
 brim-diag-macro = { workspace = true }
+
+[features]
+snap = []
