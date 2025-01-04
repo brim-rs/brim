@@ -92,9 +92,6 @@ pub enum LiteralKind {
     /// Byte string literals with b-prefix
     /// Examples: `b"bytes"`, `b"hello\n"`
     ByteStr { terminated: bool },
-    /// C-compatible string literals with c-prefix
-    /// Examples: `c"hello"`, `c"null-terminated"`
-    CStr { terminated: bool },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -250,22 +247,6 @@ impl<'a> Cursor<'a> {
                     }
                     Literal {
                         kind: ByteStr { terminated },
-                        suffix_start,
-                    }
-                }
-                _ => self.ident_or_unknown_prefix(),
-            },
-
-            'c' => match self.first() {
-                '"' => {
-                    self.bump();
-                    let terminated = self.double_quoted_string();
-                    let suffix_start = self.pos_within_token();
-                    if terminated {
-                        self.eat_identifier();
-                    }
-                    Literal {
-                        kind: LiteralKind::CStr { terminated },
                         suffix_start,
                     }
                 }
@@ -522,7 +503,7 @@ impl<'a> Cursor<'a> {
     }
 }
 
-pub fn tokenize(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
+pub fn tokenize(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
     let mut cursor = Cursor::new(input);
     std::iter::from_fn(move || {
         let token = cursor.next_token();
@@ -534,7 +515,7 @@ pub fn tokenize(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
     })
 }
 
-pub fn tokens_no_whitespace(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
+pub fn tokens_no_whitespace(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
     tokenize(input).filter(|t| t.kind != Whitespace)
 }
 
@@ -630,26 +611,6 @@ mod tests {
         assert_eq!(tokens, [Literal {
             kind: LiteralKind::Char { terminated: true },
             suffix_start: 4
-        }]);
-    }
-
-    #[test]
-    fn test_c_str() {
-        let input = "c\"hello\"";
-        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(tokens, [Literal {
-            kind: LiteralKind::CStr { terminated: true },
-            suffix_start: 8
-        }]);
-    }
-
-    #[test]
-    fn test_c_str_escaped() {
-        let input = "c\"hello\\n\"";
-        let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(tokens, [Literal {
-            kind: LiteralKind::CStr { terminated: true },
-            suffix_start: 10
         }]);
     }
 

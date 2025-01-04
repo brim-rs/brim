@@ -1,0 +1,5 @@
+/// @expect_error: Unterminated `str` literal
+
+pub fn main() {
+    let abc = "hello;
+};

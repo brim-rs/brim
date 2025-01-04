@@ -43,8 +43,53 @@ impl Lexer<'_> {
             // TODO: In the future, validate the content of the string. Unescape etc.
             LiteralKind::Byte { terminated } => self.handle_byte(terminated, start, end, comp),
             LiteralKind::ByteStr { terminated } => self.handle_byte_str(terminated, start, end, comp),
-            _ => todo!("other literals"),
+            LiteralKind::Str { terminated } => self.handle_str(terminated, start, end, comp),
+            LiteralKind::Char { terminated } => self.handle_char(terminated, start, end, comp),
         }
+    }
+    
+    pub fn handle_char(
+        &self,
+        terminated: bool,
+        start: ByteIndex,
+        end: ByteIndex,
+        comp: &mut CompilerContext,
+    ) -> (LitKind, Symbol) {
+        let kind = if !terminated {
+            let span = Span::new(start, end);
+            let emitted = comp.emit(UnterminatedLiteral {
+                span: (span, self.file.id()),
+                type_: "char",
+            });
+            LitKind::Err(emitted)
+        } else {
+            LitKind::Char
+        };
+
+        let content = self.content_from_to(start + ByteOffset::from_usize(1), end - ByteOffset::from_usize(1));
+        (kind, Symbol::new(content))
+    }
+
+    pub fn handle_str(
+        &self,
+        terminated: bool,
+        start: ByteIndex,
+        end: ByteIndex,
+        comp: &mut CompilerContext,
+    ) -> (LitKind, Symbol) {
+        let kind = if !terminated {
+            let span = Span::new(start, end);
+            let emitted = comp.emit(UnterminatedLiteral {
+                span: (span, self.file.id()),
+                type_: "string",
+            });
+            LitKind::Err(emitted)
+        } else {
+            LitKind::Str
+        };
+
+        let content = self.content_from_to(start + ByteOffset::from_usize(1), end - ByteOffset::from_usize(1));
+        (kind, Symbol::new(content))
     }
 
     fn handle_float(
