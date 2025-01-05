@@ -1,18 +1,18 @@
 use crate::lexer::{
     Lexer,
-    errors::{InvalidDigitLiteral, NoDigitsLiteral},
+    errors::{
+        EmptyExponent, InvalidDigitLiteral, NoDigitsLiteral, UnsupportedFloatBase,
+        UnterminatedLiteral,
+    },
 };
 use brim::{
     Base, LiteralKind,
     compiler::CompilerContext,
     index::{ByteIndex, ByteOffset},
     span::Span,
+    symbols::Symbol,
     token::LitKind,
 };
-use brim::index::RawOffset;
-use brim::symbols::Symbol;
-use brim::token::TokenKind;
-use crate::lexer::errors::{EmptyExponent, UnescapeError, UnsupportedFloatBase, UnterminatedLiteral};
 
 impl Lexer<'_> {
     pub fn lex_literal(
@@ -39,10 +39,15 @@ impl Lexer<'_> {
 
                 (kind, symbol)
             }
-            LiteralKind::Float { base, empty_exponent } => self.handle_float(base, empty_exponent, start, end, comp),
+            LiteralKind::Float {
+                base,
+                empty_exponent,
+            } => self.handle_float(base, empty_exponent, start, end, comp),
             // TODO: In the future, validate the content of the string. Unescape etc.
             LiteralKind::Byte { terminated } => self.handle_byte(terminated, start, end, comp),
-            LiteralKind::ByteStr { terminated } => self.handle_byte_str(terminated, start, end, comp),
+            LiteralKind::ByteStr { terminated } => {
+                self.handle_byte_str(terminated, start, end, comp)
+            }
             LiteralKind::Str { terminated } => self.handle_str(terminated, start, end, comp),
             LiteralKind::Char { terminated } => self.handle_char(terminated, start, end, comp),
         }
@@ -66,7 +71,10 @@ impl Lexer<'_> {
             LitKind::Char
         };
 
-        let content = self.content_from_to(start + ByteOffset::from_usize(1), end - ByteOffset::from_usize(1));
+        let content = self.content_from_to(
+            start + ByteOffset::from_usize(1),
+            end - ByteOffset::from_usize(1),
+        );
         (kind, Symbol::new(content))
     }
 
@@ -88,7 +96,10 @@ impl Lexer<'_> {
             LitKind::Str
         };
 
-        let content = self.content_from_to(start + ByteOffset::from_usize(1), end - ByteOffset::from_usize(1));
+        let content = self.content_from_to(
+            start + ByteOffset::from_usize(1),
+            end - ByteOffset::from_usize(1),
+        );
         (kind, Symbol::new(content))
     }
 
@@ -112,8 +123,10 @@ impl Lexer<'_> {
 
         if base != Base::Decimal {
             let span = Span::new(start, end);
-            let emitted =
-                comp.emit(UnsupportedFloatBase { span: (span, self.file.id()), base });
+            let emitted = comp.emit(UnsupportedFloatBase {
+                span: (span, self.file.id()),
+                base,
+            });
             kind = LitKind::Err(emitted)
         }
         (kind, Symbol::new(self.content_from_to(start, end)))
@@ -137,7 +150,10 @@ impl Lexer<'_> {
             LitKind::ByteStr
         };
 
-        let content = self.content_from_to(start + ByteOffset::from_usize(2), end - ByteOffset::from_usize(1));
+        let content = self.content_from_to(
+            start + ByteOffset::from_usize(2),
+            end - ByteOffset::from_usize(1),
+        );
         (kind, Symbol::new(content))
     }
 
@@ -159,7 +175,13 @@ impl Lexer<'_> {
             LitKind::Byte
         };
 
-        (kind, Symbol::new(self.content_from_to(start + ByteOffset::from_usize(2), end - ByteOffset::from_usize(1))))
+        (
+            kind,
+            Symbol::new(self.content_from_to(
+                start + ByteOffset::from_usize(2),
+                end - ByteOffset::from_usize(1),
+            )),
+        )
     }
 
     fn handle_empty_int(

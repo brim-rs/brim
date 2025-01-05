@@ -1,7 +1,10 @@
-use proc_macro2::{TokenStream, Span};
-use quote::{quote, format_ident};
-use syn::{parse2, parse::Parse, parse::ParseStream, Token, Ident, LitStr, Result};
-use indexmap::IndexMap;
+use proc_macro2::TokenStream;
+use quote::quote;
+use syn::{
+    Ident, LitStr, Result, Token,
+    parse::{Parse, ParseStream},
+    parse2,
+};
 
 struct SymbolDef {
     name: Ident,

@@ -1,7 +1,6 @@
 use brim_index::index_type;
 use once_cell::sync::Lazy;
 use std::{collections::HashMap, fmt::Display, sync::Mutex};
-use indexmap::IndexMap;
 
 index_type! {
     /// A unique identifier for a symbol interned in the global interner.
@@ -10,7 +9,7 @@ index_type! {
 }
 
 /// A symbol representing an interned string.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct Symbol(pub SymbolIndex);
 
 impl Symbol {
@@ -42,7 +41,7 @@ impl SymbolInterner {
             initialized: false,
         }
     }
-    
+
     pub fn add_existing(&mut self, index: SymbolIndex, value: String) {
         self.strings.insert(value.clone(), index);
         self.symbols.push(value);

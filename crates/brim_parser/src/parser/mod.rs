@@ -1,23 +1,22 @@
-use std::mem;
-use crate::lexer::Lexer;
+use crate::{
+    lexer::Lexer,
+    parser::{barrel::Barrel, cursor::TokenCursor, symbols::SYMBOL_STRINGS},
+};
 use anyhow::Result;
 use brim::{
-    compiler::CompilerContext, cursor::Cursor,
+    PrimitiveToken, PrimitiveTokenKind,
+    compiler::CompilerContext,
+    cursor::Cursor,
     files::SimpleFile,
+    span::Span,
+    symbols::GLOBAL_INTERNER,
     token::{Token, TokenKind},
-    PrimitiveToken,
-    PrimitiveTokenKind,
 };
 use tracing::debug;
-use brim::span::Span;
-use brim::symbols::GLOBAL_INTERNER;
-use crate::parser::barrel::Barrel;
-use crate::parser::cursor::TokenCursor;
-use crate::parser::symbols::{IF, SYMBOL_STRINGS};
 
 pub mod barrel;
-mod items;
 mod cursor;
+mod items;
 mod symbols;
 
 #[derive(Debug)]
@@ -52,7 +51,10 @@ impl<'a> Parser<'a> {
             GLOBAL_INTERNER.lock().unwrap().initialized = true;
 
             for (key, value) in SYMBOL_STRINGS.iter() {
-                GLOBAL_INTERNER.lock().unwrap().add_existing(*key, value.clone());
+                GLOBAL_INTERNER
+                    .lock()
+                    .unwrap()
+                    .add_existing(*key, value.clone());
             }
         }
 

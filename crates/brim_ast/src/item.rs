@@ -1,11 +1,11 @@
+use crate::{
+    NodeId,
+    expr::Expr,
+    stmts::Stmt,
+    ty::{Const, Ty},
+};
+use brim_span::{span::Span, symbols::Symbol};
 use std::fmt::Debug;
-use std::path::Path;
-use brim_span::span::Span;
-use brim_span::symbols::Symbol;
-use crate::expr::Expr;
-use crate::NodeId;
-use crate::stmts::Stmt;
-use crate::ty::{Const, Ty};
 
 #[derive(Clone, Debug)]
 pub struct Item {
@@ -88,13 +88,8 @@ pub struct GenericParam {
 
 #[derive(Clone, Debug)]
 pub enum GenericKind {
-    Type {
-        default: Option<Ty>,
-    },
-    NonType {
-        default: Option<Expr>,
-        ty: Ty,
-    },
+    Type { default: Option<Ty> },
+    NonType { default: Option<Expr>, ty: Ty },
 }
 
 #[derive(Clone, Debug)]

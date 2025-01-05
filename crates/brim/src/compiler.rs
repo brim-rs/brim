@@ -4,7 +4,7 @@ use brim_diagnostics::diagnostic::{Diagnostic, ToDiagnostic};
 use std::marker::PhantomData;
 
 #[cfg(not(feature = "snap"))]
-use brim_span::files::{files, SimpleFiles};
+use brim_span::files::{SimpleFiles, files};
 
 #[derive(Debug)]
 pub struct CompilerContext<'a> {

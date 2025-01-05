@@ -5,7 +5,7 @@ use crate::cli::{
 use anyhow::Result;
 use brim::{compiler::CompilerContext, session::Session, toml::ProjectType};
 use brim_parser::parser_from_simple_file;
-use clap::{ArgMatches, Command};
+use clap::Command;
 
 pub fn run_cmd() -> Command {
     Command::new("run")

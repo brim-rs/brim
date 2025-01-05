@@ -1,6 +1,5 @@
 use crate::ErrorEmitted;
-use brim_span::{span::Span};
-use brim_span::symbols::Symbol;
+use brim_span::{span::Span, symbols::Symbol};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Token {

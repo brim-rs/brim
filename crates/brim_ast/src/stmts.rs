@@ -1,5 +1,5 @@
-use brim_span::span::Span;
 use crate::NodeId;
+use brim_span::span::Span;
 
 #[derive(Clone, Debug)]
 pub struct Stmt {

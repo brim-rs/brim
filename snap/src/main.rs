@@ -1,14 +1,14 @@
 mod collector;
-mod runner;
 mod reporter;
+mod runner;
 
-use std::time::Instant;
 use crate::{collector::collect_files, runner::run_tests};
-use anyhow::{Result, bail};
+use anyhow::Result;
 use brim_shell::Shell;
+use std::time::Instant;
 
 fn main() -> Result<()> {
-    let mut shell = &mut Shell::default();
+    let shell = &mut Shell::default();
     match run(shell) {
         Ok(_) => Ok(()),
         Err(e) => {
@@ -19,10 +19,10 @@ fn main() -> Result<()> {
 }
 
 fn run(shell: &mut Shell) -> Result<()> {
-    let start= Instant::now();
-    
+    let start = Instant::now();
+
     collect_files()?;
-    run_tests(shell,  start)?;
+    run_tests(shell, start)?;
 
     Ok(())
 }

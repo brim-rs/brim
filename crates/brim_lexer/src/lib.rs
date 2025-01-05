@@ -7,8 +7,7 @@ use crate::{
     idents::{is_identifier_start, is_valid_ident_continue},
     whitespace::is_whitespace,
 };
-use std::cmp::PartialEq;
-use std::fmt::Display;
+use std::{cmp::PartialEq, fmt::Display};
 use unicode_properties::UnicodeEmoji;
 
 pub mod cursor;
@@ -503,7 +502,7 @@ impl<'a> Cursor<'a> {
     }
 }
 
-pub fn tokenize(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
+pub fn tokenize(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
     let mut cursor = Cursor::new(input);
     std::iter::from_fn(move || {
         let token = cursor.next_token();
@@ -515,7 +514,7 @@ pub fn tokenize(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
     })
 }
 
-pub fn tokens_no_whitespace(input: &str) -> impl Iterator<Item=PrimitiveToken> + '_ {
+pub fn tokens_no_whitespace(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
     tokenize(input).filter(|t| t.kind != Whitespace)
 }
 

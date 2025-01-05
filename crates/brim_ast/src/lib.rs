@@ -1,10 +1,10 @@
 use brim_index::index_type;
 
-pub mod token;
-pub mod item;
-mod ty;
 mod expr;
+pub mod item;
 mod stmts;
+pub mod token;
+mod ty;
 
 /// A struct that represents already emitted diagnostic
 #[derive(Clone, Copy, PartialEq, Debug)]

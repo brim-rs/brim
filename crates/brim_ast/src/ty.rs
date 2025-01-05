@@ -1,7 +1,5 @@
-use std::task::Context;
+use crate::{ErrorEmitted, NodeId, expr::ConstExpr};
 use brim_span::span::Span;
-use crate::expr::ConstExpr;
-use crate::{ErrorEmitted, NodeId};
 
 #[derive(Debug, Clone)]
 pub struct Ty {

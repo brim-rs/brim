@@ -1,20 +1,18 @@
-use anyhow::{Result, bail, anyhow};
+use crate::reporter::report_results;
+use anyhow::{Result, anyhow};
 use brim::{
     compiler::CompilerContext,
-    files::{SimpleFile, SimpleFiles, files},
+    files::{SimpleFile, files},
     span::Span,
-    r#mod::{Symbol, SymbolInterner},
     token::TokenKind,
 };
 use brim_parser::{parser::Parser, parser_from_simple_file};
 use brim_shell::Shell;
 use once_cell::sync::Lazy;
 use std::{
-    path::PathBuf,
     sync::{Arc, Mutex},
+    time::Instant,
 };
-use std::time::Instant;
-use crate::reporter::report_results;
 
 pub static TEST_RESULTS: Lazy<Arc<Mutex<TestSuite>>> =
     Lazy::new(|| Arc::new(Mutex::new(TestSuite::new())));
@@ -81,7 +79,7 @@ impl TestSuite {
 }
 
 pub fn run_tests(shell: &mut Shell, start: Instant) -> Result<()> {
-    let mut overall_success = true;
+    let overall_success = true;
 
     for file in files() {
         run_file_tests(&file, shell)?;
@@ -164,12 +162,22 @@ pub fn run_comment_directive(
                 }
 
                 if !found_message {
-                    return Err(anyhow!("Directive 'expect_error' failed: expected error message \"{}\" but got one of: {}", expected_message, diagnostics.iter().map(|d| format!("\"{}\"", d.message.as_str())).collect::<Vec<_>>().join(", ")));
+                    return Err(anyhow!(
+                        "Directive 'expect_error' failed: expected error message \"{}\" but got one of: {}",
+                        expected_message,
+                        diagnostics
+                            .iter()
+                            .map(|d| format!("\"{}\"", d.message.as_str()))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ));
                 }
 
                 Ok(())
             }
-            Directive::Unknown(directive) => Err(anyhow::anyhow!("Unknown directive: {}", directive)),
+            Directive::Unknown(directive) => {
+                Err(anyhow::anyhow!("Unknown directive: {}", directive))
+            }
         }
     }();
 
