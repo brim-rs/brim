@@ -1,13 +1,16 @@
 use crate::lexer::Lexer;
 use anyhow::Result;
 use brim::{
-    PrimitiveToken, PrimitiveTokenKind,
-    compiler::CompilerContext,
-    cursor::Cursor,
+    compiler::CompilerContext, cursor::Cursor,
     files::SimpleFile,
     token::{Token, TokenKind},
+    PrimitiveToken,
+    PrimitiveTokenKind,
 };
 use tracing::debug;
+use crate::parser::barrel::Barrel;
+
+pub mod barrel;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -32,7 +35,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_barrel(&mut self, comp: &mut CompilerContext) -> Result<()> {
+    pub fn parse_barrel(&mut self, comp: &mut CompilerContext) -> Result<Barrel> {
         debug!("Lexing primitive tokens for a barrel");
         loop {
             let token = self.cursor.next_token();
@@ -60,6 +63,6 @@ impl<'a> Parser<'a> {
 
         self.tokens = tokens;
 
-        Ok(())
+        Ok(Barrel {})
     }
 }

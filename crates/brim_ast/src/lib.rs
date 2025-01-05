@@ -1,4 +1,7 @@
+use brim_index::index_type;
+
 pub mod token;
+pub mod item;
 
 /// A struct that represents already emitted diagnostic
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -8,4 +11,9 @@ impl ErrorEmitted {
     pub fn new() -> Self {
         Self(())
     }
+}
+
+index_type! {
+    /// A unique identifier for a node in the AST.
+    pub struct NodeId {}
 }

@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 brim-span = { workspace = true }
+brim-index = { workspace = true }

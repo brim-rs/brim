@@ -144,6 +144,7 @@ dependencies = [
 name = "brim-ast"
 version = "0.1.0"
 dependencies = [
+ "brim-index",
  "brim-span",
 ]
 
