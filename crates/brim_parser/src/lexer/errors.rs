@@ -1,4 +1,5 @@
-use brim::{Diagnostic, diagnostic::{Label, LabelStyle, Severity, ToDiagnostic}, span::Span, symbol::Symbol, Base};
+use brim::{Diagnostic, diagnostic::{Label, LabelStyle, Severity, ToDiagnostic}, span::Span, Base};
+use brim::symbols::Symbol;
 
 #[derive(Diagnostic)]
 #[error("Emojis can't be used in identifiers: `{ident}`")]

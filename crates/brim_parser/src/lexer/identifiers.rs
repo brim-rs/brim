@@ -1,5 +1,6 @@
 use crate::lexer::Lexer;
-use brim::{index::ByteIndex, symbol::Symbol, token::TokenKind};
+use brim::{index::ByteIndex, token::TokenKind};
+use brim::symbols::Symbol;
 
 pub fn nfc_normalize(string: &str) -> Symbol {
     use unicode_normalization::{IsNormalized, UnicodeNormalization, is_nfc_quick};

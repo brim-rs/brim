@@ -7,10 +7,10 @@ use brim::{
     compiler::CompilerContext,
     index::{ByteIndex, ByteOffset},
     span::Span,
-    symbol::Symbol,
     token::LitKind,
 };
 use brim::index::RawOffset;
+use brim::symbols::Symbol;
 use brim::token::TokenKind;
 use crate::lexer::errors::{EmptyExponent, UnescapeError, UnsupportedFloatBase, UnterminatedLiteral};
 
@@ -47,7 +47,7 @@ impl Lexer<'_> {
             LiteralKind::Char { terminated } => self.handle_char(terminated, start, end, comp),
         }
     }
-    
+
     pub fn handle_char(
         &self,
         terminated: bool,

@@ -1,15 +1,17 @@
 use brim_index::index_type;
 use once_cell::sync::Lazy;
 use std::{collections::HashMap, fmt::Display, sync::Mutex};
+use indexmap::IndexMap;
 
 index_type! {
     /// A unique identifier for a symbol interned in the global interner.
+    #[derive(PartialOrd, Ord)]
     pub struct SymbolIndex {}
 }
 
 /// A symbol representing an interned string.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Symbol(SymbolIndex);
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Symbol(pub SymbolIndex);
 
 impl Symbol {
     /// Creates a symbol from a string by interning it.
@@ -29,6 +31,7 @@ impl Symbol {
 pub struct SymbolInterner {
     strings: HashMap<String, SymbolIndex>,
     symbols: Vec<String>,
+    pub initialized: bool,
 }
 
 impl SymbolInterner {
@@ -36,7 +39,13 @@ impl SymbolInterner {
         Self {
             strings: HashMap::new(),
             symbols: Vec::new(),
+            initialized: false,
         }
+    }
+    
+    pub fn add_existing(&mut self, index: SymbolIndex, value: String) {
+        self.strings.insert(value.clone(), index);
+        self.symbols.push(value);
     }
 
     pub fn intern(&mut self, s: &str) -> SymbolIndex {

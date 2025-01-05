@@ -10,9 +10,9 @@ use brim::{
     files::SimpleFile,
     index::{ByteIndex, ByteOffset, RawOffset},
     span::Span,
-    symbol::Symbol,
     token::{BinOpToken, Delimiter, Lit, Orientation, Token, TokenKind},
 };
+use brim::symbols::Symbol;
 
 #[derive(Debug)]
 pub struct Lexer<'a> {

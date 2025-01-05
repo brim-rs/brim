@@ -10,12 +10,15 @@ use brim::{
 };
 use tracing::debug;
 use brim::span::Span;
+use brim::symbols::GLOBAL_INTERNER;
 use crate::parser::barrel::Barrel;
 use crate::parser::cursor::TokenCursor;
+use crate::parser::symbols::{IF, SYMBOL_STRINGS};
 
 pub mod barrel;
 mod items;
 mod cursor;
+mod symbols;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -45,6 +48,14 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_barrel(&mut self, comp: &mut CompilerContext) -> Result<Barrel> {
+        if !GLOBAL_INTERNER.lock().unwrap().initialized {
+            GLOBAL_INTERNER.lock().unwrap().initialized = true;
+
+            for (key, value) in SYMBOL_STRINGS.iter() {
+                GLOBAL_INTERNER.lock().unwrap().add_existing(*key, value.clone());
+            }
+        }
+
         debug!("Lexing primitive tokens for a barrel");
         loop {
             let token = self.cursor.next_token();
@@ -73,10 +84,10 @@ impl<'a> Parser<'a> {
 
         self.token_cursor = TokenCursor::new(self.tokens.clone());
         let mut items = vec![];
-        
+
         // Advance to get the first token
         self.advance();
-        
+
         loop {
             let Some(token) = self.parse_item()? else {
                 break;
@@ -84,6 +95,8 @@ impl<'a> Parser<'a> {
 
             items.push(token);
         }
+
+        println!("{:#?}", GLOBAL_INTERNER.lock().unwrap());
 
         Ok(Barrel {})
     }

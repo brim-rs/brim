@@ -3,7 +3,7 @@ use brim::{
     compiler::CompilerContext,
     files::{SimpleFile, SimpleFiles, files},
     span::Span,
-    symbol::{Symbol, SymbolInterner},
+    r#mod::{Symbol, SymbolInterner},
     token::TokenKind,
 };
 use brim_parser::{parser::Parser, parser_from_simple_file};

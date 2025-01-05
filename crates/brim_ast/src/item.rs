@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::path::Path;
 use brim_span::span::Span;
-use brim_span::symbol::Symbol;
+use brim_span::symbols::Symbol;
 use crate::expr::Expr;
 use crate::NodeId;
 use crate::stmts::Stmt;

@@ -5,4 +5,4 @@ pub mod files;
 pub mod index;
 pub mod location;
 pub mod span;
-pub mod symbol;
+pub mod symbols;

@@ -8,12 +8,7 @@ impl<'a> Parser<'a> {
         if self.token_cursor.is_eof() {
             return Ok(None);
         }
-
-        let token = self.token_cursor.current().unwrap();
-
-        match token.kind {
-        }
-
+        
         Ok(None)
     }
 }

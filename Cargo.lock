@@ -239,6 +239,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "brim",
+ "brim-symbols-macro",
+ "indexmap",
+ "lazy_static",
  "tracing",
  "unicode-normalization",
 ]
@@ -260,7 +263,23 @@ name = "brim-span"
 version = "0.1.0"
 dependencies = [
  "brim-index",
+ "indexmap",
  "once_cell",
+ "thiserror",
+]
+
+[[package]]
+name = "brim-symbols-macro"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "brim-diagnostics",
+ "brim-span",
+ "indexmap",
+ "proc-macro-rules",
+ "proc-macro2",
+ "quote",
+ "syn",
  "thiserror",
 ]
 
