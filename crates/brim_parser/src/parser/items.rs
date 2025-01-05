@@ -8,6 +8,10 @@ impl<'a> Parser<'a> {
             return Ok(None);
         }
 
+        let span = self.current().span;
+        let token = self.current();
+        let visibility = self.parse_visibility();
+
         Ok(None)
     }
 }

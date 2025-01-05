@@ -40,6 +40,17 @@ pub struct Visibility {
     pub kind: VisibilityKind,
 }
 
+impl Visibility {
+    pub fn from_bool(is_public: bool, span: Span) -> Self {
+        let kind = if is_public {
+            VisibilityKind::Public
+        } else {
+            VisibilityKind::Private
+        };
+        Self { span, kind }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum VisibilityKind {
     Public,

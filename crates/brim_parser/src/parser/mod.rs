@@ -13,6 +13,9 @@ use brim::{
     token::{Token, TokenKind},
 };
 use tracing::debug;
+use brim::item::Visibility;
+use brim::symbols::Symbol;
+use crate::parser::symbols::Pub;
 
 pub mod barrel;
 mod cursor;
@@ -29,6 +32,66 @@ pub struct Parser<'a> {
     pub tokens: Vec<Token>,
     pub token_cursor: TokenCursor,
     pub current_token: Token,
+    pub previous_token: Token,
+    pub diags: ParserDiagnostics,
+}
+
+#[derive(Debug)]
+pub struct ParserDiagnostics {
+    pub expected_tokens: Vec<PToken>,
+}
+
+impl ParserDiagnostics {
+    pub fn new() -> Self {
+        Self {
+            expected_tokens: vec![]
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PToken {
+    pub sym: Symbol,
+    pub kind: PTokenKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum PTokenKind {
+    Break,
+    Catch,
+    Const,
+    Continue,
+    Else,
+    Enum,
+    False,
+    Fn,
+    For,
+    From,
+    If,
+    Impl,
+    In,
+    Let,
+    Loop,
+    Null,
+    Pub,
+    Return,
+    SelfBig,
+    SelfSmall,
+    Struct,
+    Then,
+    Trait,
+    True,
+    Use,
+    While,
+}
+
+macro_rules! ptok {
+    ($sym:ident) => {
+        PToken {
+            sym: $sym,
+            kind: PTokenKind::$sym,
+        }
+    };
 }
 
 impl<'a> Parser<'a> {
@@ -43,6 +106,8 @@ impl<'a> Parser<'a> {
             tokens: vec![],
             token_cursor: TokenCursor::new(vec![]),
             current_token: Token::new(TokenKind::Skipable, Span::DUMMY),
+            previous_token: Token::new(TokenKind::Skipable, Span::DUMMY),
+            diags: ParserDiagnostics::new(),
         }
     }
 
@@ -98,13 +163,12 @@ impl<'a> Parser<'a> {
             items.push(token);
         }
 
-        println!("{:#?}", GLOBAL_INTERNER.lock().unwrap());
-
         Ok(Barrel {})
     }
 
     pub fn advance(&mut self) -> Token {
         self.token_cursor.bump();
+        self.previous_token = self.current_token.clone();
 
         if let Some(token) = self.token_cursor.current() {
             self.current_token = token.clone();
@@ -113,5 +177,42 @@ impl<'a> Parser<'a> {
         }
 
         self.current_token.clone()
+    }
+
+    pub fn current(&self) -> Token {
+        self.current_token.clone()
+    }
+
+    pub fn prev(&self) -> Token {
+        self.previous_token.clone()
+    }
+
+    pub fn eat_keyword(&mut self, p: PToken) -> bool {
+        let is = self.valid_keyword(p);
+
+        if is {
+            self.advance();
+        }
+        is
+    }
+
+    pub fn valid_keyword(&mut self, p: PToken) -> bool {
+        let is_keyword = self.current().is_keyword(p.sym);
+
+        if !is_keyword {
+            self.diags.expected_tokens.push(p)
+        }
+
+        is_keyword
+    }
+
+    pub fn parse_visibility(&mut self) -> Visibility {
+        let is_public = self.eat_keyword(ptok!(Pub));
+
+        if !is_public {
+            return Visibility::from_bool(false, self.current().span.from_start());
+        }
+
+        Visibility::from_bool(true, self.prev().span)
     }
 }

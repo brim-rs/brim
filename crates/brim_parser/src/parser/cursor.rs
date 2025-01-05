@@ -12,7 +12,7 @@ impl TokenCursor {
     }
 
     pub fn current(&self) -> Option<&Token> {
-        self.tokens.get(self.current)
+        self.tokens.get(self.current - 1)
     }
 
     pub fn bump(&mut self) {

@@ -61,6 +61,11 @@ impl Span {
     pub fn range(self) -> Range<usize> {
         self.into()
     }
+
+    /// Returns new empty span with the same start as the current span.
+    pub fn from_start(self) -> Span {
+        Span::new(self.start, self.start)
+    }
 }
 
 impl Default for Span {

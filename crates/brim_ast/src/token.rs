@@ -1,5 +1,6 @@
 use crate::ErrorEmitted;
 use brim_span::{span::Span, symbols::Symbol};
+use crate::item::Ident;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Token {
@@ -12,6 +13,20 @@ impl Token {
         match &self.kind {
             TokenKind::DocComment(comment) => comment,
             _ => panic!("Token is not a comment"),
+        }
+    }
+
+    pub fn as_ident(&self) -> Option<Ident> {
+        match &self.kind {
+            TokenKind::Ident(ident) => Some(Ident::new(*ident, self.span)),
+            _ => None,
+        }
+    }
+
+    pub fn is_keyword(&self, sym: Symbol) -> bool {
+        match self.as_ident() {
+            Some(ident) => ident.name == sym,
+            None => false,
         }
     }
 }
