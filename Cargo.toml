@@ -47,3 +47,6 @@ tracing-subscriber = { version = "0.3.18", features = [
     "time",
 ] }
 termcolor = "1.4.1"
+
+[workspace.lints.clippy]
+non_upper_case_globals = "allow"
