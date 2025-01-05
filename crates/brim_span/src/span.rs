@@ -8,6 +8,11 @@ pub struct Span {
 }
 
 impl Span {
+    pub const DUMMY: Span = Span {
+        start: ByteIndex(0),
+        end: ByteIndex(0),
+    };
+    
     pub fn new(start: impl Into<ByteIndex>, end: impl Into<ByteIndex>) -> Span {
         let start = start.into();
         let end = end.into();
