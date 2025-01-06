@@ -22,7 +22,7 @@ impl DiagnosticContext {
     pub fn emit<'diags>(&mut self, diag: &Box<dyn ToDiagnostic<'diags> + 'diags>, files: &SimpleFiles) {
         let diag = diag.to_diagnostic();
         
-        emit(&mut stderr(), &self.config, files, &diag).unwrap();
+        self.emit_inner(diag, files);
     }
 
     pub fn emit_inner<'diags>(&mut self, diag: Diagnostic<'diags, usize>, files: &SimpleFiles) {

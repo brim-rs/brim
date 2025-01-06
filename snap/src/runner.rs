@@ -96,9 +96,9 @@ fn run_file_tests(file: &SimpleFile, shell: &mut Shell) -> Result<()> {
     parser.keep_comments = true;
     parser.parse_barrel(ctx)?;
 
+    println!("diags: {:?}", parser.diags.dcx.diags);
     for diag in &parser.diags.dcx.diags {
-        // i need Box<dyn ToDiagnostic> but diag is &Box<dyn ToDiagnostic>
-
+        println!("emitting diag: {:?}", diag);
         ctx.emit_diag(diag.clone());
     }
 

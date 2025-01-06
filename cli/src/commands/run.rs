@@ -40,7 +40,7 @@ pub fn run_command(sess: &mut Session, comp: &mut CompilerContext) -> Result<()>
             let barrel = parser.parse_barrel(comp)?;
 
             for diag in parser.diags.dcx.diags {
-                comp.emit_dyn(diag);
+                comp.emit_diag(diag);
             }
 
             Ok(())
