@@ -30,8 +30,22 @@ impl<'a> CompilerContext<'a> {
     }
 
     pub fn emit(&mut self, diag: impl ToDiagnostic<'a> + 'a) -> ErrorEmitted {
+        self.emit_inner(Box::new(diag))
+    }
+
+    pub fn emit_diag(&mut self, diag: Diagnostic<'a, usize>) -> ErrorEmitted {
         #[cfg(not(feature = "snap"))]
-        self.dcx.emit(Box::new(diag), &SimpleFiles::from_files(files()));
+        self.dcx.emit_inner(diag, &SimpleFiles::from_files(files()));
+
+        #[cfg(feature = "snap")]
+        self.emitted.push(diag);
+
+        ErrorEmitted::new()
+    }
+
+    fn emit_inner(&mut self, diag: Box<dyn ToDiagnostic<'a> + 'a>) -> ErrorEmitted {
+        #[cfg(not(feature = "snap"))]
+        self.dcx.emit(&Box::new(diag), &SimpleFiles::from_files(files()));
 
         #[cfg(feature = "snap")]
         self.emitted.push(diag.to_diagnostic());

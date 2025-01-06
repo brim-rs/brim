@@ -7,6 +7,7 @@ use brim::{PrimitiveToken, PrimitiveTokenKind, compiler::CompilerContext, cursor
 use tracing::debug;
 use brim::diag_ctx::{DiagnosticContext, TemporaryDiagnosticContext};
 use brim::diagnostic::ToDiagnostic;
+use brim::files::get_file;
 use brim::item::Visibility;
 use brim::symbols::Symbol;
 
@@ -17,8 +18,7 @@ mod errors;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
-    pub file: &'a SimpleFile,
-    pub cursor: Cursor<'a>,
+    pub file: usize,
     pub primitives: Vec<PrimitiveToken>,
     /// Used for documentation generation to keep comments in the AST. Only in `brim doc`.
     pub keep_comments: bool,
@@ -103,12 +103,9 @@ macro_rules! debug_ident {
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(file: &'a SimpleFile) -> Self {
-        let cursor = Cursor::new(file.source());
-
+    pub fn new(file: usize) -> Self {
         Self {
             file,
-            cursor,
             primitives: vec![],
             keep_comments: false,
             tokens: vec![],
@@ -131,9 +128,13 @@ impl<'a> Parser<'a> {
             }
         }
 
+        let file = get_file(self.file)?;
+        let content = file.source().clone();
+        let mut cursor = Cursor::new(&content);
+
         debug!("Lexing primitive tokens for a barrel");
         loop {
-            let token = self.cursor.next_token();
+            let token = cursor.next_token();
             self.primitives.push(token.clone());
 
             if token.kind == PrimitiveTokenKind::Eof {
@@ -141,7 +142,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let mut lexer = Lexer::new(self.file, &mut self.primitives);
+        let mut lexer = Lexer::new(&file, &mut self.primitives);
         let mut tokens = vec![];
 
         while let Some(token) = lexer.next_token(comp) {

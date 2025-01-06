@@ -49,7 +49,7 @@ impl<'a> Parser<'a> {
 
         if !self.eat_keyword(ptok!(Fn)) {
             self.emit(InvalidFunctionSignature {
-                span: (span, self.file.id()),
+                span: (span, self.file),
                 message: "Expected `fn` keyword".to_string(),
             });
         }
@@ -57,7 +57,7 @@ impl<'a> Parser<'a> {
         // We additionally check if `const` is present after `fn` keyword.
         if self.ahead(0).is_keyword(Const) {
             self.emit(InvalidModifierOrder {
-                span: (span, self.file.id()),
+                span: (span, self.file),
                 message: "`const` keyword should be placed before `fn` keyword".to_string(),
             });
         }
@@ -89,10 +89,11 @@ impl<'a> Parser<'a> {
         let span = self.current().span;
 
         box_diag!(ExpectedIdentifier {
-            span: (span, self.file.id()),
+            span: (span, self.file),
             message: format!("but found `{}`", self.current().kind),
         });
     }
+    
     pub fn parse_constant(&mut self) -> brim::ty::Const {
         if self.eat_keyword(ptok!(Const)) {
             self.advance();

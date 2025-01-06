@@ -5,6 +5,7 @@ use brim_diagnostics::{
 };
 use brim_span::files::SimpleFiles;
 use std::io::stderr;
+use brim_diagnostics::diagnostic::Diagnostic;
 
 #[derive(Debug)]
 pub struct DiagnosticContext {
@@ -18,21 +19,26 @@ impl DiagnosticContext {
         }
     }
 
-    pub fn emit<'diags>(&mut self, diag: Box<dyn ToDiagnostic<'diags> + 'diags>, files: &SimpleFiles) {
+    pub fn emit<'diags>(&mut self, diag: &Box<dyn ToDiagnostic<'diags> + 'diags>, files: &SimpleFiles) {
         let diag = diag.to_diagnostic();
+        
         emit(&mut stderr(), &self.config, files, &diag).unwrap();
     }
 
-    pub fn from_temporary<'diags>(&mut self, temp: TemporaryDiagnosticContext<'diags>, files: &SimpleFiles) {
-        for diag in temp.diags {
-            self.emit(diag, files);
+    pub fn emit_inner<'diags>(&mut self, diag: Diagnostic<'diags, usize>, files: &SimpleFiles) {
+        emit(&mut stderr(), &self.config, files, &diag).unwrap();
+    }
+
+    pub fn from_temporary<'diags>(&mut self, temp: &TemporaryDiagnosticContext<'diags>, files: &SimpleFiles) {
+        for diag in temp.diags.iter() {
+            self.emit_inner(diag.clone(), files);
         }
     }
 }
 
 /// Struct to store diagnostics to be later emitted by the main diagnostic context
 pub struct TemporaryDiagnosticContext<'diags> {
-    pub diags: Vec<Box<dyn ToDiagnostic<'diags> + 'diags>>,
+    pub diags: Vec<Diagnostic<'diags, usize>>,
 }
 
 impl<'diags> TemporaryDiagnosticContext<'diags> {
@@ -43,7 +49,7 @@ impl<'diags> TemporaryDiagnosticContext<'diags> {
     }
 
     pub fn emit(&mut self, diag: Box<dyn ToDiagnostic<'diags> + 'diags>) {
-        self.diags.push(diag);
+        self.diags.push(diag.to_diagnostic());
     }
 }
 

@@ -1,4 +1,14 @@
-pub enum Test {
-    X(i32),
-    Y(i32)
+//pub fn div(a: i32, b: i32) -> i32!string {
+//    if b == 0 {
+//        return @err("Division by zero");
+//    }
+//
+//    return @ok(a / b);
+//};
+
+//pub fn do_action(a: i32, b: i32, c: i32) -> i32!string {
+//    return @try(div(a, b)) + c;
+//};
+
+pub fn const main() {
 };

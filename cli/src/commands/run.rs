@@ -4,9 +4,9 @@ use crate::cli::{
 };
 use anyhow::Result;
 use brim::{compiler::CompilerContext, session::Session, toml::ProjectType};
-use brim_parser::parser_from_simple_file;
 use clap::Command;
 use brim::files::{files, SimpleFiles};
+use brim_parser::parser::Parser;
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -33,13 +33,15 @@ pub fn run_command(sess: &mut Session, comp: &mut CompilerContext) -> Result<()>
                 ProjectType::Bin,
                 "Can only use `run` command on binary projects",
             )?;
-            let main_file = sess.main_file()?;
-            let source_file = sess.get_file(main_file).unwrap();
 
-            let mut parser = parser_from_simple_file(&source_file)?;
+            let main_file = sess.main_file()?;
+
+            let mut parser = Parser::new(main_file);
             let barrel = parser.parse_barrel(comp)?;
-            
-            comp.dcx().from_temporary(parser.diags.dcx, &SimpleFiles::from_files(files()));
+
+            for diag in parser.diags.dcx.diags {
+                comp.emit_dyn(diag);
+            }
 
             Ok(())
         },

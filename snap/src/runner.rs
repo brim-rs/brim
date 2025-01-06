@@ -6,13 +6,14 @@ use brim::{
     span::Span,
     token::TokenKind,
 };
-use brim_parser::{parser::Parser, parser_from_simple_file};
+use brim_parser::{parser::Parser};
 use brim_shell::Shell;
 use once_cell::sync::Lazy;
 use std::{
     sync::{Arc, Mutex},
     time::Instant,
 };
+use brim::files::SimpleFiles;
 
 pub static TEST_RESULTS: Lazy<Arc<Mutex<TestSuite>>> =
     Lazy::new(|| Arc::new(Mutex::new(TestSuite::new())));
@@ -91,9 +92,15 @@ pub fn run_tests(shell: &mut Shell, start: Instant) -> Result<()> {
 
 fn run_file_tests(file: &SimpleFile, shell: &mut Shell) -> Result<()> {
     let ctx = &mut CompilerContext::new();
-    let mut parser = parser_from_simple_file(file)?;
+    let mut parser = Parser::new(file.id());
     parser.keep_comments = true;
     parser.parse_barrel(ctx)?;
+
+    for diag in &parser.diags.dcx.diags {
+        // i need Box<dyn ToDiagnostic> but diag is &Box<dyn ToDiagnostic>
+
+        ctx.emit_diag(diag.clone());
+    }
 
     let comments = directive_comments(&parser);
 
