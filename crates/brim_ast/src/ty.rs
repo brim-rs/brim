@@ -8,7 +8,7 @@ pub struct Ty {
     pub span: Span,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Const {
     Yes,
     No,

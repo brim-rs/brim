@@ -10,5 +10,5 @@
 //    return @try(div(a, b)) + c;
 //};
 
-pub fn main() {
+pub fn const main() {
 };

@@ -6,6 +6,7 @@ use anyhow::Result;
 use brim::{compiler::CompilerContext, session::Session, toml::ProjectType};
 use brim_parser::parser_from_simple_file;
 use clap::Command;
+use brim::files::{files, SimpleFiles};
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -37,6 +38,8 @@ pub fn run_command(sess: &mut Session, comp: &mut CompilerContext) -> Result<()>
 
             let mut parser = parser_from_simple_file(&source_file)?;
             let barrel = parser.parse_barrel(comp)?;
+            
+            comp.dcx().from_temporary(parser.diags.dcx, &SimpleFiles::from_files(files()));
 
             Ok(())
         },

@@ -1,3 +1,5 @@
+use std::cmp::PartialEq;
+use std::fmt::Display;
 use crate::ErrorEmitted;
 use brim_span::{span::Span, symbols::Symbol};
 use crate::item::Ident;
@@ -41,7 +43,7 @@ pub enum Delimiter {
     Bracket,
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Eq)]
 pub enum Orientation {
     Open,
     Close,
@@ -152,6 +154,52 @@ impl Lit {
             kind,
             symbol,
             suffix,
+        }
+    }
+}
+
+impl Display for Lit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.symbol)
+    }
+}
+
+impl Display for TokenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenKind::Delimiter(delimiter, orientation) => {
+                let symbol = match delimiter {
+                    Delimiter::Paren => if orientation == &Orientation::Open { "(" } else { ")" },
+                    Delimiter::Brace => if orientation == &Orientation::Open { "{" } else { "}" },
+                    Delimiter::Bracket => if orientation == &Orientation::Open { "[" } else { "]" },
+                };
+                write!(f, "{}", symbol)
+            }
+            TokenKind::Colon => write!(f, ":"),
+            TokenKind::Comma => write!(f, ","),
+            TokenKind::At => write!(f, "@"),
+            TokenKind::Dot => write!(f, "."),
+            TokenKind::Arrow => write!(f, "->"),
+            TokenKind::Dollar => write!(f, "$"),
+            TokenKind::Semicolon => write!(f, ";"),
+            TokenKind::QuestionMark => write!(f, "?"),
+            TokenKind::Bang => write!(f, "!"),
+            TokenKind::Eq => write!(f, "="),
+            TokenKind::Lt => write!(f, "<"),
+            TokenKind::Le => write!(f, "<="),
+            TokenKind::EqEq => write!(f, "=="),
+            TokenKind::Ne => write!(f, "!="),
+            TokenKind::Ge => write!(f, ">="),
+            TokenKind::Gt => write!(f, ">"),
+            TokenKind::AndAnd => write!(f, "&&"),
+            TokenKind::OrOr => write!(f, "||"),
+            TokenKind::Tilde => write!(f, "~"),
+            TokenKind::Literal(lit) => write!(f, "{}", lit),
+            TokenKind::Ident(ident) => write!(f, "{}", ident),
+            TokenKind::BinOp(bin_op) => write!(f, "{:?}", bin_op),
+            TokenKind::Skipable => write!(f, "Skipable"),
+            TokenKind::DocComment(comment) => write!(f, "DocComment({})", comment),
+            TokenKind::Eof => write!(f, "EOF"),
         }
     }
 }

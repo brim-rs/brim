@@ -29,9 +29,9 @@ impl<'a> CompilerContext<'a> {
         &mut self.dcx
     }
 
-    pub fn emit(&mut self, diag: impl ToDiagnostic<'a>) -> ErrorEmitted {
+    pub fn emit(&mut self, diag: impl ToDiagnostic<'a> + 'a) -> ErrorEmitted {
         #[cfg(not(feature = "snap"))]
-        self.dcx.emit(diag, &SimpleFiles::from_files(files()));
+        self.dcx.emit(Box::new(diag), &SimpleFiles::from_files(files()));
 
         #[cfg(feature = "snap")]
         self.emitted.push(diag.to_diagnostic());

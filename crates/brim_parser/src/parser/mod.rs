@@ -1,26 +1,19 @@
 use crate::{
     lexer::Lexer,
-    parser::{barrel::Barrel, cursor::TokenCursor, symbols::SYMBOL_STRINGS},
+    parser::{barrel::Barrel, cursor::TokenCursor},
 };
 use anyhow::Result;
-use brim::{
-    PrimitiveToken, PrimitiveTokenKind,
-    compiler::CompilerContext,
-    cursor::Cursor,
-    files::SimpleFile,
-    span::Span,
-    symbols::GLOBAL_INTERNER,
-    token::{Token, TokenKind},
-};
+use brim::{PrimitiveToken, PrimitiveTokenKind, compiler::CompilerContext, cursor::Cursor, files::SimpleFile, span::Span, symbols::GLOBAL_INTERNER, token::{Token, TokenKind}, ErrorEmitted, SYMBOL_STRINGS, Pub};
 use tracing::debug;
+use brim::diag_ctx::{DiagnosticContext, TemporaryDiagnosticContext};
+use brim::diagnostic::ToDiagnostic;
 use brim::item::Visibility;
 use brim::symbols::Symbol;
-use crate::parser::symbols::Pub;
 
 pub mod barrel;
 mod cursor;
 mod items;
-mod symbols;
+mod errors;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -33,18 +26,18 @@ pub struct Parser<'a> {
     pub token_cursor: TokenCursor,
     pub current_token: Token,
     pub previous_token: Token,
-    pub diags: ParserDiagnostics,
+    pub diags: ParserDiagnostics<'a>,
 }
 
 #[derive(Debug)]
-pub struct ParserDiagnostics {
-    pub expected_tokens: Vec<PToken>,
+pub struct ParserDiagnostics<'a> {
+    pub dcx: TemporaryDiagnosticContext<'a>,
 }
 
-impl ParserDiagnostics {
+impl<'a> ParserDiagnostics<'a> {
     pub fn new() -> Self {
         Self {
-            expected_tokens: vec![]
+            dcx: TemporaryDiagnosticContext::new(),
         }
     }
 }
@@ -85,6 +78,9 @@ pub enum PTokenKind {
     While,
 }
 
+pub type PResult<'a, T> = Result<T, Box<dyn ToDiagnostic<'a> + 'a>>;
+
+#[macro_export]
 macro_rules! ptok {
     ($sym:ident) => {
         PToken {
@@ -92,6 +88,18 @@ macro_rules! ptok {
             kind: PTokenKind::$sym,
         }
     };
+}
+
+#[macro_export]
+macro_rules! debug_ident {
+    ($( $x:expr ),*) => {
+        {
+            $(
+               #[cfg(debug_assertions)]
+                println!("{}", $x.as_ident().unwrap().name);
+            )*
+        }
+    }
 }
 
 impl<'a> Parser<'a> {
@@ -156,8 +164,13 @@ impl<'a> Parser<'a> {
         self.advance();
 
         loop {
-            let Some(token) = self.parse_item()? else {
-                break;
+            let token = match self.parse_item() {
+                Ok(Some(item)) => item,
+                Ok(None) => break,
+                Err(diag) => {
+                    self.diags.dcx.emit(diag);
+                    break;
+                }
             };
 
             items.push(token);
@@ -197,13 +210,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn valid_keyword(&mut self, p: PToken) -> bool {
-        let is_keyword = self.current().is_keyword(p.sym);
-
-        if !is_keyword {
-            self.diags.expected_tokens.push(p)
-        }
-
-        is_keyword
+        self.current().is_keyword(p.sym)
     }
 
     pub fn parse_visibility(&mut self) -> Visibility {
@@ -214,5 +221,15 @@ impl<'a> Parser<'a> {
         }
 
         Visibility::from_bool(true, self.prev().span)
+    }
+
+    pub fn ahead(&self, n: usize) -> Token {
+        self.token_cursor.tokens[self.token_cursor.current + n - 1].clone()
+    }
+
+    pub fn emit(&mut self, diag: impl ToDiagnostic<'a> + 'a) -> ErrorEmitted {
+        self.diags.dcx.emit(Box::new(diag));
+
+        ErrorEmitted::new()
     }
 }

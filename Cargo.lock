@@ -146,6 +146,9 @@ version = "0.1.0"
 dependencies = [
  "brim-index",
  "brim-span",
+ "brim-symbols-macro",
+ "indexmap",
+ "lazy_static",
 ]
 
 [[package]]
@@ -239,9 +242,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "brim",
- "brim-symbols-macro",
  "indexmap",
- "lazy_static",
  "tracing",
  "unicode-normalization",
 ]

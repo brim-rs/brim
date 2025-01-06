@@ -1,9 +1,4 @@
-use crate::{
-    NodeId,
-    expr::Expr,
-    stmts::Stmt,
-    ty::{Const, Ty},
-};
+use crate::{NodeId, expr::Expr, stmts::Stmt, ty::{Const, Ty}, Break, While};
 use brim_span::{span::Span, symbols::Symbol};
 use std::fmt::Debug;
 
@@ -25,6 +20,10 @@ pub struct Ident {
 impl Ident {
     pub fn new(name: Symbol, span: Span) -> Self {
         Self { name, span }
+    }
+
+    pub fn is_reserved(&self) -> bool {
+        self.name >= Break && self.name <= While
     }
 }
 

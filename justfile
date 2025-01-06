@@ -36,7 +36,7 @@ fix:
     just fmt
 
 run args='':
-    cd playground; cargo run --release -p brim-cli run {{ args }}
+    cd playground; cargo run -p brim-cli run {{ args }}
 
 docs:
     cd docs; bun dev
