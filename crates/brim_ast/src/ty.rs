@@ -1,5 +1,7 @@
 use crate::{ErrorEmitted, NodeId, expr::ConstExpr};
 use brim_span::span::Span;
+use brim_span::symbols::Symbol;
+use crate::item::Ident;
 
 #[derive(Debug, Clone)]
 pub struct Ty {
@@ -48,7 +50,7 @@ pub enum PrimitiveType {
     I16,
     I32,
     I64,
-    
+
     // Unsigned integers
     U8,
     U16,
@@ -62,4 +64,29 @@ pub enum PrimitiveType {
     Bool,
     Char,
     Str,
+}
+
+impl PrimitiveType {
+    pub fn try_from_ident(s: Ident) -> Option<Self> {
+        let s = s.name.as_str().unwrap();
+        match s.as_str() {
+            "i8" => Some(PrimitiveType::I8),
+            "i16" => Some(PrimitiveType::I16),
+            "i32" => Some(PrimitiveType::I32),
+            "i64" => Some(PrimitiveType::I64),
+
+            "u8" => Some(PrimitiveType::U8),
+            "u16" => Some(PrimitiveType::U16),
+            "u32" => Some(PrimitiveType::U32),
+            "u64" => Some(PrimitiveType::U64),
+
+            "f32" => Some(PrimitiveType::F32),
+            "f64" => Some(PrimitiveType::F64),
+
+            "bool" => Some(PrimitiveType::Bool),
+            "char" => Some(PrimitiveType::Char),
+            "str" => Some(PrimitiveType::Str),
+            _ => None,
+        }
+    }
 }

@@ -1,7 +1,7 @@
 use anyhow::bail;
 use crate::parser::{PResult, Parser};
 use anyhow::Result;
-use brim::{box_diag, Const, Fn};
+use brim::{box_diag, Const, Fn, NodeId};
 use brim::compiler::CompilerContext;
 use brim::item::{FnDecl, FnReturnType, FnSignature, Ident, Item, ItemKind};
 use brim::span::Span;
@@ -18,16 +18,21 @@ impl<'a> Parser<'a> {
         }
 
         let span = self.current().span;
-        let token = self.current();
-        let visibility = self.parse_visibility();
+        let vis = self.parse_visibility();
 
-        let kind = if self.is_function() {
+        let (ident, kind) = if self.is_function() {
             self.parse_fn(span)?
         } else {
             return Ok(None)
         };
 
-        Ok(None)
+        Ok(Some(Item {
+            id: NodeId::max(),
+            span,
+            vis,
+            kind,
+            ident,
+        }))
     }
 
     /// Function can only contain `const` before the `fn` keyword eg: `pub const fn foo() {}`
@@ -35,17 +40,17 @@ impl<'a> Parser<'a> {
         self.current().is_keyword(Fn) || (self.current().is_keyword(Const) && self.ahead(1).is_keyword(Fn))
     }
 
-    pub fn parse_fn(&mut self, span: Span) -> PResult<'a, ItemKind> {
+    pub fn parse_fn(&mut self, span: Span) -> PResult<'a, (Ident, ItemKind)> {
         let span = self.current().span;
         let sig = self.parse_fn_signature()?;
         let generics = self.parse_generics()?;
 
-        Ok(ItemKind::Fn(FnDecl {
+        Ok((sig.name, ItemKind::Fn(FnDecl {
             sig,
             generics,
             // todo: implement types and statements
             body: None,
-        }))
+        })))
     }
 
     pub fn parse_fn_signature(&mut self) -> PResult<'a, FnSignature> {

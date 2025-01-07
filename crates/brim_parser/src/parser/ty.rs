@@ -2,8 +2,8 @@ use crate::parser::PToken;
 use crate::parser::PTokenKind;
 use brim::{Const, NodeId};
 use brim::span::Span;
-use brim::token::{BinOpToken, TokenKind};
-use brim::ty::{Const, Ty, TyKind};
+use brim::token::{BinOpToken, Delimiter, Orientation, TokenKind};
+use brim::ty::{Const, PrimitiveType, Ty, TyKind};
 use crate::parser::{PResult, Parser};
 use crate::parser::errors::ConstAfter;
 use crate::{debug_ident, ptok};
@@ -18,8 +18,14 @@ impl<'a> Parser<'a> {
             self.parse_ptr(false)?
         } else if self.current().is_keyword(Const) {
             self.parse_const()?
+        } else if self.current().is_delimiter(Delimiter::Bracket, Orientation::Open) {
+            self.parse_array()?
         } else {
-            todo!()
+            if let Some(primitive) = self.is_primitive()? {
+                TyKind::Primitive(primitive)
+            } else {
+                todo!()
+            }
         };
 
         Ok(Ty {
@@ -52,7 +58,7 @@ impl<'a> Parser<'a> {
         let ty = self.parse_type()?;
         Ok(TyKind::Ref(Box::new(ty), Const::from_bool(constant)))
     }
-    
+
     pub fn parse_ptr(&mut self, constant: bool) -> PResult<'a, TyKind> {
         if self.current().is_keyword(Const) {
             self.emit(ConstAfter {
@@ -63,5 +69,20 @@ impl<'a> Parser<'a> {
 
         let ty = self.parse_type()?;
         Ok(TyKind::Ptr(Box::new(ty), Const::from_bool(constant)))
+    }
+
+    pub fn parse_array(&mut self) -> PResult<'a, TyKind> {
+        self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open))?;
+        let ty = self.parse_type()?;
+
+        self.expect(TokenKind::Semicolon)?;
+        let size = self.parse_const_expr()?;
+
+        self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close))?;
+        Ok(TyKind::Array(Box::new(ty), size))
+    }
+
+    pub fn is_primitive(&mut self) -> PResult<'a, Option<PrimitiveType>> {
+        Ok(PrimitiveType::try_from_ident(self.parse_ident()?))
     }
 }

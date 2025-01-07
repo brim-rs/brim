@@ -3,6 +3,7 @@ use std::fmt::Display;
 use crate::ErrorEmitted;
 use brim_span::{span::Span, symbols::Symbol};
 use crate::item::Ident;
+use crate::ty::PrimitiveType;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Token {
@@ -25,17 +26,29 @@ impl Token {
         }
     }
 
-    pub fn is_keyword(&self, sym: Symbol) -> bool {
+    pub fn is_ident(&self, func: impl FnOnce(Ident) -> bool) -> bool {
         match self.as_ident() {
-            Some(ident) => ident.name == sym,
+            Some(ident) => func(ident),
             None => false,
         }
     }
 
+    pub fn is_keyword(&self, sym: Symbol) -> bool {
+        self.is_ident(|ident| ident.name == sym)
+    }
+
     pub fn is_any_keyword(&self) -> bool {
-        match self.as_ident() {
-            Some(ident) => ident.is_reserved(),
-            None => false,
+        self.is_ident(|ident| ident.is_reserved())
+    }
+
+    pub fn is(&self, kind: TokenKind) -> bool {
+        self.kind == kind
+    }
+
+    pub fn is_delimiter(&self, delimiter: Delimiter, orientation: Orientation) -> bool {
+        match &self.kind {
+            TokenKind::Delimiter(d, o) => d == &delimiter && o == &orientation,
+            _ => false,
         }
     }
 }
