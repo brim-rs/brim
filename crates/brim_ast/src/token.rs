@@ -31,6 +31,13 @@ impl Token {
             None => false,
         }
     }
+
+    pub fn is_any_keyword(&self) -> bool {
+        match self.as_ident() {
+            Some(ident) => ident.is_reserved(),
+            None => false,
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Clone)]

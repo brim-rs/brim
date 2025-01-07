@@ -4,7 +4,7 @@ use brim_span::symbols::Symbol;
 use brim_span::symbols::SymbolIndex;
 use brim_index::index_type;
 
-mod expr;
+pub mod expr;
 pub mod item;
 mod stmts;
 pub mod token;

@@ -38,6 +38,7 @@ impl<'a> Parser<'a> {
     pub fn parse_fn(&mut self, span: Span) -> PResult<'a, ItemKind> {
         let span = self.current().span;
         let signature = self.parse_fn_signature()?;
+        let generics = self.parse_generics()?;
 
         println!("{:?}", signature);
         todo!()
@@ -93,7 +94,7 @@ impl<'a> Parser<'a> {
             message: format!("but found `{}`", self.current().kind),
         });
     }
-    
+
     pub fn parse_constant(&mut self) -> brim::ty::Const {
         if self.eat_keyword(ptok!(Const)) {
             self.advance();

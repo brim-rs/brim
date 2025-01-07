@@ -66,6 +66,15 @@ impl Span {
     pub fn from_start(self) -> Span {
         Span::new(self.start, self.start)
     }
+    
+    /// Returns new empty span with the same end as the current span.
+    pub fn from_end(self) -> Span {
+        Span::new(self.end, self.end)
+    }
+    
+    pub fn to(self, other: Span) -> Span {
+        Span::new(self.start, other.end)
+    }
 }
 
 impl Default for Span {

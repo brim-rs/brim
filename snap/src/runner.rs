@@ -80,8 +80,6 @@ impl TestSuite {
 }
 
 pub fn run_tests(shell: &mut Shell, start: Instant) -> Result<()> {
-    let overall_success = true;
-
     for file in files() {
         run_file_tests(&file, shell)?;
     }
@@ -96,14 +94,11 @@ fn run_file_tests(file: &SimpleFile, shell: &mut Shell) -> Result<()> {
     parser.keep_comments = true;
     parser.parse_barrel(ctx)?;
 
-    println!("diags: {:?}", parser.diags.dcx.diags);
     for diag in &parser.diags.dcx.diags {
-        println!("emitting diag: {:?}", diag);
         ctx.emit_diag(diag.clone());
     }
 
     let comments = directive_comments(&parser);
-
     for comment in comments {
         run_comment_directive(&comment, ctx, shell, file)?;
     }

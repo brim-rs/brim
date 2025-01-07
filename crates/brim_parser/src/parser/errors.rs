@@ -1,6 +1,7 @@
 use brim::Diagnostic;
 use brim::span::Span;
 use brim::diagnostic::{Severity, LabelStyle, Label, ToDiagnostic};
+use brim::token::TokenKind;
 
 #[derive(Diagnostic)]
 #[error("Invalid function signature. {message}")]
@@ -22,6 +23,23 @@ pub struct InvalidModifierOrder {
 #[error("expected identifier. {message}")]
 pub struct ExpectedIdentifier {
     pub(crate) message: String,
+    #[error]
+    pub span: (Span, usize),
+}
+
+// TODO: use `add` label to show `>` in the diagnostic
+#[derive(Diagnostic)]
+#[error("expected closing `>` for generics.")]
+pub struct ExpectedClosingGenerics {
+    #[error]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("expected `{expected}`, but found `{found}`.")]
+pub struct ExpectedToken {
+    pub(crate) expected: TokenKind,
+    pub(crate) found: TokenKind,
     #[error]
     pub span: (Span, usize),
 }

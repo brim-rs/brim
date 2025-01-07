@@ -1,3 +1,3 @@
 
-pub fn const main() {
+pub fn main<>() {
 };

@@ -3,18 +3,22 @@ use crate::{
     parser::{barrel::Barrel, cursor::TokenCursor},
 };
 use anyhow::Result;
-use brim::{PrimitiveToken, PrimitiveTokenKind, compiler::CompilerContext, cursor::Cursor, files::SimpleFile, span::Span, symbols::GLOBAL_INTERNER, token::{Token, TokenKind}, ErrorEmitted, SYMBOL_STRINGS, Pub};
+use brim::{PrimitiveToken, PrimitiveTokenKind, compiler::CompilerContext, cursor::Cursor, files::SimpleFile, span::Span, symbols::GLOBAL_INTERNER, token::{Token, TokenKind}, ErrorEmitted, SYMBOL_STRINGS, Pub, box_diag};
 use tracing::debug;
 use brim::diag_ctx::{DiagnosticContext, TemporaryDiagnosticContext};
 use brim::diagnostic::ToDiagnostic;
 use brim::files::get_file;
 use brim::item::Visibility;
 use brim::symbols::Symbol;
+use crate::parser::errors::ExpectedToken;
 
 pub mod barrel;
 mod cursor;
 mod items;
 mod errors;
+mod generics;
+mod ty;
+mod expr;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -210,6 +214,15 @@ impl<'a> Parser<'a> {
         is
     }
 
+    pub fn eat(&mut self, p: TokenKind) -> bool {
+        let is = self.current().kind == p;
+
+        if is {
+            self.advance();
+        }
+        is
+    }
+
     pub fn valid_keyword(&mut self, p: PToken) -> bool {
         self.current().is_keyword(p.sym)
     }
@@ -232,5 +245,21 @@ impl<'a> Parser<'a> {
         self.diags.dcx.emit(Box::new(diag));
 
         ErrorEmitted::new()
+    }
+
+    pub fn is_ident(&self) -> bool {
+        matches!(self.current().kind, TokenKind::Ident(_)) && !self.current().is_any_keyword()
+    }
+
+    pub fn expect(&mut self, p: TokenKind) -> PResult<'a, Token> {
+        if self.current().kind == p {
+            Ok(self.advance())
+        } else {
+            box_diag!(ExpectedToken {
+                span: (self.current().span, self.file),
+                expected: p,
+                found: self.current().kind,
+            })
+        }
     }
 }

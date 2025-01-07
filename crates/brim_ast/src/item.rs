@@ -1,6 +1,7 @@
 use crate::{NodeId, expr::Expr, stmts::Stmt, ty::{Const, Ty}, Break, While};
 use brim_span::{span::Span, symbols::Symbol};
 use std::fmt::Debug;
+use crate::expr::ConstExpr;
 
 #[derive(Clone, Debug)]
 pub struct Item {
@@ -99,7 +100,7 @@ pub struct GenericParam {
 #[derive(Clone, Debug)]
 pub enum GenericKind {
     Type { default: Option<Ty> },
-    NonType { default: Option<Expr>, ty: Ty },
+    NonType { default: Option<ConstExpr>, ty: Ty },
 }
 
 #[derive(Clone, Debug)]

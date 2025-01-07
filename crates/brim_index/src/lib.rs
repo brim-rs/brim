@@ -17,6 +17,8 @@ macro_rules! index_type {
         )*
 
         impl $name {
+            pub const MAX: u32 = u32::MAX;
+
             /// Creates a new index from a given `u32`.
             ///
             /// # Panics
@@ -25,6 +27,10 @@ macro_rules! index_type {
             $vis const fn from_u32(value: u32) -> Self {
                 assert!(value <= 0xFFFF_FF00);
                 Self { value }
+            }
+
+            $vis const fn max() -> Self {
+                Self { value: Self::MAX }
             }
 
             /// Creates a new index from a given `usize`.
