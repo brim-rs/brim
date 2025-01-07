@@ -3,7 +3,7 @@ use crate::parser::{PResult, Parser};
 use anyhow::Result;
 use brim::{box_diag, Const, Fn};
 use brim::compiler::CompilerContext;
-use brim::item::{FnReturnType, FnSignature, Ident, Item, ItemKind};
+use brim::item::{FnDecl, FnReturnType, FnSignature, Ident, Item, ItemKind};
 use brim::span::Span;
 use brim::symbols::GLOBAL_INTERNER;
 use brim::ty::Const;
@@ -37,11 +37,15 @@ impl<'a> Parser<'a> {
 
     pub fn parse_fn(&mut self, span: Span) -> PResult<'a, ItemKind> {
         let span = self.current().span;
-        let signature = self.parse_fn_signature()?;
+        let sig = self.parse_fn_signature()?;
         let generics = self.parse_generics()?;
 
-        println!("{:?}", signature);
-        todo!()
+        Ok(ItemKind::Fn(FnDecl {
+            sig,
+            generics,
+            // todo: implement types and statements
+            body: None,
+        }))
     }
 
     pub fn parse_fn_signature(&mut self) -> PResult<'a, FnSignature> {

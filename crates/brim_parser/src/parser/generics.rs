@@ -30,7 +30,7 @@ impl<'a> Parser<'a> {
 
         Ok(Generics {
             span: token.to(self.prev().span),
-            params: vec![],
+            params,
         })
     }
 
@@ -60,7 +60,7 @@ impl<'a> Parser<'a> {
                     self.expect(TokenKind::Colon)?;
                     self.parse_type()?
                 };
-                
+
                 let const_expr = if self.eat(TokenKind::Eq) {
                     let expr = self.parse_const_expr()?;
                     Some(expr)
@@ -75,7 +75,7 @@ impl<'a> Parser<'a> {
             } else {
                 break;
             }
-            
+
             if !self.eat(TokenKind::Comma) {
                 break;
             }
