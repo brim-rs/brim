@@ -159,18 +159,29 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
         })
         .collect();
 
-    let message_field_names = message_fields.iter().map(|&ident| quote! { #ident });
+    let message_field_refs = message_fields.iter().map(|&ident| {
+        quote! { let #ident = &self.#ident; }
+    });
 
     let label_implementations = span_fields.iter().map(|(field_ident, message, severity)| {
         if let Some(ident) = field_ident {
             let label_style = get_label_style(severity);
+            let message_field_refs_clone = message_fields.iter().map(|&ident| {
+                quote! { let #ident = &self.#ident; }
+            });
+
             quote! {
-                Label::new(
-                    #label_style,
-                    self.#ident.1,
-                    self.#ident.0.range()
-                )
-                .with_message(#message.to_string())
+                {
+                    #(#message_field_refs_clone)*
+                    let message = format!(#message);
+
+                    Label::new(
+                        #label_style,
+                        self.#ident.1,
+                        self.#ident.0.range()
+                    )
+                    .with_message(message)
+                }
             }
         } else {
             quote! {}
@@ -182,7 +193,7 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
     Ok(TokenStream::from(quote! {
         impl<'a> ToDiagnostic<'a> for #struct_name {
             fn message(&self) -> String {
-                #(let #message_field_names = &self.#message_field_names;)*
+                #(#message_field_refs)*
                 format!(#error_string)
             }
 

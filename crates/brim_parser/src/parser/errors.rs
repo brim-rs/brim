@@ -38,8 +38,16 @@ pub struct ExpectedClosingGenerics {
 #[derive(Diagnostic)]
 #[error("expected `{expected}`, but found `{found}`.")]
 pub struct ExpectedToken {
-    pub(crate) expected: TokenKind,
-    pub(crate) found: TokenKind,
+    pub expected: TokenKind,
+    pub found: TokenKind,
     #[error]
     pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("`const` should be placed before reference of pointer.")]
+pub struct ConstAfter {
+    #[error("move `const` before {before}")]
+    pub span: (Span, usize),
+    pub before: &'static str,
 }
