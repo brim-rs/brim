@@ -10,6 +10,7 @@ use brim::diagnostic::ToDiagnostic;
 use brim::files::get_file;
 use brim::item::Visibility;
 use brim::symbols::Symbol;
+use brim::token::{Delimiter, Orientation};
 use crate::parser::errors::ExpectedToken;
 
 pub mod barrel;
@@ -261,5 +262,29 @@ impl<'a> Parser<'a> {
                 found: self.current().kind,
             })
         }
+    }
+    
+    pub fn expect_oparen(&mut self) -> PResult<'a, Token> {
+        self.expect(TokenKind::Delimiter(Delimiter::Paren, Orientation::Open))
+    }
+    
+    pub fn expect_cparen(&mut self) -> PResult<'a, Token> {
+        self.expect(TokenKind::Delimiter(Delimiter::Paren, Orientation::Close))
+    }
+    
+    pub fn expect_obrace(&mut self) -> PResult<'a, Token> {
+        self.expect(TokenKind::Delimiter(Delimiter::Brace, Orientation::Open))
+    }
+    
+    pub fn expect_cbrace(&mut self) -> PResult<'a, Token> {
+        self.expect(TokenKind::Delimiter(Delimiter::Brace, Orientation::Close))
+    }
+    
+    pub fn expect_obracket(&mut self) -> PResult<'a, Token> {
+        self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open))
+    }
+    
+    pub fn expect_cbracket(&mut self) -> PResult<'a, Token> {
+        self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close))
     }
 }

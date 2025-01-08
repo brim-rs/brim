@@ -72,13 +72,13 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_array(&mut self) -> PResult<'a, TyKind> {
-        self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open))?;
-        let ty = self.parse_type()?;
+        self.expect_oparen()?;
 
+        let ty = self.parse_type()?;
         self.expect(TokenKind::Semicolon)?;
         let size = self.parse_const_expr()?;
 
-        self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close))?;
+        self.expect_cparen()?;
         Ok(TyKind::Array(Box::new(ty), size))
     }
 
