@@ -51,3 +51,26 @@ pub struct ConstAfter {
     pub span: (Span, usize),
     pub before: &'static str,
 }
+
+#[derive(Diagnostic)]
+#[error("couldn't find parameter list for function.")]
+pub struct MissingParamList {
+    #[error]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[warning("unnecessary `self` keyword. `self` is always available in methods.")]
+pub struct UnnecessarySelf {
+    #[warning("argument will be ignored")]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("`self` keyword is only available in methods.")]
+pub struct SelfOutsideMethod {
+    #[error]
+    pub span: (Span, usize),
+    #[note]
+    pub note: &'static str,
+}

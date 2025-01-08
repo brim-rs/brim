@@ -34,14 +34,15 @@ generate_symbols! {
     Null = "null",
     Pub = "pub",
     Return = "return",
-    SelfBig = "Self",
-    SelfSmall = "Small",
     Struct = "struct",
     Then = "then",
     Trait = "trait",
     True = "true",
     Use = "use",
     While = "while",
+
+    SelfBig = "Self",
+    SelfSmall = "self",
 }
 
 

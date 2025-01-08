@@ -13,7 +13,7 @@ pub enum MacroFunctionError {
     MissingAttribute,
 }
 
-const VALID_SEVERITIES: &[&str] = &["help", "note", "warning", "error", "bug"];
+const VALID_SEVERITIES: &[&str] = &["help", "warning", "error", "bug"];
 
 fn get_string_literal(expr: &Expr) -> Result<String, MacroFunctionError> {
     match expr {
@@ -124,6 +124,27 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
         })
         .collect();
 
+    let note_fields: Vec<_> = fields
+        .named
+        .iter()
+        .filter_map(|field| {
+            let ident = field.attrs.iter().find(|attr| {
+                let ident = attr
+                    .path()
+                    .segments
+                    .last()
+                    .unwrap()
+                    .ident
+                    .to_string()
+                    .to_lowercase();
+                ident == "note"
+            })?;
+
+            field.ident.as_ref()
+        }).collect();
+    println!("{:?}", note_fields);
+
+
     let span_fields: Vec<_> = fields
         .named
         .iter()
@@ -187,6 +208,12 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
             quote! {}
         }
     });
+    
+    let notes = note_fields.iter().map(|&ident| {
+        quote! {
+            let #ident = &self.#ident;
+        }
+    });
 
     let severity_ident = syn::Ident::new(&severity_variant, proc_macro2::Span::call_site());
 
@@ -212,7 +239,11 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
             }
 
             fn notes(&self) -> Vec<String> {
-                vec![]
+                #(#notes)*
+                
+                vec![
+                    #(#note_fields.to_string(),)*
+                ]
             }
         }
     }))

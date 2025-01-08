@@ -1,15 +1,32 @@
 use anyhow::bail;
 use crate::parser::{PResult, Parser};
 use anyhow::Result;
-use brim::{box_diag, Const, Fn, NodeId};
+use brim::{box_diag, Const, Fn, NodeId, SelfSmall};
 use brim::compiler::CompilerContext;
-use brim::item::{FnDecl, FnReturnType, FnSignature, Ident, Item, ItemKind};
+use brim::item::{FnDecl, FnReturnType, FnSignature, Ident, Item, ItemKind, Param};
 use brim::span::Span;
 use brim::symbols::GLOBAL_INTERNER;
+use brim::token::{Delimiter, Orientation, TokenKind};
 use brim::ty::Const;
 use crate::{debug_ident, ptok};
 use crate::parser::{PToken, PTokenKind};
-use crate::parser::errors::{ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder};
+use crate::parser::errors::{ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder, MissingParamList, SelfOutsideMethod, UnnecessarySelf};
+
+#[derive(Debug)]
+pub enum FunctionContext {
+    Item,
+    Trait,
+    Impl,
+}
+
+impl FunctionContext {
+    pub fn allows_self(&self) -> bool {
+        match self {
+            FunctionContext::Item => false,
+            _ => true,
+        }
+    }
+}
 
 impl<'a> Parser<'a> {
     pub fn parse_item(&mut self) -> PResult<'a, Option<Item>> {
@@ -21,7 +38,7 @@ impl<'a> Parser<'a> {
         let vis = self.parse_visibility();
 
         let (ident, kind) = if self.is_function() {
-            self.parse_fn(span)?
+            self.parse_fn(span, FunctionContext::Item)?
         } else {
             return Ok(None)
         };
@@ -40,10 +57,13 @@ impl<'a> Parser<'a> {
         self.current().is_keyword(Fn) || (self.current().is_keyword(Const) && self.ahead(1).is_keyword(Fn))
     }
 
-    pub fn parse_fn(&mut self, span: Span) -> PResult<'a, (Ident, ItemKind)> {
+    pub fn parse_fn(&mut self, span: Span, fn_ctx: FunctionContext) -> PResult<'a, (Ident, ItemKind)> {
         let span = self.current().span;
-        let sig = self.parse_fn_signature()?;
+        let mut sig = self.parse_fn_signature()?;
         let generics = self.parse_generics()?;
+        let params = self.parse_fn_params(fn_ctx)?;
+
+        sig.params = params;
 
         Ok((sig.name, ItemKind::Fn(FnDecl {
             sig,
@@ -81,6 +101,53 @@ impl<'a> Parser<'a> {
             params: vec![],
             return_type: FnReturnType::Default,
         })
+    }
+
+    pub fn parse_fn_params(&mut self, fn_ctx: FunctionContext) -> PResult<'a, Vec<Param>> {
+        let mut params = vec![];
+        if !self.current_token.is_delimiter(Delimiter::Paren, Orientation::Open) {
+            self.emit(MissingParamList {
+                span: (self.prev().span.from_end(), self.file),
+            });
+
+            return Ok(params);
+        }
+        self.expect_oparen()?;
+
+        while !self.current_token.is_delimiter(Delimiter::Paren, Orientation::Close) {
+            let span_start = self.current().span;
+            let ident = self.parse_ident()?;
+
+            if ident.name == SelfSmall {
+                if !fn_ctx.allows_self() {
+                    box_diag!(SelfOutsideMethod {
+                        span: (ident.span, self.file),
+                        note: "this parameter would be unnecessary. `self` is always accessible in the right context",
+                    });
+                } else {
+                    box_diag!(UnnecessarySelf {
+                        span: (ident.span, self.file),
+                    });
+                }
+            }
+
+            self.expect(TokenKind::Colon)?;
+            let ty = self.parse_type()?;
+
+            params.push(Param {
+                id: NodeId::max(),
+                span: span_start.to(self.prev().span),
+                ty,
+            });
+
+            if self.eat(TokenKind::Comma) {
+                self.advance();
+            }
+        }
+
+        self.expect_cparen()?;
+
+        Ok(params)
     }
 
     pub fn parse_ident(&mut self) -> PResult<'a, Ident> {

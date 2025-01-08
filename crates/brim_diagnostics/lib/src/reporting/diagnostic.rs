@@ -97,10 +97,6 @@ impl<'a, FileId> Diagnostic<'a, FileId> {
         Diagnostic::new(Severity::Warning)
     }
 
-    pub fn note() -> Diagnostic<'a, FileId> {
-        Diagnostic::new(Severity::Note)
-    }
-
     pub fn help() -> Diagnostic<'a, FileId> {
         Diagnostic::new(Severity::Help)
     }
