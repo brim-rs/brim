@@ -56,21 +56,21 @@ impl<'a> Lexer<'a> {
             PrimitiveTokenKind::Ident => self.ident(start),
 
             PrimitiveTokenKind::InvalidIdent
-                if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
-                    let sym = self.content_from(start);
-                    sym.chars().count() == 1 && c == sym.chars().next().unwrap()
-                }) =>
-            {
-                let symbol = nfc_normalize(self.content_from(start));
-                let span = Span::new(start, self.pos);
+            if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
+                let sym = self.content_from(start);
+                sym.chars().count() == 1 && c == sym.chars().next().unwrap()
+            }) =>
+                {
+                    let symbol = nfc_normalize(self.content_from(start));
+                    let span = Span::new(start, self.pos);
 
-                comp.emit(EmojiIdentifier {
-                    ident: symbol,
-                    label: (span, self.file.id()),
-                });
+                    comp.emit(EmojiIdentifier {
+                        ident: symbol,
+                        label: (span, self.file.id()),
+                    });
 
-                TokenKind::Ident(symbol)
-            }
+                    TokenKind::Ident(symbol)
+                }
 
             PrimitiveTokenKind::Literal { kind, suffix_start } => {
                 let suffix_start = start + ByteOffset(suffix_start as RawOffset);
@@ -115,8 +115,13 @@ impl<'a> Lexer<'a> {
                 TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close)
             }
 
-            // Binary ops
-            PrimitiveTokenKind::Minus => TokenKind::BinOp(BinOpToken::Minus),
+            // Compound token handlers
+            PrimitiveTokenKind::Minus => self.try_lex_arrow(),
+            PrimitiveTokenKind::Equals => self.try_lex_double_equals(),
+            PrimitiveTokenKind::Bang => self.try_lex_not_equals(),
+            PrimitiveTokenKind::GreaterThan => self.try_lex_greater_equals(),
+            PrimitiveTokenKind::LessThan => self.try_lex_less_equals(),
+
             PrimitiveTokenKind::Ampersand => TokenKind::BinOp(BinOpToken::And),
             PrimitiveTokenKind::Pipe => TokenKind::BinOp(BinOpToken::Or),
             PrimitiveTokenKind::Plus => TokenKind::BinOp(BinOpToken::Plus),
@@ -134,13 +139,7 @@ impl<'a> Lexer<'a> {
             PrimitiveTokenKind::QuestionMark => TokenKind::QuestionMark,
             PrimitiveTokenKind::Colon => TokenKind::Colon,
             PrimitiveTokenKind::Dollar => TokenKind::Dollar,
-
-            // Comparison
-            PrimitiveTokenKind::Equals => TokenKind::Eq,
-            PrimitiveTokenKind::Bang => TokenKind::Bang,
-            PrimitiveTokenKind::LessThan => TokenKind::Lt,
-            PrimitiveTokenKind::GreaterThan => TokenKind::Gt,
-
+            
             PrimitiveTokenKind::Unknown => {
                 let span = Span::new(start, self.pos);
                 let content = self.content_from(start);
@@ -160,10 +159,66 @@ impl<'a> Lexer<'a> {
         Some(Token::new(kind, span))
     }
 
+    // Arrow token ->
+    fn try_lex_arrow(&mut self) -> TokenKind {
+        self.try_compound_token(
+            PrimitiveTokenKind::GreaterThan,
+            TokenKind::Arrow,
+            TokenKind::BinOp(BinOpToken::Minus),
+        )
+    }
+
+    // Double equals ==
+    fn try_lex_double_equals(&mut self) -> TokenKind {
+        self.try_compound_token(
+            PrimitiveTokenKind::Equals,
+            TokenKind::EqEq,
+            TokenKind::Eq,
+        )
+    }
+
+    // Not equals !=
+    fn try_lex_not_equals(&mut self) -> TokenKind {
+        self.try_compound_token(
+            PrimitiveTokenKind::Equals,
+            TokenKind::Ne,
+            TokenKind::Bang,
+        )
+    }
+
+    // Greater than or equals >=
+    fn try_lex_greater_equals(&mut self) -> TokenKind {
+        self.try_compound_token(
+            PrimitiveTokenKind::Equals,
+            TokenKind::Ge,
+            TokenKind::Gt,
+        )
+    }
+
+    // Less than or equals <=
+    fn try_lex_less_equals(&mut self) -> TokenKind {
+        self.try_compound_token(
+            PrimitiveTokenKind::Equals,
+            TokenKind::Le,
+            TokenKind::Lt,
+        )
+    }
+
     pub fn content_from_to(&self, start: ByteIndex, end: ByteIndex) -> &str {
         let start = start.to_usize();
         let end = end.to_usize();
         &self.file.source()[start..end]
+    }
+
+    pub fn try_compound_token(&mut self, next_kind: PrimitiveTokenKind, compound_token: TokenKind, default_token: TokenKind) -> TokenKind {
+        if !self.primitives.is_empty() && self.primitives[0].kind == next_kind {
+            // Consume the second token
+            self.primitives.remove(0);
+            self.pos = self.pos + ByteOffset(1);
+            compound_token
+        } else {
+            default_token
+        }
     }
 
     pub fn content_from(&self, start: ByteIndex) -> &str {

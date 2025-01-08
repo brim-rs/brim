@@ -3,7 +3,7 @@ use crate::parser::{PResult, Parser};
 use anyhow::Result;
 use brim::{box_diag, Const, Fn, NodeId, SelfSmall};
 use brim::compiler::CompilerContext;
-use brim::item::{FnDecl, FnReturnType, FnSignature, Ident, Item, ItemKind, Param};
+use brim::item::{FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Param};
 use brim::span::Span;
 use brim::symbols::GLOBAL_INTERNER;
 use brim::token::{Delimiter, Orientation, TokenKind};
@@ -43,6 +43,7 @@ impl<'a> Parser<'a> {
             return Ok(None)
         };
 
+        println!("Parsed item: {:#?}", kind);
         Ok(Some(Item {
             id: NodeId::max(),
             span,
@@ -59,11 +60,8 @@ impl<'a> Parser<'a> {
 
     pub fn parse_fn(&mut self, span: Span, fn_ctx: FunctionContext) -> PResult<'a, (Ident, ItemKind)> {
         let span = self.current().span;
-        let mut sig = self.parse_fn_signature()?;
-        let generics = self.parse_generics()?;
-        let params = self.parse_fn_params(fn_ctx)?;
+        let (generics, sig) = self.parse_fn_signature(fn_ctx)?;
 
-        sig.params = params;
 
         Ok((sig.name, ItemKind::Fn(FnDecl {
             sig,
@@ -73,7 +71,7 @@ impl<'a> Parser<'a> {
         })))
     }
 
-    pub fn parse_fn_signature(&mut self) -> PResult<'a, FnSignature> {
+    pub fn parse_fn_signature(&mut self, fn_ctx: FunctionContext) -> PResult<'a, (Generics, FnSignature)> {
         let span = self.current().span;
         let constant = self.parse_constant();
 
@@ -93,14 +91,27 @@ impl<'a> Parser<'a> {
         }
 
         let ident = self.parse_ident()?;
+        let generics = self.parse_generics()?;
+        let params = self.parse_fn_params(fn_ctx)?;
 
-        Ok(FnSignature {
+        let ret_type = self.parse_return_type()?;
+
+        Ok((generics, FnSignature {
             constant,
             span,
             name: ident,
-            params: vec![],
-            return_type: FnReturnType::Default,
-        })
+            params,
+            return_type: ret_type,
+        }))
+    }
+
+    pub fn parse_return_type(&mut self) -> PResult<'a, FnReturnType> {
+        if self.eat(TokenKind::Arrow) {
+            let ty = self.parse_type()?;
+            Ok(FnReturnType::Ty(ty))
+        } else {
+            Ok(FnReturnType::Default)
+        }
     }
 
     pub fn parse_fn_params(&mut self, fn_ctx: FunctionContext) -> PResult<'a, Vec<Param>> {
