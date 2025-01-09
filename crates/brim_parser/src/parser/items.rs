@@ -10,9 +10,9 @@ use brim::token::{Delimiter, Orientation, TokenKind};
 use brim::ty::Const;
 use crate::{debug_ident, ptok};
 use crate::parser::{PToken, PTokenKind};
-use crate::parser::errors::{ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder, MissingParamList, SelfOutsideMethod, UnnecessarySelf};
+use crate::parser::errors::{EmptyBody, ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder, MissingParamList, SelfOutsideMethod, UnnecessarySelf};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum FunctionContext {
     Item,
     Trait,
@@ -24,6 +24,13 @@ impl FunctionContext {
         match self {
             FunctionContext::Item => false,
             _ => true,
+        }
+    }
+
+    pub fn allows_empty_body(&self) -> bool {
+        match self {
+            FunctionContext::Trait => true,
+            _ => false,
         }
     }
 }
@@ -62,6 +69,7 @@ impl<'a> Parser<'a> {
         let span = self.current().span;
         let (generics, sig) = self.parse_fn_signature(fn_ctx)?;
 
+        let body = self.parse_fn_body(fn_ctx)?;
 
         Ok((sig.name, ItemKind::Fn(FnDecl {
             sig,
@@ -69,6 +77,26 @@ impl<'a> Parser<'a> {
             // todo: implement types and statements
             body: None,
         })))
+    }
+
+    pub fn parse_fn_body(&mut self, fn_ctx: FunctionContext) -> PResult<'a, ()> {
+        if self.eat(TokenKind::Semicolon) {
+            if !fn_ctx.allows_empty_body() {
+                self.emit(EmptyBody {
+                    span: (self.prev().span, self.file),
+                });
+            }
+
+            return Ok(());
+        }
+
+        self.expect_obrace()?;
+
+        
+
+        self.expect_cbrace()?;
+
+        Ok(())
     }
 
     pub fn parse_fn_signature(&mut self, fn_ctx: FunctionContext) -> PResult<'a, (Generics, FnSignature)> {

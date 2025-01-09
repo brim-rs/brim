@@ -66,6 +66,7 @@ pub struct UnnecessarySelf {
     pub span: (Span, usize),
 }
 
+// TODO: consider changing to something like: "`self` not allowed as a parameter name."
 #[derive(Diagnostic)]
 #[error("`self` keyword is only available in methods.")]
 pub struct SelfOutsideMethod {
@@ -73,4 +74,11 @@ pub struct SelfOutsideMethod {
     pub span: (Span, usize),
     #[note]
     pub note: &'static str,
+}
+
+#[derive(Diagnostic)]
+#[error("only trait methods can have empty body.")]
+pub struct EmptyBody {
+    #[error]
+    pub span: (Span, usize),
 }
