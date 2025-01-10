@@ -1,16 +1,24 @@
-use anyhow::bail;
-use crate::parser::{PResult, Parser};
-use anyhow::Result;
-use brim::{box_diag, Const, Fn, NodeId, SelfSmall};
-use brim::compiler::CompilerContext;
-use brim::item::{FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Param};
-use brim::span::Span;
-use brim::symbols::GLOBAL_INTERNER;
-use brim::token::{Delimiter, Orientation, TokenKind};
-use brim::ty::Const;
-use crate::{debug_ident, ptok};
-use crate::parser::{PToken, PTokenKind};
-use crate::parser::errors::{EmptyBody, ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder, MissingParamList, SelfOutsideMethod, UnnecessarySelf};
+use crate::{
+    debug_ident,
+    parser::{
+        PResult, PToken, PTokenKind, Parser,
+        errors::{
+            EmptyBody, ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder,
+            MissingParamList, SelfOutsideMethod, UnnecessarySelf,
+        },
+    },
+    ptok,
+};
+use anyhow::{Result, bail};
+use brim::{
+    Const, Fn, NodeId, SelfSmall, box_diag,
+    compiler::CompilerContext,
+    item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Param},
+    span::Span,
+    symbols::GLOBAL_INTERNER,
+    token::{Delimiter, Orientation, TokenKind},
+    ty::Const,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub enum FunctionContext {
@@ -47,7 +55,7 @@ impl<'a> Parser<'a> {
         let (ident, kind) = if self.is_function() {
             self.parse_fn(span, FunctionContext::Item)?
         } else {
-            return Ok(None)
+            return Ok(None);
         };
 
         println!("Parsed item: {:#?}", kind);
@@ -62,24 +70,31 @@ impl<'a> Parser<'a> {
 
     /// Function can only contain `const` before the `fn` keyword eg: `pub const fn foo() {}`
     pub fn is_function(&self) -> bool {
-        self.current().is_keyword(Fn) || (self.current().is_keyword(Const) && self.ahead(1).is_keyword(Fn))
+        self.current().is_keyword(Fn)
+            || (self.current().is_keyword(Const) && self.ahead(1).is_keyword(Fn))
     }
 
-    pub fn parse_fn(&mut self, span: Span, fn_ctx: FunctionContext) -> PResult<'a, (Ident, ItemKind)> {
+    pub fn parse_fn(
+        &mut self,
+        span: Span,
+        fn_ctx: FunctionContext,
+    ) -> PResult<'a, (Ident, ItemKind)> {
         let span = self.current().span;
         let (generics, sig) = self.parse_fn_signature(fn_ctx)?;
 
         let body = self.parse_fn_body(fn_ctx)?;
 
-        Ok((sig.name, ItemKind::Fn(FnDecl {
-            sig,
-            generics,
-            // todo: implement types and statements
-            body: None,
-        })))
+        Ok((
+            sig.name,
+            ItemKind::Fn(FnDecl {
+                sig,
+                generics,
+                body,
+            }),
+        ))
     }
 
-    pub fn parse_fn_body(&mut self, fn_ctx: FunctionContext) -> PResult<'a, ()> {
+    pub fn parse_fn_body(&mut self, fn_ctx: FunctionContext) -> PResult<'a, Option<Block>> {
         if self.eat(TokenKind::Semicolon) {
             if !fn_ctx.allows_empty_body() {
                 self.emit(EmptyBody {
@@ -87,19 +102,20 @@ impl<'a> Parser<'a> {
                 });
             }
 
-            return Ok(());
+            return Ok(None);
         }
 
         self.expect_obrace()?;
-
-        
-
+        let block = self.parse_block()?;
         self.expect_cbrace()?;
 
-        Ok(())
+        Ok(Some(block))
     }
 
-    pub fn parse_fn_signature(&mut self, fn_ctx: FunctionContext) -> PResult<'a, (Generics, FnSignature)> {
+    pub fn parse_fn_signature(
+        &mut self,
+        fn_ctx: FunctionContext,
+    ) -> PResult<'a, (Generics, FnSignature)> {
         let span = self.current().span;
         let constant = self.parse_constant();
 
@@ -144,7 +160,10 @@ impl<'a> Parser<'a> {
 
     pub fn parse_fn_params(&mut self, fn_ctx: FunctionContext) -> PResult<'a, Vec<Param>> {
         let mut params = vec![];
-        if !self.current_token.is_delimiter(Delimiter::Paren, Orientation::Open) {
+        if !self
+            .current_token
+            .is_delimiter(Delimiter::Paren, Orientation::Open)
+        {
             self.emit(MissingParamList {
                 span: (self.prev().span.from_end(), self.file),
             });
@@ -153,7 +172,10 @@ impl<'a> Parser<'a> {
         }
         self.expect_oparen()?;
 
-        while !self.current_token.is_delimiter(Delimiter::Paren, Orientation::Close) {
+        while !self
+            .current_token
+            .is_delimiter(Delimiter::Paren, Orientation::Close)
+        {
             let span_start = self.current().span;
             let ident = self.parse_ident()?;
 

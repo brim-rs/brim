@@ -1,25 +1,30 @@
 use crate::{
     lexer::Lexer,
-    parser::{barrel::Barrel, cursor::TokenCursor},
+    parser::{barrel::Barrel, cursor::TokenCursor, errors::ExpectedToken},
 };
 use anyhow::Result;
-use brim::{PrimitiveToken, PrimitiveTokenKind, compiler::CompilerContext, cursor::Cursor, files::SimpleFile, span::Span, symbols::GLOBAL_INTERNER, token::{Token, TokenKind}, ErrorEmitted, SYMBOL_STRINGS, Pub, box_diag};
+use brim::{
+    ErrorEmitted, PrimitiveToken, PrimitiveTokenKind, Pub, SYMBOL_STRINGS, box_diag,
+    compiler::CompilerContext,
+    cursor::Cursor,
+    diag_ctx::{DiagnosticContext, TemporaryDiagnosticContext},
+    diagnostic::ToDiagnostic,
+    files::{SimpleFile, get_file},
+    item::Visibility,
+    span::Span,
+    symbols::{GLOBAL_INTERNER, Symbol},
+    token::{Delimiter, Orientation, Token, TokenKind},
+};
 use tracing::debug;
-use brim::diag_ctx::{DiagnosticContext, TemporaryDiagnosticContext};
-use brim::diagnostic::ToDiagnostic;
-use brim::files::get_file;
-use brim::item::Visibility;
-use brim::symbols::Symbol;
-use brim::token::{Delimiter, Orientation};
-use crate::parser::errors::ExpectedToken;
 
 pub mod barrel;
 mod cursor;
-mod items;
 mod errors;
-mod generics;
-mod ty;
 mod expr;
+mod generics;
+mod items;
+mod stmt;
+mod ty;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -263,28 +268,36 @@ impl<'a> Parser<'a> {
             })
         }
     }
-    
+
     pub fn expect_oparen(&mut self) -> PResult<'a, Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Paren, Orientation::Open))
     }
-    
+
     pub fn expect_cparen(&mut self) -> PResult<'a, Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Paren, Orientation::Close))
     }
-    
+
     pub fn expect_obrace(&mut self) -> PResult<'a, Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Brace, Orientation::Open))
     }
-    
+
     pub fn expect_cbrace(&mut self) -> PResult<'a, Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Brace, Orientation::Close))
     }
-    
+
     pub fn expect_obracket(&mut self) -> PResult<'a, Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open))
     }
-    
+
     pub fn expect_cbracket(&mut self) -> PResult<'a, Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close))
+    }
+
+    pub fn eat_while(&mut self, p: TokenKind) {
+        while self.eat(p.clone()) {}
+    }
+
+    pub fn eat_semis(&mut self) {
+        self.eat_while(TokenKind::Semicolon);
     }
 }
