@@ -1,4 +1,4 @@
 
 pub fn main<T: const &i32>(x: i32) -> i32 {
-    let y = x + 1;
+    let y = try 10 / 0;
 };

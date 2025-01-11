@@ -173,6 +173,7 @@ pub enum BinOpToken {
     Or,
     ShiftLeft,
     ShiftRight,
+    Power
 }
 
 impl Token {

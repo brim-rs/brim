@@ -36,6 +36,7 @@ generate_symbols! {
     Then = "then",
     Trait = "trait",
     True = "true",
+    Try = "try",
     Use = "use",
     While = "while",
 

@@ -176,12 +176,12 @@ impl<'a> Lexer<'a> {
         )
     }
 
+    /// Can be either: `**`, `*`, or `*=`
     fn try_lex_star_assign(&mut self) -> TokenKind {
-        self.try_compound_token(
-            PrimitiveTokenKind::Equals,
-            TokenKind::AssignOp(AssignOpToken::StarEq),
-            TokenKind::BinOp(BinOpToken::Star),
-        )
+        self.try_multi_char_token(&[
+            (PrimitiveTokenKind::Asterisk, TokenKind::BinOp(BinOpToken::Star)),
+            (PrimitiveTokenKind::Equals, TokenKind::AssignOp(AssignOpToken::StarEq)),
+        ], TokenKind::BinOp(BinOpToken::Power))
     }
 
     fn try_lex_slash_assign(&mut self) -> TokenKind {
