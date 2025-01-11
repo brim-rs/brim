@@ -64,7 +64,7 @@ impl<'a> Parser<'a> {
 
         let value = if self.eat(TokenKind::Eq) {
             Some(self.parse_expr()?)
-        } else if let Some(op) = self.current().is_assign() {
+        } else if let Some(op) = self.current().is_compound_assign() {
             box_diag!(InvalidVariableInit {
                 found: op,
                 span: (self.current().span, self.file),

@@ -53,11 +53,15 @@ impl Token {
     }
 
     /// Check if the token is an assignment operator other than `=`, eg: `+=`, `-=`, etc.
-    pub fn is_assign(&self) -> Option<AssignOpToken> {
+    pub fn is_compound_assign(&self) -> Option<AssignOpToken> {
         match &self.kind {
             TokenKind::AssignOp(op) => Some(*op),
             _ => None,
         }
+    }
+
+    pub fn is_assign(&self) -> bool {
+        self.is(TokenKind::Eq)
     }
 }
 
@@ -173,7 +177,7 @@ pub enum BinOpToken {
     Or,
     ShiftLeft,
     ShiftRight,
-    Power
+    Power,
 }
 
 impl Token {

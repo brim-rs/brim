@@ -24,7 +24,18 @@ impl<'a> Parser<'a> {
     fn parse_assignment_expr(&mut self) -> PResult<'a, Expr> {
         let expr = self.parse_binary_expression()?;
 
-        if let Some(op) = self.current().is_assign() {}
+        if let Some(op) = self.current().is_compound_assign() {
+            self.advance();
+            let right = self.parse_assignment_expr()?;
+            return Ok(self.new_expr(expr.span.to(right.span), ExprKind::AssignOp(Box::new(expr), op, Box::new(right))));
+        }
+
+        if self.current().is_assign() {
+            self.advance();
+        
+            let right = self.parse_assignment_expr()?;
+            return Ok(self.new_expr(expr.span.to(right.span), ExprKind::Assign(Box::new(expr), Box::new(right))));
+        }
 
         Ok(expr)
     }

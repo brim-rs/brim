@@ -1,7 +1,7 @@
 use crate::NodeId;
 use brim_span::span::Span;
 use crate::item::Ident;
-use crate::token::Lit;
+use crate::token::{AssignOpToken, Lit};
 
 #[derive(Clone, Debug)]
 pub struct Expr {
@@ -27,6 +27,10 @@ pub enum ExprKind {
     Return(Box<Expr>),
     /// `x`
     Var(Ident),
+    /// `x += 1`, `x *= 2`
+    AssignOp(Box<Expr>, AssignOpToken, Box<Expr>),
+    /// `x = 1`, `y = x`
+    Assign(Box<Expr>, Box<Expr>),
 }
 
 #[derive(Clone, Debug)]

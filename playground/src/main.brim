@@ -2,5 +2,7 @@
 pub fn main<T: const &i32>(x: i32) -> i32 {
     let y = x + 1;
 
+    y += 3;
+
     return y;
 };
