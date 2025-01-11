@@ -1,5 +1,7 @@
 use crate::NodeId;
 use brim_span::span::Span;
+use crate::item::Ident;
+use crate::token::Lit;
 
 #[derive(Clone, Debug)]
 pub struct Expr {
@@ -13,6 +15,12 @@ pub enum ExprKind {
     Binary(Box<Expr>, BinOpKind, Box<Expr>),
     /// `try x()`, `!x`
     Unary(UnaryOp, Box<Expr>),
+    /// `x.name`
+    Field(Box<Expr>, Ident),
+    /// `x[0]`
+    Index(Box<Expr>, Box<Expr>),
+    /// `123`, `"hello"`, etc.
+    Literal(Lit)
 }
 
 #[derive(Clone, Debug)]

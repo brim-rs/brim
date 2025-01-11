@@ -1,9 +1,10 @@
 use brim::expr::{BinOpAssociativity, BinOpKind, ConstExpr, Expr, ExprKind, UnaryOp};
-use brim::{NodeId, Try};
+use brim::{box_diag, NodeId, Try};
 use brim::span::Span;
-use brim::token::{BinOpToken, TokenKind};
+use brim::token::{BinOpToken, Delimiter, Orientation, TokenKind};
 use brim::ty::{Const, Ty};
 use crate::parser::{PResult, Parser};
+use crate::parser::errors::UnexpectedToken;
 
 impl<'a> Parser<'a> {
     pub fn parse_const_expr(&mut self) -> PResult<'a, ConstExpr> {
@@ -99,9 +100,43 @@ impl<'a> Parser<'a> {
 
         self.parse_access_expr()
     }
-    
+
     pub fn parse_access_expr(&mut self) -> PResult<'a, Expr> {
-        todo!("parse_access_expr")
+        let mut primary = self.parse_primary_expr()?;
+
+        loop {
+            match self.current().kind {
+                TokenKind::Dot => {
+                    self.advance();
+                    let ident = self.parse_ident()?;
+                    primary = self.new_expr(primary.span.to(ident.span), ExprKind::Field(Box::new(primary), ident));
+                }
+                TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
+                    self.advance();
+                    let index = self.parse_expr()?;
+                    self.expect_cbracket()?;
+                    primary = self.new_expr(primary.span.to(index.span), ExprKind::Index(Box::new(primary), Box::new(index)));
+                }
+                _ => break,
+            }
+        }
+
+        Ok(primary)
+    }
+
+    pub fn parse_primary_expr(&mut self) -> PResult<'a, Expr> {
+        match self.current().kind {
+            TokenKind::Literal(lit) => {
+                let span = self.advance().span;
+                Ok(self.new_expr(span, ExprKind::Literal(lit)))
+            }
+            _ => {
+                box_diag!(UnexpectedToken {
+                    found: self.current().kind,
+                    span: (self.current().span, self.file),
+                })
+            }
+        }
     }
 
     fn peek_unary_op(&mut self) -> Option<UnaryOp> {

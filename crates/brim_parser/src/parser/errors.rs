@@ -90,3 +90,11 @@ pub struct InvalidVariableInit {
     #[error]
     pub span: (Span, usize),
 }
+
+#[derive(Diagnostic)]
+#[error("found unexpected token `{found}`.")]
+pub struct UnexpectedToken {
+    pub found: TokenKind,
+    #[error]
+    pub span: (Span, usize),
+}
