@@ -23,6 +23,10 @@ pub enum ExprKind {
     Literal(Lit),
     /// `(x + y) * z`
     Paren(Box<Expr>),
+    /// `return x`
+    Return(Box<Expr>),
+    /// `x`
+    Var(Ident),
 }
 
 #[derive(Clone, Debug)]

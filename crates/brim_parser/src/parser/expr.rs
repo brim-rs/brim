@@ -1,10 +1,13 @@
+use crate::parser::PToken;
 use brim::expr::{BinOpAssociativity, BinOpKind, ConstExpr, Expr, ExprKind, UnaryOp};
-use brim::{box_diag, NodeId, Try};
+use brim::{box_diag, NodeId, Return, Try};
+use brim::item::Ident;
 use brim::span::Span;
 use brim::token::{BinOpToken, Delimiter, Orientation, TokenKind};
 use brim::ty::{Const, Ty};
-use crate::parser::{PResult, Parser};
+use crate::parser::{PResult, PTokenKind, Parser};
 use crate::parser::errors::UnexpectedToken;
+use crate::ptok;
 
 impl<'a> Parser<'a> {
     pub fn parse_const_expr(&mut self) -> PResult<'a, ConstExpr> {
@@ -135,6 +138,16 @@ impl<'a> Parser<'a> {
                 let expr = self.parse_expr()?;
                 self.expect_cparen()?;
                 Ok(self.new_expr(expr.span, ExprKind::Paren(Box::new(expr))))
+            }
+            TokenKind::Ident(sym) => {
+                if self.eat_keyword(ptok!(Return)) {
+                    let expr = self.parse_expr()?;
+                    Ok(self.new_expr(self.current().span.to(expr.span), ExprKind::Return(Box::new(expr))))
+                } else {
+                    let ident = self.parse_ident()?;
+
+                    Ok(self.new_expr(ident.span, ExprKind::Var(ident)))
+                }
             }
             _ => {
                 box_diag!(UnexpectedToken {
