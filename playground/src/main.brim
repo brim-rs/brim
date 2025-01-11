@@ -1,4 +1,4 @@
 
 pub fn main<T: const &i32>(x: i32) -> i32 {
-    return x + 1;
+    let y;
 };

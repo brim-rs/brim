@@ -11,7 +11,7 @@ use brim::{
     index::{ByteIndex, ByteOffset, RawOffset},
     span::Span,
     symbols::Symbol,
-    token::{BinOpToken, Delimiter, Lit, Orientation, Token, TokenKind},
+    token::{BinOpToken, AssignOpToken, Delimiter, Lit, Orientation, Token, TokenKind},
 };
 
 #[derive(Debug)]
@@ -49,7 +49,6 @@ impl<'a> Lexer<'a> {
             PrimitiveTokenKind::Comment { doc: true } => {
                 let comment_start = start + ByteOffset(3);
                 let content = self.content_from(comment_start);
-
                 TokenKind::DocComment(Symbol::new(content))
             }
 
@@ -59,18 +58,15 @@ impl<'a> Lexer<'a> {
             if !UNICODE_ARRAY.iter().any(|&(c, _, _)| {
                 let sym = self.content_from(start);
                 sym.chars().count() == 1 && c == sym.chars().next().unwrap()
-            }) =>
-                {
-                    let symbol = nfc_normalize(self.content_from(start));
-                    let span = Span::new(start, self.pos);
-
-                    comp.emit(EmojiIdentifier {
-                        ident: symbol,
-                        label: (span, self.file.id()),
-                    });
-
-                    TokenKind::Ident(symbol)
-                }
+            }) => {
+                let symbol = nfc_normalize(self.content_from(start));
+                let span = Span::new(start, self.pos);
+                comp.emit(EmojiIdentifier {
+                    ident: symbol,
+                    label: (span, self.file.id()),
+                });
+                TokenKind::Ident(symbol)
+            }
 
             PrimitiveTokenKind::Literal { kind, suffix_start } => {
                 let suffix_start = start + ByteOffset(suffix_start as RawOffset);
@@ -78,9 +74,6 @@ impl<'a> Lexer<'a> {
                 let suffix = if suffix_start < self.pos {
                     let string = self.content_from(suffix_start);
                     if string == "_" {
-                        // self.dcx().emit_err(errors::UnderscoreLiteralSuffix {
-                        //     span: Span::new(suffix_start, self.pos),
-                        // });
                         None
                     } else {
                         Some(Symbol::new(string))
@@ -96,39 +89,26 @@ impl<'a> Lexer<'a> {
             }
 
             // Delimiters
-            PrimitiveTokenKind::OpenParen => {
-                TokenKind::Delimiter(Delimiter::Paren, Orientation::Open)
-            }
-            PrimitiveTokenKind::CloseParen => {
-                TokenKind::Delimiter(Delimiter::Paren, Orientation::Close)
-            }
-            PrimitiveTokenKind::OpenBrace => {
-                TokenKind::Delimiter(Delimiter::Brace, Orientation::Open)
-            }
-            PrimitiveTokenKind::CloseBrace => {
-                TokenKind::Delimiter(Delimiter::Brace, Orientation::Close)
-            }
-            PrimitiveTokenKind::OpenBracket => {
-                TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open)
-            }
-            PrimitiveTokenKind::CloseBracket => {
-                TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close)
-            }
+            PrimitiveTokenKind::OpenParen => TokenKind::Delimiter(Delimiter::Paren, Orientation::Open),
+            PrimitiveTokenKind::CloseParen => TokenKind::Delimiter(Delimiter::Paren, Orientation::Close),
+            PrimitiveTokenKind::OpenBrace => TokenKind::Delimiter(Delimiter::Brace, Orientation::Open),
+            PrimitiveTokenKind::CloseBrace => TokenKind::Delimiter(Delimiter::Brace, Orientation::Close),
+            PrimitiveTokenKind::OpenBracket => TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open),
+            PrimitiveTokenKind::CloseBracket => TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close),
 
-            // Compound token handlers
-            PrimitiveTokenKind::Minus => self.try_lex_arrow(),
+            // Compound token handlers with assignment operators
+            PrimitiveTokenKind::Plus => self.try_lex_plus_assign(),
+            PrimitiveTokenKind::Minus => self.try_lex_minus_assign(),
+            PrimitiveTokenKind::Asterisk => self.try_lex_star_assign(),
+            PrimitiveTokenKind::Slash => self.try_lex_slash_assign(),
+            PrimitiveTokenKind::Percent => self.try_lex_mod_assign(),
+            PrimitiveTokenKind::Caret => self.try_lex_caret_assign(),
+            PrimitiveTokenKind::Ampersand => self.try_lex_and_assign(),
+            PrimitiveTokenKind::Pipe => self.try_lex_or_assign(),
+            PrimitiveTokenKind::LessThan => self.try_lex_shift_left_assign(),
+            PrimitiveTokenKind::GreaterThan => self.try_lex_shift_right_assign(),
             PrimitiveTokenKind::Equals => self.try_lex_double_equals(),
             PrimitiveTokenKind::Bang => self.try_lex_not_equals(),
-            PrimitiveTokenKind::GreaterThan => self.try_lex_greater_equals(),
-            PrimitiveTokenKind::LessThan => self.try_lex_less_equals(),
-
-            PrimitiveTokenKind::Ampersand => TokenKind::BinOp(BinOpToken::And),
-            PrimitiveTokenKind::Pipe => TokenKind::BinOp(BinOpToken::Or),
-            PrimitiveTokenKind::Plus => TokenKind::BinOp(BinOpToken::Plus),
-            PrimitiveTokenKind::Asterisk => TokenKind::BinOp(BinOpToken::Star),
-            PrimitiveTokenKind::Slash => TokenKind::BinOp(BinOpToken::Slash),
-            PrimitiveTokenKind::Caret => TokenKind::BinOp(BinOpToken::Caret),
-            PrimitiveTokenKind::Percent => TokenKind::BinOp(BinOpToken::Percent),
 
             // Symbols
             PrimitiveTokenKind::Semicolon => TokenKind::Semicolon,
@@ -139,7 +119,7 @@ impl<'a> Lexer<'a> {
             PrimitiveTokenKind::QuestionMark => TokenKind::QuestionMark,
             PrimitiveTokenKind::Colon => TokenKind::Colon,
             PrimitiveTokenKind::Dollar => TokenKind::Dollar,
-            
+
             PrimitiveTokenKind::Unknown => {
                 let span = Span::new(start, self.pos);
                 let content = self.content_from(start);
@@ -147,7 +127,6 @@ impl<'a> Lexer<'a> {
                     span: (span, self.file.id()),
                     token: content.to_string(),
                 });
-
                 TokenKind::Skipable
             }
 
@@ -159,16 +138,92 @@ impl<'a> Lexer<'a> {
         Some(Token::new(kind, span))
     }
 
-    // Arrow token ->
-    fn try_lex_arrow(&mut self) -> TokenKind {
+    // New assignment operator handlers
+    fn try_lex_plus_assign(&mut self) -> TokenKind {
         self.try_compound_token(
-            PrimitiveTokenKind::GreaterThan,
-            TokenKind::Arrow,
-            TokenKind::BinOp(BinOpToken::Minus),
+            PrimitiveTokenKind::Equals,
+            TokenKind::AssignOp(AssignOpToken::PlusEq),
+            TokenKind::BinOp(BinOpToken::Plus),
         )
     }
 
-    // Double equals ==
+    fn try_lex_minus_assign(&mut self) -> TokenKind {
+        self.try_multi_char_token(&[
+            (PrimitiveTokenKind::GreaterThan, TokenKind::Arrow),
+            (PrimitiveTokenKind::Equals, TokenKind::AssignOp(AssignOpToken::MinusEq)),
+        ], TokenKind::BinOp(BinOpToken::Minus))
+    }
+
+    fn try_lex_shift_left_assign(&mut self) -> TokenKind {
+        self.try_three_char_token(
+            PrimitiveTokenKind::LessThan,
+            PrimitiveTokenKind::Equals,
+            TokenKind::AssignOp(AssignOpToken::ShlEq),
+            TokenKind::BinOp(BinOpToken::ShiftLeft),
+            (PrimitiveTokenKind::Equals, TokenKind::Le),
+            TokenKind::Lt,
+        )
+    }
+
+    fn try_lex_shift_right_assign(&mut self) -> TokenKind {
+        self.try_three_char_token(
+            PrimitiveTokenKind::GreaterThan,
+            PrimitiveTokenKind::Equals,
+            TokenKind::AssignOp(AssignOpToken::ShrEq),
+            TokenKind::BinOp(BinOpToken::ShiftRight),
+            (PrimitiveTokenKind::Equals, TokenKind::Ge),
+            TokenKind::Gt,
+        )
+    }
+
+    fn try_lex_star_assign(&mut self) -> TokenKind {
+        self.try_compound_token(
+            PrimitiveTokenKind::Equals,
+            TokenKind::AssignOp(AssignOpToken::StarEq),
+            TokenKind::BinOp(BinOpToken::Star),
+        )
+    }
+
+    fn try_lex_slash_assign(&mut self) -> TokenKind {
+        self.try_compound_token(
+            PrimitiveTokenKind::Equals,
+            TokenKind::AssignOp(AssignOpToken::SlashEq),
+            TokenKind::BinOp(BinOpToken::Slash),
+        )
+    }
+
+    fn try_lex_mod_assign(&mut self) -> TokenKind {
+        self.try_compound_token(
+            PrimitiveTokenKind::Equals,
+            TokenKind::AssignOp(AssignOpToken::ModEq),
+            TokenKind::BinOp(BinOpToken::Percent),
+        )
+    }
+
+    fn try_lex_caret_assign(&mut self) -> TokenKind {
+        self.try_compound_token(
+            PrimitiveTokenKind::Equals,
+            TokenKind::AssignOp(AssignOpToken::CaretEq),
+            TokenKind::BinOp(BinOpToken::Caret),
+        )
+    }
+
+    fn try_lex_and_assign(&mut self) -> TokenKind {
+        self.try_compound_token(
+            PrimitiveTokenKind::Equals,
+            TokenKind::AssignOp(AssignOpToken::AndEq),
+            TokenKind::BinOp(BinOpToken::And),
+        )
+    }
+
+    fn try_lex_or_assign(&mut self) -> TokenKind {
+        self.try_compound_token(
+            PrimitiveTokenKind::Equals,
+            TokenKind::AssignOp(AssignOpToken::OrEq),
+            TokenKind::BinOp(BinOpToken::Or),
+        )
+    }
+
     fn try_lex_double_equals(&mut self) -> TokenKind {
         self.try_compound_token(
             PrimitiveTokenKind::Equals,
@@ -177,7 +232,6 @@ impl<'a> Lexer<'a> {
         )
     }
 
-    // Not equals !=
     fn try_lex_not_equals(&mut self) -> TokenKind {
         self.try_compound_token(
             PrimitiveTokenKind::Equals,
@@ -186,22 +240,51 @@ impl<'a> Lexer<'a> {
         )
     }
 
-    // Greater than or equals >=
-    fn try_lex_greater_equals(&mut self) -> TokenKind {
-        self.try_compound_token(
-            PrimitiveTokenKind::Equals,
-            TokenKind::Ge,
-            TokenKind::Gt,
-        )
+    fn try_multi_char_token(&mut self, options: &[(PrimitiveTokenKind, TokenKind)], default: TokenKind) -> TokenKind {
+        if !self.primitives.is_empty() {
+            let next_kind = self.primitives[0].kind;
+            for &(kind, ref token) in options {
+                if next_kind == kind {
+                    self.primitives.remove(0);
+                    self.pos = self.pos + ByteOffset(1);
+                    return token.clone();
+                }
+            }
+        }
+        default
     }
 
-    // Less than or equals <=
-    fn try_lex_less_equals(&mut self) -> TokenKind {
-        self.try_compound_token(
-            PrimitiveTokenKind::Equals,
-            TokenKind::Le,
-            TokenKind::Lt,
-        )
+    fn try_three_char_token(
+        &mut self,
+        second_char: PrimitiveTokenKind,
+        third_char: PrimitiveTokenKind,
+        three_char_result: TokenKind,
+        two_char_result: TokenKind,
+        single_char_option: (PrimitiveTokenKind, TokenKind),
+        default: TokenKind,
+    ) -> TokenKind {
+        if self.primitives.is_empty() {
+            return default;
+        }
+
+        if self.primitives[0].kind == second_char {
+            self.primitives.remove(0);
+            self.pos = self.pos + ByteOffset(1);
+
+            if !self.primitives.is_empty() && self.primitives[0].kind == third_char {
+                self.primitives.remove(0);
+                self.pos = self.pos + ByteOffset(1);
+                three_char_result
+            } else {
+                two_char_result
+            }
+        } else if self.primitives[0].kind == single_char_option.0 {
+            self.primitives.remove(0);
+            self.pos = self.pos + ByteOffset(1);
+            single_char_option.1
+        } else {
+            default
+        }
     }
 
     pub fn content_from_to(&self, start: ByteIndex, end: ByteIndex) -> &str {
@@ -212,7 +295,6 @@ impl<'a> Lexer<'a> {
 
     pub fn try_compound_token(&mut self, next_kind: PrimitiveTokenKind, compound_token: TokenKind, default_token: TokenKind) -> TokenKind {
         if !self.primitives.is_empty() && self.primitives[0].kind == next_kind {
-            // Consume the second token
             self.primitives.remove(0);
             self.pos = self.pos + ByteOffset(1);
             compound_token

@@ -142,8 +142,6 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
 
             field.ident.as_ref()
         }).collect();
-    println!("{:?}", note_fields);
-
 
     let span_fields: Vec<_> = fields
         .named
@@ -208,7 +206,7 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
             quote! {}
         }
     });
-    
+
     let notes = note_fields.iter().map(|&ident| {
         quote! {
             let #ident = &self.#ident;

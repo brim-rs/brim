@@ -51,6 +51,14 @@ impl Token {
             _ => false,
         }
     }
+
+    /// Check if the token is an assignment operator other than `=`, eg: `+=`, `-=`, etc.
+    pub fn is_assign(&self) -> Option<AssignOpToken> {
+        match &self.kind {
+            TokenKind::AssignOp(op) => Some(*op),
+            _ => None,
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -121,11 +129,36 @@ pub enum TokenKind {
 
     /// Binary operator
     BinOp(BinOpToken),
+    AssignOp(AssignOpToken),
 
     Skipable,
     DocComment(Symbol),
 
     Eof,
+}
+
+#[derive(Clone, PartialEq, Hash, Debug, Copy)]
+pub enum AssignOpToken {
+    /// `+=`
+    PlusEq,
+    /// `-=`
+    MinusEq,
+    /// `*=`
+    StarEq,
+    /// `/=`
+    SlashEq,
+    /// `%=`
+    ModEq,
+    /// `^=`
+    CaretEq,
+    /// `&=`
+    AndEq,
+    /// `|=`
+    OrEq,
+    /// `<<=`
+    ShlEq,
+    /// `>>=`
+    ShrEq,
 }
 
 #[derive(Clone, PartialEq, Hash, Debug, Copy)]
@@ -184,6 +217,23 @@ impl Display for Lit {
     }
 }
 
+impl Display for AssignOpToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AssignOpToken::PlusEq => write!(f, "+="),
+            AssignOpToken::MinusEq => write!(f, "-="),
+            AssignOpToken::StarEq => write!(f, "*="),
+            AssignOpToken::SlashEq => write!(f, "/="),
+            AssignOpToken::ModEq => write!(f, "%="),
+            AssignOpToken::CaretEq => write!(f, "^="),
+            AssignOpToken::AndEq => write!(f, "&="),
+            AssignOpToken::OrEq => write!(f, "|="),
+            AssignOpToken::ShlEq => write!(f, "<<="),
+            AssignOpToken::ShrEq => write!(f, ">>="),
+        }
+    }
+}
+
 impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -195,6 +245,7 @@ impl Display for TokenKind {
                 };
                 write!(f, "{}", symbol)
             }
+            TokenKind::AssignOp(assign_op) => write!(f, "{}", assign_op),
             TokenKind::Colon => write!(f, ":"),
             TokenKind::Comma => write!(f, ","),
             TokenKind::At => write!(f, "@"),

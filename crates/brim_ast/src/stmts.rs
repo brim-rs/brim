@@ -1,5 +1,8 @@
 use crate::NodeId;
 use brim_span::span::Span;
+use crate::expr::Expr;
+use crate::item::Ident;
+use crate::ty::Ty;
 
 #[derive(Clone, Debug)]
 pub struct Stmt {
@@ -9,4 +12,16 @@ pub struct Stmt {
 }
 
 #[derive(Clone, Debug)]
-pub enum StmtKind {}
+pub enum StmtKind {
+    Let(Let)
+}
+
+#[derive(Clone, Debug)]
+pub struct Let {
+    pub id: NodeId,
+    pub span: Span,
+    pub ty: Option<Ty>,
+    pub ident: Ident,
+    // E.g. `let x: i32 = 5;` or `let x;`
+    pub value: Option<Expr>,
+}

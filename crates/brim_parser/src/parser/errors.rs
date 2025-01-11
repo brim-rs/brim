@@ -1,7 +1,7 @@
 use brim::Diagnostic;
 use brim::span::Span;
 use brim::diagnostic::{Severity, LabelStyle, Label, ToDiagnostic};
-use brim::token::TokenKind;
+use brim::token::{AssignOpToken, TokenKind};
 
 #[derive(Diagnostic)]
 #[error("Invalid function signature. {message}")]
@@ -79,6 +79,14 @@ pub struct SelfOutsideMethod {
 #[derive(Diagnostic)]
 #[error("only trait methods can have empty body.")]
 pub struct EmptyBody {
+    #[error]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("variables can be only initialized with `=`, found `{found}`.")]
+pub struct InvalidVariableInit {
+    pub found: AssignOpToken,
     #[error]
     pub span: (Span, usize),
 }
