@@ -178,10 +178,19 @@ impl<'a> Lexer<'a> {
 
     /// Can be either: `**`, `*`, or `*=`
     fn try_lex_star_assign(&mut self) -> TokenKind {
-        self.try_multi_char_token(&[
-            (PrimitiveTokenKind::Asterisk, TokenKind::BinOp(BinOpToken::Star)),
-            (PrimitiveTokenKind::Equals, TokenKind::AssignOp(AssignOpToken::StarEq)),
-        ], TokenKind::BinOp(BinOpToken::Power))
+        // First check if we have a double asterisk '**'
+        if !self.primitives.is_empty() && self.primitives[0].kind == PrimitiveTokenKind::Asterisk {
+            self.primitives.remove(0);
+            self.pos = self.pos + ByteOffset(1);
+            return TokenKind::BinOp(BinOpToken::Power);
+        }
+
+        // If not double asterisk, check if it's '*='
+        self.try_compound_token(
+            PrimitiveTokenKind::Equals,
+            TokenKind::AssignOp(AssignOpToken::StarEq),
+            TokenKind::BinOp(BinOpToken::Star)
+        )
     }
 
     fn try_lex_slash_assign(&mut self) -> TokenKind {

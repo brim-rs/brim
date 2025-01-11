@@ -20,7 +20,9 @@ pub enum ExprKind {
     /// `x[0]`
     Index(Box<Expr>, Box<Expr>),
     /// `123`, `"hello"`, etc.
-    Literal(Lit)
+    Literal(Lit),
+    /// `(x + y) * z`
+    Paren(Box<Expr>),
 }
 
 #[derive(Clone, Debug)]

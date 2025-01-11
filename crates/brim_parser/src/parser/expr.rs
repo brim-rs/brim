@@ -39,9 +39,9 @@ impl<'a> Parser<'a> {
                 BinOpToken::Star => BinOpKind::Multiply,
                 BinOpToken::Slash => BinOpKind::Divide,
                 BinOpToken::Percent => BinOpKind::Modulo,
-                BinOpToken::Caret => BinOpKind::Power,
-                BinOpToken::And => BinOpKind::AndAnd,
-                BinOpToken::Or => BinOpKind::OrOr,
+                BinOpToken::Caret => BinOpKind::Caret,
+                BinOpToken::And => BinOpKind::And,
+                BinOpToken::Or => BinOpKind::Or,
                 BinOpToken::ShiftLeft => BinOpKind::ShiftLeft,
                 BinOpToken::ShiftRight => BinOpKind::ShiftRight,
                 BinOpToken::Power => BinOpKind::Power,
@@ -129,6 +129,12 @@ impl<'a> Parser<'a> {
             TokenKind::Literal(lit) => {
                 let span = self.advance().span;
                 Ok(self.new_expr(span, ExprKind::Literal(lit)))
+            }
+            TokenKind::Delimiter(Delimiter::Paren, Orientation::Open) => {
+                self.advance();
+                let expr = self.parse_expr()?;
+                self.expect_cparen()?;
+                Ok(self.new_expr(expr.span, ExprKind::Paren(Box::new(expr))))
             }
             _ => {
                 box_diag!(UnexpectedToken {

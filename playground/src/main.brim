@@ -1,4 +1,4 @@
 
 pub fn main<T: const &i32>(x: i32) -> i32 {
-    let y = 1[1 + 5];
+    let y = (2 + 1) * 2;
 };
