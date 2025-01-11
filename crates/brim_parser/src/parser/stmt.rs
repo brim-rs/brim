@@ -15,7 +15,7 @@ impl<'a> Parser<'a> {
         while !self.current().is(TokenKind::Delimiter(Delimiter::Brace, Orientation::Close)) {
             let stmt = self.parse_stmt()?;
             self.eat_semis();
-            
+
             stmts.push(stmt);
         }
 
@@ -31,13 +31,18 @@ impl<'a> Parser<'a> {
 
         let kind = if self.current().is_keyword(Let) {
             let stmt = self.parse_let()?;
-            
+
             Ok(StmtKind::Let(stmt))
+        } else if let Some(item) = self.parse_item()? {
+            Ok(StmtKind::Item(item))
         } else {
-            todo!()
+            let expr = self.parse_expr()?;
+
+            Ok(StmtKind::Expr(expr))
         };
+
         self.eat_semis();
-        
+
         Ok(Stmt {
             id: NodeId::max(),
             kind: kind?,
@@ -67,7 +72,7 @@ impl<'a> Parser<'a> {
         } else {
             None
         };
-        
+
         Ok(Let {
             id: NodeId::max(),
             ident,
