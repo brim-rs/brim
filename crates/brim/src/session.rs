@@ -12,6 +12,7 @@ use brim_span::files::{
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
+use brim_ctx::compiler::CompilerContext;
 
 #[derive(Debug)]
 pub struct Session {
@@ -100,5 +101,9 @@ impl Session {
 
         debug!("main file: {:?}", path);
         Ok(self.add_file(path.clone(), self.file_loader.read_file(&path)?))
+    }
+
+    pub fn resolve_and_analyze(&mut self, barrel: &Barrel, comp: &mut CompilerContext) -> Result<()> {
+        Ok(())
     }
 }
