@@ -191,6 +191,7 @@ impl<'a> Parser<'a> {
         Ok(Barrel {
             items,
             id: NodeId::max(),
+            file_id: self.file,
         })
     }
 
