@@ -10,15 +10,9 @@ use crate::{
     ptok,
 };
 use anyhow::{Result, bail};
-use brim::{
-    Const, Fn, NodeId, SelfSmall, box_diag,
-    compiler::CompilerContext,
-    item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Param},
-    span::Span,
-    symbols::GLOBAL_INTERNER,
-    token::{Delimiter, Orientation, TokenKind},
-    ty::Const,
-};
+use brim_ast::{Const, Fn, NodeId, SelfSmall, item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Param}, token::{Delimiter, Orientation, TokenKind}, ty::Const, ty};
+use brim_diagnostics::box_diag;
+use brim_span::span::Span;
 
 #[derive(Debug, Clone, Copy)]
 pub enum FunctionContext {
@@ -231,7 +225,7 @@ impl<'a> Parser<'a> {
         });
     }
 
-    pub fn parse_constant(&mut self) -> brim::ty::Const {
+    pub fn parse_constant(&mut self) -> ty::Const {
         if self.eat_keyword(ptok!(Const)) {
             self.advance();
 

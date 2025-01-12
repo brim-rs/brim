@@ -1,3 +1,5 @@
+use brim_ast::token::LitKind;
+use brim_ctx::compiler::CompilerContext;
 use crate::lexer::{
     Lexer,
     errors::{
@@ -5,14 +7,13 @@ use crate::lexer::{
         UnterminatedLiteral,
     },
 };
-use brim::{
+use brim_lexer::{
     Base, LiteralKind,
-    compiler::CompilerContext,
-    index::{ByteIndex, ByteOffset},
-    span::Span,
-    symbols::Symbol,
-    token::LitKind,
+
 };
+use brim_span::index::{ByteIndex, ByteOffset};
+use brim_span::span::Span;
+use brim_span::symbols::Symbol;
 
 impl Lexer<'_> {
     pub fn lex_literal(

@@ -1,4 +1,4 @@
-use brim::token::Token;
+use brim_ast::token::Token;
 
 #[derive(Debug)]
 pub struct TokenCursor {

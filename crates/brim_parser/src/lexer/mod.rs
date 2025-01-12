@@ -3,16 +3,17 @@ mod identifiers;
 mod literals;
 mod unicode;
 
-use crate::lexer::{errors::EmojiIdentifier, identifiers::nfc_normalize, unicode::UNICODE_ARRAY};
-use brim::{
-    PrimitiveToken, PrimitiveTokenKind,
-    compiler::CompilerContext,
-    files::SimpleFile,
-    index::{ByteIndex, ByteOffset, RawOffset},
-    span::Span,
-    symbols::Symbol,
+use crate::lexer::{identifiers::nfc_normalize, unicode::UNICODE_ARRAY};
+use brim_ast::{
     token::{BinOpToken, AssignOpToken, Delimiter, Lit, Orientation, Token, TokenKind},
 };
+use brim_ctx::compiler::CompilerContext;
+use brim_lexer::{PrimitiveToken, PrimitiveTokenKind};
+use brim_span::files::SimpleFile;
+use brim_span::index::{ByteIndex, ByteOffset, RawOffset};
+use brim_span::span::Span;
+use brim_span::symbols::Symbol;
+use crate::lexer::errors::EmojiIdentifier;
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -189,7 +190,7 @@ impl<'a> Lexer<'a> {
         self.try_compound_token(
             PrimitiveTokenKind::Equals,
             TokenKind::AssignOp(AssignOpToken::StarEq),
-            TokenKind::BinOp(BinOpToken::Star)
+            TokenKind::BinOp(BinOpToken::Star),
         )
     }
 

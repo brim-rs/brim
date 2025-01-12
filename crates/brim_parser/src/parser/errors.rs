@@ -1,7 +1,10 @@
-use brim::Diagnostic;
-use brim::span::Span;
-use brim::diagnostic::{Severity, LabelStyle, Label, ToDiagnostic};
-use brim::token::{AssignOpToken, TokenKind};
+use brim_ast::token::{AssignOpToken, TokenKind};
+use brim_diagnostics::diagnostic::ToDiagnostic;
+use brim_diagnostics::diagnostic::Label;
+use brim_diagnostics::diagnostic::LabelStyle;
+use brim_diagnostics::diagnostic::Severity;
+use brim_diag_macro::Diagnostic;
+use brim_span::span::Span;
 
 #[derive(Diagnostic)]
 #[error("Invalid function signature. {message}")]

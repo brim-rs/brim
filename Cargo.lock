@@ -135,6 +135,7 @@ dependencies = [
  "brim-diagnostics",
  "brim-fs",
  "brim-lexer",
+ "brim-parser",
  "brim-shell",
  "brim-span",
  "tracing",
@@ -197,6 +198,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "brim-ctx"
+version = "0.1.0"
+dependencies = [
+ "brim-ast",
+ "brim-diagnostics",
+ "brim-span",
+]
+
+[[package]]
 name = "brim-diag-macro"
 version = "0.1.0"
 dependencies = [
@@ -241,7 +251,12 @@ name = "brim-parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "brim",
+ "brim-ast",
+ "brim-ctx",
+ "brim-diag-macro",
+ "brim-diagnostics",
+ "brim-lexer",
+ "brim-span",
  "indexmap",
  "tracing",
  "unicode-normalization",

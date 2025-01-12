@@ -1,0 +1,12 @@
+[package]
+name = "brim-ctx"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+brim-ast = { workspace = true }
+brim-span = { workspace = true }
+brim-diagnostics = { workspace = true }
+
+[lints]
+workspace = true

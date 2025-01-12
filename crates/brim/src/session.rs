@@ -11,6 +11,7 @@ use brim_span::files::{
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
+use brim_parser::parser::barrel::Barrel;
 
 #[derive(Debug)]
 pub struct Session {

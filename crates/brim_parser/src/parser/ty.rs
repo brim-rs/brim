@@ -1,10 +1,9 @@
+use brim_ast::{Const, NodeId};
+use brim_ast::item::Ident;
+use brim_ast::token::{BinOpToken, Delimiter, Orientation, TokenKind};
+use brim_ast::ty::{Const, PrimitiveType, Ty, TyKind};
 use crate::parser::PToken;
 use crate::parser::PTokenKind;
-use brim::{Const, NodeId};
-use brim::item::Ident;
-use brim::span::Span;
-use brim::token::{BinOpToken, Delimiter, Orientation, TokenKind};
-use brim::ty::{Const, PrimitiveType, Ty, TyKind};
 use crate::parser::{PResult, Parser};
 use crate::parser::errors::ConstAfter;
 use crate::{debug_ident, ptok};

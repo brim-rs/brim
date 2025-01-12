@@ -1,8 +1,9 @@
 use crate::parser::PToken;
 use crate::parser::PTokenKind;
 use anyhow::Result;
-use brim::{NodeId, item::Block, stmts::Stmt, token::{Delimiter, Orientation, TokenKind}, Let, box_diag};
-use brim::stmts::{Let, StmtKind};
+use brim_ast::{NodeId, item::Block, stmts::Stmt, token::{Delimiter, Orientation, TokenKind}, Let};
+use brim_ast::stmts::{Let, StmtKind};
+use brim_diagnostics::box_diag;
 use crate::parser::errors::InvalidVariableInit;
 use crate::ptok;
 use super::{PResult, Parser};
@@ -21,7 +22,7 @@ impl<'a> Parser<'a> {
 
             stmts.push(stmt);
         }
-        
+
         if eat_braces {
             self.expect_cbrace()?;
         }

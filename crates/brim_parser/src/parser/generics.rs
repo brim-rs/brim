@@ -1,8 +1,8 @@
 use crate::parser::PToken;
 use crate::parser::PTokenKind;
-use brim::item::{GenericKind, GenericParam, Generics};
-use brim::{Const, NodeId};
-use brim::token::TokenKind;
+use brim_ast::item::{GenericKind, GenericParam, Generics};
+use brim_ast::{Const, NodeId};
+use brim_ast::token::TokenKind;
 use crate::parser::{PResult, Parser};
 use crate::parser::errors::ExpectedClosingGenerics;
 use crate::ptok;
