@@ -1,7 +1,9 @@
-use crate::NodeId;
+use crate::{
+    NodeId,
+    item::{Block, Ident},
+    token::{AssignOpToken, Lit},
+};
 use brim_span::span::Span;
-use crate::item::{Block, Ident};
-use crate::token::{AssignOpToken, Lit};
 
 #[derive(Clone, Debug)]
 pub struct Expr {
@@ -137,10 +139,7 @@ impl BinOpKind {
             BinOpKind::Caret => 15,
             BinOpKind::Or => 14,
             // Relational operators
-            BinOpKind::Lt
-            | BinOpKind::Le
-            | BinOpKind::Gt
-            | BinOpKind::Ge => 13,
+            BinOpKind::Lt | BinOpKind::Le | BinOpKind::Gt | BinOpKind::Ge => 13,
             // Equality operators
             BinOpKind::EqEq | BinOpKind::Ne => 12,
             // Logical operators

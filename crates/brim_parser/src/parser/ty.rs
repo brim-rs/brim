@@ -1,12 +1,14 @@
-use brim_ast::{Const, NodeId};
-use brim_ast::item::Ident;
-use brim_ast::token::{BinOpToken, Delimiter, Orientation, TokenKind};
-use brim_ast::ty::{Const, PrimitiveType, Ty, TyKind};
-use crate::parser::PToken;
-use crate::parser::PTokenKind;
-use crate::parser::{PResult, Parser};
-use crate::parser::errors::ConstAfter;
-use crate::{debug_ident, ptok};
+use crate::{
+    debug_ident,
+    parser::{PResult, PToken, PTokenKind, Parser, errors::ConstAfter},
+    ptok,
+};
+use brim_ast::{
+    Const, NodeId,
+    item::Ident,
+    token::{BinOpToken, Delimiter, Orientation, TokenKind},
+    ty::{Const, PrimitiveType, Ty, TyKind},
+};
 
 impl<'a> Parser<'a> {
     pub fn parse_type(&mut self) -> PResult<'a, Ty> {
@@ -18,7 +20,10 @@ impl<'a> Parser<'a> {
             self.parse_ptr(false)?
         } else if self.current().is_keyword(Const) {
             self.parse_const()?
-        } else if self.current().is_delimiter(Delimiter::Bracket, Orientation::Open) {
+        } else if self
+            .current()
+            .is_delimiter(Delimiter::Bracket, Orientation::Open)
+        {
             self.parse_array()?
         } else {
             let ident = self.parse_ident()?;

@@ -1,5 +1,4 @@
-use brim_ast::item::Item;
-use brim_ast::NodeId;
+use brim_ast::{NodeId, item::Item};
 
 #[derive(Debug)]
 pub struct Barrel {

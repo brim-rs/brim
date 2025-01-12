@@ -1,8 +1,10 @@
-use crate::NodeId;
+use crate::{
+    NodeId,
+    expr::Expr,
+    item::{Ident, Item},
+    ty::Ty,
+};
 use brim_span::span::Span;
-use crate::expr::Expr;
-use crate::item::{Ident, Item};
-use crate::ty::Ty;
 
 #[derive(Clone, Debug)]
 pub struct Stmt {
@@ -15,7 +17,7 @@ pub struct Stmt {
 pub enum StmtKind {
     Let(Let),
     Item(Item),
-    Expr(Expr)
+    Expr(Expr),
 }
 
 #[derive(Clone, Debug)]

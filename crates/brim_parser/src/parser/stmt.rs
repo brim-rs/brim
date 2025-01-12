@@ -1,12 +1,16 @@
-use crate::parser::PToken;
-use crate::parser::PTokenKind;
-use anyhow::Result;
-use brim_ast::{NodeId, item::Block, stmts::Stmt, token::{Delimiter, Orientation, TokenKind}, Let};
-use brim_ast::stmts::{Let, StmtKind};
-use brim_diagnostics::box_diag;
-use crate::parser::errors::InvalidVariableInit;
-use crate::ptok;
 use super::{PResult, Parser};
+use crate::{
+    parser::{PToken, PTokenKind, errors::InvalidVariableInit},
+    ptok,
+};
+use anyhow::Result;
+use brim_ast::{
+    Let, NodeId,
+    item::Block,
+    stmts::{Let, Stmt, StmtKind},
+    token::{Delimiter, Orientation, TokenKind},
+};
+use brim_diagnostics::box_diag;
 
 impl<'a> Parser<'a> {
     pub fn parse_block(&mut self, eat_braces: bool) -> PResult<'a, Block> {
@@ -16,7 +20,10 @@ impl<'a> Parser<'a> {
             self.expect_obrace()?;
         }
 
-        while !self.current().is(TokenKind::Delimiter(Delimiter::Brace, Orientation::Close)) {
+        while !self
+            .current()
+            .is(TokenKind::Delimiter(Delimiter::Brace, Orientation::Close))
+        {
             let stmt = self.parse_stmt()?;
             self.eat_semis();
 

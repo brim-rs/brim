@@ -3,16 +3,20 @@ use crate::{
     parser::{barrel::Barrel, cursor::TokenCursor, errors::ExpectedToken},
 };
 use anyhow::Result;
-use brim_ast::{ErrorEmitted, Pub, SYMBOL_STRINGS, item::Visibility, token::{Delimiter, Orientation, Token, TokenKind}, NodeId};
-use tracing::debug;
+use brim_ast::{
+    ErrorEmitted, NodeId, Pub, SYMBOL_STRINGS,
+    item::Visibility,
+    token::{Delimiter, Orientation, Token, TokenKind},
+};
 use brim_ctx::compiler::CompilerContext;
-use brim_diagnostics::diagnostic::ToDiagnostic;
-use brim_diagnostics::{box_diag, TemporaryDiagnosticContext};
-use brim_lexer::cursor::Cursor;
-use brim_lexer::{PrimitiveToken, PrimitiveTokenKind};
-use brim_span::files::get_file;
-use brim_span::span::Span;
-use brim_span::symbols::{Symbol, GLOBAL_INTERNER};
+use brim_diagnostics::{TemporaryDiagnosticContext, box_diag, diagnostic::ToDiagnostic};
+use brim_lexer::{PrimitiveToken, PrimitiveTokenKind, cursor::Cursor};
+use brim_span::{
+    files::get_file,
+    span::Span,
+    symbols::{GLOBAL_INTERNER, Symbol},
+};
+use tracing::debug;
 
 pub mod barrel;
 mod cursor;
@@ -303,7 +307,10 @@ impl<'a> Parser<'a> {
 
     /// Eats until it finds a first brace, returns the span of the brace
     pub fn eat_until_brace(&mut self, orientation: Orientation) -> Span {
-        while !self.current().is(TokenKind::Delimiter(Delimiter::Brace, orientation)) {
+        while !self
+            .current()
+            .is(TokenKind::Delimiter(Delimiter::Brace, orientation))
+        {
             self.advance();
         }
 

@@ -16,6 +16,7 @@ brim-lexer = { workspace = true }
 brim-ast = { workspace = true }
 brim-diag-macro = { workspace = true }
 brim-parser = { workspace = true }
+brim-ctx = { workspace = true }
 
 [features]
 snap = []

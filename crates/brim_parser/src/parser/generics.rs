@@ -1,11 +1,12 @@
-use crate::parser::PToken;
-use crate::parser::PTokenKind;
-use brim_ast::item::{GenericKind, GenericParam, Generics};
-use brim_ast::{Const, NodeId};
-use brim_ast::token::TokenKind;
-use crate::parser::{PResult, Parser};
-use crate::parser::errors::ExpectedClosingGenerics;
-use crate::ptok;
+use crate::{
+    parser::{PResult, PToken, PTokenKind, Parser, errors::ExpectedClosingGenerics},
+    ptok,
+};
+use brim_ast::{
+    Const, NodeId,
+    item::{GenericKind, GenericParam, Generics},
+    token::TokenKind,
+};
 
 impl<'a> Parser<'a> {
     pub fn parse_generics(&mut self) -> PResult<'a, Generics> {
@@ -70,7 +71,10 @@ impl<'a> Parser<'a> {
                 params.push(GenericParam {
                     id: NodeId::max(),
                     ident,
-                    kind: GenericKind::NonType { ty, default: const_expr },
+                    kind: GenericKind::NonType {
+                        ty,
+                        default: const_expr,
+                    },
                 })
             } else {
                 break;

@@ -10,7 +10,13 @@ use crate::{
     ptok,
 };
 use anyhow::{Result, bail};
-use brim_ast::{Const, Fn, NodeId, SelfSmall, item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Param}, token::{Delimiter, Orientation, TokenKind}, ty::Const, ty};
+use brim_ast::{
+    Const, Fn, NodeId, SelfSmall,
+    item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Param},
+    token::{Delimiter, Orientation, TokenKind},
+    ty,
+    ty::Const,
+};
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
 
@@ -166,9 +172,7 @@ impl<'a> Parser<'a> {
         }
         self.expect_oparen()?;
 
-        while !self
-            .is_paren(Orientation::Close)
-        {
+        while !self.is_paren(Orientation::Close) {
             let span_start = self.current().span;
             let ident = self.parse_ident()?;
 

@@ -1,8 +1,10 @@
-use std::fmt::Debug;
-use brim_diagnostics::{diagnostic::ToDiagnostic, term::{DiagConfig, emit}, TemporaryDiagnosticContext};
+use brim_diagnostics::{
+    TemporaryDiagnosticContext,
+    diagnostic::{Diagnostic, ToDiagnostic},
+    term::{DiagConfig, emit},
+};
 use brim_span::files::SimpleFiles;
-use std::io::stderr;
-use brim_diagnostics::diagnostic::Diagnostic;
+use std::{fmt::Debug, io::stderr};
 
 #[derive(Debug)]
 pub struct DiagnosticContext {
@@ -16,7 +18,11 @@ impl DiagnosticContext {
         }
     }
 
-    pub fn emit<'diags>(&mut self, diag: &Box<dyn ToDiagnostic<'diags> + 'diags>, files: &SimpleFiles) {
+    pub fn emit<'diags>(
+        &mut self,
+        diag: &Box<dyn ToDiagnostic<'diags> + 'diags>,
+        files: &SimpleFiles,
+    ) {
         let diag = diag.to_diagnostic();
 
         self.emit_inner(diag, files);
@@ -26,7 +32,11 @@ impl DiagnosticContext {
         emit(&mut stderr(), &self.config, files, &diag).unwrap();
     }
 
-    pub fn from_temporary<'diags>(&mut self, temp: &TemporaryDiagnosticContext<'diags>, files: &SimpleFiles) {
+    pub fn from_temporary<'diags>(
+        &mut self,
+        temp: &TemporaryDiagnosticContext<'diags>,
+        files: &SimpleFiles,
+    ) {
         for diag in temp.diags.iter() {
             self.emit_inner(diag.clone(), files);
         }

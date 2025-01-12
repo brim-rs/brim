@@ -1,9 +1,6 @@
-use std::cmp::PartialEq;
-use std::fmt::Display;
-use crate::ErrorEmitted;
+use crate::{ErrorEmitted, item::Ident, ty::PrimitiveType};
 use brim_span::{span::Span, symbols::Symbol};
-use crate::item::Ident;
-use crate::ty::PrimitiveType;
+use std::{cmp::PartialEq, fmt::Display};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Token {
@@ -244,9 +241,27 @@ impl Display for TokenKind {
         match self {
             TokenKind::Delimiter(delimiter, orientation) => {
                 let symbol = match delimiter {
-                    Delimiter::Paren => if orientation == &Orientation::Open { "(" } else { ")" },
-                    Delimiter::Brace => if orientation == &Orientation::Open { "{" } else { "}" },
-                    Delimiter::Bracket => if orientation == &Orientation::Open { "[" } else { "]" },
+                    Delimiter::Paren => {
+                        if orientation == &Orientation::Open {
+                            "("
+                        } else {
+                            ")"
+                        }
+                    }
+                    Delimiter::Brace => {
+                        if orientation == &Orientation::Open {
+                            "{"
+                        } else {
+                            "}"
+                        }
+                    }
+                    Delimiter::Bracket => {
+                        if orientation == &Orientation::Open {
+                            "["
+                        } else {
+                            "]"
+                        }
+                    }
                 };
                 write!(f, "{}", symbol)
             }

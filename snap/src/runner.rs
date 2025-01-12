@@ -2,18 +2,17 @@ use crate::reporter::report_results;
 use anyhow::{Result, anyhow};
 use brim::{
     compiler::CompilerContext,
-    files::{SimpleFile, files},
+    files::{SimpleFile, SimpleFiles, files},
     span::Span,
     token::TokenKind,
 };
-use brim_parser::{parser::Parser};
+use brim_parser::parser::Parser;
 use brim_shell::Shell;
 use once_cell::sync::Lazy;
 use std::{
     sync::{Arc, Mutex},
     time::Instant,
 };
-use brim::files::SimpleFiles;
 
 pub static TEST_RESULTS: Lazy<Arc<Mutex<TestSuite>>> =
     Lazy::new(|| Arc::new(Mutex::new(TestSuite::new())));

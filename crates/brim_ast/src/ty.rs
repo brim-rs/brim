@@ -1,7 +1,9 @@
-use crate::{ErrorEmitted, NodeId, expr::ConstExpr};
-use brim_span::span::Span;
-use brim_span::symbols::Symbol;
-use crate::item::{Generics, Ident};
+use crate::{
+    ErrorEmitted, NodeId,
+    expr::ConstExpr,
+    item::{Generics, Ident},
+};
+use brim_span::{span::Span, symbols::Symbol};
 
 #[derive(Debug, Clone)]
 pub struct Ty {
@@ -18,11 +20,7 @@ pub enum Const {
 
 impl Const {
     pub fn from_bool(b: bool) -> Self {
-        if b {
-            Const::Yes
-        } else {
-            Const::No
-        }
+        if b { Const::Yes } else { Const::No }
     }
 }
 
@@ -39,10 +37,7 @@ pub enum TyKind {
     /// Primitive type eg. `i32` (brim) -> `int32_t` (C++)
     Primitive(PrimitiveType),
     /// Any other type that can be enum, struct, type, etc.
-    Ident {
-        ident: Ident,
-        generics: Generics,
-    },
+    Ident { ident: Ident, generics: Generics },
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),

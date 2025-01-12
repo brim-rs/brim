@@ -1,8 +1,8 @@
 pub mod reporting;
 
-use std::fmt::Debug;
-pub use reporting::*;
 use crate::diagnostic::{Diagnostic, ToDiagnostic};
+pub use reporting::*;
+use std::fmt::Debug;
 
 #[macro_export]
 macro_rules! box_diag {
@@ -18,9 +18,7 @@ pub struct TemporaryDiagnosticContext<'diags> {
 
 impl<'diags> TemporaryDiagnosticContext<'diags> {
     pub fn new() -> Self {
-        Self {
-            diags: vec![],
-        }
+        Self { diags: vec![] }
     }
 
     pub fn emit(&mut self, diag: Box<dyn ToDiagnostic<'diags> + 'diags>) {

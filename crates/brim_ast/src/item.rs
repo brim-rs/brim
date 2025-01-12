@@ -1,7 +1,11 @@
-use crate::{NodeId, expr::Expr, stmts::Stmt, ty::{Const, Ty}, Break, While};
+use crate::{
+    Break, NodeId, While,
+    expr::{ConstExpr, Expr},
+    stmts::Stmt,
+    ty::{Const, Ty},
+};
 use brim_span::{span::Span, symbols::Symbol};
 use std::fmt::Debug;
-use crate::expr::ConstExpr;
 
 #[derive(Clone, Debug)]
 pub struct Item {

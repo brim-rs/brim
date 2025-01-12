@@ -2,9 +2,9 @@ use brim_ast::ErrorEmitted;
 use brim_diagnostics::diagnostic::{Diagnostic, ToDiagnostic};
 use std::marker::PhantomData;
 
+use crate::diag_ctx::DiagnosticContext;
 #[cfg(not(feature = "snap"))]
 use brim_span::files::{SimpleFiles, files};
-use crate::diag_ctx::DiagnosticContext;
 
 #[derive(Debug)]
 pub struct CompilerContext<'a> {
@@ -45,7 +45,8 @@ impl<'a> CompilerContext<'a> {
 
     fn emit_inner(&mut self, diag: Box<dyn ToDiagnostic<'a> + 'a>) -> ErrorEmitted {
         #[cfg(not(feature = "snap"))]
-        self.dcx.emit(&Box::new(diag), &SimpleFiles::from_files(files()));
+        self.dcx
+            .emit(&Box::new(diag), &SimpleFiles::from_files(files()));
 
         #[cfg(feature = "snap")]
         self.emitted.push(diag.to_diagnostic());

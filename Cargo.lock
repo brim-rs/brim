@@ -131,6 +131,7 @@ dependencies = [
  "anyhow",
  "brim-ast",
  "brim-config",
+ "brim-ctx",
  "brim-diag-macro",
  "brim-diagnostics",
  "brim-fs",

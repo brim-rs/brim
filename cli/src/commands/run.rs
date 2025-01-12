@@ -3,10 +3,14 @@ use crate::cli::{
     static_lib_mode,
 };
 use anyhow::Result;
-use brim::{compiler::CompilerContext, session::Session, toml::ProjectType};
-use clap::Command;
-use brim::files::{files, SimpleFiles};
+use brim::{
+    files::{SimpleFiles, files},
+    session::Session,
+    toml::ProjectType,
+};
 use brim_parser::parser::Parser;
+use clap::Command;
+use brim::compiler::CompilerContext;
 
 pub fn run_cmd() -> Command {
     Command::new("run")

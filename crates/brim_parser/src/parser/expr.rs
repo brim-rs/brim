@@ -1,15 +1,23 @@
-use crate::parser::PToken;
-use brim_ast::expr::{BinOpAssociativity, BinOpKind, ConditionBranch, ConstExpr, Expr, ExprKind, IfExpr, UnaryOp};
-use brim_ast::{Else, If, NodeId, Return, Try};
-use brim_ast::expr::BinOpKind::Or;
-use brim_ast::item::Ident;
-use brim_ast::token::{BinOpToken, Delimiter, Orientation, TokenKind};
-use brim_ast::ty::{Const, Ty};
+use crate::{
+    debug_ident,
+    parser::{
+        PResult, PToken, PTokenKind, Parser,
+        errors::{ElseBranchExpr, ElseIfAfterElse, UnexpectedToken},
+    },
+    ptok,
+};
+use brim_ast::{
+    Else, If, NodeId, Return, Try,
+    expr::{
+        BinOpAssociativity, BinOpKind, BinOpKind::Or, ConditionBranch, ConstExpr, Expr, ExprKind,
+        IfExpr, UnaryOp,
+    },
+    item::Ident,
+    token::{BinOpToken, Delimiter, Orientation, TokenKind},
+    ty::{Const, Ty},
+};
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
-use crate::parser::{PResult, PTokenKind, Parser};
-use crate::parser::errors::{ElseBranchExpr, ElseIfAfterElse, UnexpectedToken};
-use crate::{debug_ident, ptok};
 
 impl<'a> Parser<'a> {
     pub fn parse_const_expr(&mut self) -> PResult<'a, ConstExpr> {
@@ -29,14 +37,20 @@ impl<'a> Parser<'a> {
         if let Some(op) = self.current().is_compound_assign() {
             self.advance();
             let right = self.parse_assignment_expr()?;
-            return Ok(self.new_expr(expr.span.to(right.span), ExprKind::AssignOp(Box::new(expr), op, Box::new(right))));
+            return Ok(self.new_expr(
+                expr.span.to(right.span),
+                ExprKind::AssignOp(Box::new(expr), op, Box::new(right)),
+            ));
         }
 
         if self.current().is_assign() {
             self.advance();
 
             let right = self.parse_assignment_expr()?;
-            return Ok(self.new_expr(expr.span.to(right.span), ExprKind::Assign(Box::new(expr), Box::new(right))));
+            return Ok(self.new_expr(
+                expr.span.to(right.span),
+                ExprKind::Assign(Box::new(expr), Box::new(right)),
+            ));
         }
 
         Ok(expr)
@@ -93,7 +107,7 @@ impl<'a> Parser<'a> {
 
                 if next_precedence > operator_precedence
                     || (next_precedence == operator_precedence
-                    && next_operator.associativity() == BinOpAssociativity::Right)
+                        && next_operator.associativity() == BinOpAssociativity::Right)
                 {
                     right = self.parse_binary_expression_recurse(right, next_precedence)?;
                 } else {
@@ -101,7 +115,10 @@ impl<'a> Parser<'a> {
                 }
             }
 
-            left = self.new_expr(left.span.to(right.span), ExprKind::Binary(Box::new(left), operator, Box::new(right)));
+            left = self.new_expr(
+                left.span.to(right.span),
+                ExprKind::Binary(Box::new(left), operator, Box::new(right)),
+            );
         }
 
         Ok(left)
@@ -111,7 +128,10 @@ impl<'a> Parser<'a> {
         if let Some(op) = self.peek_unary_op() {
             self.advance();
             let operand = self.parse_unary_expr()?;
-            return Ok(self.new_expr(self.current().span.to(operand.span), ExprKind::Unary(op, Box::new(operand))));
+            return Ok(self.new_expr(
+                self.current().span.to(operand.span),
+                ExprKind::Unary(op, Box::new(operand)),
+            ));
         }
 
         self.parse_access_expr()
@@ -125,13 +145,19 @@ impl<'a> Parser<'a> {
                 TokenKind::Dot => {
                     self.advance();
                     let ident = self.parse_ident()?;
-                    primary = self.new_expr(primary.span.to(ident.span), ExprKind::Field(Box::new(primary), ident));
+                    primary = self.new_expr(
+                        primary.span.to(ident.span),
+                        ExprKind::Field(Box::new(primary), ident),
+                    );
                 }
                 TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
                     self.advance();
                     let index = self.parse_expr()?;
                     self.expect_cbracket()?;
-                    primary = self.new_expr(primary.span.to(index.span), ExprKind::Index(Box::new(primary), Box::new(index)));
+                    primary = self.new_expr(
+                        primary.span.to(index.span),
+                        ExprKind::Index(Box::new(primary), Box::new(index)),
+                    );
                 }
                 _ => break,
             }
@@ -155,7 +181,10 @@ impl<'a> Parser<'a> {
             TokenKind::Ident(sym) => {
                 if self.eat_keyword(ptok!(Return)) {
                     let expr = self.parse_expr()?;
-                    Ok(self.new_expr(self.current().span.to(expr.span), ExprKind::Return(Box::new(expr))))
+                    Ok(self.new_expr(
+                        self.current().span.to(expr.span),
+                        ExprKind::Return(Box::new(expr)),
+                    ))
                 } else if self.eat_keyword(ptok!(If)) {
                     self.parse_if()
                 } else {
@@ -174,7 +203,13 @@ impl<'a> Parser<'a> {
                         }
 
                         self.expect_cparen()?;
-                        Ok(self.new_expr(span.to(self.prev().span), ExprKind::Call(Box::new(self.new_expr(span, ExprKind::Var(ident))), args)))
+                        Ok(self.new_expr(
+                            span.to(self.prev().span),
+                            ExprKind::Call(
+                                Box::new(self.new_expr(span, ExprKind::Var(ident))),
+                                args,
+                            ),
+                        ))
                     } else {
                         Ok(self.new_expr(ident.span, ExprKind::Var(ident)))
                     }
@@ -217,7 +252,8 @@ impl<'a> Parser<'a> {
             } else {
                 let span = self.current().span;
 
-                if self.current().kind != TokenKind::Delimiter(Delimiter::Brace, Orientation::Open) {
+                if self.current().kind != TokenKind::Delimiter(Delimiter::Brace, Orientation::Open)
+                {
                     // we eat until we find the brace of the opening of the else block
                     let span_of_brace = self.eat_until_brace(Orientation::Open);
 
@@ -230,13 +266,16 @@ impl<'a> Parser<'a> {
             };
         }
 
-        Ok(self.new_expr(span, ExprKind::If(IfExpr {
+        Ok(self.new_expr(
             span,
-            condition: Box::new(condition),
-            then_block: Box::new(self.new_expr(then_block.span, ExprKind::Block(then_block))),
-            else_block: else_block.map(Box::new),
-            else_ifs,
-        })))
+            ExprKind::If(IfExpr {
+                span,
+                condition: Box::new(condition),
+                then_block: Box::new(self.new_expr(then_block.span, ExprKind::Block(then_block))),
+                else_block: else_block.map(Box::new),
+                else_ifs,
+            }),
+        ))
     }
 
     fn peek_unary_op(&mut self) -> Option<UnaryOp> {
