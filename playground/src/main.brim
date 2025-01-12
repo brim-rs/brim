@@ -2,7 +2,13 @@
 pub fn main<T: const &i32>(x: i32) -> i32 {
     let y = x + 1;
 
-    y += 3;
+    if y == 1 {
+        y = 2;
+    } else {
+        y = 4;
+    } else if y == 2 {
+        y = 3;
+    }
 
     return y;
 };

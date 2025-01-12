@@ -8,15 +8,22 @@ use crate::ptok;
 use super::{PResult, Parser};
 
 impl<'a> Parser<'a> {
-    pub fn parse_block(&mut self) -> PResult<'a, Block> {
+    pub fn parse_block(&mut self, eat_braces: bool) -> PResult<'a, Block> {
         let mut stmts = vec![];
         let span_start = self.current().span;
+        if eat_braces {
+            self.expect_obrace()?;
+        }
 
         while !self.current().is(TokenKind::Delimiter(Delimiter::Brace, Orientation::Close)) {
             let stmt = self.parse_stmt()?;
             self.eat_semis();
 
             stmts.push(stmt);
+        }
+        
+        if eat_braces {
+            self.expect_cbrace()?;
         }
 
         Ok(Block {

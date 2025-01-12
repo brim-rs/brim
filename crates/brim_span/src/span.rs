@@ -75,6 +75,11 @@ impl Span {
     pub fn to(self, other: Span) -> Span {
         Span::new(self.start, other.end)
     }
+    
+    pub fn from_point(point: impl Into<ByteIndex>) -> Span {
+        let point = point.into();
+        Span::new(point, point)
+    }
 }
 
 impl Default for Span {

@@ -98,3 +98,19 @@ pub struct UnexpectedToken {
     #[error]
     pub span: (Span, usize),
 }
+
+#[derive(Diagnostic)]
+#[error("`else` branch can't have an expression.")]
+pub struct ElseBranchExpr {
+    #[error]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("found `else if` after `else` block.")]
+pub struct ElseIfAfterElse {
+    #[error("here is the `else if` block")]
+    pub else_if: (Span, usize),
+    #[error("here is the `else` block")]
+    pub else_block: (Span, usize),
+}

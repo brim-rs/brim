@@ -75,7 +75,7 @@ pub enum Delimiter {
     Bracket,
 }
 
-#[derive(PartialEq, Debug, Clone, Eq)]
+#[derive(PartialEq, Debug, Clone, Eq, Copy)]
 pub enum Orientation {
     Open,
     Close,

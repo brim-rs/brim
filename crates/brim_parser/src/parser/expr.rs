@@ -1,12 +1,13 @@
 use crate::parser::PToken;
-use brim::expr::{BinOpAssociativity, BinOpKind, ConstExpr, Expr, ExprKind, UnaryOp};
-use brim::{box_diag, NodeId, Return, Try};
+use brim::expr::{BinOpAssociativity, BinOpKind, ConditionBranch, ConstExpr, Expr, ExprKind, IfExpr, UnaryOp};
+use brim::{box_diag, Else, If, NodeId, Return, Try};
+use brim::index::ByteOffset;
 use brim::item::Ident;
 use brim::span::Span;
 use brim::token::{BinOpToken, Delimiter, Orientation, TokenKind};
 use brim::ty::{Const, Ty};
 use crate::parser::{PResult, PTokenKind, Parser};
-use crate::parser::errors::UnexpectedToken;
+use crate::parser::errors::{ElseBranchExpr, ElseIfAfterElse, UnexpectedToken};
 use crate::ptok;
 
 impl<'a> Parser<'a> {
@@ -32,7 +33,7 @@ impl<'a> Parser<'a> {
 
         if self.current().is_assign() {
             self.advance();
-        
+
             let right = self.parse_assignment_expr()?;
             return Ok(self.new_expr(expr.span.to(right.span), ExprKind::Assign(Box::new(expr), Box::new(right))));
         }
@@ -154,6 +155,8 @@ impl<'a> Parser<'a> {
                 if self.eat_keyword(ptok!(Return)) {
                     let expr = self.parse_expr()?;
                     Ok(self.new_expr(self.current().span.to(expr.span), ExprKind::Return(Box::new(expr))))
+                } else if self.eat_keyword(ptok!(If)) {
+                    self.parse_if()
                 } else {
                     let ident = self.parse_ident()?;
 
@@ -167,6 +170,56 @@ impl<'a> Parser<'a> {
                 })
             }
         }
+    }
+
+    pub fn parse_if(&mut self) -> PResult<'a, Expr> {
+        let span = self.prev().span;
+        let condition = self.parse_expr()?;
+        let then_block = self.parse_block(true)?;
+
+        let mut else_block: Option<Expr> = None;
+        let mut else_ifs: Vec<ConditionBranch> = Vec::new();
+
+        while self.eat_keyword(ptok!(Else)) {
+            if self.eat_keyword(ptok!(If)) {
+                let span = self.prev().span;
+                let condition = self.parse_expr()?;
+                if let Some(else_block) = &else_block {
+                    self.emit(ElseIfAfterElse {
+                        else_if: (span.to(self.current().span), self.file),
+                        else_block: (else_block.span, self.file),
+                    });
+                }
+                let block = self.parse_block(true)?;
+
+                else_ifs.push(ConditionBranch {
+                    span: span.to(block.span),
+                    condition: Box::new(condition),
+                    block: Box::new(self.new_expr(block.span, ExprKind::Block(block))),
+                });
+            } else {
+                let span = self.current().span;
+
+                if self.current().kind != TokenKind::Delimiter(Delimiter::Brace, Orientation::Open) {
+                    // we eat until we find the brace of the opening of the else block
+                    let span_of_brace = self.eat_until_brace(Orientation::Open);
+
+                    self.emit(ElseBranchExpr {
+                        span: (span.to(self.prev().span), self.file),
+                    });
+                }
+                let block = self.parse_block(true)?;
+                else_block = Some(self.new_expr(block.span, ExprKind::Block(block)));
+            };
+        }
+
+        Ok(self.new_expr(span, ExprKind::If(IfExpr {
+            span,
+            condition: Box::new(condition),
+            then_block: Box::new(self.new_expr(then_block.span, ExprKind::Block(then_block))),
+            else_block: else_block.map(Box::new),
+            else_ifs,
+        })))
     }
 
     fn peek_unary_op(&mut self) -> Option<UnaryOp> {

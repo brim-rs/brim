@@ -1,6 +1,6 @@
 use crate::NodeId;
 use brim_span::span::Span;
-use crate::item::Ident;
+use crate::item::{Block, Ident};
 use crate::token::{AssignOpToken, Lit};
 
 #[derive(Clone, Debug)]
@@ -31,6 +31,26 @@ pub enum ExprKind {
     AssignOp(Box<Expr>, AssignOpToken, Box<Expr>),
     /// `x = 1`, `y = x`
     Assign(Box<Expr>, Box<Expr>),
+    /// `if x { y } else { z }`
+    If(IfExpr),
+    /// `{ ... }`
+    Block(Block)
+}
+
+#[derive(Clone, Debug)]
+pub struct IfExpr {
+    pub span: Span,
+    pub condition: Box<Expr>,
+    pub then_block: Box<Expr>,
+    pub else_block: Option<Box<Expr>>,
+    pub else_ifs: Vec<ConditionBranch>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ConditionBranch {
+    pub span: Span,
+    pub condition: Box<Expr>,
+    pub block: Box<Expr>,
 }
 
 #[derive(Clone, Debug)]

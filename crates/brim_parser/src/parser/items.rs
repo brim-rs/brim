@@ -106,7 +106,7 @@ impl<'a> Parser<'a> {
         }
 
         self.expect_obrace()?;
-        let block = self.parse_block()?;
+        let block = self.parse_block(false)?;
         self.expect_cbrace()?;
 
         Ok(Some(block))
