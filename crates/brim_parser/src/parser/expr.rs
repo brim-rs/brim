@@ -1,6 +1,7 @@
 use crate::parser::PToken;
 use brim::expr::{BinOpAssociativity, BinOpKind, ConditionBranch, ConstExpr, Expr, ExprKind, IfExpr, UnaryOp};
 use brim::{box_diag, Else, If, NodeId, Return, Try};
+use brim::expr::BinOpKind::Or;
 use brim::index::ByteOffset;
 use brim::item::Ident;
 use brim::span::Span;
@@ -8,7 +9,7 @@ use brim::token::{BinOpToken, Delimiter, Orientation, TokenKind};
 use brim::ty::{Const, Ty};
 use crate::parser::{PResult, PTokenKind, Parser};
 use crate::parser::errors::{ElseBranchExpr, ElseIfAfterElse, UnexpectedToken};
-use crate::ptok;
+use crate::{debug_ident, ptok};
 
 impl<'a> Parser<'a> {
     pub fn parse_const_expr(&mut self) -> PResult<'a, ConstExpr> {
@@ -158,9 +159,25 @@ impl<'a> Parser<'a> {
                 } else if self.eat_keyword(ptok!(If)) {
                     self.parse_if()
                 } else {
+                    let span = self.current().span;
                     let ident = self.parse_ident()?;
-
-                    Ok(self.new_expr(ident.span, ExprKind::Var(ident)))
+                    
+                    if self.is_paren(Orientation::Open) {
+                        self.advance();
+                        
+                        let mut args = Vec::new();
+                        while !self.is_paren(Orientation::Close) {
+                            args.push(self.parse_expr()?);
+                            if !self.eat(TokenKind::Comma) {
+                                break;
+                            }
+                        }
+                        
+                        self.expect_cparen()?;
+                        Ok(self.new_expr(span.to(self.prev().span), ExprKind::Call(Box::new(self.new_expr(span, ExprKind::Var(ident))), args)))
+                    } else {
+                        Ok(self.new_expr(ident.span, ExprKind::Var(ident)))
+                    }
                 }
             }
             _ => {

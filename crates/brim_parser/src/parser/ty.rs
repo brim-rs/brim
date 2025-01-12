@@ -1,6 +1,7 @@
 use crate::parser::PToken;
 use crate::parser::PTokenKind;
 use brim::{Const, NodeId};
+use brim::item::Ident;
 use brim::span::Span;
 use brim::token::{BinOpToken, Delimiter, Orientation, TokenKind};
 use brim::ty::{Const, PrimitiveType, Ty, TyKind};
@@ -21,10 +22,15 @@ impl<'a> Parser<'a> {
         } else if self.current().is_delimiter(Delimiter::Bracket, Orientation::Open) {
             self.parse_array()?
         } else {
-            if let Some(primitive) = self.is_primitive()? {
+            let ident = self.parse_ident()?;
+
+            if let Some(primitive) = self.is_primitive(ident)? {
                 TyKind::Primitive(primitive)
             } else {
-                todo!()
+                TyKind::Ident {
+                    ident,
+                    generics: self.parse_generics()?,
+                }
             }
         };
 
@@ -82,7 +88,7 @@ impl<'a> Parser<'a> {
         Ok(TyKind::Array(Box::new(ty), size))
     }
 
-    pub fn is_primitive(&mut self) -> PResult<'a, Option<PrimitiveType>> {
-        Ok(PrimitiveType::try_from_ident(self.parse_ident()?))
+    pub fn is_primitive(&mut self, ident: Ident) -> PResult<'a, Option<PrimitiveType>> {
+        Ok(PrimitiveType::try_from_ident(ident))
     }
 }

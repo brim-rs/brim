@@ -1,7 +1,7 @@
 use crate::{ErrorEmitted, NodeId, expr::ConstExpr};
 use brim_span::span::Span;
 use brim_span::symbols::Symbol;
-use crate::item::Ident;
+use crate::item::{Generics, Ident};
 
 #[derive(Debug, Clone)]
 pub struct Ty {
@@ -38,6 +38,11 @@ pub enum TyKind {
     Vec(Box<Ty>),
     /// Primitive type eg. `i32` (brim) -> `int32_t` (C++)
     Primitive(PrimitiveType),
+    /// Any other type that can be enum, struct, type, etc.
+    Ident {
+        ident: Ident,
+        generics: Generics,
+    },
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),

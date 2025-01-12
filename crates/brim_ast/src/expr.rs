@@ -34,7 +34,9 @@ pub enum ExprKind {
     /// `if x { y } else { z }`
     If(IfExpr),
     /// `{ ... }`
-    Block(Block)
+    Block(Block),
+    /// `func(x, y)`
+    Call(Box<Expr>, Vec<Expr>),
 }
 
 #[derive(Clone, Debug)]

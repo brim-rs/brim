@@ -57,8 +57,8 @@ impl<'a> Parser<'a> {
         } else {
             return Ok(None);
         };
+        self.eat_semis();
 
-        println!("Parsed item: {:#?}", kind);
         Ok(Some(Item {
             id: NodeId::max(),
             span,
@@ -173,8 +173,7 @@ impl<'a> Parser<'a> {
         self.expect_oparen()?;
 
         while !self
-            .current_token
-            .is_delimiter(Delimiter::Paren, Orientation::Close)
+            .is_paren(Orientation::Close)
         {
             let span_start = self.current().span;
             let ident = self.parse_ident()?;
@@ -201,8 +200,8 @@ impl<'a> Parser<'a> {
                 ty,
             });
 
-            if self.eat(TokenKind::Comma) {
-                self.advance();
+            if !self.eat(TokenKind::Comma) {
+                break;
             }
         }
 

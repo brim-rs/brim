@@ -187,6 +187,8 @@ impl<'a> Parser<'a> {
             items.push(token);
         }
 
+        println!("Parsed item: {:#?}", items);
+
         Ok(Barrel {})
     }
 
@@ -308,5 +310,17 @@ impl<'a> Parser<'a> {
         }
 
         self.prev().span
+    }
+
+    pub fn is_paren(&self, o: Orientation) -> bool {
+        self.current().is_delimiter(Delimiter::Paren, o)
+    }
+
+    pub fn is_brace(&self, o: Orientation) -> bool {
+        self.current().is_delimiter(Delimiter::Brace, o)
+    }
+
+    pub fn is_bracket(&self, o: Orientation) -> bool {
+        self.current().is_delimiter(Delimiter::Bracket, o)
     }
 }
