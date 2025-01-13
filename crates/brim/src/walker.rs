@@ -1,5 +1,5 @@
 use brim_ast::expr::{Expr, ExprKind, IfExpr};
-use brim_ast::item::{Block, FnDecl, Ident, Item, ItemKind};
+use brim_ast::item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind};
 use brim_ast::stmts::{Let, Stmt, StmtKind};
 use brim_ast::ty::Ty;
 
@@ -9,10 +9,28 @@ pub trait AstWalker {
     fn visit_expr(&mut self, expr: &mut Expr);
     fn visit_let(&mut self, let_stmt: &mut Let);
     fn visit_block(&mut self, block: &mut Block);
+    fn visit_ty(&mut self, ty: &mut Ty);
+    fn visit_generics(&mut self, generics: &mut Generics);
 
     fn walk_item(&mut self, item: &mut Item) {
         match &mut item.kind {
-            ItemKind::Fn(func) => self.visit_block(&mut func.body.as_mut().unwrap()),
+            ItemKind::Fn(func) => {
+                self.visit_generics(&mut func.generics);
+                if let Some(body) = &mut func.body {
+                    self.walk_block(body);
+                }
+                self.visit_signature(&mut func.sig);
+            }
+        }
+    }
+
+    fn visit_signature(&mut self, signature: &mut FnSignature) {
+        for param in &mut signature.params {
+            self.visit_ty(&mut param.ty);
+        }
+
+        if let FnReturnType::Ty(ref mut ty) = signature.return_type {
+            self.visit_ty(ty);
         }
     }
 
@@ -50,18 +68,17 @@ pub trait AstWalker {
             }
             ExprKind::If(if_expr) => {
                 self.visit_expr(&mut if_expr.condition);
-                self.visit_expr(&mut if_expr.condition);
 
                 for else_if in &mut if_expr.else_ifs {
                     self.visit_expr(&mut else_if.condition);
-                    self.visit_expr(&mut else_if.block);
+                    self.walk_expr(&mut else_if.block);
                 }
 
                 if let Some(else_branch) = &mut if_expr.else_block {
-                    self.visit_expr(else_branch);
+                    self.walk_expr(else_branch);
                 }
             }
-            ExprKind::Block(block) => self.visit_block(block),
+            ExprKind::Block(block) => self.walk_block(block),
             ExprKind::Call(func, args) => {
                 self.visit_expr(func);
                 for arg in args {
@@ -72,6 +89,10 @@ pub trait AstWalker {
     }
 
     fn walk_let(&mut self, let_stmt: &mut Let) {
+        if let Some(ty) = &mut let_stmt.ty {
+            self.visit_ty(ty);
+        }
+
         if let Some(value) = &mut let_stmt.value {
             self.visit_expr(value);
         }
