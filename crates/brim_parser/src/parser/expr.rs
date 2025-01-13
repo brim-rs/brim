@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
     pub fn parse_const_expr(&mut self) -> PResult<'a, ConstExpr> {
         Ok(ConstExpr {
             expr: Box::new(self.parse_expr()?),
-            id: NodeId::max(),
+            id: self.new_id(),
         })
     }
 
@@ -107,7 +107,7 @@ impl<'a> Parser<'a> {
 
                 if next_precedence > operator_precedence
                     || (next_precedence == operator_precedence
-                        && next_operator.associativity() == BinOpAssociativity::Right)
+                    && next_operator.associativity() == BinOpAssociativity::Right)
                 {
                     right = self.parse_binary_expression_recurse(right, next_precedence)?;
                 } else {
@@ -203,10 +203,11 @@ impl<'a> Parser<'a> {
                         }
 
                         self.expect_cparen()?;
+                        let var = self.new_expr(span, ExprKind::Var(ident));
                         Ok(self.new_expr(
                             span.to(self.prev().span),
                             ExprKind::Call(
-                                Box::new(self.new_expr(span, ExprKind::Var(ident))),
+                                Box::new(var),
                                 args,
                             ),
                         ))
@@ -266,12 +267,13 @@ impl<'a> Parser<'a> {
             };
         }
 
+        let then_block = self.new_expr(then_block.span, ExprKind::Block(then_block));
         Ok(self.new_expr(
             span,
             ExprKind::If(IfExpr {
                 span,
                 condition: Box::new(condition),
-                then_block: Box::new(self.new_expr(then_block.span, ExprKind::Block(then_block))),
+                then_block: Box::new(then_block),
                 else_block: else_block.map(Box::new),
                 else_ifs,
             }),
@@ -288,9 +290,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn new_expr(&self, span: Span, kind: ExprKind) -> Expr {
+    pub fn new_expr(&mut self, span: Span, kind: ExprKind) -> Expr {
         Expr {
-            id: NodeId::max(),
+            id: self.new_id(),
             span,
             kind,
         }

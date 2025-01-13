@@ -60,7 +60,7 @@ impl<'a> Parser<'a> {
         self.eat_semis();
 
         Ok(Some(Item {
-            id: NodeId::max(),
+            id: self.new_id(),
             span,
             vis,
             kind,
@@ -193,7 +193,7 @@ impl<'a> Parser<'a> {
             let ty = self.parse_type()?;
 
             params.push(Param {
-                id: NodeId::max(),
+                id: self.new_id(),
                 span: span_start.to(self.prev().span),
                 ty,
             });

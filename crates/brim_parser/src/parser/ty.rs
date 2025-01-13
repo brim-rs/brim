@@ -41,7 +41,7 @@ impl<'a> Parser<'a> {
         Ok(Ty {
             span,
             kind,
-            id: NodeId::max(),
+            id: self.new_id(),
         })
     }
 

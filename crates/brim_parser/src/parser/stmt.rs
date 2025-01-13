@@ -35,7 +35,7 @@ impl<'a> Parser<'a> {
         }
 
         Ok(Block {
-            id: NodeId::max(),
+            id: self.new_id(),
             stmts,
             span: span_start.to(self.prev().span),
         })
@@ -59,7 +59,7 @@ impl<'a> Parser<'a> {
         self.eat_semis();
 
         Ok(Stmt {
-            id: NodeId::max(),
+            id: self.new_id(),
             kind: kind?,
             span: start.to(self.prev().span),
         })
@@ -89,7 +89,7 @@ impl<'a> Parser<'a> {
         };
 
         Ok(Let {
-            id: NodeId::max(),
+            id: self.new_id(),
             ident,
             ty,
             value,

@@ -29,10 +29,6 @@ macro_rules! index_type {
                 Self { value }
             }
 
-            $vis const fn max() -> Self {
-                Self { value: Self::MAX }
-            }
-
             /// Creates a new index from a given `usize`.
             ///
             /// # Panics

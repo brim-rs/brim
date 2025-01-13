@@ -50,7 +50,7 @@ impl<'a> Parser<'a> {
                 };
 
                 params.push(GenericParam {
-                    id: NodeId::max(),
+                    id: self.new_id(),
                     ident,
                     kind: GenericKind::Type { default },
                 })
@@ -69,7 +69,7 @@ impl<'a> Parser<'a> {
                     None
                 };
                 params.push(GenericParam {
-                    id: NodeId::max(),
+                    id: self.new_id(),
                     ident,
                     kind: GenericKind::NonType {
                         ty,

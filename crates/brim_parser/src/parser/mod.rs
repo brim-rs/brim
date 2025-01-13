@@ -38,6 +38,7 @@ pub struct Parser<'a> {
     pub current_token: Token,
     pub previous_token: Token,
     pub diags: ParserDiagnostics<'a>,
+    pub last_id: u32
 }
 
 #[derive(Debug)]
@@ -124,7 +125,13 @@ impl<'a> Parser<'a> {
             current_token: Token::new(TokenKind::Skipable, Span::DUMMY),
             previous_token: Token::new(TokenKind::Skipable, Span::DUMMY),
             diags: ParserDiagnostics::new(),
+            last_id: 0,
         }
+    }
+    
+    pub fn new_id(&mut self) -> NodeId {
+        self.last_id += 1;
+        NodeId::from_u32(self.last_id)
     }
 
     pub fn parse_barrel(&mut self, comp: &mut CompilerContext) -> Result<Barrel> {
@@ -190,7 +197,7 @@ impl<'a> Parser<'a> {
 
         Ok(Barrel {
             items,
-            id: NodeId::max(),
+            id: self.new_id(),
             file_id: self.file,
         })
     }
