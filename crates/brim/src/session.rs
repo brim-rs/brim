@@ -103,6 +103,7 @@ impl Session {
         Ok(self.add_file(path.clone(), self.file_loader.read_file(&path)?))
     }
 
+    /// Resolve and analyze the project form the main barrel
     pub fn resolve_and_analyze(&mut self, barrel: &mut Barrel, comp: &mut CompilerContext) -> Result<()> {
         self.prepare(barrel)?;
 

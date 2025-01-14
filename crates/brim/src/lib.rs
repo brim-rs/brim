@@ -1,7 +1,6 @@
 extern crate core;
 
 pub mod session;
-mod walker;
 
 pub use brim_ast::*;
 pub use brim_config::*;
