@@ -1,4 +1,4 @@
-use crate::{ErrorEmitted, item::Ident, ty::PrimitiveType};
+use crate::{ErrorEmitted, item::Ident};
 use brim_span::{span::Span, symbols::Symbol};
 use std::{cmp::PartialEq, fmt::Display};
 

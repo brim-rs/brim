@@ -5,13 +5,12 @@ use crate::cli::{
 use anyhow::Result;
 use brim::{
     compiler::CompilerContext,
-    files::{SimpleFiles, files},
+    resolver::Resolver,
     session::Session,
     toml::ProjectType,
 };
 use brim_parser::parser::Parser;
 use clap::Command;
-use brim::resolver::Resolver;
 
 pub fn run_cmd() -> Command {
     Command::new("run")

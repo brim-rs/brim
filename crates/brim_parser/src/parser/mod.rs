@@ -4,20 +4,19 @@ use crate::{
 };
 use anyhow::Result;
 use brim_ast::{
-    item::Visibility, token::{Delimiter, Orientation, Token, TokenKind}, ErrorEmitted, NodeId,
-    Pub,
-    SYMBOL_STRINGS,
+    ErrorEmitted, NodeId, Pub, SYMBOL_STRINGS,
+    item::Visibility,
+    token::{Delimiter, Orientation, Token, TokenKind},
 };
-use brim_ctx::compiler::CompilerContext;
-use brim_diagnostics::{box_diag, diagnostic::ToDiagnostic, TemporaryDiagnosticContext};
-use brim_lexer::{cursor::Cursor, PrimitiveToken, PrimitiveTokenKind};
+use brim_ctx::{barrel::Barrel, compiler::CompilerContext};
+use brim_diagnostics::{TemporaryDiagnosticContext, box_diag, diagnostic::ToDiagnostic};
+use brim_lexer::{PrimitiveToken, PrimitiveTokenKind, cursor::Cursor};
 use brim_span::{
     files::get_file,
     span::Span,
-    symbols::{Symbol, GLOBAL_INTERNER},
+    symbols::{GLOBAL_INTERNER, Symbol},
 };
 use tracing::debug;
-use brim_ctx::barrel::Barrel;
 
 mod cursor;
 mod errors;

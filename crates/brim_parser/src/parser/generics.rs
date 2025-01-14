@@ -3,7 +3,7 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Const, NodeId,
+    Const,
     item::{GenericKind, GenericParam, Generics},
     token::TokenKind,
 };

@@ -1,10 +1,9 @@
-use brim_ast::ErrorEmitted;
-use brim_diagnostics::diagnostic::{Diagnostic, ToDiagnostic};
-use std::marker::PhantomData;
-use brim_ast::item::Use;
 use crate::diag_ctx::DiagnosticContext;
+use brim_ast::{ErrorEmitted, item::Use};
+use brim_diagnostics::diagnostic::{Diagnostic, ToDiagnostic};
 #[cfg(not(feature = "snap"))]
 use brim_span::files::{SimpleFiles, files};
+use std::marker::PhantomData;
 
 #[derive(Debug)]
 pub struct CompilerContext<'a> {

@@ -1,7 +1,9 @@
-use brim_ast::expr::{Expr, ExprKind, IfExpr};
-use brim_ast::item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Use};
-use brim_ast::stmts::{Let, Stmt, StmtKind};
-use brim_ast::ty::Ty;
+use brim_ast::{
+    expr::{Expr, ExprKind},
+    item::{Block, FnReturnType, FnSignature, Generics, Item, ItemKind, Use},
+    stmts::{Let, Stmt, StmtKind},
+    ty::Ty,
+};
 
 pub trait AstWalker {
     fn visit_item(&mut self, item: &mut Item) {}

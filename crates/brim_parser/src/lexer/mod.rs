@@ -157,7 +157,7 @@ impl<'a> Lexer<'a> {
             TokenKind::DoubleColon,
         )
     }
-    
+
     fn try_lex_plus_assign(&mut self) -> TokenKind {
         self.try_compound_token(
             PrimitiveTokenKind::Equals,

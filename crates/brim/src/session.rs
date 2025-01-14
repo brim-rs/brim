@@ -1,19 +1,17 @@
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim_config::toml::{Config, ProjectType};
+use brim_ctx::{barrel::Barrel, resolver::Resolver};
 use brim_fs::{
     loader::{BrimFileLoader, FileLoader},
     path,
 };
-use brim_ctx::barrel::Barrel;
 use brim_shell::Shell;
 use brim_span::files::{
     SimpleFile, add_file, get_file, get_file_by_name, get_index_by_name, update_file,
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
-use brim_ctx::compiler::CompilerContext;
-use brim_ctx::resolver::Resolver;
 
 #[derive(Debug)]
 pub struct Session {
@@ -105,7 +103,11 @@ impl Session {
     }
 
     /// Resolve and analyze the project form the main barrel
-    pub fn resolve_and_analyze<'a>(&mut self, barrel: &mut Barrel, resolver: &mut Resolver<'a>) -> Result<()> {
+    pub fn resolve_and_analyze<'a>(
+        &mut self,
+        barrel: &mut Barrel,
+        resolver: &mut Resolver<'a>,
+    ) -> Result<()> {
         self.prepare(barrel, resolver)?;
 
         Ok(())
@@ -113,7 +115,7 @@ impl Session {
 
     pub fn prepare<'a>(&mut self, barrel: &mut Barrel, resolver: &mut Resolver<'a>) -> Result<()> {
         resolver.create_module_map(barrel);
-        
+
         Ok(())
     }
 }

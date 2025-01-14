@@ -3,7 +3,7 @@ use crate::{
     expr::ConstExpr,
     item::{Generics, Ident},
 };
-use brim_span::{span::Span, symbols::Symbol};
+use brim_span::span::Span;
 
 #[derive(Debug, Clone)]
 pub struct Ty {

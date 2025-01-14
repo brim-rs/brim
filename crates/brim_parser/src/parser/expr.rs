@@ -1,5 +1,4 @@
 use crate::{
-    debug_ident,
     parser::{
         PResult, PToken, PTokenKind, Parser,
         errors::{ElseBranchExpr, ElseIfAfterElse, UnexpectedToken},
@@ -7,14 +6,12 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Else, If, NodeId, Return, Try,
+    Else, If, Return, Try,
     expr::{
-        BinOpAssociativity, BinOpKind, BinOpKind::Or, ConditionBranch, ConstExpr, Expr, ExprKind,
+        BinOpAssociativity, BinOpKind, ConditionBranch, ConstExpr, Expr, ExprKind,
         IfExpr, UnaryOp,
     },
-    item::Ident,
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
-    ty::{Const, Ty},
 };
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
@@ -107,7 +104,7 @@ impl<'a> Parser<'a> {
 
                 if next_precedence > operator_precedence
                     || (next_precedence == operator_precedence
-                    && next_operator.associativity() == BinOpAssociativity::Right)
+                        && next_operator.associativity() == BinOpAssociativity::Right)
                 {
                     right = self.parse_binary_expression_recurse(right, next_precedence)?;
                 } else {
@@ -206,10 +203,7 @@ impl<'a> Parser<'a> {
                         let var = self.new_expr(span, ExprKind::Var(ident));
                         Ok(self.new_expr(
                             span.to(self.prev().span),
-                            ExprKind::Call(
-                                Box::new(var),
-                                args,
-                            ),
+                            ExprKind::Call(Box::new(var), args),
                         ))
                     } else {
                         Ok(self.new_expr(ident.span, ExprKind::Var(ident)))

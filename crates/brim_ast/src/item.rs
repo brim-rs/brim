@@ -1,4 +1,9 @@
-use crate::{Break, NodeId, While, expr::{ConstExpr, Expr}, stmts::Stmt, ty::{Const, Ty}, Empty};
+use crate::{
+    Break, Empty, NodeId, While,
+    expr::ConstExpr,
+    stmts::Stmt,
+    ty::{Const, Ty},
+};
 use brim_span::{span::Span, symbols::Symbol};
 use std::fmt::Debug;
 
@@ -25,7 +30,7 @@ impl Ident {
     pub fn is_reserved(&self) -> bool {
         self.name >= Break && self.name <= While
     }
-    
+
     pub fn dummy() -> Self {
         Self {
             name: Empty,

@@ -1,7 +1,5 @@
-use brim_ast::item::{Block, Generics, Item, Use};
-use crate::barrel::Barrel;
-use crate::compiler::CompilerContext;
-use crate::walker::AstWalker;
+use crate::{barrel::Barrel, compiler::CompilerContext, walker::AstWalker};
+use brim_ast::item::Use;
 
 #[derive(Debug)]
 pub struct Resolver<'a> {

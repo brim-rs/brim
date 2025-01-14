@@ -1,21 +1,26 @@
 use crate::{
-    debug_ident,
     parser::{
         PResult, PToken, PTokenKind, Parser,
         errors::{
             EmptyBody, ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder,
-            MissingParamList, SelfOutsideMethod, UnnecessarySelf,
+            MissingFromKeyword, MissingParamList, SelfOutsideMethod, UnnecessarySelf,
+            UseStatementBraces,
         },
     },
     ptok,
 };
-use anyhow::{Result, bail};
-use brim_ast::{Const, Fn, NodeId, SelfSmall, item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Param}, token::{Delimiter, Orientation, TokenKind}, ty, ty::Const, Use, From, Parent};
-use brim_ast::item::{ImportsKind, PathItemKind, Use};
-use brim_ast::token::{BinOpToken, Lit, LitKind};
+use brim_ast::{
+    Const, Fn, From, Parent, SelfSmall, Use,
+    item::{
+        Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, ImportsKind, Item, ItemKind,
+        Param, PathItemKind, Use,
+    },
+    token::{BinOpToken, Delimiter, Orientation, TokenKind},
+    ty,
+    ty::Const,
+};
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
-use crate::parser::errors::{MissingFromKeyword, UseStatementBraces};
 
 #[derive(Debug, Clone, Copy)]
 pub enum FunctionContext {
@@ -102,7 +107,14 @@ impl<'a> Parser<'a> {
         }
 
         let path = self.expect_path()?;
-        Ok((Ident::dummy(), ItemKind::Use(Use { span, imports: kind, path })))
+        Ok((
+            Ident::dummy(),
+            ItemKind::Use(Use {
+                span,
+                imports: kind,
+                path,
+            }),
+        ))
     }
 
     pub fn expect_path(&mut self) -> PResult<'a, Vec<PathItemKind>> {
