@@ -8,8 +8,7 @@ use crate::{
 use brim_ast::{
     Else, If, Return, Try,
     expr::{
-        BinOpAssociativity, BinOpKind, ConditionBranch, ConstExpr, Expr, ExprKind,
-        IfExpr, UnaryOp,
+        BinOpAssociativity, BinOpKind, ConditionBranch, ConstExpr, Expr, ExprKind, IfExpr, UnaryOp,
     },
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
 };

@@ -3,12 +3,7 @@ use crate::cli::{
     static_lib_mode,
 };
 use anyhow::Result;
-use brim::{
-    compiler::CompilerContext,
-    resolver::Resolver,
-    session::Session,
-    toml::ProjectType,
-};
+use brim::{compiler::CompilerContext, resolver::Resolver, session::Session, toml::ProjectType};
 use brim_parser::parser::Parser;
 use clap::Command;
 
@@ -46,7 +41,6 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
 
             sess.resolve_and_analyze(&mut barrel, resolver)?;
 
-            println!("{:#?}", resolver.ctx);
             for diag in parser.diags.dcx.diags {
                 resolver.ctx.emit_diag(diag);
             }

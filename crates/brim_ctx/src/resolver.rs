@@ -1,5 +1,6 @@
 use crate::{barrel::Barrel, compiler::CompilerContext, walker::AstWalker};
-use brim_ast::item::Use;
+use brim_ast::item::{PathItemKind, Use};
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Resolver<'a> {
@@ -12,10 +13,29 @@ impl<'a> Resolver<'a> {
             self.walk_item(item);
         }
     }
+
+    pub fn build_path(&self, path: &Vec<PathItemKind>) -> PathBuf {
+        let mut path_buf = PathBuf::new();
+
+        for part in path {
+            match part {
+                PathItemKind::Module(ident) => {
+                    path_buf.push(ident.name.as_str().expect("expected module name"))
+                }
+                PathItemKind::Parent => {
+                    path_buf.pop();
+                }
+            }
+        }
+
+        path_buf
+    }
 }
 
 impl<'a> AstWalker for Resolver<'a> {
     fn visit_use(&mut self, use_stmt: &mut Use) {
-        self.ctx.imports.push(use_stmt.clone());
+        let path = self.build_path(&use_stmt.path);
+
+        println!("Resolved path: {:?}", path);
     }
 }
