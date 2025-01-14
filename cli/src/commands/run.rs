@@ -11,6 +11,7 @@ use brim::{
 };
 use brim_parser::parser::Parser;
 use clap::Command;
+use brim::resolver::Resolver;
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -30,7 +31,7 @@ pub fn run_cmd() -> Command {
         )
 }
 
-pub fn run_command(sess: &mut Session, comp: &mut CompilerContext) -> Result<()> {
+pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) -> Result<()> {
     sess.measure_time(
         |sess| {
             sess.assert_type(
@@ -42,11 +43,13 @@ pub fn run_command(sess: &mut Session, comp: &mut CompilerContext) -> Result<()>
 
             let mut parser = Parser::new(main_file);
             let mut barrel = parser.parse_barrel(comp)?;
+            let resolver = &mut Resolver { ctx: comp };
 
-            sess.resolve_and_analyze(&mut barrel, comp)?;
+            sess.resolve_and_analyze(&mut barrel, resolver)?;
 
+            println!("{:#?}", resolver.ctx);
             for diag in parser.diags.dcx.diags {
-                comp.emit_diag(diag);
+                resolver.ctx.emit_diag(diag);
             }
 
             Ok(())

@@ -1,7 +1,7 @@
 use brim_ast::ErrorEmitted;
 use brim_diagnostics::diagnostic::{Diagnostic, ToDiagnostic};
 use std::marker::PhantomData;
-
+use brim_ast::item::Use;
 use crate::diag_ctx::DiagnosticContext;
 #[cfg(not(feature = "snap"))]
 use brim_span::files::{SimpleFiles, files};
@@ -11,8 +11,8 @@ pub struct CompilerContext<'a> {
     dcx: DiagnosticContext,
     #[cfg(feature = "snap")]
     pub emitted: Vec<Diagnostic<'a, usize>>,
-    /// Required while snap is not enabled
     marker: PhantomData<&'a ()>,
+    pub imports: Vec<Use>,
 }
 
 impl<'a> CompilerContext<'a> {
@@ -22,6 +22,7 @@ impl<'a> CompilerContext<'a> {
             #[cfg(feature = "snap")]
             emitted: vec![],
             marker: PhantomData,
+            imports: vec![],
         }
     }
 

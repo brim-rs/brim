@@ -4,14 +4,14 @@ use brim_ast::stmts::{Let, Stmt, StmtKind};
 use brim_ast::ty::Ty;
 
 pub trait AstWalker {
-    fn visit_item(&mut self, item: &mut Item);
-    fn visit_stmt(&mut self, stmt: &mut Stmt);
-    fn visit_expr(&mut self, expr: &mut Expr);
-    fn visit_let(&mut self, let_stmt: &mut Let);
-    fn visit_block(&mut self, block: &mut Block);
-    fn visit_ty(&mut self, ty: &mut Ty);
-    fn visit_generics(&mut self, generics: &mut Generics);
-    fn visit_use(&mut self, use_stmt: &mut Use);
+    fn visit_item(&mut self, item: &mut Item) {}
+    fn visit_stmt(&mut self, stmt: &mut Stmt) {}
+    fn visit_expr(&mut self, expr: &mut Expr) {}
+    fn visit_let(&mut self, let_stmt: &mut Let) {}
+    fn visit_block(&mut self, block: &mut Block) {}
+    fn visit_ty(&mut self, ty: &mut Ty) {}
+    fn visit_generics(&mut self, generics: &mut Generics) {}
+    fn visit_use(&mut self, use_stmt: &mut Use) {}
 
     fn walk_item(&mut self, item: &mut Item) {
         match &mut item.kind {

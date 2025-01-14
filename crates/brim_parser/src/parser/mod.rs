@@ -1,24 +1,24 @@
 use crate::{
     lexer::Lexer,
-    parser::{barrel::Barrel, cursor::TokenCursor, errors::ExpectedToken},
+    parser::{cursor::TokenCursor, errors::ExpectedToken},
 };
 use anyhow::Result;
 use brim_ast::{
-    ErrorEmitted, NodeId, Pub, SYMBOL_STRINGS,
-    item::Visibility,
-    token::{Delimiter, Orientation, Token, TokenKind},
+    item::Visibility, token::{Delimiter, Orientation, Token, TokenKind}, ErrorEmitted, NodeId,
+    Pub,
+    SYMBOL_STRINGS,
 };
 use brim_ctx::compiler::CompilerContext;
-use brim_diagnostics::{TemporaryDiagnosticContext, box_diag, diagnostic::ToDiagnostic};
-use brim_lexer::{PrimitiveToken, PrimitiveTokenKind, cursor::Cursor};
+use brim_diagnostics::{box_diag, diagnostic::ToDiagnostic, TemporaryDiagnosticContext};
+use brim_lexer::{cursor::Cursor, PrimitiveToken, PrimitiveTokenKind};
 use brim_span::{
     files::get_file,
     span::Span,
-    symbols::{GLOBAL_INTERNER, Symbol},
+    symbols::{Symbol, GLOBAL_INTERNER},
 };
 use tracing::debug;
+use brim_ctx::barrel::Barrel;
 
-pub mod barrel;
 mod cursor;
 mod errors;
 mod expr;
@@ -195,9 +195,9 @@ impl<'a> Parser<'a> {
 
             items.push(token);
         }
-        
+
         println!("{:#?}", items);
-        
+
         Ok(Barrel {
             items,
             id: self.new_id(),

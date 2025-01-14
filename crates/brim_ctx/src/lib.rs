@@ -1,4 +1,5 @@
 pub mod compiler;
 pub mod diag_ctx;
-mod resolver;
-mod walker;
+pub mod resolver;
+pub mod walker;
+pub mod barrel;

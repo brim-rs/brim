@@ -60,8 +60,8 @@ fn main() -> Result<()> {
 
 pub fn exec_command<'a>(
     sess: &'a mut Session,
-    comp: &'a mut CompilerContext,
-    func: impl FnOnce(&mut Session, &mut CompilerContext) -> Result<()>,
+    comp: &'a mut CompilerContext<'a>,
+    func: impl FnOnce(&mut Session, &'a mut CompilerContext<'a>) -> Result<()>,
 ) -> Result<()> {
     match func(sess, comp) {
         Ok(_) => Ok(()),

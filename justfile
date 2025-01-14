@@ -8,7 +8,6 @@ _default:
 
 ready:
     just fmt
-    just check
     just fix
     just test
     just doc
