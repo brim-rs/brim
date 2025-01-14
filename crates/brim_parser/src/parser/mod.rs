@@ -38,7 +38,7 @@ pub struct Parser<'a> {
     pub current_token: Token,
     pub previous_token: Token,
     pub diags: ParserDiagnostics<'a>,
-    pub last_id: u32
+    pub last_id: u32,
 }
 
 #[derive(Debug)]
@@ -78,6 +78,7 @@ pub enum PTokenKind {
     Let,
     Loop,
     Null,
+    Parent,
     Pub,
     Return,
     SelfBig,
@@ -128,7 +129,7 @@ impl<'a> Parser<'a> {
             last_id: 0,
         }
     }
-    
+
     pub fn new_id(&mut self) -> NodeId {
         self.last_id += 1;
         NodeId::from_u32(self.last_id)
@@ -194,7 +195,9 @@ impl<'a> Parser<'a> {
 
             items.push(token);
         }
-
+        
+        println!("{:#?}", items);
+        
         Ok(Barrel {
             items,
             id: self.new_id(),

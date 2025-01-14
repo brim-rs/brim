@@ -44,7 +44,6 @@ pub fn run_command(sess: &mut Session, comp: &mut CompilerContext) -> Result<()>
             let mut barrel = parser.parse_barrel(comp)?;
 
             sess.resolve_and_analyze(&mut barrel, comp)?;
-            println!("{:#?}", barrel);
 
             for diag in parser.diags.dcx.diags {
                 comp.emit_diag(diag);

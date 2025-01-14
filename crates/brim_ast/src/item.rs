@@ -1,9 +1,4 @@
-use crate::{
-    Break, NodeId, While,
-    expr::{ConstExpr, Expr},
-    stmts::Stmt,
-    ty::{Const, Ty},
-};
+use crate::{Break, NodeId, While, expr::{ConstExpr, Expr}, stmts::Stmt, ty::{Const, Ty}, Empty};
 use brim_span::{span::Span, symbols::Symbol};
 use std::fmt::Debug;
 
@@ -29,6 +24,13 @@ impl Ident {
 
     pub fn is_reserved(&self) -> bool {
         self.name >= Break && self.name <= While
+    }
+    
+    pub fn dummy() -> Self {
+        Self {
+            name: Empty,
+            span: Span::initial(),
+        }
     }
 }
 
@@ -71,6 +73,29 @@ impl VisibilityKind {
 pub enum ItemKind {
     /// Function declaration
     Fn(FnDecl),
+    /// Use statement
+    Use(Use),
+}
+
+#[derive(Clone, Debug)]
+pub struct Use {
+    pub span: Span,
+    pub path: Vec<PathItemKind>,
+    pub imports: ImportsKind,
+}
+
+#[derive(Clone, Debug)]
+pub enum PathItemKind {
+    Parent,
+    Module(Ident),
+}
+
+#[derive(Clone, Debug)]
+pub enum ImportsKind {
+    /// `use { foo, bar } from "test";`
+    List(Vec<Ident>),
+    /// `use * from "test";`
+    All,
 }
 
 #[derive(Clone, Debug)]

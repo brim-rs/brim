@@ -114,3 +114,17 @@ pub struct ElseIfAfterElse {
     #[error("here is the `else` block")]
     pub else_block: (Span, usize),
 }
+
+#[derive(Diagnostic)]
+#[error("use statement requires braces in the item list.")]
+pub struct UseStatementBraces {
+    #[error("add braces around the item list")]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("missing `from` keyword after item list.")]
+pub struct MissingFromKeyword {
+    #[error]
+    pub span: (Span, usize),
+}

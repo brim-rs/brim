@@ -10,15 +10,12 @@ use crate::{
     ptok,
 };
 use anyhow::{Result, bail};
-use brim_ast::{
-    Const, Fn, NodeId, SelfSmall,
-    item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Param},
-    token::{Delimiter, Orientation, TokenKind},
-    ty,
-    ty::Const,
-};
+use brim_ast::{Const, Fn, NodeId, SelfSmall, item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Param}, token::{Delimiter, Orientation, TokenKind}, ty, ty::Const, Use, From, Parent};
+use brim_ast::item::{ImportsKind, PathItemKind, Use};
+use brim_ast::token::{BinOpToken, Lit, LitKind};
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
+use crate::parser::errors::{MissingFromKeyword, UseStatementBraces};
 
 #[derive(Debug, Clone, Copy)]
 pub enum FunctionContext {
@@ -54,6 +51,8 @@ impl<'a> Parser<'a> {
 
         let (ident, kind) = if self.is_function() {
             self.parse_fn(span, FunctionContext::Item)?
+        } else if self.current().is_keyword(Use) {
+            self.parse_use(span)?
         } else {
             return Ok(None);
         };
@@ -66,6 +65,63 @@ impl<'a> Parser<'a> {
             kind,
             ident,
         }))
+    }
+
+    pub fn parse_use(&mut self, span: Span) -> PResult<'a, (Ident, ItemKind)> {
+        self.eat_keyword(ptok!(Use));
+
+        let kind = if self.ahead(1).kind == TokenKind::BinOp(BinOpToken::Star) {
+            self.advance();
+            ImportsKind::All
+        } else if self.is_brace(Orientation::Open) {
+            self.advance();
+
+            let mut imports = vec![];
+
+            while !self.is_brace(Orientation::Close) {
+                let ident = self.parse_ident()?;
+                imports.push(ident);
+
+                if !self.eat(TokenKind::Comma) {
+                    break;
+                }
+            }
+
+            self.expect_cbrace()?;
+            ImportsKind::List(imports)
+        } else {
+            box_diag!(UseStatementBraces {
+                span: (span.to(self.current().span), self.file),
+            });
+        };
+
+        if !self.eat_keyword(ptok!(From)) {
+            self.emit(MissingFromKeyword {
+                span: (self.prev().span.from_end(), self.file),
+            });
+        }
+
+        let path = self.expect_path()?;
+        Ok((Ident::dummy(), ItemKind::Use(Use { span, imports: kind, path })))
+    }
+
+    pub fn expect_path(&mut self) -> PResult<'a, Vec<PathItemKind>> {
+        let mut path = vec![];
+
+        loop {
+            if self.eat_keyword(ptok!(Parent)) {
+                path.push(PathItemKind::Parent);
+            } else {
+                let ident = self.parse_ident()?;
+                path.push(PathItemKind::Module(ident));
+            }
+
+            if !self.eat(TokenKind::DoubleColon) {
+                break;
+            }
+        }
+
+        Ok(path)
     }
 
     /// Function can only contain `const` before the `fn` keyword eg: `pub const fn foo() {}`

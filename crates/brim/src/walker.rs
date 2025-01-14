@@ -1,5 +1,5 @@
 use brim_ast::expr::{Expr, ExprKind, IfExpr};
-use brim_ast::item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind};
+use brim_ast::item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Use};
 use brim_ast::stmts::{Let, Stmt, StmtKind};
 use brim_ast::ty::Ty;
 
@@ -11,6 +11,7 @@ pub trait AstWalker {
     fn visit_block(&mut self, block: &mut Block);
     fn visit_ty(&mut self, ty: &mut Ty);
     fn visit_generics(&mut self, generics: &mut Generics);
+    fn visit_use(&mut self, use_stmt: &mut Use);
 
     fn walk_item(&mut self, item: &mut Item) {
         match &mut item.kind {
@@ -21,6 +22,7 @@ pub trait AstWalker {
                 }
                 self.visit_signature(&mut func.sig);
             }
+            ItemKind::Use(use_stmt) => self.visit_use(use_stmt),
         }
     }
 

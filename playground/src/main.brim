@@ -1,8 +1,5 @@
+use { add } from test;
 
 pub fn main() {
     let x = add(1, 2);
-};
-
-pub fn add<T: const &i32>(x: T, y: T) -> T {
-    return x + y;
 };

@@ -100,6 +100,8 @@ pub enum TokenKind {
     QuestionMark,
     /// `!`
     Bang,
+    /// `::`
+    DoubleColon,
 
     // Operators
     /// `=`
@@ -275,6 +277,7 @@ impl Display for TokenKind {
             TokenKind::Semicolon => write!(f, ";"),
             TokenKind::QuestionMark => write!(f, "?"),
             TokenKind::Bang => write!(f, "!"),
+            TokenKind::DoubleColon => write!(f, "::"),
             TokenKind::Eq => write!(f, "="),
             TokenKind::Lt => write!(f, "<"),
             TokenKind::Le => write!(f, "<="),
