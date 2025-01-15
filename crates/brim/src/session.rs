@@ -1,7 +1,7 @@
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim_config::toml::{Config, ProjectType};
-use brim_ctx::{barrel::Barrel, resolver::Resolver};
+use brim_ctx::{barrel::Barrel};
 use brim_fs::{
     loader::{BrimFileLoader, FileLoader},
     path,
@@ -12,6 +12,7 @@ use brim_span::files::{
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
+use crate::resolver::Resolver;
 
 #[derive(Debug)]
 pub struct Session {
@@ -114,7 +115,7 @@ impl Session {
     }
 
     pub fn prepare<'a>(&mut self, barrel: &mut Barrel, resolver: &mut Resolver<'a>) -> Result<()> {
-        resolver.create_module_map(barrel);
+        resolver.create_module_map(barrel)?;
 
         Ok(())
     }

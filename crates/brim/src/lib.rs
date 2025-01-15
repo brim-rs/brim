@@ -1,6 +1,7 @@
 extern crate core;
 
 pub mod session;
+pub mod resolver;
 
 pub use brim_ast::*;
 pub use brim_config::*;

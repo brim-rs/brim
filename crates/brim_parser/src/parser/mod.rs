@@ -195,8 +195,6 @@ impl<'a> Parser<'a> {
             items.push(token);
         }
 
-        println!("{:#?}", items);
-
         Ok(Barrel {
             items,
             id: self.new_id(),

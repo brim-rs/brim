@@ -380,3 +380,10 @@ pub fn files() -> Vec<SimpleFile> {
         .files
         .clone()
 }
+
+pub fn get_path(file_id: usize) -> Result<PathBuf, Error> {
+    GLOBAL_FILES
+        .lock()
+        .expect("Failed to lock global files")
+        .name(file_id)
+}

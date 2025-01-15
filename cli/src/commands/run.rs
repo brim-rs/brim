@@ -37,7 +37,7 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
 
             let mut parser = Parser::new(main_file);
             let mut barrel = parser.parse_barrel(comp)?;
-            let resolver = &mut Resolver { ctx: comp };
+            let resolver = &mut Resolver::new(comp);
 
             sess.resolve_and_analyze(&mut barrel, resolver)?;
 

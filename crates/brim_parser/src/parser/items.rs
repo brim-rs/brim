@@ -1,14 +1,11 @@
-use crate::{
-    parser::{
-        PResult, PToken, PTokenKind, Parser,
-        errors::{
-            EmptyBody, ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder,
-            MissingFromKeyword, MissingParamList, SelfOutsideMethod, UnnecessarySelf,
-            UseStatementBraces,
-        },
+use crate::{debug_ident, parser::{
+    PResult, PToken, PTokenKind, Parser,
+    errors::{
+        EmptyBody, ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder,
+        MissingFromKeyword, MissingParamList, SelfOutsideMethod, UnnecessarySelf,
+        UseStatementBraces,
     },
-    ptok,
-};
+}, ptok};
 use brim_ast::{
     Const, Fn, From, Parent, SelfSmall, Use,
     item::{

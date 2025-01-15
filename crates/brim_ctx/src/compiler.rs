@@ -11,7 +11,6 @@ pub struct CompilerContext<'a> {
     #[cfg(feature = "snap")]
     pub emitted: Vec<Diagnostic<'a, usize>>,
     marker: PhantomData<&'a ()>,
-    pub imports: Vec<Use>,
 }
 
 impl<'a> CompilerContext<'a> {
@@ -21,7 +20,6 @@ impl<'a> CompilerContext<'a> {
             #[cfg(feature = "snap")]
             emitted: vec![],
             marker: PhantomData,
-            imports: vec![],
         }
     }
 
