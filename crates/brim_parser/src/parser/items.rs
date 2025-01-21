@@ -1,3 +1,4 @@
+use std::convert::identity;
 use crate::{debug_ident, parser::{
     PResult, PToken, PTokenKind, Parser,
     errors::{

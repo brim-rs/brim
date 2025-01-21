@@ -153,8 +153,8 @@ impl<'a> Lexer<'a> {
 
     fn try_lex_colon_or_double_colon(&mut self, start: ByteIndex) -> TokenKind {
         self.try_multi_char_token(
-            &[(PrimitiveTokenKind::Colon, TokenKind::Colon)],
-            TokenKind::DoubleColon,
+            &[(PrimitiveTokenKind::Colon, TokenKind::DoubleColon)],
+            TokenKind::Colon,
         )
     }
 
