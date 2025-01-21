@@ -2,6 +2,7 @@ extern crate core;
 
 pub mod session;
 pub mod resolver;
+mod validator;
 
 pub use brim_ast::*;
 pub use brim_config::*;

@@ -12,7 +12,9 @@ use brim_span::files::{
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
+use brim_ctx::compiler::CompilerContext;
 use crate::resolver::Resolver;
+use crate::validator::AstValidator;
 
 #[derive(Debug)]
 pub struct Session {
@@ -104,19 +106,15 @@ impl Session {
     }
 
     /// Resolve and analyze the project form the main barrel
-    pub fn resolve_and_analyze<'a>(
+    pub fn analyze<'a>(
         &mut self,
         barrel: &mut Barrel,
-        resolver: &mut Resolver<'a>,
+        ctx: &'a mut CompilerContext<'a>,
     ) -> Result<()> {
-        self.prepare(barrel, resolver)?;
-
-        Ok(())
-    }
-
-    pub fn prepare<'a>(&mut self, barrel: &mut Barrel, resolver: &mut Resolver<'a>) -> Result<()> {
-        resolver.create_module_map(barrel)?;
+        let validator = &mut AstValidator::new(ctx);
+        validator.validate()?;
 
         Ok(())
     }
 }
+

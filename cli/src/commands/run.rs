@@ -37,14 +37,15 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
 
             let mut parser = Parser::new(main_file);
             let mut barrel = parser.parse_barrel(comp)?;
-            let resolver = &mut Resolver::new(comp);
-
-            sess.resolve_and_analyze(&mut barrel, resolver)?;
-
-            for diag in parser.diags.dcx.diags {
-                resolver.ctx.emit_diag(diag);
+            for diag in &parser.diags.dcx.diags {
+                comp.emit_diag(diag.clone());
             }
 
+            let mut resolver = Resolver::new(comp);
+            resolver.create_module_map(&mut barrel)?;
+            
+            sess.analyze(&mut barrel, resolver.ctx)?;
+            
             Ok(())
         },
         "to execute project",

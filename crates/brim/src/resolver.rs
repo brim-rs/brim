@@ -46,10 +46,12 @@ impl<'a> Resolver<'a> {
                     let contents = self.temp_loader.read_file(&ref_path)?;
                     let file = add_file(ref_path.clone(), contents);
 
-                    println!("{:?}", file);
                     let parser = &mut Parser::new(file);
                     let mut barrel = parser.parse_barrel(self.ctx)?;
-                    println!("{:?}", barrel);
+                    
+                    for diag in &parser.diags.dcx.diags {
+                        self.ctx.emit_diag(diag.clone());
+                    }
 
                     self.map.insert_or_update(ref_path, barrel.clone());
 

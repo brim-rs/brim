@@ -1,13 +1,13 @@
 use crate::{barrel::Barrel, compiler::CompilerContext, walker::AstWalker};
 use std::path::PathBuf;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Module {
     pub path: PathBuf,
     pub barrel: Barrel,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ModuleMap {
     pub modules: Vec<Module>,
 }
