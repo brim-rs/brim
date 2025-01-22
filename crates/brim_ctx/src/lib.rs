@@ -14,20 +14,26 @@ index_type! {
     pub struct ModuleId {}
 }
 
-#[derive(Debug, Clone)]
-/// A symbol identifier. 
-pub struct SymbolId {
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+/// A symbol identifier.
+pub struct GlobalSymbolId {
     pub mod_id: ModuleId,
-    pub item_id: NodeId
+    pub item_id: NodeId,
 }
 
 #[derive(Debug, Clone)]
-pub struct Symbol {
+pub struct GlobalSymbol {
     pub name: Ident,
-    pub kind: SymbolKind,
+    pub kind: GlobalSymbolKind,
+}
+
+impl GlobalSymbol {
+    pub fn new(name: Ident, kind: GlobalSymbolKind) -> Self {
+        Self { name, kind }
+    }
 }
 
 #[derive(Debug, Clone)]
-pub enum SymbolKind {
+pub enum GlobalSymbolKind {
     Fn(FnDecl)
 }

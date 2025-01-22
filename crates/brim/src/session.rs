@@ -116,7 +116,6 @@ impl Session {
         validator.validate(map.clone())?;
 
         SymbolCollector::new(map).collect();
-        println!("{:#?}", map);
 
         Ok(())
     }
