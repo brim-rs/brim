@@ -17,31 +17,9 @@ use brim_ast::{
     ty,
     ty::Const,
 };
+use brim_ast::item::FunctionContext;
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
-
-#[derive(Debug, Clone, Copy)]
-pub enum FunctionContext {
-    Item,
-    Trait,
-    Impl,
-}
-
-impl FunctionContext {
-    pub fn allows_self(&self) -> bool {
-        match self {
-            FunctionContext::Item => false,
-            _ => true,
-        }
-    }
-
-    pub fn allows_empty_body(&self) -> bool {
-        match self {
-            FunctionContext::Trait => true,
-            _ => false,
-        }
-    }
-}
 
 impl<'a> Parser<'a> {
     pub fn parse_item(&mut self) -> PResult<'a, Option<Item>> {
@@ -156,6 +134,7 @@ impl<'a> Parser<'a> {
                 sig,
                 generics,
                 body,
+                context: fn_ctx,
             }),
         ))
     }

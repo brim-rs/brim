@@ -109,7 +109,32 @@ pub struct FnDecl {
     pub generics: Generics,
     /// Allowed to be empty for trait functions
     pub body: Option<Block>,
+    pub context: FunctionContext
 }
+
+#[derive(Debug, Clone, Copy)]
+pub enum FunctionContext {
+    Item,
+    Trait,
+    Impl,
+}
+
+impl FunctionContext {
+    pub fn allows_self(&self) -> bool {
+        match self {
+            FunctionContext::Item => false,
+            _ => true,
+        }
+    }
+
+    pub fn allows_empty_body(&self) -> bool {
+        match self {
+            FunctionContext::Trait => true,
+            _ => false,
+        }
+    }
+}
+
 
 #[derive(Clone, Debug)]
 pub struct Block {
