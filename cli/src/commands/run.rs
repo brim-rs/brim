@@ -44,7 +44,7 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
             let mut resolver = Resolver::new(comp);
             resolver.create_module_map(&mut barrel)?;
             
-            sess.analyze(&mut barrel, resolver.ctx)?;
+            sess.analyze(resolver.map, resolver.ctx)?;
             
             Ok(())
         },

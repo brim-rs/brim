@@ -13,6 +13,7 @@ use brim_span::files::{
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
 use brim_ctx::compiler::CompilerContext;
+use brim_ctx::modules::ModuleMap;
 use crate::resolver::Resolver;
 use crate::validator::AstValidator;
 
@@ -108,11 +109,11 @@ impl Session {
     /// Resolve and analyze the project form the main barrel
     pub fn analyze<'a>(
         &mut self,
-        barrel: &mut Barrel,
+        map: ModuleMap,
         ctx: &'a mut CompilerContext<'a>,
     ) -> Result<()> {
         let validator = &mut AstValidator::new(ctx);
-        validator.validate()?;
+        validator.validate(map)?;
 
         Ok(())
     }
