@@ -50,8 +50,8 @@ impl<'a> AstValidator<'a> {
             let param_name = param.name.to_string();
             if let Some(original_span) = seen.get(&param_name) {
                 self.ctx.emit(DuplicateParam {
-                    dup: (param.span.clone(), self.current_file), 
-                    span: (original_span.clone(), self.current_file), 
+                    dup: (param.span.clone(), self.current_file),
+                    span: (original_span.clone(), self.current_file),
                     name: param_name,
                 });
             } else {
@@ -63,10 +63,13 @@ impl<'a> AstValidator<'a> {
 
 impl<'a> AstWalker for AstValidator<'a> {
     fn visit_item(&mut self, item: &mut Item) {
-        match &item.kind {
-            // Checking for empty body and self param is already handled by the parser
+        match &mut item.kind {
             ItemKind::Fn(func) => {
                 self.validate_function_params(&func.sig);
+
+                if let Some(ref mut block) = func.body {
+                    self.walk_block(block);
+                }
             }
             _ => {}
         }
