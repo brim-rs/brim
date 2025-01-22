@@ -31,13 +31,15 @@ impl<'a> Resolver<'a> {
 
         let items = std::mem::take(&mut barrel.items);
 
-        for mut item in items {
+        for mut item in items.clone() {
             match &mut item.kind {
                 ItemKind::Use(use_stmt) => {
                     let path = self.build_path(&use_stmt.path);
 
                     // we create the path based on the provided barrel
                     let mut ref_path = get_path(file_id.clone())?;
+                    barrel.items.extend(items.clone());
+
                     self.map.insert_or_update(ref_path.clone(), barrel.clone());
 
                     // remove the file name
@@ -63,7 +65,6 @@ impl<'a> Resolver<'a> {
                 }
                 _ => {}
             }
-            barrel.items.push(item);
         }
 
         Ok(())
