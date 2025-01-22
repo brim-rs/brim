@@ -89,6 +89,7 @@ impl<'a> Parser<'a> {
                 span,
                 imports: kind,
                 path,
+                resolved_path: None,
             }),
         ))
     }
@@ -241,7 +242,7 @@ impl<'a> Parser<'a> {
                 id: self.new_id(),
                 span: span_start.to(self.prev().span),
                 ty,
-                name: ident
+                name: ident,
             });
 
             if !self.eat(TokenKind::Comma) {

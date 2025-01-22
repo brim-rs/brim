@@ -20,6 +20,7 @@ impl<'a> Resolver<'a> {
             ctx,
             map: ModuleMap {
                 modules: Vec::new(),
+                symbols: Default::default(),
             },
             temp_loader: BrimFileLoader,
         }
@@ -28,7 +29,9 @@ impl<'a> Resolver<'a> {
     pub fn create_module_map(&mut self, barrel: &mut Barrel) -> anyhow::Result<()> {
         let file_id = barrel.file_id.clone();
 
-        for item in &mut barrel.items {
+        let items = std::mem::take(&mut barrel.items);
+
+        for mut item in items {
             match &mut item.kind {
                 ItemKind::Use(use_stmt) => {
                     let path = self.build_path(&use_stmt.path);
@@ -47,19 +50,20 @@ impl<'a> Resolver<'a> {
                     let file = add_file(ref_path.clone(), contents);
 
                     let parser = &mut Parser::new(file);
-                    let mut barrel = parser.parse_barrel(self.ctx)?;
-                    
+                    let mut nested_barrel = parser.parse_barrel(self.ctx)?;
+
                     for diag in &parser.diags.dcx.diags {
                         self.ctx.emit_diag(diag.clone());
                     }
 
-                    self.map.insert_or_update(ref_path.clone(), barrel.clone());
+                    self.map.insert_or_update(ref_path.clone(), nested_barrel.clone());
                     use_stmt.resolved_path = Some(ref_path);
 
-                    self.create_module_map(&mut barrel)?;
+                    self.create_module_map(&mut nested_barrel)?;
                 }
                 _ => {}
             }
+            barrel.items.push(item);
         }
 
         Ok(())
