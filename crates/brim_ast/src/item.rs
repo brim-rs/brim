@@ -5,7 +5,7 @@ use crate::{
     ty::{Const, Ty},
 };
 use brim_span::{span::Span, symbols::Symbol};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 #[derive(Clone, Debug)]
 pub struct Item {
@@ -16,7 +16,7 @@ pub struct Item {
     pub kind: ItemKind,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Ident {
     pub name: Symbol,
     pub span: Span,
@@ -42,6 +42,12 @@ impl Ident {
 impl Debug for Ident {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.name)
+    }
+}
+
+impl Display for Ident {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
     }
 }
 
@@ -109,7 +115,7 @@ pub struct FnDecl {
     pub generics: Generics,
     /// Allowed to be empty for trait functions
     pub body: Option<Block>,
-    pub context: FunctionContext
+    pub context: FunctionContext,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -177,6 +183,7 @@ pub struct Param {
     pub ty: Ty,
     pub id: NodeId,
     pub span: Span,
+    pub name: Ident,
 }
 
 #[derive(Clone, Debug)]

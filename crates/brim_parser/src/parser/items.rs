@@ -241,6 +241,7 @@ impl<'a> Parser<'a> {
                 id: self.new_id(),
                 span: span_start.to(self.prev().span),
                 ty,
+                name: ident
             });
 
             if !self.eat(TokenKind::Comma) {

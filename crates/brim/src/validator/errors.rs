@@ -10,3 +10,13 @@ pub struct TooManyParameters {
     #[note]
     pub note: &'static str,
 }
+
+#[derive(Diagnostic)]
+#[error("duplicate parameter `{name}`")]
+pub struct DuplicateParam {
+    #[error("first defined here")]
+    pub span: (Span, usize),
+    #[error("duplicate found here")]
+    pub dup: (Span, usize),
+    pub name: String
+}
