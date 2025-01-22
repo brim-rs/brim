@@ -6,6 +6,7 @@ use crate::{
 };
 use brim_span::{span::Span, symbols::Symbol};
 use std::fmt::{Debug, Display};
+use std::path::PathBuf;
 
 #[derive(Clone, Debug)]
 pub struct Item {
@@ -93,6 +94,7 @@ pub struct Use {
     pub span: Span,
     pub path: Vec<PathItemKind>,
     pub imports: ImportsKind,
+    pub resolved_path: Option<PathBuf>
 }
 
 #[derive(Clone, Debug)]

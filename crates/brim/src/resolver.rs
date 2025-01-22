@@ -28,8 +28,8 @@ impl<'a> Resolver<'a> {
     pub fn create_module_map(&mut self, barrel: &mut Barrel) -> anyhow::Result<()> {
         let file_id = barrel.file_id.clone();
 
-        for item in &barrel.items {
-            match &item.kind {
+        for item in &mut barrel.items {
+            match &mut item.kind {
                 ItemKind::Use(use_stmt) => {
                     let path = self.build_path(&use_stmt.path);
 
@@ -53,7 +53,8 @@ impl<'a> Resolver<'a> {
                         self.ctx.emit_diag(diag.clone());
                     }
 
-                    self.map.insert_or_update(ref_path, barrel.clone());
+                    self.map.insert_or_update(ref_path.clone(), barrel.clone());
+                    use_stmt.resolved_path = Some(ref_path);
 
                     self.create_module_map(&mut barrel)?;
                 }
