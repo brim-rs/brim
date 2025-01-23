@@ -11,3 +11,11 @@ pub struct RedeclaredVariable {
     pub redecl: (Span, usize),
     pub name: String
 }
+
+#[derive(Diagnostic)]
+#[error("undeclared variable `{name}`")]
+pub struct UndeclaredVariable {
+    #[error("variable `{name}` is not declared in this scope")]
+    pub span: (Span, usize),
+    pub name: String
+}

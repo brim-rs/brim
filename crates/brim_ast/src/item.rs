@@ -94,7 +94,6 @@ pub struct Use {
     pub span: Span,
     pub path: Vec<PathItemKind>,
     pub imports: ImportsKind,
-    pub resolved_path: Option<PathBuf>
 }
 
 #[derive(Clone, Debug)]

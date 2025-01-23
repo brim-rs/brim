@@ -1,11 +1,13 @@
+use std::collections::HashSet;
 use crate::cli::{
     debug_mode, dynamic_lib_mode, min_size_rel_mode, rel_with_deb_info_mode, release_mode,
     static_lib_mode,
 };
 use anyhow::Result;
-use brim::{compiler::CompilerContext, resolver::Resolver, session::Session, toml::ProjectType};
+use brim::{compiler::CompilerContext, resolver, resolver::Resolver, session::Session, toml::ProjectType};
 use brim_parser::parser::Parser;
 use clap::Command;
+use brim::item::ItemKind;
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -42,9 +44,10 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
             }
 
             let mut resolver = Resolver::new(comp);
-            resolver.create_module_map(&mut barrel)?;
+            let mut visited = HashSet::new();
+            let module_map = resolver.create_module_map(&mut barrel, &mut visited)?;
 
-            sess.analyze(resolver.map, resolver.ctx)?;
+            sess.analyze(module_map, resolver.ctx)?;
 
             Ok(())
         },

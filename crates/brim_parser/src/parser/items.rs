@@ -89,7 +89,6 @@ impl<'a> Parser<'a> {
                 span,
                 imports: kind,
                 path,
-                resolved_path: None,
             }),
         ))
     }

@@ -1,7 +1,9 @@
 mod scopes;
 mod errors;
 
+use std::collections::HashMap;
 use tracing::debug;
+use brim_ast::expr::{Expr, ExprKind};
 use brim_ast::item::{Block, FnDecl, Item};
 use brim_ast::stmts::Let;
 use brim_ctx::compiler::CompilerContext;
@@ -9,6 +11,7 @@ use brim_ctx::modules::ModuleMap;
 use brim_ctx::walker::AstWalker;
 use brim_diagnostics::diag_opt;
 use brim_fs::loader::BrimFileLoader;
+use crate::name::errors::UndeclaredVariable;
 use crate::name::scopes::{ScopeManager, VariableInfo};
 
 #[derive(Debug)]
@@ -56,6 +59,16 @@ impl<'a> NameResolver<'a> {
 }
 
 impl<'a> AstWalker for NameResolver<'a> {
+    fn visit_block(&mut self, block: &mut Block) {
+        self.scopes.push_scope(self.file);
+
+        for stmt in block.stmts.iter_mut() {
+            self.visit_stmt(stmt);
+        }
+
+        self.scopes.pop_scope();
+    }
+
     fn visit_fn(&mut self, func: &mut FnDecl) {
         self.scopes = ScopeManager::new(self.file);
 
@@ -65,6 +78,59 @@ impl<'a> AstWalker for NameResolver<'a> {
                 is_const: false,
                 span: param.span,
             });
+        }
+
+        if let Some(body) = &mut func.body {
+            self.visit_block(body);
+        }
+    }
+
+    fn walk_expr(&mut self, expr: &mut Expr) {
+        match &mut expr.kind {
+            ExprKind::Binary(lhs, _, rhs) => {
+                self.visit_expr(lhs);
+                self.visit_expr(rhs);
+            }
+            ExprKind::Unary(_, operand) => self.visit_expr(operand),
+            ExprKind::Field(base, _) => self.visit_expr(base),
+            ExprKind::Index(base, index) => {
+                self.visit_expr(base);
+                self.visit_expr(index);
+            }
+            ExprKind::Literal(_) => {}
+            ExprKind::Paren(inner) => self.visit_expr(inner),
+            ExprKind::Return(inner) => self.visit_expr(inner),
+            ExprKind::Var(var) => {
+                if !self.is_variable_declared(&var.name.to_string()) {
+                    self.ctx.emit(UndeclaredVariable {
+                        span: (var.span, self.file),
+                        name: var.name.to_string(),
+                    });
+                }
+            }
+            ExprKind::AssignOp(lhs, _, rhs) | ExprKind::Assign(lhs, rhs) => {
+                self.visit_expr(lhs);
+                self.visit_expr(rhs);
+            }
+            ExprKind::If(if_expr) => {
+                self.visit_expr(&mut if_expr.condition);
+                self.visit_expr(&mut if_expr.then_block);
+
+                for else_if in &mut if_expr.else_ifs {
+                    self.visit_expr(&mut else_if.condition);
+                    self.visit_expr(&mut else_if.block);
+                }
+
+                if let Some(else_branch) = &mut if_expr.else_block {
+                    self.visit_expr(else_branch);
+                }
+            }
+            ExprKind::Block(block) => self.visit_block(block),
+            ExprKind::Call(func, args) => {
+                for arg in args {
+                    self.visit_expr(arg);
+                }
+            }
         }
     }
 }

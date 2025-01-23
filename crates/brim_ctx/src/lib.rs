@@ -25,11 +25,12 @@ pub struct GlobalSymbolId {
 pub struct GlobalSymbol {
     pub name: Ident,
     pub kind: GlobalSymbolKind,
+    pub item_id: NodeId,
 }
 
 impl GlobalSymbol {
-    pub fn new(name: Ident, kind: GlobalSymbolKind) -> Self {
-        Self { name, kind }
+    pub fn new(name: Ident, kind: GlobalSymbolKind, id:NodeId) -> Self {
+        Self { name, kind, item_id: id }
     }
 }
 

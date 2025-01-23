@@ -1,7 +1,7 @@
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim_config::toml::{Config, ProjectType};
-use brim_ctx::{barrel::Barrel};
+use brim_ctx::{barrel::Barrel, GlobalSymbolId, ModuleId};
 use brim_fs::{
     loader::{BrimFileLoader, FileLoader},
     path,
@@ -12,6 +12,8 @@ use brim_span::files::{
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
+use brim_ast::item::{ImportsKind, ItemKind};
+use brim_ast::item::PathItemKind::Module;
 use brim_ctx::compiler::CompilerContext;
 use brim_ctx::modules::{ModuleMap, SymbolCollector};
 use crate::name::NameResolver;
@@ -120,6 +122,42 @@ impl Session {
 
         let mut collector = SymbolCollector::new(map);
         collector.collect();
+
+        for module in map.modules.clone() {
+            let file_id = module.barrel.file_id;
+            for item in module.barrel.items {
+                match item.kind {
+                    ItemKind::Use(u) => {
+                        let module_id = ModuleId::from_usize(file_id);
+                        let module = map.module_by_import(GlobalSymbolId {
+                            mod_id: module_id,
+                            item_id: item.id,
+                        }).unwrap();
+                        let resolved_id = ModuleId::from_usize(module.barrel.file_id);
+
+                        let import_symbols: Vec<GlobalSymbolId> = match &u.imports {
+                            ImportsKind::All => map.find_symbols_in_module(Some(resolved_id))
+                                .iter()
+                                .map(|symbol| GlobalSymbolId {
+                                    mod_id: resolved_id,
+                                    item_id: symbol.item_id,
+                                })
+                                .collect(),
+                            ImportsKind::List(list) => list.iter()
+                                .flat_map(|import| map.find_symbol_by_name(&import.to_string(), Some(resolved_id)))
+                                .map(|symbol| GlobalSymbolId {
+                                    mod_id: resolved_id,
+                                    item_id: symbol.item_id,
+                                })
+                                .collect(),
+                        };
+
+                        map.update_modules_imports(module_id, import_symbols);
+                    }
+                    _ => {}
+                }
+            }
+        }
 
         let mut name_resolver = NameResolver::new(validator.ctx, map.clone());
         name_resolver.resolve_names();

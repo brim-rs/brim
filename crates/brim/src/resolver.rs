@@ -1,7 +1,9 @@
+use std::collections::HashSet;
 use std::path::PathBuf;
 use brim_ast::item::{ItemKind, PathItemKind};
 use brim_ctx::barrel::Barrel;
 use brim_ctx::compiler::CompilerContext;
+use brim_ctx::{GlobalSymbolId, ModuleId};
 use brim_ctx::modules::{ModuleMap};
 use brim_fs::loader::{BrimFileLoader, FileLoader};
 use brim_parser::parser::Parser;
@@ -21,49 +23,46 @@ impl<'a> Resolver<'a> {
             map: ModuleMap {
                 modules: Vec::new(),
                 symbols: Default::default(),
+                imports: Default::default(),
             },
             temp_loader: BrimFileLoader,
         }
     }
 
-    pub fn create_module_map(&mut self, barrel: &mut Barrel) -> anyhow::Result<ModuleMap> {
+    pub fn create_module_map(&mut self, barrel: &mut Barrel, visited: &mut HashSet<PathBuf>) -> anyhow::Result<ModuleMap> {
         let file_id = barrel.file_id.clone();
+        let mut ref_path = get_path(file_id.clone())?;
 
-        let items = std::mem::take(&mut barrel.items);
+        if visited.contains(&ref_path) {
+            return Ok(self.map.clone());
+        }
 
-        for mut item in items.clone() {
-            match &mut item.kind {
-                ItemKind::Use(use_stmt) => {
-                    let path = self.build_path(&use_stmt.path);
+        visited.insert(ref_path.clone());
+        self.map.insert_or_update(ref_path.clone(), barrel.clone());
 
-                    // we create the path based on the provided barrel
-                    let mut ref_path = get_path(file_id.clone())?;
-                    barrel.items.extend(items.clone());
+        for item in barrel.items.iter_mut() {
+            if let ItemKind::Use(use_stmt) = &mut item.kind {
+                let path = self.build_path(&use_stmt.path);
 
-                    self.map.insert_or_update(ref_path.clone(), barrel.clone());
+                ref_path.pop();
+                ref_path.push(path);
+                ref_path.set_extension("brim");
 
-                    // remove the file name
-                    ref_path.pop();
+                let contents = self.temp_loader.read_file(&ref_path)?;
+                let file = add_file(ref_path.clone(), contents);
+                let mut parser = Parser::new(file);
+                let mut nested_barrel = parser.parse_barrel(self.ctx)?;
 
-                    ref_path.push(path);
-                    ref_path.set_extension("brim");
-
-                    let contents = self.temp_loader.read_file(&ref_path)?;
-                    let file = add_file(ref_path.clone(), contents);
-
-                    let parser = &mut Parser::new(file);
-                    let mut nested_barrel = parser.parse_barrel(self.ctx)?;
-
-                    for diag in &parser.diags.dcx.diags {
-                        self.ctx.emit_diag(diag.clone());
-                    }
-
-                    self.map.insert_or_update(ref_path.clone(), nested_barrel.clone());
-                    use_stmt.resolved_path = Some(ref_path);
-
-                    self.create_module_map(&mut nested_barrel)?;
+                for diag in &parser.diags.dcx.diags {
+                    self.ctx.emit_diag(diag.clone());
                 }
-                _ => {}
+
+                self.map.add_import(GlobalSymbolId {
+                    mod_id: ModuleId::from_usize(file_id),
+                    item_id: item.id,
+                }, ref_path.clone());
+
+                self.create_module_map(&mut nested_barrel, visited)?;
             }
         }
 
