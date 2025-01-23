@@ -4,6 +4,7 @@ use brim_ast::{
     stmts::{Let, Stmt, StmtKind},
     ty::Ty,
 };
+use brim_ast::item::FnDecl;
 
 pub trait AstWalker {
     // Visit methods - customize behavior for each node type
@@ -33,6 +34,14 @@ pub trait AstWalker {
 
     fn visit_use(&mut self, _use_stmt: &mut Use) {}
 
+    fn visit_fn(&mut self, func: &mut FnDecl) {
+        self.visit_generics(&mut func.generics);
+        self.visit_signature(&mut func.sig);
+        if let Some(body) = &mut func.body {
+            self.visit_block(body);
+        }
+    }
+
     fn visit_signature(&mut self, signature: &mut FnSignature) {
         self.walk_signature(signature);
     }
@@ -40,13 +49,7 @@ pub trait AstWalker {
     // Walk methods - traverse child nodes
     fn walk_item(&mut self, item: &mut Item) {
         match &mut item.kind {
-            ItemKind::Fn(func) => {
-                self.visit_generics(&mut func.generics);
-                self.visit_signature(&mut func.sig);
-                if let Some(body) = &mut func.body {
-                    self.visit_block(body);
-                }
-            }
+            ItemKind::Fn(func) => self.visit_fn(func),
             ItemKind::Use(use_stmt) => self.visit_use(use_stmt),
         }
     }
@@ -54,7 +57,6 @@ pub trait AstWalker {
     fn walk_stmt(&mut self, stmt: &mut Stmt) {
         match &mut stmt.kind {
             StmtKind::Let(let_stmt) => self.visit_let(let_stmt),
-            StmtKind::Item(item) => self.visit_item(item),
             StmtKind::Expr(expr) => self.visit_expr(expr),
         }
     }

@@ -16,7 +16,6 @@ pub struct Stmt {
 #[derive(Clone, Debug)]
 pub enum StmtKind {
     Let(Let),
-    Item(Item),
     Expr(Expr),
 }
 

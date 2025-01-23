@@ -217,6 +217,7 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
     let severity_ident = syn::Ident::new(&severity_variant, proc_macro2::Span::call_site());
 
     Ok(TokenStream::from(quote! {
+        #[allow(unused)]
         impl<'a> ToDiagnostic<'a> for #struct_name {
             fn message(&self) -> String {
                 #(#message_field_refs)*

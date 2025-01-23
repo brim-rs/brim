@@ -14,6 +14,7 @@ use std::{path::PathBuf, time::Instant};
 use tracing::debug;
 use brim_ctx::compiler::CompilerContext;
 use brim_ctx::modules::{ModuleMap, SymbolCollector};
+use crate::name::NameResolver;
 use crate::resolver::Resolver;
 use crate::validator::AstValidator;
 
@@ -109,13 +110,19 @@ impl Session {
     /// Resolve and analyze the project form the main barrel
     pub fn analyze<'a>(
         &mut self,
-        map: &mut ModuleMap,
+        mut map: ModuleMap,
         ctx: &'a mut CompilerContext<'a>,
     ) -> Result<()> {
-        let validator = &mut AstValidator::new(ctx);
+        let map = &mut map;
+
+        let mut validator = AstValidator::new(ctx);
         validator.validate(map.clone())?;
 
-        SymbolCollector::new(map).collect();
+        let mut collector = SymbolCollector::new(map);
+        collector.collect();
+
+        let mut name_resolver = NameResolver::new(validator.ctx, map.clone());
+        name_resolver.resolve_names();
 
         Ok(())
     }

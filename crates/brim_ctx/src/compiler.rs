@@ -41,7 +41,7 @@ impl<'a> CompilerContext<'a> {
         ErrorEmitted::new()
     }
 
-    fn emit_inner(&mut self, diag: Box<dyn ToDiagnostic<'a> + 'a>) -> ErrorEmitted {
+    pub fn emit_inner(&mut self, diag: Box<dyn ToDiagnostic<'a> + 'a>) -> ErrorEmitted {
         #[cfg(not(feature = "snap"))]
         self.dcx
             .emit(&Box::new(diag), &SimpleFiles::from_files(files()));

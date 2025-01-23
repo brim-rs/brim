@@ -52,7 +52,7 @@ impl<'a> Parser<'a> {
         } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
             Ok(self.parse_ptr(true)?)
         } else {
-            todo!()
+            Ok(TyKind::Const(Box::new(self.parse_type()?)))
         }
     }
 

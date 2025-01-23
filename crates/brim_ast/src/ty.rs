@@ -12,6 +12,15 @@ pub struct Ty {
     pub span: Span,
 }
 
+impl Ty {
+    pub fn is_const(&self) -> bool {
+        match &self.kind {
+            TyKind::Const(_) | TyKind::Ref(_, Const::Yes) | TyKind::Ptr(_, Const::Yes) => true,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Const {
     Yes,
@@ -30,6 +39,8 @@ pub enum TyKind {
     Ref(Box<Ty>, Const),
     /// Pointer type eg. `*T` (brim) -> `T*` (C++) or `const *T` (brim) -> `const T*` (C++)
     Ptr(Box<Ty>, Const),
+    /// Const type eg. `const T` (brim) -> `const T` (C++)
+    Const(Box<Ty>),
     /// Array type eg. `[T; N]` (brim) -> `T[N]` (C++)
     Array(Box<Ty>, ConstExpr),
     /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim is the same as array in C++.

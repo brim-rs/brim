@@ -26,7 +26,7 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    pub fn create_module_map(&mut self, barrel: &mut Barrel) -> anyhow::Result<()> {
+    pub fn create_module_map(&mut self, barrel: &mut Barrel) -> anyhow::Result<ModuleMap> {
         let file_id = barrel.file_id.clone();
 
         let items = std::mem::take(&mut barrel.items);
@@ -67,7 +67,7 @@ impl<'a> Resolver<'a> {
             }
         }
 
-        Ok(())
+        Ok(self.map.clone())
     }
 
     pub fn build_path(&self, path: &Vec<PathItemKind>) -> PathBuf {

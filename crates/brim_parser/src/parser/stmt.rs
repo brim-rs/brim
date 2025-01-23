@@ -47,8 +47,6 @@ impl<'a> Parser<'a> {
             let stmt = self.parse_let()?;
 
             Ok(StmtKind::Let(stmt))
-        } else if let Some(item) = self.parse_item()? {
-            Ok(StmtKind::Item(item))
         } else {
             let expr = self.parse_expr()?;
 

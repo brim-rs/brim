@@ -9,7 +9,21 @@ macro_rules! box_diag {
     ($diag:expr) => {
         return Err(Box::new($diag))
     };
+    (@opt $diag:expr) => {
+        return Some(Box::new($diag))
+    };
 }
+
+#[macro_export]
+macro_rules! diag_opt {
+    ($ctx:expr, $diag:expr) => {
+        if let Some(diag) = $diag {
+            $ctx.emit_inner(diag);
+        }
+    };
+}
+
+pub type OptionalDiag<'a> = Option<Box<dyn ToDiagnostic<'a> + 'a>>;
 
 /// Struct to store diagnostics to be later emitted by the main diagnostic context
 pub struct TemporaryDiagnosticContext<'diags> {
