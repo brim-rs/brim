@@ -143,8 +143,9 @@ impl<'a> AstWalker for NameResolver<'a> {
                         name,
                     });
                 }
+                let sym = func_sym.unwrap();
+                self.map.assign_symbol(expr.id, sym.id.clone());
 
-                println!("Function call: {:?}", func_sym);
                 for arg in args {
                     self.visit_expr(arg);
                 }

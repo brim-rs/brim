@@ -18,11 +18,7 @@ impl<'a> Resolver<'a> {
     pub fn new(ctx: &'a mut CompilerContext<'a>) -> Self {
         Self {
             ctx,
-            map: ModuleMap {
-                modules: Vec::new(),
-                symbols: Default::default(),
-                imports: Default::default(),
-            },
+            map: ModuleMap::new(),
             temp_loader: BrimFileLoader,
         }
     }
