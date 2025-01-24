@@ -1,19 +1,17 @@
-mod scopes;
 mod errors;
+mod scopes;
 
-use std::collections::HashMap;
-use tracing::debug;
-use brim_ast::expr::{Expr, ExprKind};
-use brim_ast::item::{Block, FnDecl, Item};
-use brim_ast::stmts::Let;
-use brim_ctx::compiler::CompilerContext;
-use brim_ctx::ModuleId;
-use brim_ctx::modules::ModuleMap;
-use brim_ctx::walker::AstWalker;
+use crate::name::{
+    errors::{UndeclaredFunction, UndeclaredVariable},
+    scopes::{ScopeManager, VariableInfo},
+};
+use brim_ast::{
+    expr::{Expr, ExprKind},
+    item::{Block, FnDecl},
+};
+use brim_ctx::{ModuleId, compiler::CompilerContext, modules::ModuleMap, walker::AstWalker};
 use brim_diagnostics::diag_opt;
-use brim_fs::loader::BrimFileLoader;
-use crate::name::errors::{UndeclaredFunction, UndeclaredVariable};
-use crate::name::scopes::{ScopeManager, VariableInfo};
+use tracing::debug;
 
 #[derive(Debug)]
 pub struct NameResolver<'a> {
@@ -46,11 +44,17 @@ impl<'a> NameResolver<'a> {
 
     /// declare_param doesn't check for duplicates, because that is already handled by the [`AstValidator`](crate::validator::AstValidator)
     fn declare_param(&mut self, name: &str, info: VariableInfo) {
-        diag_opt!(self.ctx, self.scopes.declare_variable(name.to_string(), info, false))
+        diag_opt!(
+            self.ctx,
+            self.scopes.declare_variable(name.to_string(), info, false)
+        )
     }
 
     fn declare_variable(&mut self, name: &str, info: VariableInfo) {
-        diag_opt!(self.ctx, self.scopes.declare_variable(name.to_string(), info, true))
+        diag_opt!(
+            self.ctx,
+            self.scopes.declare_variable(name.to_string(), info, true)
+        )
     }
 
     // Check if a variable is declared in any accessible scope
@@ -139,7 +143,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                         name,
                     });
                 }
-                
+
                 for arg in args {
                     self.visit_expr(arg);
                 }

@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-use brim_ast::item::Param;
-use brim_ast::NodeId;
-use brim_diagnostics::{box_diag, OptionalDiag};
-use brim_diagnostics::diagnostic::ToDiagnostic;
-use brim_span::span::Span;
 use crate::name::errors::RedeclaredVariable;
+use brim_ast::{NodeId, item::Param};
+use brim_diagnostics::{OptionalDiag, box_diag};
+use brim_span::span::Span;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Scope {
@@ -47,7 +45,12 @@ impl<'a> Scope {
         }
     }
 
-    pub fn declare_variable(&mut self, name: String, info: VariableInfo, check_duplicates: bool) -> OptionalDiag<'a> {
+    pub fn declare_variable(
+        &mut self,
+        name: String,
+        info: VariableInfo,
+        check_duplicates: bool,
+    ) -> OptionalDiag<'a> {
         if self.variables.contains_key(&name) && check_duplicates {
             let var = self.variables.get(&name).unwrap();
 
@@ -70,7 +73,9 @@ impl<'a> Scope {
         }
 
         // If not found, check parent scopes
-        self.parent.as_ref().and_then(|parent| parent.resolve_variable(name))
+        self.parent
+            .as_ref()
+            .and_then(|parent| parent.resolve_variable(name))
     }
 }
 
@@ -99,14 +104,24 @@ impl<'a> ScopeManager {
     }
 
     pub fn current_scope(&mut self) -> &mut Scope {
-        self.scope_stack.last_mut().expect("Scope stack should never be empty")
+        self.scope_stack
+            .last_mut()
+            .expect("Scope stack should never be empty")
     }
 
     pub fn resolve_variable(&self, name: &str) -> Option<&VariableInfo> {
-        self.scope_stack.last().and_then(|scope| scope.resolve_variable(name))
+        self.scope_stack
+            .last()
+            .and_then(|scope| scope.resolve_variable(name))
     }
 
-    pub fn declare_variable(&mut self, name: String, info: VariableInfo, check_duplicates: bool) -> OptionalDiag<'a> {
-        self.current_scope().declare_variable(name, info, check_duplicates)
+    pub fn declare_variable(
+        &mut self,
+        name: String,
+        info: VariableInfo,
+        check_duplicates: bool,
+    ) -> OptionalDiag<'a> {
+        self.current_scope()
+            .declare_variable(name, info, check_duplicates)
     }
 }

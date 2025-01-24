@@ -1,7 +1,7 @@
 use crate::{
     NodeId,
     expr::Expr,
-    item::{Ident, Item},
+    item::Ident,
     ty::Ty,
 };
 use brim_span::span::Span;

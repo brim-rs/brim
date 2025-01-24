@@ -1,16 +1,12 @@
 mod errors;
 
-use std::collections::{HashMap, HashSet};
-use crate::resolver::Resolver;
-use anyhow::Result;
-use tracing::debug;
-use brim_ast::item::{FnSignature, Ident, Item, ItemKind, Param};
-use brim_ctx::compiler::CompilerContext;
-use brim_ctx::modules::ModuleMap;
-use brim_ctx::walker::AstWalker;
-use brim_parser::debug_ident;
-use brim_span::span::Span;
 use crate::validator::errors::{DuplicateParam, TooManyParameters};
+use anyhow::Result;
+use brim_ast::item::{FnSignature, Item, ItemKind};
+use brim_ctx::{compiler::CompilerContext, modules::ModuleMap, walker::AstWalker};
+use brim_span::span::Span;
+use std::collections::HashMap;
+use tracing::debug;
 
 #[derive(Debug)]
 pub struct AstValidator<'a> {
@@ -20,7 +16,10 @@ pub struct AstValidator<'a> {
 
 impl<'a> AstValidator<'a> {
     pub fn new(ctx: &'a mut CompilerContext<'a>) -> Self {
-        Self { ctx, current_file: 0 }
+        Self {
+            ctx,
+            current_file: 0,
+        }
     }
 
     /// Validates AST in every module found in the module map.

@@ -6,7 +6,6 @@ use crate::{
 };
 use brim_span::{span::Span, symbols::Symbol};
 use std::fmt::{Debug, Display};
-use std::path::PathBuf;
 
 #[derive(Clone, Debug)]
 pub struct Item {
@@ -141,7 +140,6 @@ impl FunctionContext {
         }
     }
 }
-
 
 #[derive(Clone, Debug)]
 pub struct Block {

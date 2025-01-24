@@ -1,5 +1,7 @@
-use brim_ast::item::{FnDecl, Ident};
-use brim_ast::NodeId;
+use brim_ast::{
+    NodeId,
+    item::{FnDecl, Ident},
+};
 use brim_index::index_type;
 
 pub mod barrel;
@@ -29,12 +31,16 @@ pub struct GlobalSymbol {
 }
 
 impl GlobalSymbol {
-    pub fn new(name: Ident, kind: GlobalSymbolKind, id:NodeId) -> Self {
-        Self { name, kind, item_id: id }
+    pub fn new(name: Ident, kind: GlobalSymbolKind, id: NodeId) -> Self {
+        Self {
+            name,
+            kind,
+            item_id: id,
+        }
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum GlobalSymbolKind {
-    Fn(FnDecl)
+    Fn(FnDecl),
 }

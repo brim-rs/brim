@@ -1,13 +1,11 @@
-use std::collections::HashSet;
-use std::path::PathBuf;
 use brim_ast::item::{ItemKind, PathItemKind};
-use brim_ctx::barrel::Barrel;
-use brim_ctx::compiler::CompilerContext;
-use brim_ctx::{GlobalSymbolId, ModuleId};
-use brim_ctx::modules::{ModuleMap};
+use brim_ctx::{
+    GlobalSymbolId, ModuleId, barrel::Barrel, compiler::CompilerContext, modules::ModuleMap,
+};
 use brim_fs::loader::{BrimFileLoader, FileLoader};
 use brim_parser::parser::Parser;
 use brim_span::files::{add_file, get_path};
+use std::{collections::HashSet, path::PathBuf};
 
 #[derive(Debug)]
 pub struct Resolver<'a> {
@@ -29,7 +27,11 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    pub fn create_module_map(&mut self, barrel: &mut Barrel, visited: &mut HashSet<PathBuf>) -> anyhow::Result<ModuleMap> {
+    pub fn create_module_map(
+        &mut self,
+        barrel: &mut Barrel,
+        visited: &mut HashSet<PathBuf>,
+    ) -> anyhow::Result<ModuleMap> {
         let file_id = barrel.file_id.clone();
         let mut ref_path = get_path(file_id.clone())?;
 
@@ -57,10 +59,13 @@ impl<'a> Resolver<'a> {
                     self.ctx.emit_diag(diag.clone());
                 }
 
-                self.map.add_import(GlobalSymbolId {
-                    mod_id: ModuleId::from_usize(file_id),
-                    item_id: item.id,
-                }, ref_path.clone());
+                self.map.add_import(
+                    GlobalSymbolId {
+                        mod_id: ModuleId::from_usize(file_id),
+                        item_id: item.id,
+                    },
+                    ref_path.clone(),
+                );
 
                 self.create_module_map(&mut nested_barrel, visited)?;
             }

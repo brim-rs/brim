@@ -9,7 +9,7 @@ pub struct RedeclaredVariable {
     pub span: (Span, usize),
     #[error("redeclared here")]
     pub redecl: (Span, usize),
-    pub name: String
+    pub name: String,
 }
 
 #[derive(Diagnostic)]
@@ -17,7 +17,7 @@ pub struct RedeclaredVariable {
 pub struct UndeclaredVariable {
     #[error("variable `{name}` is not declared in this scope")]
     pub span: (Span, usize),
-    pub name: String
+    pub name: String,
 }
 
 #[derive(Diagnostic)]
@@ -25,5 +25,5 @@ pub struct UndeclaredVariable {
 pub struct UndeclaredFunction {
     #[error("function `{name}` is not declared in this scope")]
     pub span: (Span, usize),
-    pub name: String
+    pub name: String,
 }

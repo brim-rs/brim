@@ -1,5 +1,5 @@
 use crate::diag_ctx::DiagnosticContext;
-use brim_ast::{ErrorEmitted, item::Use};
+use brim_ast::ErrorEmitted;
 use brim_diagnostics::diagnostic::{Diagnostic, ToDiagnostic};
 #[cfg(not(feature = "snap"))]
 use brim_span::files::{SimpleFiles, files};

@@ -1,8 +1,11 @@
-use std::collections::HashMap;
-use crate::{barrel::Barrel, compiler::CompilerContext, walker::AstWalker, GlobalSymbol, GlobalSymbolId, GlobalSymbolKind, ModuleId};
-use std::path::PathBuf;
-use brim_ast::item::{ImportsKind, Item, ItemKind};
-use brim_ast::NodeId;
+use crate::{
+    GlobalSymbol, GlobalSymbolId, GlobalSymbolKind, ModuleId, barrel::Barrel, walker::AstWalker,
+};
+use brim_ast::{
+    NodeId,
+    item::{Item, ItemKind},
+};
+use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct Module {
@@ -27,7 +30,11 @@ impl ModuleMap {
             }
         }
 
-        self.modules.push(Module { path, barrel, imports: vec![] });
+        self.modules.push(Module {
+            path,
+            barrel,
+            imports: vec![],
+        });
     }
 
     pub fn add_import(&mut self, symbol_id: GlobalSymbolId, path: PathBuf) {
@@ -35,9 +42,9 @@ impl ModuleMap {
     }
 
     pub fn module_by_import(&self, symbol_id: GlobalSymbolId) -> Option<&Module> {
-        self.imports.get(&symbol_id).and_then(|path| {
-            self.modules.iter().find(|module| module.path == *path)
-        })
+        self.imports
+            .get(&symbol_id)
+            .and_then(|path| self.modules.iter().find(|module| module.path == *path))
     }
 
     pub fn update_modules_imports(&mut self, mod_id: ModuleId, imports: Vec<GlobalSymbolId>) {
@@ -50,41 +57,49 @@ impl ModuleMap {
     }
 
     pub fn add_symbol(&mut self, symbol: GlobalSymbol, file: usize, item_id: NodeId) {
-        self.symbols.insert(GlobalSymbolId {
-            mod_id: ModuleId::from_usize(file),
-            item_id,
-        }, symbol);
+        self.symbols.insert(
+            GlobalSymbolId {
+                mod_id: ModuleId::from_usize(file),
+                item_id,
+            },
+            symbol,
+        );
     }
 
-    pub fn find_symbol_by_name(&self, name: &str, module_id: Option<ModuleId>) -> Vec<&GlobalSymbol> {
-        self.symbols.iter()
+    pub fn find_symbol_by_name(
+        &self,
+        name: &str,
+        module_id: Option<ModuleId>,
+    ) -> Vec<&GlobalSymbol> {
+        self.symbols
+            .iter()
             .filter(|(id, symbol)| {
-                symbol.name.to_string() == name &&
-                    module_id.map_or(true, |mid| id.mod_id == mid)
+                symbol.name.to_string() == name && module_id.map_or(true, |mid| id.mod_id == mid)
             })
             .map(|(_, symbol)| symbol)
             .collect()
     }
 
     pub fn find_symbols_in_module(&self, module_id: Option<ModuleId>) -> Vec<&GlobalSymbol> {
-        self.symbols.iter()
+        self.symbols
+            .iter()
             .filter(|(id, _)| module_id.map_or(true, |mid| id.mod_id == mid))
             .map(|(_, symbol)| symbol)
             .collect()
     }
 
     pub fn has_symbol(&self, name: &str, module_id: Option<ModuleId>) -> bool {
-        self.symbols.iter().any(|(id, symbol)|
-            symbol.name.to_string() == name &&
-                module_id.map_or(true, |mid| id.mod_id == mid)
-        )
+        self.symbols.iter().any(|(id, symbol)| {
+            symbol.name.to_string() == name && module_id.map_or(true, |mid| id.mod_id == mid)
+        })
     }
 
     pub fn get_function_symbols(&self, module_id: Option<ModuleId>) -> Vec<&GlobalSymbol> {
-        self.symbols.iter()
+        self.symbols
+            .iter()
             .filter(|(id, symbol)| {
-                matches!(symbol.kind, GlobalSymbolKind::Fn(_)) &&
-                    module_id.map_or(true, |mid| id.mod_id == mid)
+                matches!(symbol.kind, GlobalSymbolKind::Fn(_))
+                    && module_id.map_or(true, |mid| id.mod_id == mid)
             })
             .map(|(_, symbol)| symbol)
             .collect()
@@ -94,21 +109,25 @@ impl ModuleMap {
     where
         F: Fn(&GlobalSymbol) -> bool,
     {
-        self.symbols.iter()
-            .filter(|(id, symbol)|
-                predicate(symbol) &&
-                    module_id.map_or(true, |mid| id.mod_id == mid)
-            )
+        self.symbols
+            .iter()
+            .filter(|(id, symbol)| {
+                predicate(symbol) && module_id.map_or(true, |mid| id.mod_id == mid)
+            })
             .map(|(_, symbol)| symbol)
             .collect()
     }
-    
+
     pub fn get_module_by_id(&self, id: ModuleId) -> Option<&Module> {
-        self.modules.iter().find(|module| ModuleId::from_usize(module.barrel.file_id) == id)
+        self.modules
+            .iter()
+            .find(|module| ModuleId::from_usize(module.barrel.file_id) == id)
     }
-    
+
     pub fn get_imported_symbols(&self, module: &Module) -> Vec<&GlobalSymbol> {
-        module.imports.iter()
+        module
+            .imports
+            .iter()
             .flat_map(|id| self.symbols.get(id))
             .collect()
     }

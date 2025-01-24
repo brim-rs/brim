@@ -18,5 +18,5 @@ pub struct DuplicateParam {
     pub span: (Span, usize),
     #[error("duplicate found here")]
     pub dup: (Span, usize),
-    pub name: String
+    pub name: String,
 }

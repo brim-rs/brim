@@ -1,13 +1,15 @@
-use std::collections::HashSet;
 use crate::cli::{
     debug_mode, dynamic_lib_mode, min_size_rel_mode, rel_with_deb_info_mode, release_mode,
     static_lib_mode,
 };
 use anyhow::Result;
-use brim::{compiler::CompilerContext, resolver, resolver::Resolver, session::Session, toml::ProjectType};
+use brim::{
+    compiler::CompilerContext, resolver::Resolver, session::Session,
+    toml::ProjectType,
+};
 use brim_parser::parser::Parser;
 use clap::Command;
-use brim::item::ItemKind;
+use std::collections::HashSet;
 
 pub fn run_cmd() -> Command {
     Command::new("run")

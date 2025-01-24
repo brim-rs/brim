@@ -1,10 +1,9 @@
 use brim_ast::{
     expr::{Expr, ExprKind},
-    item::{Block, FnReturnType, FnSignature, Generics, Item, ItemKind, Use},
+    item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Item, ItemKind, Use},
     stmts::{Let, Stmt, StmtKind},
     ty::Ty,
 };
-use brim_ast::item::FnDecl;
 
 pub trait AstWalker {
     // Visit methods - customize behavior for each node type

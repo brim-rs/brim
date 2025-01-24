@@ -1,23 +1,24 @@
-use std::convert::identity;
-use crate::{debug_ident, parser::{
-    PResult, PToken, PTokenKind, Parser,
-    errors::{
-        EmptyBody, ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder,
-        MissingFromKeyword, MissingParamList, SelfOutsideMethod, UnnecessarySelf,
-        UseStatementBraces,
+use crate::{
+    parser::{
+        PResult, PToken, PTokenKind, Parser,
+        errors::{
+            EmptyBody, ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder,
+            MissingFromKeyword, MissingParamList, SelfOutsideMethod, UnnecessarySelf,
+            UseStatementBraces,
+        },
     },
-}, ptok};
+    ptok,
+};
 use brim_ast::{
     Const, Fn, From, Parent, SelfSmall, Use,
     item::{
-        Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, ImportsKind, Item, ItemKind,
-        Param, PathItemKind, Use,
+        Block, FnDecl, FnReturnType, FnSignature, FunctionContext, Generics, Ident, ImportsKind,
+        Item, ItemKind, Param, PathItemKind, Use,
     },
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
     ty,
     ty::Const,
 };
-use brim_ast::item::FunctionContext;
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
 
