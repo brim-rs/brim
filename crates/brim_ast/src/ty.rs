@@ -31,6 +31,12 @@ impl Const {
     pub fn from_bool(b: bool) -> Self {
         if b { Const::Yes } else { Const::No }
     }
+    pub fn as_bool(&self) -> bool {
+        match self {
+            Const::Yes => true,
+            Const::No => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -1,8 +1,7 @@
-use brim_ast::item::Ident;
-use brim_ast::ty::{Const};
+use brim_ast::item::{FnReturnType, Ident};
 use brim_span::span::Span;
-use brim_span::symbols::Symbol;
-use crate::HirId;
+use crate::expr::HirConstExpr;
+use crate::{HirId};
 use crate::stmts::HirStmt;
 use crate::ty::HirTy;
 
@@ -26,14 +25,14 @@ pub enum HirItemKind {
 #[derive(Clone, Debug)]
 pub struct HirUse {
     pub span: Span,
-    pub path: Vec<Symbol>,
+    pub path: Vec<Ident>,
     pub imports: HirImportsKind,
 }
 
 #[derive(Clone, Debug)]
 pub enum HirImportsKind {
     /// `use { foo, bar } from "test";`
-    List(Vec<Symbol>),
+    List(Vec<Ident>),
     /// `use * from "test";`
     All,
 }
@@ -48,8 +47,9 @@ pub struct HirFn {
 #[derive(Clone, Debug)]
 pub struct HirFnSig {
     pub constant: bool,
-    pub name: Symbol,
-    pub return_type: HirTy,
+    pub name: Ident,
+    /// We use option instead of FnReturnType
+    pub return_type: Option<HirTy>,
     pub params: Vec<HirParam>,
     pub generics: HirGenerics,
     pub span: Span,
@@ -86,5 +86,5 @@ pub struct HirGenericParam {
 #[derive(Clone, Debug)]
 pub enum HirGenericKind {
     Type { default: Option<HirTy> },
-    Const { ty: HirTy, default: Option<Const> },
+    Const { ty: HirTy, default: Option<HirConstExpr> },
 }

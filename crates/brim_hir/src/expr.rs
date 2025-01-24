@@ -4,16 +4,17 @@ use brim_ast::token::Lit;
 use brim_span::span::Span;
 use crate::HirId;
 use crate::stmts::HirStmt;
-use crate::ty::HirTy;
+use crate::ty::HirTyKind;
 
 #[derive(Clone, Debug)]
 pub struct HirExpr {
     pub id: HirId,
     pub kind: HirExprKind,
     pub span: Span,
-    pub ty: HirTy,
+    pub ty: HirTyKind,
 }
 
+// We no longer need parenthesized expressions, because the tree defines the structure.
 #[derive(Clone, Debug)]
 pub enum HirExprKind {
     /// Binary operations with desugared operands.
@@ -26,8 +27,6 @@ pub enum HirExprKind {
     Index(Box<HirExpr>, Box<HirExpr>),
     /// Literal values like numbers or strings.
     Literal(Lit),
-    /// Parenthesized expression: `(x)`.
-    Paren(Box<HirExpr>),
     /// Variable reference.
     Var(Ident),
     /// Assignment.

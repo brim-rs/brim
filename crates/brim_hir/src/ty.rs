@@ -1,4 +1,5 @@
 use brim_ast::ErrorEmitted;
+use brim_ast::expr::ConstExpr;
 use brim_ast::item::Ident;
 use brim_span::span::Span;
 use crate::expr::HirConstExpr;

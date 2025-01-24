@@ -1,4 +1,5 @@
 use brim_ast::item::Ident;
+use brim_ast::ty::Ty;
 use brim_span::span::Span;
 use crate::expr::HirExpr;
 use crate::HirId;
