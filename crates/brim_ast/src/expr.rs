@@ -11,6 +11,16 @@ pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
 }
+
+impl Expr {
+    pub fn as_ident(&self) -> Option<&Ident> {
+        match &self.kind {
+            ExprKind::Var(ident) => Some(ident),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum ExprKind {
     /// `1 + 2`, `x * y`

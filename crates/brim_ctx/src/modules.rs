@@ -102,6 +102,28 @@ impl ModuleMap {
             .map(|(_, symbol)| symbol)
             .collect()
     }
+    
+    pub fn get_module_by_id(&self, id: ModuleId) -> Option<&Module> {
+        self.modules.iter().find(|module| ModuleId::from_usize(module.barrel.file_id) == id)
+    }
+    
+    pub fn get_imported_symbols(&self, module: &Module) -> Vec<&GlobalSymbol> {
+        module.imports.iter()
+            .flat_map(|id| self.symbols.get(id))
+            .collect()
+    }
+
+    pub fn resolve_symbol(&self, name: &str, mod_id: ModuleId) -> Option<&GlobalSymbol> {
+        let module_symbols = self.find_symbols_in_module(Some(mod_id));
+        let module = self.get_module_by_id(mod_id)?;
+        let imported_symbols = self.get_imported_symbols(module);
+
+        module_symbols
+            .iter()
+            .chain(imported_symbols.iter())
+            .find(|symbol| symbol.name.to_string() == name)
+            .copied()
+    }
 }
 
 #[derive(Debug)]

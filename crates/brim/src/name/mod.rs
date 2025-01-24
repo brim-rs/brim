@@ -7,11 +7,12 @@ use brim_ast::expr::{Expr, ExprKind};
 use brim_ast::item::{Block, FnDecl, Item};
 use brim_ast::stmts::Let;
 use brim_ctx::compiler::CompilerContext;
+use brim_ctx::ModuleId;
 use brim_ctx::modules::ModuleMap;
 use brim_ctx::walker::AstWalker;
 use brim_diagnostics::diag_opt;
 use brim_fs::loader::BrimFileLoader;
-use crate::name::errors::UndeclaredVariable;
+use crate::name::errors::{UndeclaredFunction, UndeclaredVariable};
 use crate::name::scopes::{ScopeManager, VariableInfo};
 
 #[derive(Debug)]
@@ -127,6 +128,18 @@ impl<'a> AstWalker for NameResolver<'a> {
             }
             ExprKind::Block(block) => self.visit_block(block),
             ExprKind::Call(func, args) => {
+                let name = func.as_ident().unwrap().to_string();
+                let mod_id = ModuleId::from_usize(self.file);
+
+                let func_sym = self.map.resolve_symbol(&name, mod_id);
+
+                if let None = func_sym {
+                    self.ctx.emit(UndeclaredFunction {
+                        span: (func.span, self.file),
+                        name,
+                    });
+                }
+                
                 for arg in args {
                     self.visit_expr(arg);
                 }
