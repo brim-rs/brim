@@ -239,6 +239,15 @@ name = "brim-fs"
 version = "0.1.0"
 
 [[package]]
+name = "brim-hir"
+version = "0.1.0"
+dependencies = [
+ "brim-ast",
+ "brim-index",
+ "brim-span",
+]
+
+[[package]]
 name = "brim-index"
 version = "0.1.0"
 

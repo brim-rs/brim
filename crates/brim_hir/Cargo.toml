@@ -1,0 +1,12 @@
+[package]
+name = "brim-hir"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+brim-span = { workspace = true }
+brim-index = { workspace = true }
+brim-ast = { workspace = true }
+
+[lints]
+workspace = true
