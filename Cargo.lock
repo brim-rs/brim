@@ -243,6 +243,7 @@ name = "brim-hir"
 version = "0.1.0"
 dependencies = [
  "brim-ast",
+ "brim-ctx",
  "brim-index",
  "brim-span",
 ]

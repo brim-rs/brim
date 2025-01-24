@@ -1,9 +1,8 @@
 use brim_ast::item::Ident;
-use brim_ast::ty::Ty;
 use brim_span::span::Span;
 use crate::expr::HirExpr;
 use crate::HirId;
-
+use crate::ty::HirTy;
 
 #[derive(Clone, Debug)]
 pub struct HirStmt {
@@ -17,7 +16,7 @@ pub enum HirStmtKind {
     /// `let x: i32 = 5;`
     Let {
         ident: Ident,
-        ty: Option<Ty>,
+        ty: Option<HirTy>,
         value: Option<HirExpr>,
     },
     /// An expression statement.

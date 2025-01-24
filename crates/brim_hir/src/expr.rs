@@ -1,17 +1,17 @@
 use brim_ast::expr::{BinOpKind, UnaryOp};
 use brim_ast::item::Ident;
 use brim_ast::token::Lit;
-use brim_ast::ty::Ty;
 use brim_span::span::Span;
 use crate::HirId;
 use crate::stmts::HirStmt;
+use crate::ty::HirTy;
 
 #[derive(Clone, Debug)]
 pub struct HirExpr {
     pub id: HirId,
     pub kind: HirExprKind,
     pub span: Span,
-    pub ty: Ty,
+    pub ty: HirTy,
 }
 
 #[derive(Clone, Debug)]
@@ -49,7 +49,14 @@ pub enum HirExprKind {
 
 /// Desugared condition branches for `if` or `else if`.
 #[derive(Clone, Debug)]
-pub struct ConditionBranch {
+pub struct HirConditionBranch {
     pub condition: Box<HirExpr>,
     pub block: Box<HirExpr>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HirConstExpr {
+    pub id: HirId,
+    pub span: Span,
+    pub body: HirId,
 }
