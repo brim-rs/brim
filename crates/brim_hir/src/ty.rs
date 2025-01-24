@@ -1,10 +1,6 @@
-use brim_ast::ErrorEmitted;
-use brim_ast::expr::ConstExpr;
-use brim_ast::item::Ident;
+use crate::{HirId, expr::HirConstExpr, items::HirGenerics};
+use brim_ast::{ErrorEmitted, expr::ConstExpr, item::Ident};
 use brim_span::span::Span;
-use crate::expr::HirConstExpr;
-use crate::HirId;
-use crate::items::HirGenerics;
 
 #[derive(Debug, Clone)]
 pub struct HirTy {

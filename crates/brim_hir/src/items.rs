@@ -1,9 +1,6 @@
+use crate::{HirId, expr::HirConstExpr, stmts::HirStmt, ty::HirTy};
 use brim_ast::item::{FnReturnType, Ident};
 use brim_span::span::Span;
-use crate::expr::HirConstExpr;
-use crate::{HirId};
-use crate::stmts::HirStmt;
-use crate::ty::HirTy;
 
 #[derive(Clone, Debug)]
 pub struct HirItem {
@@ -85,6 +82,11 @@ pub struct HirGenericParam {
 
 #[derive(Clone, Debug)]
 pub enum HirGenericKind {
-    Type { default: Option<HirTy> },
-    Const { ty: HirTy, default: Option<HirConstExpr> },
+    Type {
+        default: Option<HirTy>,
+    },
+    Const {
+        ty: HirTy,
+        default: Option<HirConstExpr>,
+    },
 }

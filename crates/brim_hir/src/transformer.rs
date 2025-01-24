@@ -1,14 +1,19 @@
-use std::collections::HashMap;
-use std::path::PathBuf;
-use brim_ast::item::{Item, ItemKind};
-use brim_ast::NodeId;
-use brim_ctx::ModuleId;
-use brim_ctx::modules::{Module, ModuleMap};
-use crate::expr::HirExpr;
-use crate::HirId;
-use crate::items::{HirFn, HirFnSig, HirGenericParam, HirGenerics, HirItem, HirItemKind, HirParam};
-use crate::stmts::HirStmt;
-use crate::ty::HirTy;
+use crate::{
+    HirId,
+    expr::HirExpr,
+    items::{HirFn, HirFnSig, HirGenericParam, HirGenerics, HirItem, HirItemKind, HirParam},
+    stmts::HirStmt,
+    ty::HirTy,
+};
+use brim_ast::{
+    NodeId,
+    item::{Item, ItemKind},
+};
+use brim_ctx::{
+    ModuleId,
+    modules::{Module, ModuleMap},
+};
+use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -65,7 +70,12 @@ impl Transformer {
     }
 
     pub fn transform_module(&mut self, module: Module) -> HirModule {
-        let items = module.barrel.items.iter().map(|item| self.transform_item(item)).collect();
+        let items = module
+            .barrel
+            .items
+            .iter()
+            .map(|item| self.transform_item(item))
+            .collect();
         HirModule {
             mod_id: ModuleId::from_usize(module.barrel.file_id),
             items,
@@ -76,35 +86,42 @@ impl Transformer {
 
     pub fn transform_item(&mut self, item: Item) -> HirItem {
         let hir_item_kind = match item.kind.clone() {
-            ItemKind::Fn(f_decl) => {
-
-                HirItemKind::Fn(HirFn {
-                    sig: HirFnSig {
-                        constant: f_decl.sig.constant.as_bool(),
-                        name: f_decl.sig.name,
-                        return_type: if let Some(ty) = f_decl.sig.return_type {
-                            Some(self.transform_ty(ty))
-                        } else {
-                            Self
-                        },
-                        params: f_decl.sig.params.iter().map(|param| HirParam {
+            ItemKind::Fn(f_decl) => HirItemKind::Fn(HirFn {
+                sig: HirFnSig {
+                    constant: f_decl.sig.constant.as_bool(),
+                    name: f_decl.sig.name,
+                    return_type: if let Some(ty) = f_decl.sig.return_type {
+                        Some(self.transform_ty(ty))
+                    } else {
+                        Self
+                    },
+                    params: f_decl
+                        .sig
+                        .params
+                        .iter()
+                        .map(|param| HirParam {
                             id: HirId::from_u32(param.id.as_u32()),
                             span: param.span,
                             name: param.name,
                             ty: self.transform_ty(param.ty.clone()),
-                        }).collect(),
-                        generics: HirGenerics {
-                            params: f_decl.generics.params.iter().map(|param| HirGenericParam {
+                        })
+                        .collect(),
+                    generics: HirGenerics {
+                        params: f_decl
+                            .generics
+                            .params
+                            .iter()
+                            .map(|param| HirGenericParam {
                                 id: HirId::from_u32(param.id.as_u32()),
                                 name: param.ident,
                                 kind: self.hir_generic_kind(param.kind.clone()),
-                            }).collect(),
-                            span: f_decl.generics.span,
-                        },
-                        span: f_decl.sig.span,
+                            })
+                            .collect(),
+                        span: f_decl.generics.span,
                     },
-                })
-            }
+                    span: f_decl.sig.span,
+                },
+            }),
             _ => {}
         };
 

@@ -19,7 +19,7 @@ pub struct ModuleMap {
     pub modules: Vec<Module>,
     pub symbols: HashMap<GlobalSymbolId, GlobalSymbol>,
     pub imports: HashMap<GlobalSymbolId, PathBuf>,
-    pub associated_symbols: HashMap<NodeId, GlobalSymbolId>
+    pub associated_symbols: HashMap<NodeId, GlobalSymbolId>,
 }
 
 impl ModuleMap {
@@ -28,10 +28,10 @@ impl ModuleMap {
             modules: vec![],
             symbols: HashMap::new(),
             imports: HashMap::new(),
-            associated_symbols: HashMap::new()
+            associated_symbols: HashMap::new(),
         }
     }
-    
+
     pub fn insert_or_update(&mut self, path: PathBuf, barrel: Barrel) {
         for module in &mut self.modules {
             if module.path == path {
@@ -67,10 +67,7 @@ impl ModuleMap {
     }
 
     pub fn add_symbol(&mut self, symbol: GlobalSymbol) {
-        self.symbols.insert(
-            symbol.id.clone(),
-            symbol,
-        );
+        self.symbols.insert(symbol.id.clone(), symbol);
     }
 
     pub fn find_symbol_by_name(
@@ -150,7 +147,7 @@ impl ModuleMap {
             .find(|symbol| symbol.name.to_string() == name)
             .copied()
     }
-    
+
     /// Associates a symbol with a node in the AST. Useful for things like assign function to call expressions etc.
     pub fn assign_symbol(&mut self, node_id: NodeId, symbol_id: GlobalSymbolId) {
         self.associated_symbols.insert(node_id, symbol_id);
@@ -192,9 +189,12 @@ impl<'a> AstWalker for SymbolCollector<'a> {
 
         match &item.kind {
             ItemKind::Fn(f) => {
-                self.map.add_symbol(
-                    GlobalSymbol::new(item.ident, GlobalSymbolKind::Fn(f.clone()), item.id, id),
-                );
+                self.map.add_symbol(GlobalSymbol::new(
+                    item.ident,
+                    GlobalSymbolKind::Fn(f.clone()),
+                    item.id,
+                    id,
+                ));
             }
             _ => {}
         }

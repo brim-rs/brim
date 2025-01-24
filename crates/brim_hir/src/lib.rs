@@ -1,9 +1,9 @@
 use brim_index::index_type;
 
-mod stmts;
 mod expr;
-mod transformer;
 mod items;
+mod stmts;
+mod transformer;
 mod ty;
 
 index_type! {

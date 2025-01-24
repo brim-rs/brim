@@ -1,10 +1,10 @@
-use brim_ast::expr::{BinOpKind, UnaryOp};
-use brim_ast::item::Ident;
-use brim_ast::token::Lit;
+use crate::{HirId, stmts::HirStmt, ty::HirTyKind};
+use brim_ast::{
+    expr::{BinOpKind, UnaryOp},
+    item::Ident,
+    token::Lit,
+};
 use brim_span::span::Span;
-use crate::HirId;
-use crate::stmts::HirStmt;
-use crate::ty::HirTyKind;
 
 #[derive(Clone, Debug)]
 pub struct HirExpr {
@@ -44,7 +44,6 @@ pub enum HirExprKind {
     /// Return statement: `return x`.
     Return(Box<HirExpr>),
 }
-
 
 /// Desugared condition branches for `if` or `else if`.
 #[derive(Clone, Debug)]
