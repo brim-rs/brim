@@ -1,9 +1,4 @@
-use crate::{
-    NodeId,
-    expr::Expr,
-    item::Ident,
-    ty::Ty,
-};
+use crate::{NodeId, expr::Expr, item::Ident, ty::Ty};
 use brim_span::span::Span;
 
 #[derive(Clone, Debug)]

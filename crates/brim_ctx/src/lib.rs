@@ -25,17 +25,19 @@ pub struct GlobalSymbolId {
 
 #[derive(Debug, Clone)]
 pub struct GlobalSymbol {
+    pub id: GlobalSymbolId,
     pub name: Ident,
     pub kind: GlobalSymbolKind,
     pub item_id: NodeId,
 }
 
 impl GlobalSymbol {
-    pub fn new(name: Ident, kind: GlobalSymbolKind, id: NodeId) -> Self {
+    pub fn new(name: Ident, kind: GlobalSymbolKind, id: NodeId, gid: GlobalSymbolId) -> Self {
         Self {
             name,
             kind,
             item_id: id,
+            id: gid,
         }
     }
 }

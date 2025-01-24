@@ -144,6 +144,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                     });
                 }
 
+                println!("Function call: {:?}", func_sym);
                 for arg in args {
                     self.visit_expr(arg);
                 }

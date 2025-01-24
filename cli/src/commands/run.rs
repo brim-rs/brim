@@ -3,10 +3,7 @@ use crate::cli::{
     static_lib_mode,
 };
 use anyhow::Result;
-use brim::{
-    compiler::CompilerContext, resolver::Resolver, session::Session,
-    toml::ProjectType,
-};
+use brim::{compiler::CompilerContext, resolver::Resolver, session::Session, toml::ProjectType};
 use brim_parser::parser::Parser;
 use clap::Command;
 use std::collections::HashSet;

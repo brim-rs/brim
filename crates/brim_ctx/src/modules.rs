@@ -56,12 +56,9 @@ impl ModuleMap {
         }
     }
 
-    pub fn add_symbol(&mut self, symbol: GlobalSymbol, file: usize, item_id: NodeId) {
+    pub fn add_symbol(&mut self, symbol: GlobalSymbol) {
         self.symbols.insert(
-            GlobalSymbolId {
-                mod_id: ModuleId::from_usize(file),
-                item_id,
-            },
+            symbol.id.clone(),
             symbol,
         );
     }
@@ -173,12 +170,15 @@ impl<'a> SymbolCollector<'a> {
 
 impl<'a> AstWalker for SymbolCollector<'a> {
     fn visit_item(&mut self, item: &mut Item) {
+        let id = GlobalSymbolId {
+            mod_id: ModuleId::from_usize(self.file_id),
+            item_id: item.id,
+        };
+
         match &item.kind {
             ItemKind::Fn(f) => {
                 self.map.add_symbol(
-                    GlobalSymbol::new(item.ident, GlobalSymbolKind::Fn(f.clone()), item.id),
-                    self.file_id,
-                    item.id,
+                    GlobalSymbol::new(item.ident, GlobalSymbolKind::Fn(f.clone()), item.id, id),
                 );
             }
             _ => {}
