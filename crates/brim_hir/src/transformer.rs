@@ -61,6 +61,52 @@ impl HirModuleMap {
     pub fn new_module(&mut self, module: HirModule) {
         self.modules.push(module);
     }
+
+    pub fn get(&self, id: HirId) -> Option<&StoredHirItem> {
+        self.hir_items.get(&id)
+    }
+
+    pub fn get_item(&self, id: HirId) -> &HirItem {
+        match self.get(id) {
+            Some(StoredHirItem::Item(item)) => item,
+            _ => panic!("Expected item"),
+        }
+    }
+
+    pub fn get_item_safe(&self, id: HirId) -> Option<&HirItem> {
+        match self.get(id) {
+            Some(StoredHirItem::Item(item)) => Some(item),
+            _ => None,
+        }
+    }
+
+    pub fn get_expr(&self, id: HirId) -> &HirExpr {
+        match self.get(id) {
+            Some(StoredHirItem::Expr(expr)) => expr,
+            _ => panic!("Expected expr"),
+        }
+    }
+
+    pub fn get_expr_safe(&self, id: HirId) -> Option<&HirExpr> {
+        match self.get(id) {
+            Some(StoredHirItem::Expr(expr)) => Some(expr),
+            _ => None,
+        }
+    }
+
+    pub fn get_stmt(&self, id: HirId) -> &HirStmt {
+        match self.get(id) {
+            Some(StoredHirItem::Stmt(stmt)) => stmt,
+            _ => panic!("Expected stmt"),
+        }
+    }
+
+    pub fn get_stmt_safe(&self, id: HirId) -> Option<&HirStmt> {
+        match self.get(id) {
+            Some(StoredHirItem::Stmt(stmt)) => Some(stmt),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
