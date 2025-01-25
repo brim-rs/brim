@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use crate::{HirId, expr::HirConstExpr, stmts::HirStmt, ty::HirTy};
 use brim_ast::item::{FnReturnType, Ident};
 use brim_span::span::Span;
@@ -22,8 +23,8 @@ pub enum HirItemKind {
 #[derive(Clone, Debug)]
 pub struct HirUse {
     pub span: Span,
-    pub path: Vec<Ident>,
     pub imports: HirImportsKind,
+    pub resolved_path: PathBuf,
 }
 
 #[derive(Clone, Debug)]
@@ -64,13 +65,6 @@ pub struct HirParam {
     pub span: Span,
     pub name: Ident,
     pub ty: HirTy,
-}
-
-#[derive(Clone, Debug)]
-pub struct HirBlock {
-    pub id: HirId,
-    pub span: Span,
-    pub stmts: Vec<HirStmt>,
 }
 
 #[derive(Clone, Debug)]

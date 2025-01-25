@@ -1,9 +1,6 @@
 use crate::{HirId, stmts::HirStmt, ty::HirTyKind};
-use brim_ast::{
-    expr::{BinOpKind, UnaryOp},
-    item::Ident,
-    token::Lit,
-};
+use brim_ast::{expr::{BinOpKind, UnaryOp}, item::Ident, token::Lit, NodeId};
+use brim_ast::stmts::Stmt;
 use brim_span::span::Span;
 
 #[derive(Clone, Debug)]
@@ -40,9 +37,16 @@ pub enum HirExprKind {
     /// Function calls.
     Call(Box<HirExpr>, Vec<HirExpr>),
     /// Block of statements or expressions.
-    Block(Vec<HirStmt>),
+    Block(HirBlock),
     /// Return statement: `return x`.
     Return(Box<HirExpr>),
+}
+
+#[derive(Clone, Debug)]
+pub struct HirBlock {
+    pub id: HirId,
+    pub span: Span,
+    pub stmts: Vec<HirStmt>,
 }
 
 /// Desugared condition branches for `if` or `else if`.
