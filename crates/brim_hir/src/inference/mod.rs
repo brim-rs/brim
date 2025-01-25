@@ -3,7 +3,8 @@ mod scope;
 use crate::{
     HirId,
     expr::{HirExpr, HirExprKind},
-    items::{HirGenericParam, HirItem, HirItemKind},
+    inference::scope::{TypeInfo, TypeScopeManager},
+    items::{HirGenericKind, HirGenericParam, HirItem, HirItemKind},
     stmts::{HirStmt, HirStmtKind},
     transformer::{HirModule, HirModuleMap},
     ty::{HirTy, HirTyKind},
@@ -14,7 +15,6 @@ use brim_ast::{
     ty::PrimitiveType,
 };
 use std::collections::HashMap;
-use crate::inference::scope::{TypeInfo, TypeScopeManager};
 
 #[derive(Debug)]
 pub struct TypeInference<'a> {
@@ -49,7 +49,7 @@ pub fn infer_types(hir: &mut HirModuleMap) {
     let ti = &mut TypeInference {
         hir,
         ctx: InferCtx::new(),
-        scope_manager: TypeScopeManager::new(), 
+        scope_manager: TypeScopeManager::new(),
     };
 
     ti.infer();
@@ -77,7 +77,7 @@ impl<'a> TypeInference<'a> {
     fn infer_item(&mut self, item: &mut HirItem) {
         match &mut item.kind {
             HirItemKind::Fn(f) => {
-                self.scope_manager.push_scope(); 
+                self.scope_manager.push_scope();
 
                 for param in &f.sig.params {
                     let param_type = param.ty.kind.clone();
@@ -85,7 +85,11 @@ impl<'a> TypeInference<'a> {
                         ty: param_type,
                         span: param.span.clone(),
                     };
-                    self.scope_manager.declare_variable(param.name.clone().to_string(), type_info, true);
+                    self.scope_manager.declare_variable(
+                        param.name.clone().to_string(),
+                        type_info,
+                        true,
+                    );
                 }
 
                 self.ctx.clear_generics();
@@ -127,6 +131,31 @@ impl<'a> TypeInference<'a> {
                         *ty = Some(value.ty.clone());
                     }
                 }
+            }
+        }
+    }
+
+    fn is_generic(&self, ty: &HirTyKind) -> Option<HirGenericParam> {
+        if let HirTyKind::Ident { ident, .. } = ty {
+            self.ctx
+                .generics
+                .iter()
+                .find(|g| g.name.to_string() == *ident.to_string())
+                .cloned()
+        } else {
+            None
+        }
+    }
+
+    fn assign_generic(&self, expr: &mut HirExpr) {
+        if let Some(generic) = self.is_generic(&expr.ty) {
+            if let HirGenericKind::Type {
+                default: Some(default),
+            } = generic.kind
+            {
+                expr.ty = default.kind;
+            } else {
+                expr.ty = HirTyKind::Placeholder;
             }
         }
     }
@@ -174,6 +203,10 @@ impl<'a> TypeInference<'a> {
             HirExprKind::Binary(lhs, op, rhs) => {
                 self.infer_expr(lhs);
                 self.infer_expr(rhs);
+
+                // The generics will be inferred later, so we can't infer the type yet.
+                self.assign_generic(lhs);
+                self.assign_generic(rhs);
 
                 match (op, &lhs.ty, &rhs.ty) {
                     // Numeric operations
@@ -230,7 +263,10 @@ impl<'a> TypeInference<'a> {
                 }
             }
             HirExprKind::Var(name) => {
-                let var = self.scope_manager.resolve_variable(&name.to_string()).unwrap();
+                let var = self
+                    .scope_manager
+                    .resolve_variable(&name.to_string())
+                    .unwrap();
                 &var.ty
             }
             _ => todo!("infer_expr: {:?}", expr.kind),
