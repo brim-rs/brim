@@ -34,7 +34,8 @@ impl FileLoader for BrimFileLoader {
 }
 
 impl BrimFileLoader {
-    /// We return a custom error because the os messages can be in different languages. It's really annoying for me.
+    /// We return a custom error because the os messages can be in different languages. It's really
+    /// annoying for me.
     pub fn check_if_exists(&self, path: &Path) -> io::Result<()> {
         if !self.file_exists(path) {
             return Err(io::Error::new(

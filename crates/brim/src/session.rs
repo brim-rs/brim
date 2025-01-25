@@ -12,13 +12,13 @@ use brim_fs::{
     loader::{BrimFileLoader, FileLoader},
     path,
 };
+use brim_hir::transformer::transform_module;
 use brim_shell::Shell;
 use brim_span::files::{
     SimpleFile, add_file, get_file, get_file_by_name, get_index_by_name, update_file,
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
-use brim_hir::transformer::transform_module;
 
 #[derive(Debug)]
 pub struct Session {

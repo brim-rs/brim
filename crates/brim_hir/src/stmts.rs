@@ -1,5 +1,5 @@
 use crate::{HirId, expr::HirExpr, ty::HirTy};
-use brim_ast::{item::Ident, ty::Ty};
+use brim_ast::item::Ident;
 use brim_span::span::Span;
 
 #[derive(Clone, Debug)]

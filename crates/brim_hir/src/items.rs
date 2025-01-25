@@ -1,7 +1,7 @@
-use std::path::PathBuf;
-use crate::{HirId, expr::HirConstExpr, stmts::HirStmt, ty::HirTy};
-use brim_ast::item::{FnReturnType, Ident};
+use crate::{HirId, expr::HirConstExpr, ty::HirTy};
+use brim_ast::item::Ident;
 use brim_span::span::Span;
+use std::path::PathBuf;
 
 #[derive(Clone, Debug)]
 pub struct HirItem {

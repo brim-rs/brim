@@ -1,6 +1,9 @@
 use crate::{HirId, expr::HirConstExpr, items::HirGenerics};
-use brim_ast::{ErrorEmitted, expr::ConstExpr, item::Ident};
-use brim_ast::ty::{Const, PrimitiveType};
+use brim_ast::{
+    ErrorEmitted,
+    item::Ident,
+    ty::{Const, PrimitiveType},
+};
 use brim_span::span::Span;
 
 #[derive(Debug, Clone)]
@@ -20,7 +23,8 @@ pub enum HirTyKind {
     Const(Box<HirTy>),
     /// Array type eg. `[T; N]` (brim) -> `T[N]` (C++)
     Array(Box<HirTy>, HirConstExpr),
-    /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim is the same as array in C++.
+    /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim
+    /// is the same as array in C++.
     Vec(Box<HirTy>),
     /// Primitive type eg. `i32` (brim) -> `int32_t` (C++)
     Primitive(PrimitiveType),
@@ -29,7 +33,7 @@ pub enum HirTyKind {
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),
-    
+
     /// Placeholder for the type of expression that has not been type checked yet
     Placeholder,
 }

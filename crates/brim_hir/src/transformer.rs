@@ -1,22 +1,25 @@
 use crate::{
     HirId,
-    expr::HirExpr,
-    items::{HirFn, HirFnSig, HirGenericParam, HirGenerics, HirItem, HirItemKind, HirParam},
-    stmts::HirStmt,
-    ty::HirTy,
+    expr::{HirBlock, HirConstExpr, HirExpr, HirExprKind},
+    items::{
+        HirFn, HirFnSig, HirGenericKind, HirGenericParam, HirGenerics, HirImportsKind, HirItem,
+        HirItemKind, HirParam, HirUse,
+    },
+    stmts::{HirStmt, HirStmtKind},
+    ty::{HirTy, HirTyKind},
 };
-use brim_ast::{NodeId, item::{Item, ItemKind}, ErrorEmitted};
-use brim_ctx::{ModuleId, modules::{Module, ModuleMap}, GlobalSymbolId};
+use brim_ast::{
+    expr::{BinOpKind, ConstExpr, Expr, ExprKind},
+    item::{Block, FnReturnType, GenericKind, ImportsKind, Item, ItemKind},
+    stmts::{Stmt, StmtKind},
+    token::AssignOpToken,
+    ty::TyKind,
+};
+use brim_ctx::{
+    GlobalSymbolId, ModuleId,
+    modules::{Module, ModuleMap},
+};
 use std::{collections::HashMap, path::PathBuf};
-use brim_ast::expr::{BinOpKind, ConstExpr, Expr, ExprKind};
-use brim_ast::item::{Block, FnReturnType, GenericKind, ImportsKind};
-use brim_ast::stmts::{Stmt, StmtKind};
-use brim_ast::token::AssignOpToken;
-use brim_ast::ty::TyKind;
-use crate::expr::{HirBlock, HirConstExpr, HirExprKind};
-use crate::items::{HirGenericKind, HirImportsKind, HirUse};
-use crate::stmts::HirStmtKind;
-use crate::ty::HirTyKind;
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -86,10 +89,15 @@ pub struct Transformer {
 
 impl Transformer {
     pub fn new(module_map: ModuleMap) -> Self {
-        Self { map: HirModuleMap::new(), last_id: 0, module_map, current_mod_id: ModuleId::from_usize(0) }
+        Self {
+            map: HirModuleMap::new(),
+            last_id: 0,
+            module_map,
+            current_mod_id: ModuleId::from_usize(0),
+        }
     }
 
-    pub fn transform_modules(&mut self ) -> HirModuleMap {
+    pub fn transform_modules(&mut self) -> HirModuleMap {
         for module in self.module_map.modules.clone() {
             self.current_mod_id = ModuleId::from_usize(module.barrel.file_id);
             let hir_module = self.transform_module(module);
@@ -117,7 +125,12 @@ impl Transformer {
         let hir_item_kind = match item.kind.clone() {
             ItemKind::Fn(f_decl) => {
                 let body = if let Some(body) = f_decl.body {
-                    let hir = HirExpr { kind: HirExprKind::Block(self.transform_block(body.clone())), span: body.span, ty: HirTyKind::Placeholder, id: self.hir_id() };
+                    let hir = HirExpr {
+                        kind: HirExprKind::Block(self.transform_block(body.clone())),
+                        span: body.span,
+                        ty: HirTyKind::Placeholder,
+                        id: self.hir_id(),
+                    };
 
                     self.map.insert_hir_expr(hir.id, hir.clone());
                     Some(hir.id)
@@ -172,10 +185,15 @@ impl Transformer {
                 HirItemKind::Use(HirUse {
                     span: u.span,
                     imports,
-                    resolved_path: self.module_map.imports.get(&GlobalSymbolId {
-                        item_id: item.id,
-                        mod_id: self.current_mod_id,
-                    }).unwrap().clone(),
+                    resolved_path: self
+                        .module_map
+                        .imports
+                        .get(&GlobalSymbolId {
+                            item_id: item.id,
+                            mod_id: self.current_mod_id,
+                        })
+                        .unwrap()
+                        .clone(),
                 })
             }
         };
@@ -188,13 +206,18 @@ impl Transformer {
             is_public: item.vis.kind.is_public(),
         };
 
-        self.map.insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
+        self.map
+            .insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
 
         item
     }
 
     pub fn transform_block(&mut self, block: Block) -> HirBlock {
-        let stmts = block.stmts.iter().map(|stmt| self.transform_stmt(stmt.clone())).collect();
+        let stmts = block
+            .stmts
+            .iter()
+            .map(|stmt| self.transform_stmt(stmt.clone()))
+            .collect();
 
         HirBlock {
             id: self.hir_id(),
@@ -240,12 +263,21 @@ impl Transformer {
                     op,
                     Box::new(self.transform_expr(*rhs).0),
                 ),
-                ExprKind::Unary(op, expr) => HirExprKind::Unary(op, Box::new(self.transform_expr(*expr).0)),
-                ExprKind::Field(expr, ident) => HirExprKind::Field(Box::new(self.transform_expr(*expr).0), ident),
-                ExprKind::Index(expr, index) => HirExprKind::Index(Box::new(self.transform_expr(*expr).0), Box::new(self.transform_expr(*index).0)),
+                ExprKind::Unary(op, expr) => {
+                    HirExprKind::Unary(op, Box::new(self.transform_expr(*expr).0))
+                }
+                ExprKind::Field(expr, ident) => {
+                    HirExprKind::Field(Box::new(self.transform_expr(*expr).0), ident)
+                }
+                ExprKind::Index(expr, index) => HirExprKind::Index(
+                    Box::new(self.transform_expr(*expr).0),
+                    Box::new(self.transform_expr(*index).0),
+                ),
                 ExprKind::Literal(lit) => HirExprKind::Literal(lit),
                 ExprKind::Paren(expr) => self.transform_expr(*expr).0.kind,
-                ExprKind::Return(expr) => HirExprKind::Return(Box::new(self.transform_expr(*expr).0)),
+                ExprKind::Return(expr) => {
+                    HirExprKind::Return(Box::new(self.transform_expr(*expr).0))
+                }
                 ExprKind::Var(ident) => HirExprKind::Var(ident),
                 // Ops like += turn into x = x + 1
                 ExprKind::AssignOp(lhs, op, rhs) => {
@@ -276,11 +308,19 @@ impl Transformer {
                         }),
                     )
                 }
-                ExprKind::Assign(lhs, rhs) => HirExprKind::Assign(Box::new(self.transform_expr(*lhs).0), Box::new(self.transform_expr(*rhs).0)),
+                ExprKind::Assign(lhs, rhs) => HirExprKind::Assign(
+                    Box::new(self.transform_expr(*lhs).0),
+                    Box::new(self.transform_expr(*rhs).0),
+                ),
                 // ExprKind::If(if_expr) => self.transform_if_expr(if_expr),
                 ExprKind::Block(block) => HirExprKind::Block(self.transform_block(block)),
-                ExprKind::Call(expr, args) => HirExprKind::Call(Box::new(self.transform_expr(*expr).0), args.iter().map(|arg| self.transform_expr(arg.clone()).0).collect()),
-                _ => todo!()
+                ExprKind::Call(expr, args) => HirExprKind::Call(
+                    Box::new(self.transform_expr(*expr).0),
+                    args.iter()
+                        .map(|arg| self.transform_expr(arg.clone()).0)
+                        .collect(),
+                ),
+                _ => todo!(),
             },
             ty: HirTyKind::Placeholder,
         };
@@ -295,7 +335,10 @@ impl Transformer {
             span: ty.span,
             kind: match ty.kind {
                 TyKind::Ptr(ty, cnst) => HirTyKind::Ptr(Box::new(self.transform_ty(*ty)), cnst),
-                TyKind::Array(ty, len) => HirTyKind::Array(Box::new(self.transform_ty(*ty)), self.transform_const_expr(len)),
+                TyKind::Array(ty, len) => HirTyKind::Array(
+                    Box::new(self.transform_ty(*ty)),
+                    self.transform_const_expr(len),
+                ),
                 TyKind::Ref(ty, cnst) => HirTyKind::Ref(Box::new(self.transform_ty(*ty)), cnst),
                 TyKind::Primitive(primitive) => HirTyKind::Primitive(primitive),
                 TyKind::Vec(ty) => HirTyKind::Vec(Box::new(self.transform_ty(*ty))),

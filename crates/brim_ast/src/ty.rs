@@ -31,6 +31,7 @@ impl Const {
     pub fn from_bool(b: bool) -> Self {
         if b { Const::Yes } else { Const::No }
     }
+
     pub fn as_bool(&self) -> bool {
         match self {
             Const::Yes => true,
@@ -49,7 +50,8 @@ pub enum TyKind {
     Const(Box<Ty>),
     /// Array type eg. `[T; N]` (brim) -> `T[N]` (C++)
     Array(Box<Ty>, ConstExpr),
-    /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim is the same as array in C++.
+    /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim
+    /// is the same as array in C++.
     Vec(Box<Ty>),
     /// Primitive type eg. `i32` (brim) -> `int32_t` (C++)
     Primitive(PrimitiveType),

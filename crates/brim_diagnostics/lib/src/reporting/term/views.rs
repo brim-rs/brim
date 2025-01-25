@@ -1,8 +1,8 @@
 use crate::reporting::{
     diagnostic::{Diagnostic, LabelStyle},
     term::{
-        renderer::{Locus, MultiLabel, Renderer, SingleLabel},
         DiagConfig,
+        renderer::{Locus, MultiLabel, Renderer, SingleLabel},
     },
 };
 use brim_span::files::{Error, Files, Location};
@@ -237,13 +237,10 @@ where
             let source = source.as_ref();
 
             if !labeled_file.lines.is_empty() {
-                renderer.render_snippet_start(
-                    outer_padding,
-                    &Locus {
-                        name: labeled_file.name,
-                        location: labeled_file.location,
-                    },
-                )?;
+                renderer.render_snippet_start(outer_padding, &Locus {
+                    name: labeled_file.name,
+                    location: labeled_file.location,
+                })?;
                 renderer.render_snippet_empty(
                     outer_padding,
                     self.diagnostic.severity,

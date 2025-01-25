@@ -1,6 +1,9 @@
 use crate::{HirId, stmts::HirStmt, ty::HirTyKind};
-use brim_ast::{expr::{BinOpKind, UnaryOp}, item::Ident, token::Lit, NodeId};
-use brim_ast::stmts::Stmt;
+use brim_ast::{
+    expr::{BinOpKind, UnaryOp},
+    item::Ident,
+    token::Lit,
+};
 use brim_span::span::Span;
 
 #[derive(Clone, Debug)]

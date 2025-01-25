@@ -148,7 +148,8 @@ impl ModuleMap {
             .copied()
     }
 
-    /// Associates a symbol with a node in the AST. Useful for things like assign function to call expressions etc.
+    /// Associates a symbol with a node in the AST. Useful for things like assign function to call
+    /// expressions etc.
     pub fn assign_symbol(&mut self, node_id: NodeId, symbol_id: GlobalSymbolId) {
         self.associated_symbols.insert(node_id, symbol_id);
     }

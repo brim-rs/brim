@@ -42,7 +42,8 @@ impl<'a> NameResolver<'a> {
         }
     }
 
-    /// declare_param doesn't check for duplicates, because that is already handled by the [`AstValidator`](crate::validator::AstValidator)
+    /// declare_param doesn't check for duplicates, because that is already handled by the
+    /// [`AstValidator`](crate::validator::AstValidator)
     fn declare_param(&mut self, name: &str, info: VariableInfo) {
         diag_opt!(
             self.ctx,

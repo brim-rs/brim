@@ -318,7 +318,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
             let (label_style, range, bottom_message) = match label {
                 MultiLabel::Left => continue,
                 MultiLabel::Top(start) if *start <= source.len() - source.trim_start().len() => {
-                    continue
+                    continue;
                 }
                 MultiLabel::Top(range) => (*label_style, range, None),
                 MultiLabel::Bottom(range, message) => (*label_style, range, Some(message)),
