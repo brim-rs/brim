@@ -130,6 +130,7 @@ dependencies = [
  "anstream",
  "anyhow",
  "brim-ast",
+ "brim-codegen",
  "brim-config",
  "brim-ctx",
  "brim-diag-macro",

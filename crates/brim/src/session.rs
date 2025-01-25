@@ -2,6 +2,7 @@ use crate::{name::NameResolver, validator::AstValidator};
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim_ast::item::{ImportsKind, ItemKind};
+use brim_codegen::CodeBuilder;
 use brim_config::toml::{Config, ProjectType};
 use brim_ctx::{
     GlobalSymbolId, ModuleId,
@@ -29,6 +30,7 @@ use brim_span::{
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
+use brim_codegen::codegen::CppCodegen;
 
 #[derive(Debug)]
 pub struct Session {
@@ -194,6 +196,11 @@ impl Session {
             box_diag!(NoMainFunction {
                 file: main_mod.path.display().to_string(),
             });
+        }
+
+        let mut codegen = CppCodegen::new();
+        for module in hir.modules {
+            codegen.generate_module(module);
         }
 
         Ok(())

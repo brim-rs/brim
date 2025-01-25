@@ -1,15 +1,19 @@
 use crate::cli::{
-    debug_mode, dynamic_lib_mode, min_size_rel_mode, rel_with_deb_info_mode, release_mode,
+    debug_mode, dynamic_lib_mode, min_size_rel_mode, opt, rel_with_deb_info_mode, release_mode,
     static_lib_mode,
 };
 use anyhow::Result;
 use brim::{
-    ModuleId, compiler::CompilerContext, resolver::Resolver, session::Session, toml::ProjectType,
+    ModuleId,
+    compiler::CompilerContext,
+    files::{SimpleFiles, files},
+    resolver::Resolver,
+    session::Session,
+    toml::ProjectType,
 };
 use brim_parser::parser::Parser;
-use clap::Command;
+use clap::{Arg, ArgAction, Command};
 use std::collections::HashSet;
-use brim::files::{files, SimpleFiles};
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -26,6 +30,15 @@ pub fn run_cmd() -> Command {
                 .num_args(0..)
                 .allow_negative_numbers(true)
                 .trailing_var_arg(true),
+        )
+        // when true display generated c++ code
+        .arg(
+            opt(
+                "codegen-debug",
+                "Displays generated c++ code in the terminal",
+            )
+            .short('c')
+            .action(ArgAction::SetTrue),
         )
 }
 
@@ -54,7 +67,8 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
             match sess.run_codegen(hir, main_file) {
                 Ok(_) => {}
                 Err(e) => {
-                    comp.dcx().emit_inner(e.to_diagnostic(), &SimpleFiles::from_files(files()));
+                    comp.dcx()
+                        .emit_inner(e.to_diagnostic(), &SimpleFiles::from_files(files()));
                 }
             }
 
