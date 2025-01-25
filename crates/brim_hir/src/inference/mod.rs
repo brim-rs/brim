@@ -1,17 +1,26 @@
-use brim_ast::ErrorEmitted;
-use brim_ast::expr::{BinOpKind, UnaryOp};
-use brim_ast::ty::PrimitiveType;
-use crate::expr::{HirExpr, HirExprKind};
-use crate::HirId;
-use crate::items::{HirGenericParam, HirItem, HirItemKind};
-use crate::stmts::{HirStmt, HirStmtKind};
-use crate::transformer::{HirModule, HirModuleMap};
-use crate::ty::{HirTy, HirTyKind};
+mod scope;
+
+use crate::{
+    HirId,
+    expr::{HirExpr, HirExprKind},
+    items::{HirGenericParam, HirItem, HirItemKind},
+    stmts::{HirStmt, HirStmtKind},
+    transformer::{HirModule, HirModuleMap},
+    ty::{HirTy, HirTyKind},
+};
+use brim_ast::{
+    ErrorEmitted,
+    expr::{BinOpKind, UnaryOp},
+    ty::PrimitiveType,
+};
+use std::collections::HashMap;
+use crate::inference::scope::{TypeInfo, TypeScopeManager};
 
 #[derive(Debug)]
 pub struct TypeInference<'a> {
     pub hir: &'a mut HirModuleMap,
     pub ctx: InferCtx,
+    pub scope_manager: TypeScopeManager,
 }
 
 #[derive(Debug)]
@@ -22,7 +31,9 @@ pub struct InferCtx {
 
 impl InferCtx {
     pub fn new() -> Self {
-        Self { generics: Vec::new() }
+        Self {
+            generics: Vec::new(),
+        }
     }
 
     pub fn push_generic(&mut self, generic: HirGenericParam) {
@@ -35,7 +46,11 @@ impl InferCtx {
 }
 
 pub fn infer_types(hir: &mut HirModuleMap) {
-    let ti = &mut TypeInference { hir, ctx: InferCtx::new() };
+    let ti = &mut TypeInference {
+        hir,
+        ctx: InferCtx::new(),
+        scope_manager: TypeScopeManager::new(), 
+    };
 
     ti.infer();
 }
@@ -44,7 +59,8 @@ impl<'a> TypeInference<'a> {
     pub fn infer(&mut self) {
         let modules = std::mem::take(&mut self.hir.modules);
 
-        self.hir.modules = modules.into_iter()
+        self.hir.modules = modules
+            .into_iter()
             .map(|mut module| {
                 self.infer_module(&mut module);
                 module
@@ -61,18 +77,35 @@ impl<'a> TypeInference<'a> {
     fn infer_item(&mut self, item: &mut HirItem) {
         match &mut item.kind {
             HirItemKind::Fn(f) => {
+                self.scope_manager.push_scope(); 
+
+                for param in &f.sig.params {
+                    let param_type = param.ty.kind.clone();
+                    let type_info = TypeInfo {
+                        ty: param_type,
+                        span: param.span.clone(),
+                    };
+                    self.scope_manager.declare_variable(param.name.clone().to_string(), type_info, true);
+                }
+
                 self.ctx.clear_generics();
                 for generic in &f.sig.generics.params {
                     self.ctx.push_generic(generic.clone());
                 }
 
-                f.ret_type = f.sig.return_type
+                f.ret_type = f
+                    .sig
+                    .return_type
                     .as_ref()
-                    .map_or(HirTyKind::Primitive(PrimitiveType::Void), |ty| ty.kind.clone());
+                    .map_or(HirTyKind::Primitive(PrimitiveType::Void), |ty| {
+                        ty.kind.clone()
+                    });
 
                 if let Some(body_id) = f.body {
                     self.infer_body(body_id);
                 }
+
+                self.scope_manager.pop_scope(); // Reset scope after function
             }
             _ => {}
         }
@@ -106,8 +139,20 @@ impl<'a> TypeInference<'a> {
                 match (op, &operand.ty) {
                     (UnaryOp::Try, ty) => ty,
                     // Unary minus only applies to numeric types. We assign err, that will be later emitted in the type checker. Same goes for the rest of the cases.
-                    (UnaryOp::Minus, ty) => if ty.is_numeric() { ty } else { &HirTyKind::err() },
-                    (UnaryOp::Deref, ty) => if ty.can_be_dereferenced() { ty } else { &HirTyKind::err() },
+                    (UnaryOp::Minus, ty) => {
+                        if ty.is_numeric() {
+                            ty
+                        } else {
+                            &HirTyKind::err()
+                        }
+                    }
+                    (UnaryOp::Deref, ty) => {
+                        if ty.can_be_dereferenced() {
+                            ty
+                        } else {
+                            &HirTyKind::err()
+                        }
+                    }
                     (UnaryOp::Not, ty) => &HirTyKind::Primitive(PrimitiveType::Bool),
                 }
             }
@@ -116,13 +161,78 @@ impl<'a> TypeInference<'a> {
                     self.infer_stmt(stmt);
                 }
 
-                block.stmts.last().and_then(|stmt| stmt.can_be_used_for_inference())
+                block
+                    .stmts
+                    .last()
+                    .and_then(|stmt| stmt.can_be_used_for_inference())
                     .unwrap_or(HirTyKind::void())
             },
             HirExprKind::Return(expr) => &{
                 self.infer_expr(expr);
                 expr.ty.clone()
             },
+            HirExprKind::Binary(lhs, op, rhs) => {
+                self.infer_expr(lhs);
+                self.infer_expr(rhs);
+
+                match (op, &lhs.ty, &rhs.ty) {
+                    // Numeric operations
+                    (
+                        BinOpKind::Plus
+                        | BinOpKind::Minus
+                        | BinOpKind::Multiply
+                        | BinOpKind::Divide
+                        | BinOpKind::Modulo
+                        | BinOpKind::Power
+                        | BinOpKind::Caret
+                        | BinOpKind::ShiftRight
+                        | BinOpKind::ShiftLeft
+                        | BinOpKind::And
+                        | BinOpKind::Or,
+                        l,
+                        r,
+                    ) => {
+                        if l.is_numeric() && r.is_numeric() {
+                            let ty =
+                                PrimitiveType::promote_type(&l.to_primitive(), &r.to_primitive())
+                                    .unwrap();
+
+                            &HirTyKind::Primitive(ty)
+                        } else {
+                            &HirTyKind::err()
+                        }
+                    }
+
+                    (
+                        BinOpKind::Lt
+                        | BinOpKind::Le
+                        | BinOpKind::EqEq
+                        | BinOpKind::Ne
+                        | BinOpKind::Ge
+                        | BinOpKind::Gt,
+                        l,
+                        r,
+                    ) => {
+                        if l.can_be_logically_compared_to(r) {
+                            &HirTyKind::Primitive(PrimitiveType::Bool)
+                        } else {
+                            &HirTyKind::err()
+                        }
+                    }
+
+                    (BinOpKind::AndAnd | BinOpKind::OrOr, l, r) => {
+                        if l.is_bool() && r.is_bool() {
+                            &HirTyKind::Primitive(PrimitiveType::Bool)
+                        } else {
+                            &HirTyKind::err()
+                        }
+                    }
+                }
+            }
+            HirExprKind::Var(name) => {
+                let var = self.scope_manager.resolve_variable(&name.to_string()).unwrap();
+                &var.ty
+            }
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
 
