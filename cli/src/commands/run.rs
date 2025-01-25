@@ -52,6 +52,6 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
         },
         "to execute project",
     )?;
- 
+
     Ok(())
 }

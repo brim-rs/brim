@@ -135,6 +135,7 @@ dependencies = [
  "brim-diag-macro",
  "brim-diagnostics",
  "brim-fs",
+ "brim-hir",
  "brim-lexer",
  "brim-parser",
  "brim-shell",

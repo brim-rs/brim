@@ -1,7 +1,8 @@
 [workspace]
 members = ["cli", "crates/brim_config", "crates/brim_cpp_compiler", "crates/brim_fs", "crates/brim_shell", "crates/brim_diagnostics/lib",
     "crates/brim_diagnostics/playground", "crates/brim_lexer", "crates/brim",
-    "crates/brim_span", "crates/brim_span", "crates/brim_parser", "crates/brim_ast", "crates/brim_index", "crates/brim_diag_macro", "snap", "crates/brim_symbols_macro", "crates/brim_ctx", "crates/brim_hir"]
+    "crates/brim_span", "crates/brim_span", "crates/brim_parser", "crates/brim_ast", "crates/brim_index",
+    "crates/brim_diag_macro", "snap", "crates/brim_symbols_macro", "crates/brim_ctx", "crates/brim_hir"]
 resolver = "1"
 
 [workspace.dependencies]
