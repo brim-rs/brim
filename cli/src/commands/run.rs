@@ -1,8 +1,11 @@
-use crate::cli::{
-    debug_mode, dynamic_lib_mode, min_size_rel_mode, opt, rel_with_deb_info_mode, release_mode,
-    static_lib_mode,
+use crate::{
+    cli::{
+        debug_mode, dynamic_lib_mode, min_size_rel_mode, opt, rel_with_deb_info_mode, release_mode,
+        static_lib_mode,
+    },
+    plural::plural,
 };
-use anyhow::Result;
+use anyhow::{Result, bail};
 use brim::{
     ModuleId,
     compiler::CompilerContext,
@@ -63,6 +66,15 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
             let module_map = resolver.create_module_map(&mut barrel, &mut visited)?;
 
             let (hir, comp) = sess.analyze(module_map, resolver.ctx)?;
+
+            let emitted = comp.emitted.len();
+            if emitted > 0 {
+                bail!(
+                    "Compilation failed due to {} {}",
+                    emitted,
+                    plural(emitted, "error", "errors")
+                )
+            }
 
             match sess.run_codegen(hir, main_file) {
                 Ok(_) => {}
