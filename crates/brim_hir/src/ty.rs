@@ -40,6 +40,9 @@ pub enum HirTyKind {
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),
+    
+    /// Placeholder for the type of expression that has not been type checked yet
+    Placeholder,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
