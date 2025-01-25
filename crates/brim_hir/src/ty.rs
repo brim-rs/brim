@@ -37,3 +37,45 @@ pub enum HirTyKind {
     /// Placeholder for the type of expression that has not been type checked yet
     Placeholder,
 }
+
+impl HirTyKind {
+    pub fn is_numeric(&self) -> bool {
+        match self {
+            HirTyKind::Primitive(PrimitiveType::I8)
+            | HirTyKind::Primitive(PrimitiveType::I16)
+            | HirTyKind::Primitive(PrimitiveType::I32)
+            | HirTyKind::Primitive(PrimitiveType::I64)
+
+            | HirTyKind::Primitive(PrimitiveType::U8)
+            | HirTyKind::Primitive(PrimitiveType::U16)
+            | HirTyKind::Primitive(PrimitiveType::U32)
+            | HirTyKind::Primitive(PrimitiveType::U64)
+
+            | HirTyKind::Primitive(PrimitiveType::F32)
+            | HirTyKind::Primitive(PrimitiveType::F64) => true,
+            _ => false,
+        }
+    }
+    
+    pub fn is_bool(&self) -> bool {
+        match self {
+            HirTyKind::Primitive(PrimitiveType::Bool) => true,
+            _ => false,
+        }
+    }
+    
+    pub fn can_be_dereferenced(&self) -> bool {
+        match self {
+            HirTyKind::Ref(_, _) | HirTyKind::Ptr(_, _) => true,
+            _ => false,
+        }
+    }
+    
+    pub fn err() -> Self {
+        HirTyKind::Err(ErrorEmitted::new())
+    }
+    
+    pub fn void() -> Self {
+        HirTyKind::Primitive(PrimitiveType::Void)
+    }
+}

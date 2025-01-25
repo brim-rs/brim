@@ -83,6 +83,7 @@ pub enum PrimitiveType {
     Bool,
     Char,
     Str,
+    Void,
 }
 
 impl PrimitiveType {
@@ -105,6 +106,40 @@ impl PrimitiveType {
             "bool" => Some(PrimitiveType::Bool),
             "char" => Some(PrimitiveType::Char),
             "str" => Some(PrimitiveType::Str),
+            _ => None,
+        }
+    }
+
+    pub fn promote_type(left: &PrimitiveType, right: &PrimitiveType) -> Option<PrimitiveType> {
+        use PrimitiveType::*;
+
+        match (left, right) {
+            // Integer promotion
+            (I8, I16) | (I16, I8) => Some(I16),
+            (I16, I32) | (I32, I16) => Some(I32),
+            (I32, I64) | (I64, I32) => Some(I64),
+
+            // Unsigned integer promotion
+            (U8, U16) | (U16, U8) => Some(U16),
+            (U16, U32) | (U32, U16) => Some(U32),
+            (U32, U64) | (U64, U32) => Some(U64),
+
+            // Mixed integer and float promotion
+            (I32, F32) | (F32, I32) => Some(F32),
+            (I32, F64) | (F64, I32) => Some(F64),
+            (U32, F32) | (F32, U32) => Some(F32),
+            (U32, F64) | (F64, U32) => Some(F64),
+
+            // Float promotion
+            (F32, F64) | (F64, F32) => Some(F64),
+
+            // Same types
+            (l, r) if l == r => Some(l.clone()),
+
+            // String promotion
+            (Str, Char) | (Char, Str) => Some(Str),
+            
+            // Default case
             _ => None,
         }
     }

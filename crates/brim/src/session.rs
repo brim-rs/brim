@@ -19,6 +19,7 @@ use brim_span::files::{
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
+use brim_hir::inference::infer_types;
 
 #[derive(Debug)]
 pub struct Session {
@@ -168,8 +169,11 @@ impl Session {
         let mut name_resolver = NameResolver::new(validator.ctx, map.clone());
         name_resolver.resolve_names();
 
-        let hir = transform_module(map.clone());
+        let hir = &mut transform_module(map.clone());
 
+        infer_types(hir);
+
+        println!("{:#?}", hir.modules);
         Ok(())
     }
 }

@@ -2,6 +2,7 @@ use crate::{HirId, expr::HirConstExpr, ty::HirTy};
 use brim_ast::item::Ident;
 use brim_span::span::Span;
 use std::path::PathBuf;
+use crate::ty::HirTyKind;
 
 #[derive(Clone, Debug)]
 pub struct HirItem {
@@ -40,6 +41,8 @@ pub struct HirFn {
     pub sig: HirFnSig,
     /// ID of the function body block
     pub body: Option<HirId>,
+    /// Return type specified by the user or the default return type. Different from the signature return type.
+    pub ret_type: HirTyKind,
 }
 
 #[derive(Clone, Debug)]

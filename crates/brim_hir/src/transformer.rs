@@ -39,40 +39,61 @@ pub struct HirModuleMap {
 }
 
 impl HirModuleMap {
+    /// Create a new, empty HirModuleMap
     pub fn new() -> Self {
         Self {
-            modules: vec![],
-            hir_items: Default::default(),
+            modules: Vec::new(),
+            hir_items: HashMap::new(),
         }
     }
 
+    /// Insert a HIR item with a given ID
     pub fn insert_hir_item(&mut self, id: HirId, item: StoredHirItem) {
         self.hir_items.insert(id, item);
     }
 
+    /// Convenience method to insert a HIR expression
     pub fn insert_hir_expr(&mut self, id: HirId, expr: HirExpr) {
         self.hir_items.insert(id, StoredHirItem::Expr(expr));
     }
 
+    /// Convenience method to insert a HIR statement
     pub fn insert_hir_stmt(&mut self, id: HirId, stmt: HirStmt) {
         self.hir_items.insert(id, StoredHirItem::Stmt(stmt));
     }
 
+    /// Add a new module to the map
     pub fn new_module(&mut self, module: HirModule) {
         self.modules.push(module);
     }
 
+    /// Retrieve an immutable reference to a HIR item by ID
     pub fn get(&self, id: HirId) -> Option<&StoredHirItem> {
         self.hir_items.get(&id)
     }
 
+    /// Retrieve a mutable reference to a HIR item by ID
+    pub fn get_mut(&mut self, id: HirId) -> Option<&mut StoredHirItem> {
+        self.hir_items.get_mut(&id)
+    }
+
+    /// Immutable getter for HIR items with panic on incorrect type
     pub fn get_item(&self, id: HirId) -> &HirItem {
         match self.get(id) {
             Some(StoredHirItem::Item(item)) => item,
-            _ => panic!("Expected item"),
+            _ => panic!("Expected item for ID {:?}", id),
         }
     }
 
+    /// Mutable getter for HIR items
+    pub fn get_item_mut(&mut self, id: HirId) -> &mut HirItem {
+        match self.get_mut(id) {
+            Some(StoredHirItem::Item(item)) => item,
+            _ => panic!("Expected item for ID {:?}", id),
+        }
+    }
+
+    /// Safe immutable getter for HIR items
     pub fn get_item_safe(&self, id: HirId) -> Option<&HirItem> {
         match self.get(id) {
             Some(StoredHirItem::Item(item)) => Some(item),
@@ -80,13 +101,31 @@ impl HirModuleMap {
         }
     }
 
-    pub fn get_expr(&self, id: HirId) -> &HirExpr {
-        match self.get(id) {
-            Some(StoredHirItem::Expr(expr)) => expr,
-            _ => panic!("Expected expr"),
+    /// Safe mutable getter for HIR items
+    pub fn get_item_safe_mut(&mut self, id: HirId) -> Option<&mut HirItem> {
+        match self.get_mut(id) {
+            Some(StoredHirItem::Item(item)) => Some(item),
+            _ => None,
         }
     }
 
+    /// Immutable getter for HIR expressions with panic on incorrect type
+    pub fn get_expr(&self, id: HirId) -> &HirExpr {
+        match self.get(id) {
+            Some(StoredHirItem::Expr(expr)) => expr,
+            _ => panic!("Expected expr for ID {:?}", id),
+        }
+    }
+
+    /// Mutable getter for HIR expressions
+    pub fn get_expr_mut(&mut self, id: HirId) -> &mut HirExpr {
+        match self.get_mut(id) {
+            Some(StoredHirItem::Expr(expr)) => expr,
+            _ => panic!("Expected expr for ID {:?}", id),
+        }
+    }
+
+    /// Safe immutable getter for HIR expressions
     pub fn get_expr_safe(&self, id: HirId) -> Option<&HirExpr> {
         match self.get(id) {
             Some(StoredHirItem::Expr(expr)) => Some(expr),
@@ -94,18 +133,67 @@ impl HirModuleMap {
         }
     }
 
-    pub fn get_stmt(&self, id: HirId) -> &HirStmt {
-        match self.get(id) {
-            Some(StoredHirItem::Stmt(stmt)) => stmt,
-            _ => panic!("Expected stmt"),
+    /// Safe mutable getter for HIR expressions
+    pub fn get_expr_safe_mut(&mut self, id: HirId) -> Option<&mut HirExpr> {
+        match self.get_mut(id) {
+            Some(StoredHirItem::Expr(expr)) => Some(expr),
+            _ => None,
         }
     }
 
+    /// Immutable getter for HIR statements with panic on incorrect type
+    pub fn get_stmt(&self, id: HirId) -> &HirStmt {
+        match self.get(id) {
+            Some(StoredHirItem::Stmt(stmt)) => stmt,
+            _ => panic!("Expected stmt for ID {:?}", id),
+        }
+    }
+
+    /// Mutable getter for HIR statements
+    pub fn get_stmt_mut(&mut self, id: HirId) -> &mut HirStmt {
+        match self.get_mut(id) {
+            Some(StoredHirItem::Stmt(stmt)) => stmt,
+            _ => panic!("Expected stmt for ID {:?}", id),
+        }
+    }
+
+    /// Safe immutable getter for HIR statements
     pub fn get_stmt_safe(&self, id: HirId) -> Option<&HirStmt> {
         match self.get(id) {
             Some(StoredHirItem::Stmt(stmt)) => Some(stmt),
             _ => None,
         }
+    }
+
+    /// Safe mutable getter for HIR statements
+    pub fn get_stmt_safe_mut(&mut self, id: HirId) -> Option<&mut HirStmt> {
+        match self.get_mut(id) {
+            Some(StoredHirItem::Stmt(stmt)) => Some(stmt),
+            _ => None,
+        }
+    }
+
+    /// Return the number of items in the map
+    pub fn len(&self) -> usize {
+        self.hir_items.len()
+    }
+
+    /// Check if the map is empty
+    pub fn is_empty(&self) -> bool {
+        self.hir_items.is_empty()
+    }
+
+    /// Clear all items from the map
+    pub fn clear(&mut self) {
+        self.hir_items.clear();
+        self.modules.clear();
+    }
+}
+
+// Implement Default trait for convenience
+impl Default for HirModuleMap {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -219,6 +307,7 @@ impl Transformer {
                         },
                         span: f_decl.sig.span,
                     },
+                    ret_type: HirTyKind::Placeholder,
                     body,
                 })
             }
@@ -279,7 +368,7 @@ impl Transformer {
             kind: match stmt.kind {
                 StmtKind::Expr(expr) => HirStmtKind::Expr(self.transform_expr(expr).0),
                 StmtKind::Let(le) => HirStmtKind::Let {
-                    ty: le.ty.map(|ty| self.transform_ty(ty)),
+                    ty: le.ty.map(|ty| self.transform_ty(ty).kind),
                     ident: le.ident,
                     value: le.value.map(|expr| self.transform_expr(expr).0),
                 },
