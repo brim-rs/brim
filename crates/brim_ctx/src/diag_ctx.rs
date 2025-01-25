@@ -6,7 +6,7 @@ use brim_diagnostics::{
 use brim_span::files::SimpleFiles;
 use std::{fmt::Debug, io::stderr};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DiagnosticContext {
     pub config: DiagConfig,
 }

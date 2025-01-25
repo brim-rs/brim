@@ -188,6 +188,11 @@ impl HirModuleMap {
         self.hir_items.clear();
         self.modules.clear();
     }
+
+    /// Get module by ID
+    pub fn get_module(&self, id: ModuleId) -> Option<&HirModule> {
+        self.modules.iter().find(|module| module.mod_id == id)
+    }
 }
 
 // Implement Default trait for convenience
@@ -210,7 +215,19 @@ pub struct HirModule {
     pub mod_id: ModuleId,
     pub items: Vec<HirItem>,
     // Not sure if this will be needed
-    path: PathBuf,
+    pub path: PathBuf,
+}
+
+impl HirModule {
+    pub fn get_fn(&self, name: &str) -> Option<&HirFn> {
+        self.items
+            .iter()
+            .filter_map(|item| match &item.kind {
+                HirItemKind::Fn(f) if f.sig.name.to_string() == name => Some(f),
+                _ => None,
+            })
+            .next()
+    }
 }
 
 #[derive(Debug)]

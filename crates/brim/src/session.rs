@@ -8,14 +8,24 @@ use brim_ctx::{
     compiler::CompilerContext,
     modules::{ModuleMap, SymbolCollector},
 };
+use brim_diag_macro::Diagnostic;
+use brim_diagnostics::{
+    box_diag,
+    diagnostic::{Label, LabelStyle, Severity, ToDiagnostic},
+};
 use brim_fs::{
     loader::{BrimFileLoader, FileLoader},
     path,
 };
-use brim_hir::{inference::infer_types, transformer::transform_module};
+use brim_hir::{
+    inference::infer_types,
+    transformer::{HirModule, HirModuleMap, transform_module},
+};
+use brim_parser::parser::PResult;
 use brim_shell::Shell;
-use brim_span::files::{
-    SimpleFile, add_file, get_file, get_file_by_name, get_index_by_name, update_file,
+use brim_span::{
+    files::{SimpleFile, add_file, get_file, get_file_by_name, get_index_by_name, update_file},
+    span::Span,
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
@@ -114,7 +124,7 @@ impl Session {
         &mut self,
         mut map: ModuleMap,
         ctx: &'a mut CompilerContext<'a>,
-    ) -> Result<()> {
+    ) -> Result<(HirModuleMap, &'a mut CompilerContext<'a>)> {
         let map = &mut map;
 
         let mut validator = AstValidator::new(ctx);
@@ -169,10 +179,29 @@ impl Session {
         name_resolver.resolve_names();
 
         let hir = &mut transform_module(map.clone());
-
         infer_types(hir);
 
-        println!("{:#?}", hir);
+        // TODO: type checking etc.
+
+        Ok((hir.clone(), name_resolver.ctx))
+    }
+
+    pub fn run_codegen(&mut self, hir: HirModuleMap, main_file: usize) -> PResult<()> {
+        let main_mod = hir.get_module(ModuleId::from_usize(main_file)).unwrap();
+        let main_fn = main_mod.get_fn("main");
+
+        if let None = main_fn {
+            box_diag!(NoMainFunction {
+                file: main_mod.path.display().to_string(),
+            });
+        }
+
         Ok(())
     }
+}
+
+#[derive(Diagnostic)]
+#[error("Entrypoint file: '{file}' doesn't contain a main function")]
+pub struct NoMainFunction {
+    pub file: String,
 }

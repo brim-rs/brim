@@ -3,10 +3,13 @@ use crate::cli::{
     static_lib_mode,
 };
 use anyhow::Result;
-use brim::{compiler::CompilerContext, resolver::Resolver, session::Session, toml::ProjectType};
+use brim::{
+    ModuleId, compiler::CompilerContext, resolver::Resolver, session::Session, toml::ProjectType,
+};
 use brim_parser::parser::Parser;
 use clap::Command;
 use std::collections::HashSet;
+use brim::files::{files, SimpleFiles};
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -46,7 +49,14 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
             let mut visited = HashSet::new();
             let module_map = resolver.create_module_map(&mut barrel, &mut visited)?;
 
-            sess.analyze(module_map, resolver.ctx)?;
+            let (hir, comp) = sess.analyze(module_map, resolver.ctx)?;
+
+            match sess.run_codegen(hir, main_file) {
+                Ok(_) => {}
+                Err(e) => {
+                    comp.dcx().emit_inner(e.to_diagnostic(), &SimpleFiles::from_files(files()));
+                }
+            }
 
             Ok(())
         },

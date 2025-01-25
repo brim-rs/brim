@@ -1,0 +1,11 @@
+[package]
+name = "brim-codegen"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+brim-ast = { workspace = true }
+brim-hir = { workspace = true }
+
+[lints]
+workspace = true

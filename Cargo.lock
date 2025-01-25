@@ -171,6 +171,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "brim-codegen"
+version = "0.1.0"
+dependencies = [
+ "brim-ast",
+ "brim-hir",
+]
+
+[[package]]
 name = "brim-config"
 version = "0.1.0"
 dependencies = [
