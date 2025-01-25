@@ -75,7 +75,7 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
                     plural(emitted, "error", "errors")
                 )
             }
-
+            
             match sess.run_codegen(hir, main_file) {
                 Ok(_) => {}
                 Err(e) => {

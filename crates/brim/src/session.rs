@@ -2,7 +2,7 @@ use crate::{name::NameResolver, validator::AstValidator};
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim_ast::item::{ImportsKind, ItemKind};
-use brim_codegen::CodeBuilder;
+use brim_codegen::{CodeBuilder, codegen::CppCodegen};
 use brim_config::toml::{Config, ProjectType};
 use brim_ctx::{
     GlobalSymbolId, ModuleId,
@@ -30,7 +30,6 @@ use brim_span::{
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
-use brim_codegen::codegen::CppCodegen;
 
 #[derive(Debug)]
 pub struct Session {
@@ -41,6 +40,7 @@ pub struct Session {
     pub measure_time: bool,
     file_loader: BrimFileLoader,
     shell: Shell,
+    pub display_cpp: bool,
 }
 
 impl Session {
@@ -53,6 +53,7 @@ impl Session {
             measure_time: false,
             file_loader: BrimFileLoader,
             shell: Shell::new(color_choice),
+            display_cpp: false,
         }
     }
 
@@ -201,6 +202,11 @@ impl Session {
         let mut codegen = CppCodegen::new();
         for module in hir.modules {
             codegen.generate_module(module);
+        }
+        
+        let code = codegen.code.build();
+        if self.display_cpp {
+            println!("{}", code.clone());
         }
 
         Ok(())

@@ -47,6 +47,10 @@ fn main() -> Result<()> {
             if args.get_flag("time") {
                 sess.measure_time = true;
             }
+            
+            if cmd.1.get_flag("codegen-debug") {
+                sess.display_cpp = true;
+            }
 
             exec_command(sess, comp, run_command)?;
         }
