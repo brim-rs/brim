@@ -17,6 +17,7 @@ brim-ast = { workspace = true }
 brim-diag-macro = { workspace = true }
 brim-parser = { workspace = true }
 brim-ctx = { workspace = true }
+brim-hir = { workspace = true }
 
 [features]
 snap = []
