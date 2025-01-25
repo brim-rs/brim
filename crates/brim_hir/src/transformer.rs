@@ -5,10 +5,7 @@ use crate::{
     stmts::HirStmt,
     ty::HirTy,
 };
-use brim_ast::{
-    NodeId,
-    item::{Item, ItemKind},
-};
+use brim_ast::{NodeId, item::{Item, ItemKind}, ErrorEmitted};
 use brim_ctx::{
     ModuleId,
     modules::{Module, ModuleMap},
@@ -17,6 +14,7 @@ use std::{collections::HashMap, path::PathBuf};
 use brim_ast::expr::{BinOpKind, ConstExpr, Expr, ExprKind};
 use brim_ast::item::{FnReturnType, GenericKind};
 use brim_ast::token::AssignOpToken;
+use brim_ast::ty::TyKind;
 use crate::expr::{HirConstExpr, HirExprKind};
 use crate::items::HirGenericKind;
 use crate::ty::HirTyKind;
@@ -233,6 +231,37 @@ impl Transformer {
         self.map.insert_hir_expr(expr.id, expr.clone());
 
         (expr.clone(), expr.id)
+    }
+    
+    pub fn transform_ty(&mut self, ty: brim_ast::ty::Ty) -> HirTy {
+        HirTy {
+            id: self.hir_id(),
+            span: ty.span,
+            kind: match ty.kind {
+                TyKind::Ptr(ty, cnst) => HirTyKind::Ptr(Box::new(self.transform_ty(*ty)), cnst),
+                TyKind::Array(ty, len) => HirTyKind::Array(Box::new(self.transform_ty(*ty)), self.transform_const_expr(len)),
+                TyKind::Ref(ty, cnst) => HirTyKind::Ref(Box::new(self.transform_ty(*ty)), cnst),
+                TyKind::Primitive(primitive) => HirTyKind::Primitive(primitive),
+                TyKind::Vec(ty) => HirTyKind::Vec(Box::new(self.transform_ty(*ty))),
+                TyKind::Const(ty) => HirTyKind::Const(Box::new(self.transform_ty(*ty))),
+                TyKind::Ident { ident, generics } => HirTyKind::Ident {
+                    ident,
+                    generics: HirGenerics {
+                        params: generics
+                            .params
+                            .iter()
+                            .map(|param| HirGenericParam {
+                                id: HirId::from_u32(param.id.as_u32()),
+                                name: param.ident,
+                                kind: self.hir_generic_kind(param.kind.clone()),
+                            })
+                            .collect(),
+                        span: generics.span,
+                    },
+                },
+                TyKind::Err(e) => HirTyKind::Err(e),
+            },
+        }
     }
 
     pub fn transform_const_expr(&mut self, expr: ConstExpr) -> HirConstExpr {

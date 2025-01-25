@@ -1,5 +1,6 @@
 use crate::{HirId, expr::HirConstExpr, items::HirGenerics};
 use brim_ast::{ErrorEmitted, expr::ConstExpr, item::Ident};
+use brim_ast::ty::{Const, PrimitiveType};
 use brim_span::span::Span;
 
 #[derive(Debug, Clone)]
@@ -7,18 +8,6 @@ pub struct HirTy {
     pub id: HirId,
     pub kind: HirTyKind,
     pub span: Span,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Const {
-    Yes,
-    No,
-}
-
-impl Const {
-    pub fn from_bool(b: bool) -> Self {
-        if b { Const::Yes } else { Const::No }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -43,27 +32,4 @@ pub enum HirTyKind {
     
     /// Placeholder for the type of expression that has not been type checked yet
     Placeholder,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PrimitiveType {
-    // Signed integers
-    I8,
-    I16,
-    I32,
-    I64,
-
-    // Unsigned integers
-    U8,
-    U16,
-    U32,
-    U64,
-
-    // Floating point numbers
-    F32,
-    F64,
-
-    Bool,
-    Char,
-    Str,
 }
