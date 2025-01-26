@@ -32,7 +32,7 @@ impl<'a> Parser<'a> {
             } else {
                 TyKind::Ident {
                     ident,
-                    generics: self.parse_generics()?,
+                    generics: self.parse_argument_generics()?,
                 }
             }
         };

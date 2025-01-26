@@ -155,6 +155,18 @@ pub struct Generics {
 }
 
 #[derive(Clone, Debug)]
+pub struct GenericArgs {
+    pub span: Span,
+    pub params: Vec<GenericArg>,
+}
+
+#[derive(Clone, Debug)]
+pub struct GenericArg {
+    pub id: NodeId,
+    pub ty: Ty,
+}
+
+#[derive(Clone, Debug)]
 pub struct GenericParam {
     pub id: NodeId,
     pub ident: Ident,

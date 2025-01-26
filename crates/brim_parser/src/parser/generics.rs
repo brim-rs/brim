@@ -7,6 +7,7 @@ use brim_ast::{
     item::{GenericKind, GenericParam, Generics},
     token::TokenKind,
 };
+use brim_ast::item::{GenericArg, GenericArgs};
 
 impl<'a> Parser<'a> {
     pub fn parse_generics(&mut self) -> PResult<'a, Generics> {
@@ -32,6 +33,50 @@ impl<'a> Parser<'a> {
         Ok(Generics {
             span: token.to(self.prev().span),
             params,
+        })
+    }
+
+    /// Parses the generic arguments provided as an argument. eg: `foo<T, U>`
+    pub fn parse_argument_generics(&mut self) -> PResult<'a, GenericArgs> {
+        let token = self.current().span;
+        if !self.eat(TokenKind::Lt) {
+            // no generics. return early
+            return Ok(GenericArgs {
+                span: self.prev().span.from_end(),
+                params: vec![],
+            });
+        }
+
+        let params = {
+            let mut params = vec![];
+
+            loop {
+                let ty = self.parse_type()?;
+
+                params.push(GenericArg {
+                    id: self.new_id(),
+                    ty,
+                });
+
+                if !self.eat(TokenKind::Comma) {
+                    break;
+                }
+            }
+
+            params
+        };
+
+        if !self.eat(TokenKind::Gt) {
+            let expected_span = self.prev().span.from_end();
+
+            self.emit(ExpectedClosingGenerics {
+                span: (expected_span, self.file),
+            });
+        }
+
+        Ok(GenericArgs {
+            span: token.to(self.prev().span),
+            params
         })
     }
 

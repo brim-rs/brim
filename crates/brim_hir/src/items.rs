@@ -2,6 +2,8 @@ use crate::{HirId, expr::HirConstExpr, ty::HirTy};
 use brim_ast::item::Ident;
 use brim_span::span::Span;
 use std::path::PathBuf;
+use brim_ast::NodeId;
+use brim_ast::ty::Ty;
 use crate::ty::HirTyKind;
 
 #[derive(Clone, Debug)]
@@ -60,6 +62,18 @@ pub struct HirFnSig {
 pub struct HirGenerics {
     pub params: Vec<HirGenericParam>,
     pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub struct HirGenericArgs {
+    pub span: Span,
+    pub params: Vec<HirGenericArg>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HirGenericArg {
+    pub id: HirId,
+    pub ty: HirTy,
 }
 
 #[derive(Clone, Debug)]

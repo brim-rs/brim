@@ -1,5 +1,5 @@
-use brim_hir::transformer::HirModule;
 use crate::CodeBuilder;
+use brim_hir::transformer::HirModule;
 
 #[derive(Debug)]
 pub struct CppCodegen {
@@ -8,33 +8,25 @@ pub struct CppCodegen {
 
 impl CppCodegen {
     pub fn new() -> Self {
-        Self {
-            code: CodeBuilder::new(4),
+        let mut code = CodeBuilder::new(4);
+
+        for import in &["string", "vector", "cstdint"] {
+            code.add_line(&format!("#include <{}>", import));
         }
+
+        Self { code }
     }
 
-    pub fn add_include(&mut self, include: &str) {
-        self.code.add_line(&format!("#include <{}>", include));
-    }
-
-    pub fn add_namespace<F>(&mut self, namespace: &str, body: F)
-    where
-        F: FnOnce(&mut CodeBuilder),
-    {
-        self.code.add_line(&format!("namespace {} {{", namespace));
+    pub fn generate_module(&mut self, module: HirModule) {
+        self.code
+            .add_line(&format!("namespace module{} {{", module.mod_id.as_u32()));
         self.code.increase_indent();
-        body(&mut self.code);
+
+        for item in module.items {
+            self.generate_item(item);
+        }
+
         self.code.decrease_indent();
         self.code.add_line("}");
     }
-    
-    /// Translates to namespace with name being `module{id}`
-    pub fn generate_module(&mut self, module: HirModule) {
-        self.add_namespace(&format!("module{}", module.mod_id.as_u32()), |code| {
-            for item in module.items {
-                
-            }
-        });
-    }
-    
 }

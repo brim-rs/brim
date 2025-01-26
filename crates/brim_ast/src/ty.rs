@@ -4,6 +4,7 @@ use crate::{
     item::{Generics, Ident},
 };
 use brim_span::span::Span;
+use crate::item::GenericArgs;
 
 #[derive(Debug, Clone)]
 pub struct Ty {
@@ -56,7 +57,7 @@ pub enum TyKind {
     /// Primitive type eg. `i32` (brim) -> `int32_t` (C++)
     Primitive(PrimitiveType),
     /// Any other type that can be enum, struct, type, etc.
-    Ident { ident: Ident, generics: Generics },
+    Ident { ident: Ident, generics: GenericArgs },
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),

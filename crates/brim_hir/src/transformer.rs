@@ -20,6 +20,7 @@ use brim_ctx::{
     modules::{Module, ModuleMap},
 };
 use std::{collections::HashMap, path::PathBuf};
+use crate::items::{HirGenericArg, HirGenericArgs};
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -497,14 +498,13 @@ impl Transformer {
                 TyKind::Const(ty) => HirTyKind::Const(Box::new(self.transform_ty(*ty))),
                 TyKind::Ident { ident, generics } => HirTyKind::Ident {
                     ident,
-                    generics: HirGenerics {
+                    generics: HirGenericArgs {
                         params: generics
                             .params
                             .iter()
-                            .map(|param| HirGenericParam {
-                                id: HirId::from_u32(param.id.as_u32()),
-                                name: param.ident,
-                                kind: self.hir_generic_kind(param.kind.clone()),
+                            .map(|param| HirGenericArg {
+                                id: self.hir_id(),
+                                ty: self.transform_ty(param.ty.clone()),
                             })
                             .collect(),
                         span: generics.span,
