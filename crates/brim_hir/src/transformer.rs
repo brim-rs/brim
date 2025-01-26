@@ -2,8 +2,8 @@ use crate::{
     HirId,
     expr::{HirBlock, HirConstExpr, HirExpr, HirExprKind},
     items::{
-        HirFn, HirFnSig, HirGenericKind, HirGenericParam, HirGenerics, HirImportsKind, HirItem,
-        HirItemKind, HirParam, HirUse,
+        HirFn, HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam,
+        HirGenerics, HirImportsKind, HirItem, HirItemKind, HirParam, HirUse,
     },
     stmts::{HirStmt, HirStmtKind},
     ty::{HirTy, HirTyKind},
@@ -20,7 +20,6 @@ use brim_ctx::{
     modules::{Module, ModuleMap},
 };
 use std::{collections::HashMap, path::PathBuf};
-use crate::items::{HirGenericArg, HirGenericArgs};
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -194,6 +193,15 @@ impl HirModuleMap {
     pub fn get_module(&self, id: ModuleId) -> Option<&HirModule> {
         self.modules.iter().find(|module| module.mod_id == id)
     }
+
+    pub fn update_modules_imports(&mut self, mod_id: ModuleId, imports: Vec<HirId>) {
+        for module in &mut self.modules {
+            if module.mod_id == mod_id {
+                module.imports = imports;
+                return;
+            }
+        }
+    }
 }
 
 // Implement Default trait for convenience
@@ -217,6 +225,7 @@ pub struct HirModule {
     pub items: Vec<HirItem>,
     // Not sure if this will be needed
     pub path: PathBuf,
+    pub imports: Vec<HirId>,
 }
 
 impl HirModule {
@@ -252,25 +261,100 @@ impl Transformer {
     pub fn transform_modules(&mut self) -> HirModuleMap {
         for module in self.module_map.modules.clone() {
             self.current_mod_id = ModuleId::from_usize(module.barrel.file_id);
-            let hir_module = self.transform_module(module);
-            self.map.new_module(hir_module);
+            self.transform_module(module);
+        }
+
+        for module in self.map.modules.clone() {
+            // TODO: this monstrosity needs to be refactored
+            for item in module.items {
+                if let HirItemKind::Use(u) = &item.kind {
+                    let module_id = ModuleId::from_usize(module.mod_id.as_usize());
+                    let module = self
+                        .module_map
+                        .module_by_import(GlobalSymbolId {
+                            mod_id: module_id,
+                            item_id: item.old_sym_id.item_id,
+                        })
+                        .unwrap();
+                    let resolved_id = ModuleId::from_usize(module.barrel.file_id);
+
+                    let import_symbols: Vec<GlobalSymbolId> = match &u.imports {
+                        HirImportsKind::All => self
+                            .module_map
+                            .find_symbols_in_module(Some(resolved_id))
+                            .iter()
+                            .map(|symbol| GlobalSymbolId {
+                                mod_id: resolved_id,
+                                item_id: symbol.item_id,
+                            })
+                            .collect(),
+                        HirImportsKind::List(list) => list
+                            .iter()
+                            .flat_map(|import| {
+                                self.module_map
+                                    .find_symbol_by_name(&import.to_string(), Some(resolved_id))
+                            })
+                            .map(|symbol| GlobalSymbolId {
+                                mod_id: resolved_id,
+                                item_id: symbol.item_id,
+                            })
+                            .collect(),
+                    };
+
+                    let mut ids = vec![];
+                    for symbol in import_symbols {
+                        let mut hir_id = self.map.hir_items.iter().find_map(|(id, item)| {
+                            if let StoredHirItem::Item(item) = item {
+                                if item.old_sym_id == symbol {
+                                    Some(*id)
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            }
+                        });
+
+                        // If we couldn't find the symbol in the global items, then we look into the module
+                        if let None = hir_id {
+                            let module = self.map.get_module(symbol.mod_id).unwrap();
+
+                            for item in &module.items {
+                                if item.old_sym_id == symbol {
+                                    hir_id = Some(item.id);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if let Some(id) = hir_id {
+                            ids.push(id);
+                        }
+                    }
+
+                    self.map.update_modules_imports(module_id, ids);
+                }
+            }
         }
 
         self.map.clone()
     }
 
-    pub fn transform_module(&mut self, module: Module) -> HirModule {
-        let items = module
+    pub fn transform_module(&mut self, module: Module) {
+        let items: Vec<HirItem> = module
             .barrel
             .items
             .iter()
             .map(|item| self.transform_item(item.clone()))
             .collect();
-        HirModule {
+
+        let new_module = HirModule {
             mod_id: ModuleId::from_usize(module.barrel.file_id),
             items,
             path: module.path,
-        }
+            imports: vec![],
+        };
+        self.map.new_module(new_module.clone());
     }
 
     pub fn transform_item(&mut self, item: Item) -> HirItem {
@@ -353,6 +437,10 @@ impl Transformer {
 
         let item = HirItem {
             id: self.hir_id(),
+            old_sym_id: GlobalSymbolId {
+                item_id: item.id,
+                mod_id: self.current_mod_id,
+            },
             span: item.span,
             ident: item.ident,
             kind: hir_item_kind,

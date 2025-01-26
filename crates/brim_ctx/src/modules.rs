@@ -19,7 +19,6 @@ pub struct ModuleMap {
     pub modules: Vec<Module>,
     pub symbols: HashMap<GlobalSymbolId, GlobalSymbol>,
     pub imports: HashMap<GlobalSymbolId, PathBuf>,
-    pub associated_symbols: HashMap<NodeId, GlobalSymbolId>,
 }
 
 impl ModuleMap {
@@ -28,7 +27,6 @@ impl ModuleMap {
             modules: vec![],
             symbols: HashMap::new(),
             imports: HashMap::new(),
-            associated_symbols: HashMap::new(),
         }
     }
 
@@ -146,12 +144,6 @@ impl ModuleMap {
             .chain(imported_symbols.iter())
             .find(|symbol| symbol.name.to_string() == name)
             .copied()
-    }
-
-    /// Associates a symbol with a node in the AST. Useful for things like assign function to call
-    /// expressions etc.
-    pub fn assign_symbol(&mut self, node_id: NodeId, symbol_id: GlobalSymbolId) {
-        self.associated_symbols.insert(node_id, symbol_id);
     }
 }
 

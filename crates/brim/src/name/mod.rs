@@ -9,7 +9,9 @@ use brim_ast::{
     expr::{Expr, ExprKind},
     item::{Block, FnDecl},
 };
-use brim_ctx::{ModuleId, compiler::CompilerContext, modules::ModuleMap, walker::AstWalker};
+use brim_ctx::{
+    GlobalSymbolId, ModuleId, compiler::CompilerContext, modules::ModuleMap, walker::AstWalker,
+};
 use brim_diagnostics::diag_opt;
 use tracing::debug;
 
@@ -145,7 +147,14 @@ impl<'a> AstWalker for NameResolver<'a> {
                     });
                 }
                 let sym = func_sym.unwrap();
-                self.map.assign_symbol(expr.id, sym.id.clone());
+                self.map.assign_symbol(
+                    // it's not a symbol, but we need to identify the module and function
+                    GlobalSymbolId {
+                        mod_id,
+                        item_id: expr.id,
+                    },
+                    sym.id.clone(),
+                );
 
                 for arg in args {
                     self.visit_expr(arg);

@@ -14,6 +14,15 @@ pub struct HirExpr {
     pub ty: HirTyKind,
 }
 
+impl HirExpr {
+    pub fn as_ident(&self) -> Option<&Ident> {
+        match &self.kind {
+            HirExprKind::Var(ident) => Some(ident),
+            _ => None,
+        }
+    }
+}
+
 // We no longer need parenthesized expressions, because the tree defines the structure.
 #[derive(Clone, Debug)]
 pub enum HirExprKind {

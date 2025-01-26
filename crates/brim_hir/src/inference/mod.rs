@@ -269,6 +269,11 @@ impl<'a> TypeInference<'a> {
                     .unwrap();
                 &var.ty
             }
+            HirExprKind::Call(ident, args) => { 
+                println!("Call: {:#?}", self.hir);
+                
+                todo!()
+            }
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
 

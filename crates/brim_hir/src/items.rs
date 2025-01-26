@@ -1,14 +1,18 @@
-use crate::{HirId, expr::HirConstExpr, ty::HirTy};
-use brim_ast::item::Ident;
+use crate::{
+    HirId,
+    expr::HirConstExpr,
+    ty::{HirTy, HirTyKind},
+};
+use brim_ast::{NodeId, item::Ident, ty::Ty};
 use brim_span::span::Span;
 use std::path::PathBuf;
-use brim_ast::NodeId;
-use brim_ast::ty::Ty;
-use crate::ty::HirTyKind;
+use brim_ctx::GlobalSymbolId;
 
 #[derive(Clone, Debug)]
 pub struct HirItem {
     pub id: HirId,
+    /// Only kept for the convenience of the transformation phase.
+    pub old_sym_id: GlobalSymbolId,
     pub span: Span,
     pub ident: Ident,
     pub kind: HirItemKind,

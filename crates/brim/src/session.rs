@@ -181,7 +181,7 @@ impl Session {
         let mut name_resolver = NameResolver::new(validator.ctx, map.clone());
         name_resolver.resolve_names();
 
-        let hir = &mut transform_module(map.clone());
+        let hir = &mut transform_module(name_resolver.map);
         infer_types(hir);
 
         // TODO: type checking etc.
