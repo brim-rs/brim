@@ -35,7 +35,7 @@ impl CppCodegen {
                 format!("{}({})", func, args)
             }
             HirExprKind::Literal(lit) => self.generate_lit(lit),
-            _ => String::new(),
+            _ => todo!("{:?}", expr.kind),
         }
     }
 

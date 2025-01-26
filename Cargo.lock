@@ -176,6 +176,7 @@ name = "brim-codegen"
 version = "0.1.0"
 dependencies = [
  "brim-ast",
+ "brim-ctx",
  "brim-hir",
 ]
 

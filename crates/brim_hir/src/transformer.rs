@@ -194,7 +194,7 @@ impl HirModuleMap {
         self.modules.iter().find(|module| module.mod_id == id)
     }
 
-    pub fn update_modules_imports(&mut self, mod_id: ModuleId, imports: Vec<HirId>) {
+    pub fn update_modules_imports(&mut self, mod_id: ModuleId, imports: Vec<LocId>) {
         for module in &mut self.modules {
             if module.mod_id == mod_id {
                 module.imports = imports;
@@ -244,7 +244,7 @@ impl HirModuleMap {
         module
             .imports
             .iter()
-            .flat_map(|id| self.get_item_safe(*id))
+            .flat_map(|id| self.get_item_safe(id.id))
             .collect()
     }
 
@@ -290,7 +290,7 @@ pub struct HirModule {
     pub items: Vec<HirItem>,
     // Not sure if this will be needed
     pub path: PathBuf,
-    pub imports: Vec<HirId>,
+    pub imports: Vec<LocId>,
 }
 
 impl HirModule {
@@ -394,7 +394,10 @@ impl Transformer {
                         }
 
                         if let Some(id) = hir_id {
-                            ids.push(id);
+                            ids.push(LocId {
+                                id,
+                                module: symbol.mod_id,
+                            });
                         }
                     }
 
