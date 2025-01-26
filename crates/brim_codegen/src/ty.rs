@@ -3,11 +3,11 @@ use brim_ast::ty::PrimitiveType;
 use brim_hir::ty::HirTyKind;
 
 impl CppCodegen {
-    pub fn transform_ty(&mut self, ty: HirTyKind) -> String {
+    pub fn generate_ty(&mut self, ty: HirTyKind) -> String {
         match ty {
             HirTyKind::Primitive(prim) => self.transform_primitive(prim),
             HirTyKind::Ptr(ty, cnst) => {
-                let ty = self.transform_ty(ty.kind);
+                let ty = self.generate_ty(ty.kind);
                 if cnst.as_bool() {
                     format!("const {}*", ty)
                 } else {
@@ -16,7 +16,7 @@ impl CppCodegen {
             }
 
             HirTyKind::Ref(ty, cnst) => {
-                let ty = self.transform_ty(ty.kind);
+                let ty = self.generate_ty(ty.kind);
                 if cnst.as_bool() {
                     format!("const {}&", ty)
                 } else {
@@ -28,12 +28,12 @@ impl CppCodegen {
                 format!("{}{}", ident, if generics.params.is_empty() {
                     "".to_string()
                 } else {
-                    format!("<{}>", generics.params.iter().map(|p| self.transform_ty(p.ty.kind.clone())).collect::<Vec<_>>().join(", "))
+                    format!("<{}>", generics.params.iter().map(|p| self.generate_ty(p.ty.kind.clone())).collect::<Vec<_>>().join(", "))
                 })
             }
 
             HirTyKind::Vec(ty) => {
-                let ty = self.transform_ty(ty.kind);
+                let ty = self.generate_ty(ty.kind);
                 format!("std::vector<{}>", ty)
             }
 
