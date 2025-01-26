@@ -6,13 +6,7 @@ use crate::{
     plural::plural,
 };
 use anyhow::{Result, bail};
-use brim::{
-    compiler::CompilerContext,
-    files::{SimpleFiles, files},
-    resolver::Resolver,
-    session::Session,
-    toml::ProjectType,
-};
+use brim::{compiler::CompilerContext, create_file_parent_dirs, files::{SimpleFiles, files}, resolver::Resolver, session::Session, toml::ProjectType};
 use brim_parser::parser::Parser;
 use clap::{ArgAction, Command};
 use std::collections::HashSet;
@@ -75,8 +69,14 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
                 )
             }
 
+            let build_dir = sess.build_dir();
             match sess.run_codegen(hir, main_file) {
-                Ok(_) => {}
+                Ok(code) => {
+                    let file = build_dir.join("codegen").join("main.cpp");
+
+                    create_file_parent_dirs(&file)?;
+                    std::fs::write(&file, code)?;
+                }
                 Err(e) => {
                     comp.dcx()
                         .emit_inner(e.to_diagnostic(), &SimpleFiles::from_files(files()));

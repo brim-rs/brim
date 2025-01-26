@@ -121,6 +121,10 @@ impl Session {
         Ok(self.add_file(path.clone(), self.file_loader.read_file(&path)?))
     }
 
+    pub fn build_dir(&self) -> PathBuf {
+        self.cwd.join("build")
+    }
+
     /// Resolve and analyze the project form the main barrel
     pub fn analyze<'a>(
         &mut self,
@@ -188,7 +192,7 @@ impl Session {
         Ok((hir.clone(), name_resolver.ctx))
     }
 
-    pub fn run_codegen(&mut self, hir: HirModuleMap, main_file: usize) -> PResult<()> {
+    pub fn run_codegen(&mut self, hir: HirModuleMap, main_file: usize) -> PResult<String> {
         let main_mod = hir.get_module(ModuleId::from_usize(main_file)).unwrap();
         let main_fn = main_mod.get_fn("main");
 
@@ -206,7 +210,7 @@ impl Session {
             println!("{}", code.clone());
         }
 
-        Ok(())
+        Ok(code)
     }
 }
 

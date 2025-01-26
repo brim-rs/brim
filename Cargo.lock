@@ -248,6 +248,9 @@ dependencies = [
 [[package]]
 name = "brim-fs"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+]
 
 [[package]]
 name = "brim-hir"

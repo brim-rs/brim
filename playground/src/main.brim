@@ -1,7 +1,7 @@
 use { add } from test;
 
 pub fn divide(a: i32, b: i32) -> i32 {
-    a / b
+    return a / b;
 }
 
 pub fn main() {
