@@ -8,6 +8,7 @@ use crate::name::{
 use brim_ast::{
     expr::{Expr, ExprKind},
     item::{Block, FnDecl},
+    stmts::Let,
 };
 use brim_ctx::{ModuleId, compiler::CompilerContext, modules::ModuleMap, walker::AstWalker};
 use brim_diagnostics::diag_opt;
@@ -73,6 +74,18 @@ impl<'a> AstWalker for NameResolver<'a> {
         }
 
         self.scopes.pop_scope();
+    }
+
+    fn visit_let(&mut self, let_stmt: &mut Let) {
+        self.declare_variable(&let_stmt.ident.to_string(), VariableInfo {
+            id: let_stmt.id,
+            is_const: if let Some(ty) = &let_stmt.ty {
+                ty.is_const()
+            } else {
+                false
+            },
+            span: let_stmt.span,
+        });
     }
 
     fn visit_fn(&mut self, func: &mut FnDecl) {

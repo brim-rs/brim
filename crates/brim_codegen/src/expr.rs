@@ -7,7 +7,7 @@ use brim_hir::expr::{HirExpr, HirExprKind};
 
 impl CppCodegen {
     pub fn generate_expr(&mut self, expr: HirExpr) -> String {
-        match expr.kind {
+        let code = match expr.kind {
             HirExprKind::Block(block) => {
                 let mut code = String::new();
                 for stmt in block.stmts {
@@ -46,7 +46,9 @@ impl CppCodegen {
             }
             HirExprKind::Literal(lit) => self.generate_lit(lit),
             _ => todo!("{:?}", expr.kind),
-        }
+        };
+        
+        format!("({})", code)
     }
 
     pub fn generate_lit(&self, lit: Lit) -> String {
