@@ -513,6 +513,7 @@ impl Transformer {
             ident: item.ident,
             kind: hir_item_kind,
             is_public: item.vis.kind.is_public(),
+            mod_id: self.current_mod_id,
         };
 
         self.map

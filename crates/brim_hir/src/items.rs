@@ -6,7 +6,7 @@ use crate::{
 use brim_ast::{NodeId, item::Ident, ty::Ty};
 use brim_span::span::Span;
 use std::path::PathBuf;
-use brim_ctx::GlobalSymbolId;
+use brim_ctx::{GlobalSymbolId, ModuleId};
 
 #[derive(Clone, Debug)]
 pub struct HirItem {
@@ -17,6 +17,7 @@ pub struct HirItem {
     pub ident: Ident,
     pub kind: HirItemKind,
     pub is_public: bool,
+    pub mod_id: ModuleId
 }
 
 impl HirItem {

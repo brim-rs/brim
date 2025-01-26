@@ -7,6 +7,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 pub struct CppCodegen {
     pub code: CodeBuilder,
     pub hir: HirModuleMap,
+    pub current_mod: ModuleId
 }
 
 impl CppCodegen {
@@ -17,7 +18,7 @@ impl CppCodegen {
             code.add_line(&format!("#include <{}>", import));
         }
 
-        Self { code, hir }
+        Self { code, hir, current_mod: ModuleId::from_usize(0) }
     }
 
     pub fn generate(&mut self) {
@@ -71,6 +72,7 @@ impl CppCodegen {
         self.hir.modules = sorted_modules.clone();
         
         for module in sorted_modules {
+            self.current_mod = module.mod_id.clone();
             self.generate_module(module);
         }
     }

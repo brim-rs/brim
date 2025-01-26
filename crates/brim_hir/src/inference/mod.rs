@@ -22,7 +22,7 @@ pub struct TypeInference<'a> {
     pub hir: &'a mut HirModuleMap,
     pub ctx: InferCtx,
     pub scope_manager: TypeScopeManager,
-    pub current_file: ModuleId,
+    pub current_mod: ModuleId,
 }
 
 #[derive(Debug)]
@@ -52,7 +52,7 @@ pub fn infer_types(hir: &mut HirModuleMap) {
         hir,
         ctx: InferCtx::new(),
         scope_manager: TypeScopeManager::new(),
-        current_file: ModuleId::from_usize(0),
+        current_mod: ModuleId::from_usize(0),
     };
 
     ti.infer();
@@ -66,7 +66,7 @@ impl<'a> TypeInference<'a> {
             .clone()
             .into_iter()
             .map(|mut module| {
-                self.current_file = module.mod_id;
+                self.current_mod = module.mod_id;
                 self.infer_module(&mut module);
                 module
             })
@@ -281,7 +281,7 @@ impl<'a> TypeInference<'a> {
                 let func = self
                     .hir
                     // we unwrap, because this was already checked in the name resolver
-                    .resolve_symbol(&ident.as_ident().unwrap().to_string(), self.current_file)
+                    .resolve_symbol(&ident.as_ident().unwrap().to_string(), self.current_mod)
                     .unwrap();
 
                 &func.as_fn().ret_type
