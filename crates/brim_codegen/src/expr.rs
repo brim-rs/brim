@@ -1,3 +1,4 @@
+use brim_ast::expr::BinOpKind;
 use crate::codegen::CppCodegen;
 use brim_hir::expr::{HirExpr, HirExprKind};
 
@@ -15,7 +16,36 @@ impl CppCodegen {
                 let expr = self.generate_expr(*expr);
                 format!("return {};", expr)
             }
+            HirExprKind::Binary(lhs, op, rhs) => {
+                let lhs = self.generate_expr(*lhs);
+                let rhs = self.generate_expr(*rhs);
+                format!("{} {} {}", lhs, self.bin_op(op), rhs)
+            }
             _ => String::new()
+        }
+    }
+    
+    pub fn bin_op(&self, op: BinOpKind) -> &'static str {
+        match op {
+            BinOpKind::Plus => "+",
+            BinOpKind::Minus => "-",
+            BinOpKind::Multiply => "*",
+            BinOpKind::Divide => "/",
+            BinOpKind::Modulo => "%",
+            BinOpKind::And => "&&",
+            BinOpKind::Or => "||",
+            BinOpKind::EqEq => "==",
+            BinOpKind::Ne => "!=",
+            BinOpKind::Lt => "<",
+            BinOpKind::Le => "<=",
+            BinOpKind::Gt => ">",
+            BinOpKind::Ge => ">=",
+            BinOpKind::Power => "**",
+            BinOpKind::Caret => "^",
+            BinOpKind::ShiftLeft => "<<",
+            BinOpKind::ShiftRight => ">>",
+            BinOpKind::AndAnd => "&&",
+            BinOpKind::OrOr => "||",
         }
     }
 }
