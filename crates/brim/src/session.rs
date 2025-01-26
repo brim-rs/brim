@@ -40,6 +40,7 @@ pub struct Session {
     file_loader: BrimFileLoader,
     pub shell: Shell,
     pub display_cpp: bool,
+    pub no_write: bool,
 }
 
 impl Session {
@@ -53,6 +54,7 @@ impl Session {
             file_loader: BrimFileLoader,
             shell: Shell::new(color_choice),
             display_cpp: false,
+            no_write: false,
         }
     }
 

@@ -60,6 +60,12 @@ pub fn static_lib_mode() -> Arg {
         .help_heading(COMPILATION_HEADING)
 }
 
+pub fn no_write() -> Arg {
+    opt("no-write", "Do not write the output to a file")
+        .action(ArgAction::SetTrue)
+        .short('w')
+}
+
 pub fn cli() -> Command {
     let styles = {
         Styles::styled()

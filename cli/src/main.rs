@@ -52,6 +52,10 @@ fn main() -> Result<()> {
             if cmd.1.get_flag("codegen-debug") {
                 sess.display_cpp = true;
             }
+            
+            if cmd.1.get_flag("no-write") {
+                sess.no_write = true;
+            }
 
             exec_command(sess, comp, cmd.1, run_command)?;
         }

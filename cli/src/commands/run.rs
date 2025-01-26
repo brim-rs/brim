@@ -1,7 +1,7 @@
 use crate::{
     cli::{
-        debug_mode, dynamic_lib_mode, min_size_rel_mode, opt, rel_with_deb_info_mode, release_mode,
-        static_lib_mode,
+        debug_mode, dynamic_lib_mode, min_size_rel_mode, no_write, opt, rel_with_deb_info_mode,
+        release_mode, static_lib_mode,
     },
     plural::plural,
 };
@@ -37,6 +37,7 @@ pub fn run_cmd() -> Command {
                 .allow_negative_numbers(true)
                 .trailing_var_arg(true),
         )
+        .arg(no_write())
         // when true display generated c++ code
         .arg(
             opt(
@@ -101,7 +102,14 @@ pub fn run_command<'a>(
                     let file = build_dir.join("codegen").join("main.cpp");
 
                     create_file_parent_dirs(&file)?;
-                    std::fs::write(&file, code)?;
+
+                    if !sess.no_write && !file.exists() {
+                        bail!("Found `no-write` flag but file doesn't exist. Try to run without `no-write` flag first");
+                    }
+
+                    if !sess.no_write {
+                        std::fs::write(&file, code)?;
+                    }
 
                     let build_process = &mut CppBuild::new(
                         Some(CompilerKind::Clang),
