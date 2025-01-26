@@ -19,6 +19,15 @@ pub struct HirItem {
     pub is_public: bool,
 }
 
+impl HirItem {
+    pub fn as_fn(&self) -> &HirFn {
+        match &self.kind {
+            HirItemKind::Fn(f) => f,
+            _ => panic!("Expected function item"),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum HirItemKind {
     /// Function definition

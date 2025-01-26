@@ -202,6 +202,71 @@ impl HirModuleMap {
             }
         }
     }
+
+    // TODO: again refactor
+    pub fn find_symbols_in_module(&self, module_id: Option<ModuleId>) -> Vec<&HirItem> {
+        self.hir_items
+            .iter()
+            .filter_map(|(id, item)| {
+                if let StoredHirItem::Item(item) = item {
+                    if module_id.map_or(true, |mid| item.old_sym_id.mod_id == mid) {
+                        Some(item)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn find_symbol_by_name(&self, name: &str, module_id: Option<ModuleId>) -> Vec<&HirItem> {
+        self.hir_items
+            .iter()
+            .filter_map(|(id, item)| {
+                if let StoredHirItem::Item(item) = item {
+                    if item.ident.to_string() == name
+                        && module_id.map_or(true, |mid| item.old_sym_id.mod_id == mid)
+                    {
+                        Some(item)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn get_imported_symbols(&self, module: &HirModule) -> Vec<&HirItem> {
+        module
+            .imports
+            .iter()
+            .flat_map(|id| self.get_item_safe(*id))
+            .collect()
+    }
+
+    pub fn get_module_by_id(&self, id: ModuleId) -> Option<&HirModule> {
+        self.modules.iter().find(|module| module.mod_id == id)
+    }
+
+    /// Looks for the symbol by name first in the module and then in imported modules
+    pub fn resolve_symbol(&self, name: &str, mod_id: ModuleId) -> Option<&HirItem> {
+        let module_symbols = self.find_symbols_in_module(Some(mod_id));
+        let module = self.get_module_by_id(mod_id).unwrap();
+        let imported_symbols = self.get_imported_symbols(module);
+
+        module_symbols
+            .iter()
+            .chain(imported_symbols.iter())
+            .find(|symbol| {
+                println!("{:?} {:?}", symbol.ident.to_string(), name);
+                symbol.ident.to_string() == name
+            })
+            .copied()
+    }
 }
 
 // Implement Default trait for convenience
@@ -261,7 +326,8 @@ impl Transformer {
     pub fn transform_modules(&mut self) -> HirModuleMap {
         for module in self.module_map.modules.clone() {
             self.current_mod_id = ModuleId::from_usize(module.barrel.file_id);
-            self.transform_module(module);
+            let module = self.transform_module(module);
+            self.map.new_module(module);
         }
 
         for module in self.map.modules.clone() {
@@ -340,7 +406,7 @@ impl Transformer {
         self.map.clone()
     }
 
-    pub fn transform_module(&mut self, module: Module) {
+    pub fn transform_module(&mut self, module: Module) -> HirModule {
         let items: Vec<HirItem> = module
             .barrel
             .items
@@ -348,13 +414,12 @@ impl Transformer {
             .map(|item| self.transform_item(item.clone()))
             .collect();
 
-        let new_module = HirModule {
+        HirModule {
             mod_id: ModuleId::from_usize(module.barrel.file_id),
             items,
             path: module.path,
             imports: vec![],
-        };
-        self.map.new_module(new_module.clone());
+        }
     }
 
     pub fn transform_item(&mut self, item: Item) -> HirItem {

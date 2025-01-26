@@ -146,15 +146,6 @@ impl<'a> AstWalker for NameResolver<'a> {
                         name,
                     });
                 }
-                let sym = func_sym.unwrap();
-                self.map.assign_symbol(
-                    // it's not a symbol, but we need to identify the module and function
-                    GlobalSymbolId {
-                        mod_id,
-                        item_id: expr.id,
-                    },
-                    sym.id.clone(),
-                );
 
                 for arg in args {
                     self.visit_expr(arg);

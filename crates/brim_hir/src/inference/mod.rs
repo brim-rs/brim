@@ -14,6 +14,7 @@ use brim_ast::{
     expr::{BinOpKind, UnaryOp},
     ty::PrimitiveType,
 };
+use brim_ctx::ModuleId;
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -21,6 +22,7 @@ pub struct TypeInference<'a> {
     pub hir: &'a mut HirModuleMap,
     pub ctx: InferCtx,
     pub scope_manager: TypeScopeManager,
+    pub current_file: ModuleId,
 }
 
 #[derive(Debug)]
@@ -50,6 +52,7 @@ pub fn infer_types(hir: &mut HirModuleMap) {
         hir,
         ctx: InferCtx::new(),
         scope_manager: TypeScopeManager::new(),
+        current_file: ModuleId::from_usize(0),
     };
 
     ti.infer();
@@ -57,15 +60,19 @@ pub fn infer_types(hir: &mut HirModuleMap) {
 
 impl<'a> TypeInference<'a> {
     pub fn infer(&mut self) {
-        let modules = std::mem::take(&mut self.hir.modules);
-
-        self.hir.modules = modules
+        let inferred_modules: Vec<_> = self
+            .hir
+            .modules
+            .clone()
             .into_iter()
             .map(|mut module| {
+                self.current_file = module.mod_id;
                 self.infer_module(&mut module);
                 module
             })
             .collect();
+
+        self.hir.modules = inferred_modules;
     }
 
     pub fn infer_module(&mut self, module: &mut HirModule) {
@@ -128,6 +135,7 @@ impl<'a> TypeInference<'a> {
             HirStmtKind::Let { ty, value, .. } => {
                 if let None = ty {
                     if let Some(value) = value {
+                        self.infer_expr(value);
                         *ty = Some(value.ty.clone());
                     }
                 }
@@ -269,10 +277,14 @@ impl<'a> TypeInference<'a> {
                     .unwrap();
                 &var.ty
             }
-            HirExprKind::Call(ident, args) => { 
-                println!("Call: {:#?}", self.hir);
-                
-                todo!()
+            HirExprKind::Call(ident, args) => {
+                let func = self
+                    .hir
+                    // we unwrap, because this was already checked in the name resolver
+                    .resolve_symbol(&ident.as_ident().unwrap().to_string(), self.current_file)
+                    .unwrap();
+
+                &func.as_fn().ret_type
             }
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
