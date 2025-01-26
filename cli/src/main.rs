@@ -6,6 +6,7 @@ use anyhow::Result;
 use brim::{compiler::CompilerContext, session::Session, toml::Config};
 use cli::cli;
 use std::{env, process::exit};
+use clap::ArgMatches;
 
 pub mod cli;
 mod commands;
@@ -52,7 +53,7 @@ fn main() -> Result<()> {
                 sess.display_cpp = true;
             }
 
-            exec_command(sess, comp, run_command)?;
+            exec_command(sess, comp, cmd.1, run_command)?;
         }
         _ => {
             eprintln!("Unknown command: {}", cmd.0);
@@ -66,9 +67,10 @@ fn main() -> Result<()> {
 pub fn exec_command<'a>(
     sess: &'a mut Session,
     comp: &'a mut CompilerContext<'a>,
-    func: impl FnOnce(&mut Session, &'a mut CompilerContext<'a>, ColorChoice) -> Result<()>,
+    args: &ArgMatches,
+    func: impl FnOnce(&mut Session, &'a mut CompilerContext<'a>, ColorChoice, &ArgMatches) -> Result<()>,
 ) -> Result<()> {
-    match func(sess, comp, sess.color_choice) {
+    match func(sess, comp, sess.color_choice, args) {
         Ok(_) => Ok(()),
         Err(err) => {
             sess.shell().error(err)?;

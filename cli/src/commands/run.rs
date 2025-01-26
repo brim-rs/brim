@@ -18,8 +18,8 @@ use brim::{
 };
 use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
 use brim_parser::parser::Parser;
-use clap::{ArgAction, Command};
-use std::collections::HashSet;
+use clap::{ArgAction, ArgMatches, Command};
+use std::{collections::HashSet, process};
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -52,6 +52,7 @@ pub fn run_command<'a>(
     sess: &mut Session,
     comp: &'a mut CompilerContext<'a>,
     c_choice: ColorChoice,
+    args: &ArgMatches,
 ) -> Result<()> {
     let build_dir = sess.build_dir().clone();
     let project_type = sess.project_type();
@@ -111,7 +112,28 @@ pub fn run_command<'a>(
                     build_process.set_opt_level(opt_level);
                     build_process.add_source(file);
 
-                    build_process.compile(project_name, shell)?;
+                    let exe_path = build_process.compile(project_name, shell)?;
+
+                    let args: Vec<String> = args
+                        .get_many::<String>("args")
+                        .unwrap_or_default()
+                        .map(|s| s.to_string())
+                        .collect();
+
+                    let mut command = process::Command::new(&exe_path);
+                    command.args(&args);
+
+                    shell.status(
+                        "Running",
+                        format!(
+                            "`{}{}{}`",
+                            &exe_path.to_string_lossy(),
+                            if args.is_empty() { "" } else { " " },
+                            &args.join(" ")
+                        ),
+                    )?;
+
+                    command.status()?;
                 }
                 Err(e) => {
                     comp.dcx()
