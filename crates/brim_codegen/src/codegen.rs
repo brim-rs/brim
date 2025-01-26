@@ -79,8 +79,19 @@ impl CppCodegen {
             self.current_mod = module.mod_id.clone();
             self.generate_module(module);
         }
+        
+        self.add_main();
     }
 
+    pub fn add_main(&mut self) {
+        self.code.add_line("int main() {");
+        self.code.increase_indent();
+        self.code.add_line("module0::main();");
+        self.code.add_line("return 0;");
+        self.code.decrease_indent();
+        self.code.add_line("}");
+    }
+    
     pub fn generate_module(&mut self, module: HirModule) {
         self.code
             .add_line(&format!("namespace module{} {{", module.mod_id.as_u32()));

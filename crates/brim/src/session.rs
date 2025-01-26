@@ -96,7 +96,7 @@ impl Session {
     pub fn lib_type(&self) -> LibType {
         self.config.build.lib_type.clone()
     }
-    
+
     /// Measure the time taken to run a closure and print it to the shell
     pub fn measure_time(
         &mut self,
