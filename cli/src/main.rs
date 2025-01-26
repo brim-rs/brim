@@ -66,9 +66,9 @@ fn main() -> Result<()> {
 pub fn exec_command<'a>(
     sess: &'a mut Session,
     comp: &'a mut CompilerContext<'a>,
-    func: impl FnOnce(&mut Session, &'a mut CompilerContext<'a>) -> Result<()>,
+    func: impl FnOnce(&mut Session, &'a mut CompilerContext<'a>, ColorChoice) -> Result<()>,
 ) -> Result<()> {
-    match func(sess, comp) {
+    match func(sess, comp, sess.color_choice) {
         Ok(_) => Ok(()),
         Err(err) => {
             sess.shell().error(err)?;

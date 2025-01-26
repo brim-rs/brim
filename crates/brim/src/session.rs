@@ -3,7 +3,7 @@ use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim_ast::item::{ImportsKind, ItemKind};
 use brim_codegen::codegen::CppCodegen;
-use brim_config::toml::{Config, ProjectType};
+use brim_config::toml::{Config, LibType, ProjectType};
 use brim_ctx::{
     GlobalSymbolId, ModuleId,
     compiler::CompilerContext,
@@ -32,13 +32,13 @@ use tracing::debug;
 
 #[derive(Debug)]
 pub struct Session {
-    config: Config,
+    pub config: Config,
     cwd: PathBuf,
-    color_choice: ColorChoice,
+    pub color_choice: ColorChoice,
     start: Instant,
     pub measure_time: bool,
     file_loader: BrimFileLoader,
-    shell: Shell,
+    pub shell: Shell,
     pub display_cpp: bool,
 }
 
@@ -89,6 +89,14 @@ impl Session {
         Ok(())
     }
 
+    pub fn project_type(&self) -> ProjectType {
+        self.config.project.r#type.clone()
+    }
+
+    pub fn lib_type(&self) -> LibType {
+        self.config.build.lib_type.clone()
+    }
+    
     /// Measure the time taken to run a closure and print it to the shell
     pub fn measure_time(
         &mut self,

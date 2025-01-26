@@ -5,8 +5,18 @@ use crate::{
     },
     plural::plural,
 };
+use anstream::ColorChoice;
 use anyhow::{Result, bail};
-use brim::{compiler::CompilerContext, create_file_parent_dirs, files::{SimpleFiles, files}, resolver::Resolver, session::Session, toml::ProjectType};
+use brim::{
+    Shell,
+    compiler::CompilerContext,
+    create_file_parent_dirs,
+    files::{SimpleFiles, files},
+    resolver::Resolver,
+    session::Session,
+    toml::ProjectType,
+};
+use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
 use brim_parser::parser::Parser;
 use clap::{ArgAction, Command};
 use std::collections::HashSet;
@@ -38,7 +48,16 @@ pub fn run_cmd() -> Command {
         )
 }
 
-pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) -> Result<()> {
+pub fn run_command<'a>(
+    sess: &mut Session,
+    comp: &'a mut CompilerContext<'a>,
+    c_choice: ColorChoice,
+) -> Result<()> {
+    let build_dir = sess.build_dir().clone();
+    let project_type = sess.project_type();
+    let lib_type = sess.lib_type();
+    let project_name = sess.config.project.name.clone();
+
     sess.measure_time(
         |sess| {
             sess.assert_type(
@@ -69,13 +88,24 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
                 )
             }
 
-            let build_dir = sess.build_dir();
             match sess.run_codegen(hir, main_file) {
                 Ok(code) => {
                     let file = build_dir.join("codegen").join("main.cpp");
 
                     create_file_parent_dirs(&file)?;
                     std::fs::write(&file, code)?;
+
+                    let build_process = &mut CppBuild::new(
+                        Some(CompilerKind::Clang),
+                        project_type,
+                        build_dir,
+                        lib_type,
+                    )?;
+
+                    build_process.add_source(file);
+
+                    // TODO: don't create new shell instance
+                    build_process.compile(project_name, &mut Shell::new(c_choice))?;
                 }
                 Err(e) => {
                     comp.dcx()

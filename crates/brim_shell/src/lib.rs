@@ -161,24 +161,17 @@ impl Shell {
         let title = format!(" {} ", title);
         let stderr = self.output.stderr();
         let size = terminal_size();
-        if let Some((Width(w), Height(h))) = size {
+        if let Some((Width(w), Height(_h))) = size {
             let width = w as usize;
 
-            let message = format!(" {} ", message);
-            let message_len = message.len();
-            let message = if message_len > width {
-                message
-            } else {
-                let padding = (width - message_len) / 2;
-                format!("{:padding$}{}", "", message, padding = padding)
-            };
+            let message = format!(" {}", message);
 
             let dim_title = anstyle::Style::new() | anstyle::Effects::DIMMED;
             let reset = anstyle::Style::new() | anstyle::Effects::new();
             let mut buffer = Vec::new();
 
-            writeln!(buffer, "{dim_title}{:=^1$}{reset:#}", title, width)?;
-            writeln!(buffer, "{:#^1$}", message, width)?;
+            writeln!(buffer, "{dim_title}{:=^1$}{reset}", title, width)?;
+            writeln!(buffer, "{}", message)?;
 
             if err {
                 stderr.write_all(&buffer)?;
