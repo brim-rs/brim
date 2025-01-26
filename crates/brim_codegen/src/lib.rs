@@ -2,6 +2,7 @@ pub mod codegen;
 mod expr;
 mod generics;
 mod item;
+mod stmt;
 mod ty;
 
 #[derive(Debug)]

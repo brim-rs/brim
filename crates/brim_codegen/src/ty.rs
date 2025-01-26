@@ -37,6 +37,9 @@ impl CppCodegen {
                 format!("std::vector<{}>", ty)
             }
 
+            // Only for now, this will be replaced in type checking
+            HirTyKind::Placeholder => "auto".to_string(),
+            
             _ => todo!("transform_ty: {:?}", ty),
         }
     }

@@ -199,11 +199,9 @@ impl Session {
             });
         }
 
-        let mut codegen = CppCodegen::new();
-        for module in hir.modules {
-            codegen.generate_module(module);
-        }
-        
+        let mut codegen = CppCodegen::new(hir.clone());
+        codegen.generate();
+
         let code = codegen.code.build();
         if self.display_cpp {
             println!("{}", code.clone());
