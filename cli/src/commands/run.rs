@@ -1,7 +1,7 @@
 use crate::{
     cli::{
-        debug_mode, dynamic_lib_mode, min_size_rel_mode, no_write, opt, rel_with_deb_info_mode,
-        release_mode, static_lib_mode,
+        RunArgs, codegen_debug, debug_mode, dynamic_lib_mode, min_size_rel_mode, no_write, opt,
+        rel_with_deb_info_mode, release_mode, static_lib_mode,
     },
     plural::plural,
 };
@@ -38,22 +38,14 @@ pub fn run_cmd() -> Command {
                 .trailing_var_arg(true),
         )
         .arg(no_write())
-        // when true display generated c++ code
-        .arg(
-            opt(
-                "codegen-debug",
-                "Displays generated c++ code in the terminal",
-            )
-            .short('c')
-            .action(ArgAction::SetTrue),
-        )
+        .arg(codegen_debug())
 }
 
 pub fn run_command<'a>(
     sess: &mut Session,
     comp: &'a mut CompilerContext<'a>,
     c_choice: ColorChoice,
-    args: &ArgMatches,
+    args: RunArgs,
 ) -> Result<()> {
     let build_dir = sess.build_dir().clone();
     let project_type = sess.project_type();
@@ -103,11 +95,11 @@ pub fn run_command<'a>(
 
                     create_file_parent_dirs(&file)?;
 
-                    if !sess.no_write && !file.exists() {
+                    if !args.no_write && !file.exists() {
                         bail!("Found `no-write` flag but file doesn't exist. Try to run without `no-write` flag first");
                     }
 
-                    if !sess.no_write {
+                    if !args.no_write {
                         std::fs::write(&file, code)?;
                     }
 
@@ -122,11 +114,7 @@ pub fn run_command<'a>(
 
                     let exe_path = build_process.compile(project_name, shell)?;
 
-                    let args: Vec<String> = args
-                        .get_many::<String>("args")
-                        .unwrap_or_default()
-                        .map(|s| s.to_string())
-                        .collect();
+                    let args: Vec<String> = args.exec_args;
 
                     let mut command = process::Command::new(&exe_path);
                     command.args(&args);

@@ -1,6 +1,6 @@
 use crate::commands::run::run_cmd;
 use brim::styles::{ERROR, HEADER, INVALID, LITERAL, PLACEHOLDER, USAGE, VALID};
-use clap::{Arg, ArgAction, Command, builder::Styles};
+use clap::{Arg, ArgAction, Command, builder::Styles, ArgMatches};
 
 pub fn opt(name: &'static str, help: &'static str) -> Arg {
     Arg::new(name).long(name).help(help).action(ArgAction::Set)
@@ -66,6 +66,15 @@ pub fn no_write() -> Arg {
         .short('w')
 }
 
+pub fn codegen_debug() -> Arg {
+    opt(
+        "codegen-debug",
+        "Displays generated c++ code in the terminal",
+    )
+        .short('c')
+        .action(ArgAction::SetTrue)
+}
+
 pub fn cli() -> Command {
     let styles = {
         Styles::styled()
@@ -100,4 +109,25 @@ pub fn cli() -> Command {
                 .global(true),
         )
         .subcommand(run_cmd())
+}
+
+#[derive(Debug)]
+pub struct RunArgs {
+    pub no_write: bool,
+    pub codegen_debug: bool,
+    pub exec_args: Vec<String>
+}
+
+impl RunArgs {
+    pub fn from_args(args: &ArgMatches) -> Self {
+        Self {
+            no_write: args.get_flag("no-write"),
+            codegen_debug: args.get_flag("codegen-debug"),
+            exec_args: args
+                .get_many::<String>("args")
+                .unwrap_or_default()
+                .map(|s| s.to_string())
+                .collect()
+        }
+    }
 }

@@ -7,6 +7,7 @@ use brim::{compiler::CompilerContext, session::Session, toml::Config};
 use cli::cli;
 use std::{env, process::exit};
 use clap::ArgMatches;
+use crate::cli::RunArgs;
 
 pub mod cli;
 mod commands;
@@ -49,15 +50,9 @@ fn main() -> Result<()> {
                 sess.measure_time = true;
             }
 
-            if cmd.1.get_flag("codegen-debug") {
-                sess.display_cpp = true;
-            }
-            
-            if cmd.1.get_flag("no-write") {
-                sess.no_write = true;
-            }
+            let run_args= RunArgs::from_args(&cmd.1);
 
-            exec_command(sess, comp, cmd.1, run_command)?;
+            exec_command(sess, comp, run_args, run_command)?;
         }
         _ => {
             eprintln!("Unknown command: {}", cmd.0);
@@ -71,8 +66,8 @@ fn main() -> Result<()> {
 pub fn exec_command<'a>(
     sess: &'a mut Session,
     comp: &'a mut CompilerContext<'a>,
-    args: &ArgMatches,
-    func: impl FnOnce(&mut Session, &'a mut CompilerContext<'a>, ColorChoice, &ArgMatches) -> Result<()>,
+    args: RunArgs,
+    func: impl FnOnce(&mut Session, &'a mut CompilerContext<'a>, ColorChoice, RunArgs) -> Result<()>,
 ) -> Result<()> {
     match func(sess, comp, sess.color_choice, args) {
         Ok(_) => Ok(()),
