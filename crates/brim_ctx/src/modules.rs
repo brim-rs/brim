@@ -1,10 +1,7 @@
 use crate::{
     GlobalSymbol, GlobalSymbolId, GlobalSymbolKind, ModuleId, barrel::Barrel, walker::AstWalker,
 };
-use brim_ast::{
-    NodeId,
-    item::{Item, ItemKind},
-};
+use brim_ast::item::{Item, ItemKind};
 use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Debug, Clone)]

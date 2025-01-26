@@ -1,5 +1,5 @@
-use brim_hir::items::{HirItem, HirItemKind};
 use crate::codegen::CppCodegen;
+use brim_hir::items::{HirItem, HirItemKind};
 
 impl CppCodegen {
     pub fn generate_item(&mut self, item: HirItem) {

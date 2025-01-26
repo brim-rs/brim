@@ -1,7 +1,6 @@
-use crate::{HirId, expr::HirExpr, ty::HirTy};
+use crate::{HirId, expr::HirExpr, ty::HirTyKind};
 use brim_ast::item::Ident;
 use brim_span::span::Span;
-use crate::ty::HirTyKind;
 
 #[derive(Clone, Debug)]
 pub struct HirStmt {

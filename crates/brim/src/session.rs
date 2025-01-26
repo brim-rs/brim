@@ -2,7 +2,7 @@ use crate::{name::NameResolver, validator::AstValidator};
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim_ast::item::{ImportsKind, ItemKind};
-use brim_codegen::{CodeBuilder, codegen::CppCodegen};
+use brim_codegen::codegen::CppCodegen;
 use brim_config::toml::{Config, ProjectType};
 use brim_ctx::{
     GlobalSymbolId, ModuleId,
@@ -12,7 +12,7 @@ use brim_ctx::{
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::{
     box_diag,
-    diagnostic::{Label, LabelStyle, Severity, ToDiagnostic},
+    diagnostic::{Label, Severity, ToDiagnostic},
 };
 use brim_fs::{
     loader::{BrimFileLoader, FileLoader},
@@ -20,13 +20,12 @@ use brim_fs::{
 };
 use brim_hir::{
     inference::infer_types,
-    transformer::{HirModule, HirModuleMap, transform_module},
+    transformer::{HirModuleMap, transform_module},
 };
 use brim_parser::parser::PResult;
 use brim_shell::Shell;
-use brim_span::{
-    files::{SimpleFile, add_file, get_file, get_file_by_name, get_index_by_name, update_file},
-    span::Span,
+use brim_span::files::{
+    SimpleFile, add_file, get_file, get_file_by_name, get_index_by_name, update_file,
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;

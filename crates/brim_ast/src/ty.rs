@@ -1,10 +1,9 @@
 use crate::{
     ErrorEmitted, NodeId,
     expr::ConstExpr,
-    item::{Generics, Ident},
+    item::{GenericArgs, Ident},
 };
 use brim_span::span::Span;
-use crate::item::GenericArgs;
 
 #[derive(Debug, Clone)]
 pub struct Ty {
@@ -139,7 +138,7 @@ impl PrimitiveType {
 
             // String promotion
             (Str, Char) | (Char, Str) => Some(Str),
-            
+
             // Default case
             _ => None,
         }

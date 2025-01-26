@@ -27,13 +27,22 @@ impl CppCodegen {
             HirExprKind::Var(ident) => ident.name.to_string(),
             HirExprKind::Call(func, args) => {
                 let fn_name = func.as_ident().unwrap().to_string();
-                let func_mod_id = self.hir.resolve_symbol(&fn_name, self.current_mod).unwrap().mod_id;
+                let func_mod_id = self
+                    .hir
+                    .resolve_symbol(&fn_name, self.current_mod)
+                    .unwrap()
+                    .mod_id;
                 let args = args
                     .iter()
                     .map(|arg| self.generate_expr(arg.clone()))
                     .collect::<Vec<String>>()
                     .join(", ");
-                format!("{}::{}({})", format!("module{}", func_mod_id.as_usize()), fn_name, args)
+                format!(
+                    "{}::{}({})",
+                    format!("module{}", func_mod_id.as_usize()),
+                    fn_name,
+                    args
+                )
             }
             HirExprKind::Literal(lit) => self.generate_lit(lit),
             _ => todo!("{:?}", expr.kind),

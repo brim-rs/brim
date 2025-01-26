@@ -1,11 +1,10 @@
-use crate::{HirId, expr::HirConstExpr, items::HirGenerics};
+use crate::{HirId, expr::HirConstExpr, items::HirGenericArgs};
 use brim_ast::{
     ErrorEmitted,
     item::Ident,
     ty::{Const, PrimitiveType},
 };
 use brim_span::span::Span;
-use crate::items::HirGenericArgs;
 
 #[derive(Debug, Clone)]
 pub struct HirTy {
@@ -30,7 +29,10 @@ pub enum HirTyKind {
     /// Primitive type eg. `i32` (brim) -> `int32_t` (C++)
     Primitive(PrimitiveType),
     /// Any other type that can be enum, struct, type, etc.
-    Ident { ident: Ident, generics: HirGenericArgs },
+    Ident {
+        ident: Ident,
+        generics: HirGenericArgs,
+    },
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),

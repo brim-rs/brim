@@ -261,10 +261,7 @@ impl HirModuleMap {
         module_symbols
             .iter()
             .chain(imported_symbols.iter())
-            .find(|symbol| {
-                println!("{:?} {:?}", symbol.ident.to_string(), name);
-                symbol.ident.to_string() == name
-            })
+            .find(|symbol| symbol.ident.to_string() == name)
             .copied()
     }
 }

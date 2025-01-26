@@ -25,11 +25,23 @@ impl CppCodegen {
             }
 
             HirTyKind::Ident { ident, generics } => {
-                format!("{}{}", ident, if generics.params.is_empty() {
-                    "".to_string()
-                } else {
-                    format!("<{}>", generics.params.iter().map(|p| self.generate_ty(p.ty.kind.clone())).collect::<Vec<_>>().join(", "))
-                })
+                format!(
+                    "{}{}",
+                    ident,
+                    if generics.params.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "<{}>",
+                            generics
+                                .params
+                                .iter()
+                                .map(|p| self.generate_ty(p.ty.kind.clone()))
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    }
+                )
             }
 
             HirTyKind::Vec(ty) => {
@@ -39,7 +51,7 @@ impl CppCodegen {
 
             // Only for now, this will be replaced in type checking
             HirTyKind::Placeholder => "auto".to_string(),
-            
+
             _ => todo!("transform_ty: {:?}", ty),
         }
     }

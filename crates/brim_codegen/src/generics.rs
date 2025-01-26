@@ -14,11 +14,18 @@ impl CppCodegen {
                     HirGenericKind::Type { default } => {
                         gens.push_str(&format!("typename {}", param.name.to_string()));
                         if let Some(default) = default {
-                            gens.push_str(&format!(" = {}", self.generate_ty(default.kind.clone())));
+                            gens.push_str(&format!(
+                                " = {}",
+                                self.generate_ty(default.kind.clone())
+                            ));
                         }
                     }
                     HirGenericKind::Const { ty, default } => {
-                        gens.push_str(&format!("{} {}", self.generate_ty(ty.kind.clone()), param.name.to_string()));
+                        gens.push_str(&format!(
+                            "{} {}",
+                            self.generate_ty(ty.kind.clone()),
+                            param.name.to_string()
+                        ));
                         if let Some(default) = default {
                             todo!("default const value");
                             // gens.push_str(&format!(" = {}", self.transform_const_expr(default.clone())));
@@ -28,6 +35,6 @@ impl CppCodegen {
             }
             gens
         };
-        self.code.add_line(&format!("template <{}>", gens)); 
+        self.code.add_line(&format!("template <{}>", gens));
     }
 }

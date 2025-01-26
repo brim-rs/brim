@@ -9,9 +9,7 @@ use brim_ast::{
     expr::{Expr, ExprKind},
     item::{Block, FnDecl},
 };
-use brim_ctx::{
-    GlobalSymbolId, ModuleId, compiler::CompilerContext, modules::ModuleMap, walker::AstWalker,
-};
+use brim_ctx::{ModuleId, compiler::CompilerContext, modules::ModuleMap, walker::AstWalker};
 use brim_diagnostics::diag_opt;
 use tracing::debug;
 

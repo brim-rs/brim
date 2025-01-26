@@ -4,10 +4,9 @@ use crate::{
 };
 use brim_ast::{
     Const,
-    item::{GenericKind, GenericParam, Generics},
+    item::{GenericArg, GenericArgs, GenericKind, GenericParam, Generics},
     token::TokenKind,
 };
-use brim_ast::item::{GenericArg, GenericArgs};
 
 impl<'a> Parser<'a> {
     pub fn parse_generics(&mut self) -> PResult<'a, Generics> {
@@ -76,7 +75,7 @@ impl<'a> Parser<'a> {
 
         Ok(GenericArgs {
             span: token.to(self.prev().span),
-            params
+            params,
         })
     }
 

@@ -7,7 +7,6 @@ use crate::{
 };
 use anyhow::{Result, bail};
 use brim::{
-    ModuleId,
     compiler::CompilerContext,
     files::{SimpleFiles, files},
     resolver::Resolver,
@@ -15,7 +14,7 @@ use brim::{
     toml::ProjectType,
 };
 use brim_parser::parser::Parser;
-use clap::{Arg, ArgAction, Command};
+use clap::{ArgAction, Command};
 use std::collections::HashSet;
 
 pub fn run_cmd() -> Command {
@@ -75,7 +74,7 @@ pub fn run_command<'a>(sess: &mut Session, comp: &'a mut CompilerContext<'a>) ->
                     plural(emitted, "error", "errors")
                 )
             }
-            
+
             match sess.run_codegen(hir, main_file) {
                 Ok(_) => {}
                 Err(e) => {

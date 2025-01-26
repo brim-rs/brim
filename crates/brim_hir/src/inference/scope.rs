@@ -1,5 +1,4 @@
-use crate::ty::{HirTy, HirTyKind};
-use brim_ast::item::Param;
+use crate::ty::HirTyKind;
 use brim_span::span::Span;
 use std::collections::HashMap;
 

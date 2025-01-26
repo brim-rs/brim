@@ -7,15 +7,13 @@ use crate::{
     items::{HirGenericKind, HirGenericParam, HirItem, HirItemKind},
     stmts::{HirStmt, HirStmtKind},
     transformer::{HirModule, HirModuleMap},
-    ty::{HirTy, HirTyKind},
+    ty::HirTyKind,
 };
 use brim_ast::{
-    ErrorEmitted,
     expr::{BinOpKind, UnaryOp},
     ty::PrimitiveType,
 };
 use brim_ctx::ModuleId;
-use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct TypeInference<'a> {

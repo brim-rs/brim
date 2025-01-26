@@ -2,7 +2,7 @@ use crate::reporter::report_results;
 use anyhow::{Result, anyhow};
 use brim::{
     compiler::CompilerContext,
-    files::{SimpleFile, SimpleFiles, files},
+    files::{SimpleFile, files},
     span::Span,
     token::TokenKind,
 };

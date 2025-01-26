@@ -16,7 +16,7 @@ use std::{
     io::{Stderr, Stdout, Write},
     path::PathBuf,
 };
-use terminal_size::{Height, Width, terminal_size};
+use terminal_size::{terminal_size, Height, Width};
 
 #[derive(Debug)]
 pub struct ShellOutput {
