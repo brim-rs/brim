@@ -87,8 +87,7 @@ pub enum PrimitiveType {
 }
 
 impl PrimitiveType {
-    pub fn try_from_ident(s: Ident) -> Option<Self> {
-        let s = s.name.as_str().unwrap();
+    pub fn try_from_string(s: String) -> Option<Self> {
         match s.as_str() {
             "i8" => Some(PrimitiveType::I8),
             "i16" => Some(PrimitiveType::I16),

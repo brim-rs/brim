@@ -2,7 +2,7 @@ mod scope;
 
 use crate::{
     HirId,
-    expr::{HirExpr, HirExprKind},
+    expr::{HirConstExpr, HirExpr, HirExprKind},
     inference::scope::{TypeInfo, TypeScopeManager},
     items::{HirGenericKind, HirGenericParam, HirItem, HirItemKind},
     stmts::{HirStmt, HirStmtKind},
@@ -11,6 +11,7 @@ use crate::{
 };
 use brim_ast::{
     expr::{BinOpKind, UnaryOp},
+    token::{Lit, LitKind},
     ty::PrimitiveType,
 };
 use brim_ctx::ModuleId;
@@ -293,9 +294,32 @@ impl<'a> TypeInference<'a> {
 
                 &func.as_fn().ret_type
             }
+            HirExprKind::Literal(lit) => match lit.kind {
+                LitKind::Str => &HirTyKind::Primitive(PrimitiveType::Str),
+                LitKind::Byte => &HirTyKind::Primitive(PrimitiveType::U8),
+                // TODO: should be array, but we don't really have way to transform the length to a constant expression. Maybe we will evaluate it before.
+                LitKind::ByteStr => {
+                    &HirTyKind::Vec(Box::new(HirTyKind::Primitive(PrimitiveType::U8)))
+                }
+                LitKind::Char => &HirTyKind::Primitive(PrimitiveType::Char),
+                LitKind::Bool => &HirTyKind::Primitive(PrimitiveType::Bool),
+                LitKind::Integer => &self.ty_with_suffix(lit, PrimitiveType::I32),
+                LitKind::Float => &self.ty_with_suffix(lit, PrimitiveType::F64),
+                LitKind::CStr => todo!("CStr"),
+                _ => unreachable!("literal error: {:#?}", lit),
+            },
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
-
         expr.ty = kind.clone();
+    }
+
+    pub fn ty_with_suffix(&mut self, lit: &Lit, def: PrimitiveType) -> HirTyKind {
+        if let Some(suf) = lit.suffix {
+            let ty = PrimitiveType::try_from_string(suf.to_string()).unwrap();
+
+            HirTyKind::Primitive(ty)
+        } else {
+            HirTyKind::Primitive(def)
+        }
     }
 }

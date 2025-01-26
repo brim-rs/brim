@@ -92,6 +92,6 @@ impl<'a> Parser<'a> {
     }
 
     pub fn is_primitive(&mut self, ident: Ident) -> PResult<'a, Option<PrimitiveType>> {
-        Ok(PrimitiveType::try_from_ident(ident))
+        Ok(PrimitiveType::try_from_string(ident.to_string()))
     }
 }

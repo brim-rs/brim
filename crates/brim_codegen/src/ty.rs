@@ -7,7 +7,7 @@ impl CppCodegen {
         match ty {
             HirTyKind::Primitive(prim) => self.transform_primitive(prim),
             HirTyKind::Ptr(ty, cnst) => {
-                let ty = self.generate_ty(ty.kind);
+                let ty = self.generate_ty(*ty);
                 if cnst.as_bool() {
                     format!("const {}*", ty)
                 } else {
@@ -16,7 +16,7 @@ impl CppCodegen {
             }
 
             HirTyKind::Ref(ty, cnst) => {
-                let ty = self.generate_ty(ty.kind);
+                let ty = self.generate_ty(*ty);
                 if cnst.as_bool() {
                     format!("const {}&", ty)
                 } else {
@@ -45,12 +45,12 @@ impl CppCodegen {
             }
 
             HirTyKind::Vec(ty) => {
-                let ty = self.generate_ty(ty.kind);
+                let ty = self.generate_ty(*ty);
                 format!("std::vector<{}>", ty)
             }
 
             // Only for now, this will be replaced in type checking
-            HirTyKind::Placeholder => "auto".to_string(),
+            HirTyKind::Placeholder | HirTyKind::Err(_) => "auto".to_string(),
 
             _ => todo!("transform_ty: {:?}", ty),
         }

@@ -641,15 +641,15 @@ impl Transformer {
             id: self.hir_id(),
             span: ty.span,
             kind: match ty.kind {
-                TyKind::Ptr(ty, cnst) => HirTyKind::Ptr(Box::new(self.transform_ty(*ty)), cnst),
+                TyKind::Ptr(ty, cnst) => HirTyKind::Ptr(Box::new(self.transform_ty(*ty).kind), cnst),
                 TyKind::Array(ty, len) => HirTyKind::Array(
-                    Box::new(self.transform_ty(*ty)),
+                    Box::new(self.transform_ty(*ty).kind),
                     self.transform_const_expr(len),
                 ),
-                TyKind::Ref(ty, cnst) => HirTyKind::Ref(Box::new(self.transform_ty(*ty)), cnst),
+                TyKind::Ref(ty, cnst) => HirTyKind::Ref(Box::new(self.transform_ty(*ty).kind), cnst),
                 TyKind::Primitive(primitive) => HirTyKind::Primitive(primitive),
-                TyKind::Vec(ty) => HirTyKind::Vec(Box::new(self.transform_ty(*ty))),
-                TyKind::Const(ty) => HirTyKind::Const(Box::new(self.transform_ty(*ty))),
+                TyKind::Vec(ty) => HirTyKind::Vec(Box::new(self.transform_ty(*ty).kind)),
+                TyKind::Const(ty) => HirTyKind::Const(Box::new(self.transform_ty(*ty).kind)),
                 TyKind::Ident { ident, generics } => HirTyKind::Ident {
                     ident,
                     generics: HirGenericArgs {
