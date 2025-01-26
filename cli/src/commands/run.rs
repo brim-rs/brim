@@ -57,6 +57,8 @@ pub fn run_command<'a>(
     let project_type = sess.project_type();
     let lib_type = sess.lib_type();
     let project_name = sess.config.project.name.clone();
+    let shell = &mut Shell::new(c_choice);
+    let opt_level = sess.config.build.level.clone();
 
     sess.measure_time(
         |sess| {
@@ -66,6 +68,11 @@ pub fn run_command<'a>(
             )?;
 
             let main_file = sess.main_file()?;
+
+            shell.status(
+                "Compiling",
+                format!("{} in {} mode", project_name, opt_level),
+            )?;
 
             let mut parser = Parser::new(main_file);
             let mut barrel = parser.parse_barrel(comp)?;
@@ -101,11 +108,10 @@ pub fn run_command<'a>(
                         build_dir,
                         lib_type,
                     )?;
-
+                    build_process.set_opt_level(opt_level);
                     build_process.add_source(file);
 
-                    // TODO: don't create new shell instance
-                    build_process.compile(project_name, &mut Shell::new(c_choice))?;
+                    build_process.compile(project_name, shell)?;
                 }
                 Err(e) => {
                     comp.dcx()
