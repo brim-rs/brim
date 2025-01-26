@@ -1,5 +1,8 @@
 use crate::codegen::CppCodegen;
-use brim_ast::expr::BinOpKind;
+use brim_ast::{
+    expr::BinOpKind,
+    token::{Lit, LitKind},
+};
 use brim_hir::expr::{HirExpr, HirExprKind};
 
 impl CppCodegen {
@@ -31,7 +34,28 @@ impl CppCodegen {
                     .join(", ");
                 format!("{}({})", func, args)
             }
+            HirExprKind::Literal(lit) => self.generate_lit(lit),
             _ => String::new(),
+        }
+    }
+
+    pub fn generate_lit(&self, lit: Lit) -> String {
+        if let LitKind::Integer | LitKind::Float = lit.kind {
+            if let Some(suffix) = lit.suffix {
+                format!("{}{}", lit.symbol, suffix)
+            } else {
+                lit.symbol.to_string()
+            }
+        } else {
+            match lit.kind {
+                LitKind::Str => format!("\"{}\"", lit.symbol),
+                LitKind::Char => format!("'{}'", lit.symbol),
+                LitKind::Bool => lit.symbol.to_string(),
+                LitKind::Byte => format!("b'{}'", lit.symbol),
+                LitKind::ByteStr => format!("b\"{}\"", lit.symbol),
+                LitKind::CStr => format!("\"{}\"", lit.symbol),
+                _ => unreachable!(),
+            }
         }
     }
 
