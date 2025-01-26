@@ -130,13 +130,22 @@ impl<'a> TypeInference<'a> {
     fn infer_stmt(&mut self, stmt: &mut HirStmt) {
         match &mut stmt.kind {
             HirStmtKind::Expr(expr) => self.infer_expr(expr),
-            HirStmtKind::Let { ty, value, .. } => {
+            HirStmtKind::Let { ty, value, ident } => {
                 if let None = ty {
                     if let Some(value) = value {
                         self.infer_expr(value);
                         *ty = Some(value.ty.clone());
                     }
                 }
+
+                self.scope_manager.declare_variable(
+                    ident.to_string(),
+                    TypeInfo {
+                        ty: ty.clone().unwrap(),
+                        span: stmt.span.clone(),
+                    },
+                    true,
+                );
             }
         }
     }
