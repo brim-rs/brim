@@ -47,15 +47,15 @@ impl CppCodegen {
     fn transform_primitive(&self, prim: PrimitiveType) -> String {
         match prim {
             PrimitiveType::Void => "void".to_string(),
-            PrimitiveType::I8 => "int8_t".to_string(),
-            PrimitiveType::I16 => "int16_t".to_string(),
-            PrimitiveType::I32 => "int32_t".to_string(),
-            PrimitiveType::I64 => "int64_t".to_string(),
+            PrimitiveType::I8 => "std::int8_t".to_string(),
+            PrimitiveType::I16 => "std::int16_t".to_string(),
+            PrimitiveType::I32 => "std::int32_t".to_string(),
+            PrimitiveType::I64 => "std::int64_t".to_string(),
 
-            PrimitiveType::U8 => "uint8_t".to_string(),
-            PrimitiveType::U16 => "uint16_t".to_string(),
-            PrimitiveType::U32 => "uint32_t".to_string(),
-            PrimitiveType::U64 => "uint64_t".to_string(),
+            PrimitiveType::U8 => "std::uint8_t".to_string(),
+            PrimitiveType::U16 => "std::uint16_t".to_string(),
+            PrimitiveType::U32 => "std::uint32_t".to_string(),
+            PrimitiveType::U64 => "std::uint64_t".to_string(),
 
             PrimitiveType::F32 => "float".to_string(),
             PrimitiveType::F64 => "double".to_string(),
