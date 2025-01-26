@@ -21,6 +21,7 @@ impl CppCodegen {
                 let rhs = self.generate_expr(*rhs);
                 format!("{} {} {}", lhs, self.bin_op(op), rhs)
             }
+            HirExprKind::Var(ident) => ident.name.to_string(),
             _ => String::new()
         }
     }
