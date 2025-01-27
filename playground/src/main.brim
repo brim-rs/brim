@@ -1,12 +1,5 @@
 use { add } from test;
 
-pub fn divide(a: i32, b: i32) -> i32 {
-    return a / b;
-}
-
 pub fn main() {
-    let x = add(1, 2);
-    let y = divide(10, 2);
-
-    let z = (y + 1) * x;
+    let x: const int = add(1, 2);
 };

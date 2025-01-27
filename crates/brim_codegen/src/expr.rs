@@ -49,7 +49,6 @@ impl CppCodegen {
                 )
             }
             HirExprKind::Literal(lit) => self.generate_lit(lit),
-
             _ => todo!("{:?}", expr.kind),
         };
 

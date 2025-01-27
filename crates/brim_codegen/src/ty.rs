@@ -48,6 +48,11 @@ impl CppCodegen {
                 let ty = self.generate_ty(*ty);
                 format!("std::vector<{}>", ty)
             }
+            
+            HirTyKind::Const(ty) => {
+                let ty = self.generate_ty(*ty);
+                format!("const {}", ty)
+            }
 
             // Only for now, this will be replaced in type checking
             HirTyKind::Placeholder | HirTyKind::Err(_) => "auto".to_string(),
