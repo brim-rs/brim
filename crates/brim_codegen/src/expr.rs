@@ -49,6 +49,17 @@ impl CppCodegen {
                 )
             }
             HirExprKind::Literal(lit) => self.generate_lit(lit),
+            HirExprKind::Index(expr, index) => {
+                apply_parent = true;
+                let expr = self.generate_expr(*expr);
+                let index = self.generate_expr(*index);
+                format!("{}[{}]", expr, index)
+            }
+            HirExprKind::Field(expr, field) => {
+                apply_parent = true;
+                let expr = self.generate_expr(*expr);
+                format!("{}.{}", expr, field)
+            }
             _ => todo!("{:?}", expr.kind),
         };
 
