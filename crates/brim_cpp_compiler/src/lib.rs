@@ -280,6 +280,15 @@ impl CppBuild {
         }
         Ok(())
     }
+    
+    pub fn disable_warnings(&mut self) -> &mut Self {
+        self.add_flag(if self.compiler.kind() == &CompilerKind::Msvc {
+            "/W0"
+        } else {
+            "-w"
+        });
+        self
+    }
 
     fn get_output_path(&self, output_name: &OsStr) -> PathBuf {
         self.build_dir

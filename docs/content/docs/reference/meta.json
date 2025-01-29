@@ -7,9 +7,9 @@
     "---Introduction---",
     "index",
     "---Lexical structure---",
-    "keywords",
-    "identifiers",
-    "comments",
-    "whitespace"
+    "lexical/keywords",
+    "lexical/identifiers",
+    "lexical/comments",
+    "lexical/whitespace"
   ]
 }

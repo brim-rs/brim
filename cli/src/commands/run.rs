@@ -109,7 +109,7 @@ pub fn run_command<'a>(
                         build_dir,
                         lib_type,
                     )?;
-                    build_process.set_opt_level(opt_level);
+                    build_process.set_opt_level(opt_level).disable_warnings();
                     build_process.add_source(file);
 
                     let exe_path = build_process.compile(project_name, shell)?;
