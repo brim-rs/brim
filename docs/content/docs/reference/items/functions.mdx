@@ -1,0 +1,39 @@
+---
+title: Functions
+icon: SquareFunction
+---
+
+## Signature
+
+A function is a block of code that performs a specific task. Functions in Brim are defined using the `fn` keyword, followed by the function name, a list of parameters, and a block of code.
+
+### Modifiers
+- The `fn` keyword can be prefixed with `pub` to make it visible to outer modules.
+- By adding `const` keyword before `fn`, the function becomes a constant function. Which will be evaluated at compile time.
+
+### Parameters and Return Type
+Parameters are a list of variables that are passed to the function.
+- Each parameter consists of a name and a type separated by a colon (`:`). Parameters are enclosed in parentheses `()`.
+
+The return type of function is specified after the parameter list using the `->` symbol followed by the return type.
+It defaults to `void`
+
+```brim
+fn add(a: i32, b: i32) -> i32 {
+    return a + b;
+}
+```
+
+<Callout>Function body is only optional for trait methods.</Callout>
+
+### Generic arguments
+
+Functions can have generic types. The generic arguments are specified in angle brackets `<>` after the function name.
+
+```brim
+fn identity<T>(value: T) -> T {
+    return value;
+}
+```
+
+<Callout>Read more about generics here: [Generics](/docs/reference/items/generics)</Callout>

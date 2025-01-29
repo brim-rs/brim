@@ -10,6 +10,8 @@
     "lexical/keywords",
     "lexical/identifiers",
     "lexical/comments",
-    "lexical/whitespace"
+    "lexical/whitespace",
+    "---Items---",
+    "items/functions"
   ]
 }
