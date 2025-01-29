@@ -67,9 +67,15 @@ pub struct HirFnSig {
     pub name: Ident,
     /// We use option instead of FnReturnType
     pub return_type: Option<HirTy>,
-    pub params: Vec<HirParam>,
+    pub params: HirFnParams,
     pub generics: HirGenerics,
     pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub struct HirFnParams {
+    pub span: Span,
+    pub params: Vec<HirParam>,
 }
 
 #[derive(Clone, Debug)]

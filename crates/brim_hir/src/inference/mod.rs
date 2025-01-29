@@ -86,7 +86,7 @@ impl<'a> TypeInference<'a> {
             HirItemKind::Fn(f) => {
                 self.scope_manager.push_scope();
 
-                for param in &f.sig.params {
+                for param in &f.sig.params.params {
                     let param_type = param.ty.kind.clone();
                     let type_info = TypeInfo {
                         ty: param_type,

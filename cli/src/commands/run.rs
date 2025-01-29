@@ -8,12 +8,12 @@ use crate::{
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim::{
-    Shell,
+    ModuleId, Shell,
     compiler::CompilerContext,
     create_file_parent_dirs,
     files::{SimpleFiles, files},
     resolver::Resolver,
-    session::Session,
+    session::{NoMainFunction, Session},
     toml::ProjectType,
 };
 use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
@@ -80,6 +80,17 @@ pub fn run_command<'a>(
 
             let (hir, comp) = sess.analyze(module_map, resolver.ctx)?;
 
+            let main_mod = hir.get_module(ModuleId::from_usize(main_file)).unwrap();
+            let main_fn = main_mod.get_fn("main");
+
+            if let Some(func) = main_fn {
+                sess.validate_main_function(func, comp, main_file);
+            } else {
+                comp.emit(NoMainFunction {
+                    file: main_mod.path.display().to_string(),
+                });
+            }
+
             let emitted = comp.emitted.len();
             if emitted > 0 {
                 bail!(
@@ -89,53 +100,46 @@ pub fn run_command<'a>(
                 )
             }
 
-            match sess.run_codegen(hir, main_file) {
-                Ok(code) => {
-                    let file = build_dir.join("codegen").join("main.cpp");
+            let code = sess.run_codegen(hir);
+            let file = build_dir.join("codegen").join("main.cpp");
 
-                    create_file_parent_dirs(&file)?;
+            create_file_parent_dirs(&file)?;
 
-                    if !args.no_write && !file.exists() {
-                        bail!("Found `no-write` flag but file doesn't exist. Try to run without `no-write` flag first");
-                    }
-
-                    if !args.no_write {
-                        std::fs::write(&file, code)?;
-                    }
-
-                    let build_process = &mut CppBuild::new(
-                        Some(CompilerKind::Clang),
-                        project_type,
-                        build_dir,
-                        lib_type,
-                    )?;
-                    build_process.set_opt_level(opt_level).disable_warnings();
-                    build_process.add_source(file);
-
-                    let exe_path = build_process.compile(project_name, shell)?;
-
-                    let args: Vec<String> = args.exec_args;
-
-                    let mut command = process::Command::new(&exe_path);
-                    command.args(&args);
-
-                    shell.status(
-                        "Running",
-                        format!(
-                            "`{}{}{}`",
-                            &exe_path.to_string_lossy(),
-                            if args.is_empty() { "" } else { " " },
-                            &args.join(" ")
-                        ),
-                    )?;
-
-                    command.status()?;
-                }
-                Err(e) => {
-                    comp.dcx()
-                        .emit_inner(e.to_diagnostic(), &SimpleFiles::from_files(files()));
-                }
+            if !args.no_write && !file.exists() {
+                bail!("Found `no-write` flag but file doesn't exist. Try to run without `no-write` flag first");
             }
+
+            if !args.no_write {
+                std::fs::write(&file, code)?;
+            }
+
+            let build_process = &mut CppBuild::new(
+                Some(CompilerKind::Clang),
+                project_type,
+                build_dir,
+                lib_type,
+            )?;
+            build_process.set_opt_level(opt_level).disable_warnings();
+            build_process.add_source(file);
+
+            let exe_path = build_process.compile(project_name, shell)?;
+
+            let args: Vec<String> = args.exec_args;
+
+            let mut command = process::Command::new(&exe_path);
+            command.args(&args);
+
+            shell.status(
+                "Running",
+                format!(
+                    "`{}{}{}`",
+                    &exe_path.to_string_lossy(),
+                    if args.is_empty() { "" } else { " " },
+                    &args.join(" ")
+                ),
+            )?;
+
+            command.status()?;
 
             Ok(())
         },

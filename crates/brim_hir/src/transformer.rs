@@ -1,9 +1,9 @@
 use crate::{
     HirId,
-    expr::{HirBlock, HirConstExpr, HirExpr, HirExprKind},
+    expr::{HirBlock, HirConditionBranch, HirConstExpr, HirExpr, HirExprKind, HirIfExpr},
     items::{
-        HirFn, HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam,
-        HirGenerics, HirImportsKind, HirItem, HirItemKind, HirParam, HirUse,
+        HirFn, HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind,
+        HirGenericParam, HirGenerics, HirImportsKind, HirItem, HirItemKind, HirParam, HirUse,
     },
     stmts::{HirStmt, HirStmtKind},
     ty::{HirTy, HirTyKind},
@@ -19,8 +19,8 @@ use brim_ctx::{
     GlobalSymbolId, ModuleId,
     modules::{Module, ModuleMap},
 };
+use brim_span::span::Span;
 use std::{collections::HashMap, path::PathBuf};
-use crate::expr::{HirConditionBranch, HirIfExpr};
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -440,6 +440,18 @@ impl Transformer {
                     None
                 };
 
+                let params = f_decl
+                    .sig
+                    .params
+                    .iter()
+                    .map(|param| HirParam {
+                        id: HirId::from_u32(param.id.as_u32()),
+                        span: param.span,
+                        name: param.name,
+                        ty: self.transform_ty(param.ty.clone()),
+                    })
+                    .collect::<Vec<_>>();
+
                 HirItemKind::Fn(HirFn {
                     sig: HirFnSig {
                         constant: f_decl.sig.constant.as_bool(),
@@ -449,17 +461,14 @@ impl Transformer {
                         } else {
                             None
                         },
-                        params: f_decl
-                            .sig
-                            .params
-                            .iter()
-                            .map(|param| HirParam {
-                                id: HirId::from_u32(param.id.as_u32()),
-                                span: param.span,
-                                name: param.name,
-                                ty: self.transform_ty(param.ty.clone()),
-                            })
-                            .collect(),
+                        params: HirFnParams {
+                            span: if params.is_empty() {
+                                Span::DUMMY
+                            } else {
+                                params[0].span.to(params[params.len() - 1].span)
+                            },
+                            params,
+                        },
                         generics: HirGenerics {
                             params: f_decl
                                 .generics
@@ -645,7 +654,7 @@ impl Transformer {
                             block: Box::new(self.transform_expr(*branch.block.clone()).0),
                         })
                         .collect(),
-                })
+                }),
             },
             ty: HirTyKind::Placeholder,
         };
@@ -659,12 +668,16 @@ impl Transformer {
             id: self.hir_id(),
             span: ty.span,
             kind: match ty.kind {
-                TyKind::Ptr(ty, cnst) => HirTyKind::Ptr(Box::new(self.transform_ty(*ty).kind), cnst),
+                TyKind::Ptr(ty, cnst) => {
+                    HirTyKind::Ptr(Box::new(self.transform_ty(*ty).kind), cnst)
+                }
                 TyKind::Array(ty, len) => HirTyKind::Array(
                     Box::new(self.transform_ty(*ty).kind),
                     self.transform_const_expr(len),
                 ),
-                TyKind::Ref(ty, cnst) => HirTyKind::Ref(Box::new(self.transform_ty(*ty).kind), cnst),
+                TyKind::Ref(ty, cnst) => {
+                    HirTyKind::Ref(Box::new(self.transform_ty(*ty).kind), cnst)
+                }
                 TyKind::Primitive(primitive) => HirTyKind::Primitive(primitive),
                 TyKind::Vec(ty) => HirTyKind::Vec(Box::new(self.transform_ty(*ty).kind)),
                 TyKind::Const(ty) => HirTyKind::Const(Box::new(self.transform_ty(*ty).kind)),

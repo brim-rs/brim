@@ -56,7 +56,6 @@ impl CppCodegen {
 
             HirTyKind::Result(ok, err) => {
                 let ok = self.generate_ty(*ok);
-                println!("{:#?}", err);
                 let err = self.generate_ty(*err);
                 format!("std::expected<{}, {}>", ok, err)
             }

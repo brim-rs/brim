@@ -10,7 +10,7 @@ impl CppCodegen {
 
                 let params = decl
                     .sig
-                    .params
+                    .params.params
                     .iter()
                     .map(|p| {
                         format!(

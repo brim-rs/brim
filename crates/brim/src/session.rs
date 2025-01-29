@@ -12,7 +12,7 @@ use brim_ctx::{
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::{
     box_diag,
-    diagnostic::{Label, Severity, ToDiagnostic},
+    diagnostic::{Label, LabelStyle, Severity, ToDiagnostic},
 };
 use brim_fs::{
     loader::{BrimFileLoader, FileLoader},
@@ -20,12 +20,15 @@ use brim_fs::{
 };
 use brim_hir::{
     inference::infer_types,
+    items::HirFn,
     transformer::{HirModuleMap, transform_module},
+    ty::HirTyKind,
 };
 use brim_parser::parser::PResult;
 use brim_shell::Shell;
-use brim_span::files::{
-    SimpleFile, add_file, get_file, get_file_by_name, get_index_by_name, update_file,
+use brim_span::{
+    files::{SimpleFile, add_file, get_file, get_file_by_name, get_index_by_name, update_file},
+    span::Span,
 };
 use std::{path::PathBuf, time::Instant};
 use tracing::debug;
@@ -202,16 +205,7 @@ impl Session {
         Ok((hir.clone(), name_resolver.ctx))
     }
 
-    pub fn run_codegen(&mut self, hir: HirModuleMap, main_file: usize) -> PResult<String> {
-        let main_mod = hir.get_module(ModuleId::from_usize(main_file)).unwrap();
-        let main_fn = main_mod.get_fn("main");
-
-        if let None = main_fn {
-            box_diag!(NoMainFunction {
-                file: main_mod.path.display().to_string(),
-            });
-        }
-
+    pub fn run_codegen(&mut self, hir: HirModuleMap) -> String {
         let mut codegen = CppCodegen::new(hir.clone());
         codegen.generate();
 
@@ -220,12 +214,46 @@ impl Session {
             println!("{}", code.clone());
         }
 
-        Ok(code)
+        code
+    }
+
+    /// More to be added
+    pub fn validate_main_function(
+        &mut self,
+        func: &HirFn,
+        comp: &mut CompilerContext,
+        main: usize,
+    ) {
+        if func.sig.params.params.len() != 0 {
+            comp.emit(MainFunctionParams {
+                span: (func.sig.params.span, main),
+            });
+        }
+        
+        if func.sig.constant {
+            comp.emit(MainFunctionConstant {
+                span: (func.sig.span, main),
+            });
+        }
     }
 }
 
 #[derive(Diagnostic)]
-#[error("Entrypoint file: '{file}' doesn't contain a main function")]
+#[error("entrypoint file: '{file}' doesn't contain a main function")]
 pub struct NoMainFunction {
     pub file: String,
+}
+
+#[derive(Diagnostic)]
+#[error("main function cannot have parameters")]
+pub struct MainFunctionParams {
+    #[error("delete the parameters")]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("main function cannot be constant")]
+pub struct MainFunctionConstant {
+    #[error("delete the `const` keyword")]
+    pub span: (Span, usize),
 }
