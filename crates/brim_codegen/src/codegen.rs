@@ -14,7 +14,7 @@ impl CppCodegen {
     pub fn new(hir: HirModuleMap) -> Self {
         let mut code = CodeBuilder::new(4);
 
-        for import in &["string", "vector", "cstdint"] {
+        for import in &["string", "vector", "cstdint", "expected"] {
             code.add_line(&format!("#include <{}>", import));
         }
 
@@ -79,7 +79,7 @@ impl CppCodegen {
             self.current_mod = module.mod_id.clone();
             self.generate_module(module);
         }
-        
+
         self.add_main();
     }
 
@@ -91,7 +91,7 @@ impl CppCodegen {
         self.code.decrease_indent();
         self.code.add_line("}");
     }
-    
+
     pub fn generate_module(&mut self, module: HirModule) {
         self.code
             .add_line(&format!("namespace module{} {{", module.mod_id.as_u32()));

@@ -50,15 +50,40 @@ impl CppCodegen {
             }
             HirExprKind::Literal(lit) => self.generate_lit(lit),
             HirExprKind::Index(expr, index) => {
-                apply_parent = true;
                 let expr = self.generate_expr(*expr);
                 let index = self.generate_expr(*index);
                 format!("{}[{}]", expr, index)
             }
             HirExprKind::Field(expr, field) => {
-                apply_parent = true;
                 let expr = self.generate_expr(*expr);
                 format!("{}.{}", expr, field)
+            }
+            // We use compound expressions to allow if statements to be expressions. 
+            // For example: `let x = if true { ... } else { ... };` (brim) -> `auto x = true ? ... : ...;` (C++)
+            HirExprKind::If(if_stmt) => {
+                let condition = self.generate_expr(*if_stmt.condition);
+                let then_block = self.generate_expr(*if_stmt.then_block);
+                
+                let else_block = if let Some(else_block) = if_stmt.else_block {
+                    format!("else {{ {} }}", self.generate_expr(*else_block))
+                } else {
+                    String::new()
+                };
+                
+                let else_ifs = if_stmt
+                    .else_ifs
+                    .iter()
+                    .map(|branch| {
+                        format!(
+                            "else if ({}) {{ {} }}",
+                            self.generate_expr(*branch.condition.clone()),
+                            self.generate_expr(*branch.block.clone())
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join(" ");
+                
+                format!("if ({}) {{ {} }} {} {}", condition, then_block, else_block, else_ifs)
             }
             _ => todo!("{:?}", expr.kind),
         };

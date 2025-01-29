@@ -1,6 +1,6 @@
 use crate::{HirId, stmts::HirStmt, ty::HirTyKind};
 use brim_ast::{
-    expr::{BinOpKind, UnaryOp},
+    expr::{BinOpKind, ConditionBranch, Expr, UnaryOp},
     item::Ident,
     token::Lit,
 };
@@ -41,11 +41,7 @@ pub enum HirExprKind {
     /// Assignment.
     Assign(Box<HirExpr>, Box<HirExpr>),
     /// Conditionals desugared into a single structure.
-    If {
-        condition: Box<HirExpr>,
-        then_branch: Box<HirExpr>,
-        else_branch: Option<Box<HirExpr>>,
-    },
+    If(HirIfExpr),
     /// Function calls.
     Call(Box<HirExpr>, Vec<HirExpr>),
     /// Block of statements or expressions.
@@ -55,13 +51,21 @@ pub enum HirExprKind {
 }
 
 #[derive(Clone, Debug)]
+pub struct HirIfExpr {
+    pub span: Span,
+    pub condition: Box<HirExpr>,
+    pub then_block: Box<HirExpr>,
+    pub else_block: Option<Box<HirExpr>>,
+    pub else_ifs: Vec<HirConditionBranch>,
+}
+
+#[derive(Clone, Debug)]
 pub struct HirBlock {
     pub id: HirId,
     pub span: Span,
     pub stmts: Vec<HirStmt>,
 }
 
-/// Desugared condition branches for `if` or `else if`.
 #[derive(Clone, Debug)]
 pub struct HirConditionBranch {
     pub condition: Box<HirExpr>,

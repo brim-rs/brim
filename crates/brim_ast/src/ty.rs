@@ -57,6 +57,8 @@ pub enum TyKind {
     Primitive(PrimitiveType),
     /// Any other type that can be enum, struct, type, etc.
     Ident { ident: Ident, generics: GenericArgs },
+    /// Result type eg. `T!E` (brim) -> `std::expected<T, E>` (C++).
+    Result(Box<Ty>, Box<Ty>),
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),

@@ -33,6 +33,8 @@ pub enum HirTyKind {
         ident: Ident,
         generics: HirGenericArgs,
     },
+    /// Result type eg. `T!E` (brim) -> `std::expected<T, E>` (C++).
+    Result(Box<HirTyKind>, Box<HirTyKind>),
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),
@@ -97,9 +99,7 @@ impl HirTyKind {
             (HirTyKind::Const(ty1), HirTyKind::Const(ty2)) => {
                 ty1.can_be_logically_compared_to(&ty2)
             }
-            (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => {
-                ty1.can_be_logically_compared_to(&ty2)
-            }
+            (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.can_be_logically_compared_to(&ty2),
             _ => false,
         }
     }

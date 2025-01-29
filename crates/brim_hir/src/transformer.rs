@@ -20,6 +20,7 @@ use brim_ctx::{
     modules::{Module, ModuleMap},
 };
 use std::{collections::HashMap, path::PathBuf};
+use crate::expr::{HirConditionBranch, HirIfExpr};
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -627,7 +628,24 @@ impl Transformer {
                         .map(|arg| self.transform_expr(arg.clone()).0)
                         .collect(),
                 ),
-                _ => todo!(),
+                ExprKind::If(if_expr) => HirExprKind::If(HirIfExpr {
+                    span: if_expr.span,
+                    condition: Box::new(self.transform_expr(*if_expr.condition).0),
+                    then_block: Box::new(self.transform_expr(*if_expr.then_block).0),
+                    else_block: if let Some(else_block) = if_expr.else_block {
+                        Some(Box::new(self.transform_expr(*else_block).0))
+                    } else {
+                        None
+                    },
+                    else_ifs: if_expr
+                        .else_ifs
+                        .iter()
+                        .map(|branch| HirConditionBranch {
+                            condition: Box::new(self.transform_expr(*branch.condition.clone()).0),
+                            block: Box::new(self.transform_expr(*branch.block.clone()).0),
+                        })
+                        .collect(),
+                })
             },
             ty: HirTyKind::Placeholder,
         };
@@ -664,6 +682,10 @@ impl Transformer {
                         span: generics.span,
                     },
                 },
+                TyKind::Result(ok, err) => HirTyKind::Result(
+                    Box::new(self.transform_ty(*ok).kind),
+                    Box::new(self.transform_ty(*err).kind),
+                ),
                 TyKind::Err(e) => HirTyKind::Err(e),
             },
         }

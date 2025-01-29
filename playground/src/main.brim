@@ -1,5 +1,5 @@
-use { add } from test;
+use { div } from test;
 
 pub fn main() {
-    let x: const int = add(1, 2);
+    let x = div(1, 2);
 };

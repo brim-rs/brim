@@ -56,6 +56,12 @@ impl ErrorEmitted {
     }
 }
 
+impl PartialEq<()> for ErrorEmitted {
+    fn eq(&self, _: &()) -> bool {
+        true
+    }
+}
+
 index_type! {
     /// A unique identifier for a node in the AST.
     pub struct NodeId {}

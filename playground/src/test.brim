@@ -1,3 +1,7 @@
-pub fn add<T: i32>(x: T, y: T) -> T {
-    return x + y;
+pub fn div<T: i32>(x: T, y: T) -> T!str {
+    if y == 0 {
+        return "Division by zero";
+    }
+
+    return x / y;
 };

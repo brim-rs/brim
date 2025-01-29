@@ -48,10 +48,17 @@ impl CppCodegen {
                 let ty = self.generate_ty(*ty);
                 format!("std::vector<{}>", ty)
             }
-            
+
             HirTyKind::Const(ty) => {
                 let ty = self.generate_ty(*ty);
                 format!("const {}", ty)
+            }
+
+            HirTyKind::Result(ok, err) => {
+                let ok = self.generate_ty(*ok);
+                println!("{:#?}", err);
+                let err = self.generate_ty(*err);
+                format!("std::expected<{}, {}>", ok, err)
             }
 
             // Only for now, this will be replaced in type checking

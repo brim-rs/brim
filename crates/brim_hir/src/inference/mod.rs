@@ -15,6 +15,7 @@ use brim_ast::{
     ty::PrimitiveType,
 };
 use brim_ctx::ModuleId;
+use std::cmp::PartialEq;
 
 #[derive(Debug)]
 pub struct TypeInference<'a> {
@@ -308,6 +309,22 @@ impl<'a> TypeInference<'a> {
                 LitKind::CStr => todo!("CStr"),
                 _ => unreachable!("literal error: {:#?}", lit),
             },
+            HirExprKind::If(if_expr) => {
+                self.infer_expr(&mut if_expr.condition);
+                self.infer_expr(&mut if_expr.then_block);
+
+                if let Some(else_block) = &mut if_expr.else_block {
+                    self.infer_expr(else_block);
+                }
+
+                for branch in &mut if_expr.else_ifs {
+                    self.infer_expr(&mut branch.condition);
+                    self.infer_expr(&mut branch.block);
+                }
+
+                // For now, we will just use placeholder until we figure out how to compare types.
+                &HirTyKind::Placeholder
+            }
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
         expr.ty = kind.clone();
