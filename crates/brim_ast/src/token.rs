@@ -188,7 +188,7 @@ impl Token {
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Lit {
     pub kind: LitKind,
-    pub symbol: Ident,
+    pub symbol: Symbol,
     pub suffix: Option<Ident>,
 }
 
@@ -206,7 +206,7 @@ pub enum LitKind {
 }
 
 impl Lit {
-    pub fn new(kind: LitKind, symbol: Ident, suffix: Option<Ident>) -> Self {
+    pub fn new(kind: LitKind, symbol: Symbol, suffix: Option<Ident>) -> Self {
         Self {
             kind,
             symbol,

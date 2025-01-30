@@ -3,5 +3,5 @@ use { div } from test;
 pub fn main() {
     let x = div(1, 2);
 
-    let y = 1f32;
+    let y: f32 = 1f3;
 };
