@@ -1,13 +1,12 @@
 [package]
-name = "brim-hir"
+name = "brim-middle"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+brim-ast = { workspace = true }
 brim-span = { workspace = true }
 brim-index = { workspace = true }
-brim-ast = { workspace = true }
-brim-middle = { workspace = true }
 
 [lints]
 workspace = true

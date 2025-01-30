@@ -4,9 +4,9 @@ use crate::{
     ty::{HirTy, HirTyKind},
 };
 use brim_ast::item::Ident;
-use brim_ctx::{GlobalSymbolId, ModuleId};
 use brim_span::span::Span;
 use std::path::PathBuf;
+use brim_middle::{GlobalSymbolId, ModuleId};
 
 #[derive(Clone, Debug)]
 pub struct HirItem {

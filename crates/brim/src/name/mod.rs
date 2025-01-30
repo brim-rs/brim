@@ -10,8 +10,9 @@ use brim_ast::{
     item::{Block, FnDecl},
     stmts::Let,
 };
-use brim_ctx::{ModuleId, compiler::CompilerContext, modules::ModuleMap, walker::AstWalker};
+use brim_ctx::{ModuleId, compiler::CompilerContext};
 use brim_diagnostics::diag_opt;
+use brim_middle::{modules::ModuleMap, walker::AstWalker};
 use tracing::debug;
 
 #[derive(Debug)]

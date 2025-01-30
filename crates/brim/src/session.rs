@@ -4,11 +4,7 @@ use anyhow::{Result, bail};
 use brim_ast::item::{ImportsKind, ItemKind};
 use brim_codegen::codegen::CppCodegen;
 use brim_config::toml::{Config, LibType, ProjectType};
-use brim_ctx::{
-    GlobalSymbolId, ModuleId,
-    compiler::CompilerContext,
-    modules::{ModuleMap, SymbolCollector},
-};
+use brim_ctx::{GlobalSymbolId, ModuleId, compiler::CompilerContext};
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::{
     box_diag,
@@ -24,6 +20,7 @@ use brim_hir::{
     transformer::{HirModuleMap, transform_module},
     ty::HirTyKind,
 };
+use brim_middle::modules::{ModuleMap, SymbolCollector};
 use brim_parser::parser::PResult;
 use brim_shell::Shell;
 use brim_span::{
@@ -229,7 +226,7 @@ impl Session {
                 span: (func.sig.params.span, main),
             });
         }
-        
+
         if func.sig.constant {
             comp.emit(MainFunctionConstant {
                 span: (func.sig.span, main),

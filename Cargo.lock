@@ -258,8 +258,8 @@ name = "brim-hir"
 version = "0.1.0"
 dependencies = [
  "brim-ast",
- "brim-ctx",
  "brim-index",
+ "brim-middle",
  "brim-span",
 ]
 
@@ -275,6 +275,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "brim-middle"
+version = "0.1.0"
+dependencies = [
+ "brim-ast",
+ "brim-index",
+ "brim-span",
+]
+
+[[package]]
 name = "brim-parser"
 version = "0.1.0"
 dependencies = [
@@ -284,6 +293,7 @@ dependencies = [
  "brim-diag-macro",
  "brim-diagnostics",
  "brim-lexer",
+ "brim-middle",
  "brim-span",
  "indexmap",
  "tracing",

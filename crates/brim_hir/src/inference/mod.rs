@@ -14,8 +14,7 @@ use brim_ast::{
     token::{Lit, LitKind},
     ty::PrimitiveType,
 };
-use brim_ctx::ModuleId;
-use std::cmp::PartialEq;
+use brim_middle::ModuleId;
 
 #[derive(Debug)]
 pub struct TypeInference<'a> {

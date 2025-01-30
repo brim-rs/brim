@@ -1,8 +1,7 @@
 use brim_ast::item::{ItemKind, PathItemKind};
-use brim_ctx::{
-    GlobalSymbolId, ModuleId, barrel::Barrel, compiler::CompilerContext, modules::ModuleMap,
-};
+use brim_ctx::{GlobalSymbolId, ModuleId, compiler::CompilerContext};
 use brim_fs::loader::{BrimFileLoader, FileLoader};
+use brim_middle::{barrel::Barrel, modules::ModuleMap};
 use brim_parser::parser::Parser;
 use brim_span::files::{add_file, get_path};
 use std::{collections::HashSet, path::PathBuf};

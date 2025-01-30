@@ -8,7 +8,7 @@ use brim_ast::{
     item::Visibility,
     token::{Delimiter, Orientation, Token, TokenKind},
 };
-use brim_ctx::{barrel::Barrel, compiler::CompilerContext};
+use brim_ctx::compiler::CompilerContext;
 use brim_diagnostics::{TemporaryDiagnosticContext, box_diag, diagnostic::ToDiagnostic};
 use brim_lexer::{PrimitiveToken, PrimitiveTokenKind, cursor::Cursor};
 use brim_span::{
@@ -17,6 +17,7 @@ use brim_span::{
     symbols::{GLOBAL_INTERNER, Symbol},
 };
 use tracing::debug;
+use brim_middle::barrel::Barrel;
 
 mod cursor;
 mod errors;

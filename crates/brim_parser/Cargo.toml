@@ -14,3 +14,4 @@ brim-diag-macro = { workspace = true }
 brim-diagnostics = { workspace = true }
 brim-lexer = { workspace = true }
 brim-ctx = { workspace = true }
+brim-middle = { workspace = true }
