@@ -8,7 +8,6 @@ use brim_ast::{
     item::Ident,
     token::{AssignOpToken, BinOpToken, Delimiter, Lit, Orientation, Token, TokenKind},
 };
-use brim_ctx::compiler::CompilerContext;
 use brim_diagnostics::TemporaryDiagnosticContext;
 use brim_lexer::{PrimitiveToken, PrimitiveTokenKind};
 use brim_span::{

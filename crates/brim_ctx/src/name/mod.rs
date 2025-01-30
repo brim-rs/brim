@@ -1,12 +1,9 @@
 mod errors;
 mod scopes;
 
-use crate::{
-    compiler::CompilerContext,
-    name::{
-        errors::{UndeclaredFunction, UndeclaredVariable},
-        scopes::{ScopeManager, VariableInfo},
-    },
+use crate::name::{
+    errors::{UndeclaredFunction, UndeclaredVariable},
+    scopes::{ScopeManager, VariableInfo},
 };
 use brim_ast::{
     expr::{Expr, ExprKind},
@@ -79,7 +76,7 @@ impl AstWalker for NameResolver {
             },
             span: let_stmt.span,
         });
-        
+
         if let Some(expr) = &mut let_stmt.value {
             self.walk_expr(expr);
         }

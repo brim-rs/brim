@@ -1,6 +1,6 @@
 use crate::{
     cli::{
-        codegen_debug, debug_mode, dynamic_lib_mode, min_size_rel_mode, no_write, opt,
+        codegen_debug, debug_mode, dynamic_lib_mode, min_size_rel_mode, no_write,
         rel_with_deb_info_mode, release_mode, static_lib_mode,
     },
     plural::plural,
@@ -8,19 +8,13 @@ use crate::{
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim::{
-    ModuleId, Shell, TemporaryDiagnosticContext,
-    args::RunArgs,
-    compiler::CompilerContext,
-    create_file_parent_dirs,
-    files::{SimpleFiles, files},
-    resolver::Resolver,
-    session::Session,
-    toml::ProjectType,
+    ModuleId, Shell, TemporaryDiagnosticContext, args::RunArgs, compiler::CompilerContext,
+    create_file_parent_dirs, resolver::Resolver, session::Session, toml::ProjectType,
 };
 use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
 use brim_ctx::errors::NoMainFunction;
 use brim_parser::parser::Parser;
-use clap::{ArgAction, ArgMatches, Command};
+use clap::Command;
 use std::{collections::HashSet, process};
 
 pub fn run_cmd() -> Command {

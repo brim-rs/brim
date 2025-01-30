@@ -166,8 +166,14 @@ where
                     Ok(index) | Err(index) => index,
                 };
 
-                line.single_labels
-                    .insert(index, (label.style.clone(), label_start..label_end, label.message.clone()));
+                line.single_labels.insert(
+                    index,
+                    (
+                        label.style.clone(),
+                        label_start..label_end,
+                        label.message.clone(),
+                    ),
+                );
 
                 line.must_render = true;
             } else {

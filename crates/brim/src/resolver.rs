@@ -1,5 +1,4 @@
 use brim_ast::item::{ItemKind, PathItemKind};
-use brim_ctx::compiler::CompilerContext;
 use brim_diagnostics::TemporaryDiagnosticContext;
 use brim_fs::loader::{BrimFileLoader, FileLoader};
 use brim_middle::{GlobalSymbolId, ModuleId, barrel::Barrel, modules::ModuleMap};

@@ -2,7 +2,7 @@ mod scope;
 
 use crate::{
     HirId,
-    expr::{HirConstExpr, HirExpr, HirExprKind},
+    expr::{HirExpr, HirExprKind},
     inference::scope::{TypeInfo, TypeScopeManager},
     items::{HirGenericKind, HirGenericParam, HirItem, HirItemKind},
     stmts::{HirStmt, HirStmtKind},

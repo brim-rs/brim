@@ -15,10 +15,12 @@ use brim_ast::{
     token::AssignOpToken,
     ty::TyKind,
 };
+use brim_middle::{
+    GlobalSymbolId, ModuleId,
+    modules::{Module, ModuleMap},
+};
 use brim_span::span::Span;
 use std::{collections::HashMap, path::PathBuf};
-use brim_middle::{GlobalSymbolId, ModuleId};
-use brim_middle::modules::{Module, ModuleMap};
 
 #[derive(Clone, Debug)]
 pub struct LocId {

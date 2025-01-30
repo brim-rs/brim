@@ -63,7 +63,7 @@ impl CompilerContext {
 
         ErrorEmitted::new()
     }
-    
+
     pub fn extend_temp(&mut self, temp: TemporaryDiagnosticContext) {
         for diag in temp.diags.iter() {
             self.emit_diag(diag.clone());

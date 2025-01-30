@@ -6,8 +6,6 @@ use crate::lexer::{
     },
 };
 use brim_ast::token::LitKind;
-use brim_ctx::compiler::CompilerContext;
-use brim_diagnostics::TemporaryDiagnosticContext;
 use brim_lexer::{Base, LiteralKind};
 use brim_span::{
     index::{ByteIndex, ByteOffset},
@@ -47,9 +45,7 @@ impl<'a> Lexer<'a> {
             } => self.handle_float(base, empty_exponent, start, end),
             // TODO: In the future, validate the content of the string. Unescape etc.
             LiteralKind::Byte { terminated } => self.handle_byte(terminated, start, end),
-            LiteralKind::ByteStr { terminated } => {
-                self.handle_byte_str(terminated, start, end)
-            }
+            LiteralKind::ByteStr { terminated } => self.handle_byte_str(terminated, start, end),
             LiteralKind::Str { terminated } => self.handle_str(terminated, start, end),
             LiteralKind::Char { terminated } => self.handle_char(terminated, start, end),
         }
@@ -181,11 +177,7 @@ impl<'a> Lexer<'a> {
         )
     }
 
-    fn handle_empty_int(
-        &mut self,
-        start: ByteIndex,
-        end: ByteIndex,
-    ) -> LitKind {
+    fn handle_empty_int(&mut self, start: ByteIndex, end: ByteIndex) -> LitKind {
         let span = Span::new(start, end);
         let emitted = self.ctx.emit_impl(NoDigitsLiteral {
             span: (span, self.file.id()),
@@ -193,12 +185,7 @@ impl<'a> Lexer<'a> {
         LitKind::Err(emitted)
     }
 
-    fn validate_digits(
-        &mut self,
-        start: ByteIndex,
-        base: u32,
-        digits: &str,
-    ) -> LitKind {
+    fn validate_digits(&mut self, start: ByteIndex, base: u32, digits: &str) -> LitKind {
         let mut kind = LitKind::Integer;
 
         for (idx, c) in digits.char_indices() {

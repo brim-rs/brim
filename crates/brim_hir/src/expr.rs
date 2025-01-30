@@ -1,6 +1,6 @@
 use crate::{HirId, stmts::HirStmt, ty::HirTyKind};
 use brim_ast::{
-    expr::{BinOpKind, ConditionBranch, Expr, UnaryOp},
+    expr::{BinOpKind, UnaryOp},
     item::Ident,
     token::Lit,
 };

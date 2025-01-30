@@ -46,7 +46,7 @@ fn main() -> Result<()> {
         )]);
 
     for label in &mut diagnostic.labels {
-        match label.style {
+        match label.style.clone() {
             LabelStyle::Add(to_add) => {
                 let range = label.range.start..label.range.start;
 

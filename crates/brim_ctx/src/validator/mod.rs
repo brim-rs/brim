@@ -1,9 +1,6 @@
 mod errors;
 
-use crate::{
-    compiler::CompilerContext,
-    validator::errors::{DuplicateParam, TooManyParameters},
-};
+use crate::validator::errors::{DuplicateParam, TooManyParameters};
 use anyhow::Result;
 use brim_ast::item::{FnSignature, Item, ItemKind};
 use brim_diagnostics::TemporaryDiagnosticContext;

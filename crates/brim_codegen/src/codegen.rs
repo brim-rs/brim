@@ -1,7 +1,7 @@
 use crate::CodeBuilder;
 use brim_hir::transformer::{HirModule, HirModuleMap};
-use std::collections::{HashMap, HashSet, VecDeque};
 use brim_middle::ModuleId;
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug)]
 pub struct CppCodegen {

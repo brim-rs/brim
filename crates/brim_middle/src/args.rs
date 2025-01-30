@@ -4,7 +4,7 @@ use clap::ArgMatches;
 pub struct RunArgs {
     pub no_write: bool,
     pub codegen_debug: bool,
-    pub exec_args: Vec<String>
+    pub exec_args: Vec<String>,
 }
 
 impl RunArgs {
@@ -16,7 +16,7 @@ impl RunArgs {
                 .get_many::<String>("args")
                 .unwrap_or_default()
                 .map(|s| s.to_string())
-                .collect()
+                .collect(),
         }
     }
 }

@@ -280,7 +280,7 @@ impl CppBuild {
         }
         Ok(())
     }
-    
+
     pub fn disable_warnings(&mut self) -> &mut Self {
         self.add_flag(if self.compiler.kind() == &CompilerKind::Msvc {
             "/W0"
