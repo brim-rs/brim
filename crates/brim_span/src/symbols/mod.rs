@@ -101,7 +101,7 @@ impl Display for Symbol {
         if let Some(s) = self.as_str() {
             write!(f, "{}", s)
         } else {
-            write!(f, "<symbol>")
+            panic!("Failed to resolve symbol")
         }
     }
 }

@@ -3,6 +3,7 @@ mod identifiers;
 mod literals;
 mod unicode;
 
+use brim_ast::item::Ident;
 use crate::lexer::{errors::EmojiIdentifier, identifiers::nfc_normalize, unicode::UNICODE_ARRAY};
 use brim_ast::token::{AssignOpToken, BinOpToken, Delimiter, Lit, Orientation, Token, TokenKind};
 use brim_ctx::compiler::CompilerContext;
@@ -77,7 +78,10 @@ impl<'a> Lexer<'a> {
                     if string == "_" {
                         None
                     } else {
-                        Some(Symbol::new(string))
+                        Some(Ident::new(
+                            Symbol::new(string),
+                            Span::new(suffix_start, self.pos),
+                        ))
                     }
                 } else {
                     None

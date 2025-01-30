@@ -5,7 +5,7 @@ use crate::lexer::{
         UnterminatedLiteral,
     },
 };
-use brim_ast::token::LitKind;
+use brim_ast::{item::Ident, token::LitKind};
 use brim_ctx::compiler::CompilerContext;
 use brim_lexer::{Base, LiteralKind};
 use brim_span::{
@@ -21,29 +21,26 @@ impl Lexer<'_> {
         start: ByteIndex,
         end: ByteIndex,
         comp: &mut CompilerContext,
-    ) -> (LitKind, Symbol) {
+    ) -> (LitKind, Ident) {
+        let span = Span::new(start, end);
         match lit {
             LiteralKind::Int { base, empty_int } => {
                 let content = self.content_from_to(start, end);
                 let symbol = Symbol::from(content);
-
                 let kind = if empty_int {
                     self.handle_empty_int(start, end, comp)
                 } else if matches!(base, Base::Binary | Base::Octal) {
-                    // Get the slice without the prefix (0b or 0o)
                     let digits = &content[2..];
                     self.validate_digits(start, base as u32, digits, comp)
                 } else {
                     LitKind::Integer
                 };
-
-                (kind, symbol)
+                (kind, Ident::new(symbol, span))
             }
             LiteralKind::Float {
                 base,
                 empty_exponent,
             } => self.handle_float(base, empty_exponent, start, end, comp),
-            // TODO: In the future, validate the content of the string. Unescape etc.
             LiteralKind::Byte { terminated } => self.handle_byte(terminated, start, end, comp),
             LiteralKind::ByteStr { terminated } => {
                 self.handle_byte_str(terminated, start, end, comp)
@@ -59,9 +56,9 @@ impl Lexer<'_> {
         start: ByteIndex,
         end: ByteIndex,
         comp: &mut CompilerContext,
-    ) -> (LitKind, Symbol) {
+    ) -> (LitKind, Ident) {
+        let span = Span::new(start, end);
         let kind = if !terminated {
-            let span = Span::new(start, end);
             let emitted = comp.emit(UnterminatedLiteral {
                 span: (span, self.file.id()),
                 type_: "char",
@@ -70,37 +67,11 @@ impl Lexer<'_> {
         } else {
             LitKind::Char
         };
-
         let content = self.content_from_to(
             start + ByteOffset::from_usize(1),
             end - ByteOffset::from_usize(1),
         );
-        (kind, Symbol::new(content))
-    }
-
-    pub fn handle_str(
-        &self,
-        terminated: bool,
-        start: ByteIndex,
-        end: ByteIndex,
-        comp: &mut CompilerContext,
-    ) -> (LitKind, Symbol) {
-        let kind = if !terminated {
-            let span = Span::new(start, end);
-            let emitted = comp.emit(UnterminatedLiteral {
-                span: (span, self.file.id()),
-                type_: "string",
-            });
-            LitKind::Err(emitted)
-        } else {
-            LitKind::Str
-        };
-
-        let content = self.content_from_to(
-            start + ByteOffset::from_usize(1),
-            end - ByteOffset::from_usize(1),
-        );
-        (kind, Symbol::new(content))
+        (kind, Ident::new(Symbol::new(content), span))
     }
 
     fn handle_float(
@@ -110,51 +81,24 @@ impl Lexer<'_> {
         start: ByteIndex,
         end: ByteIndex,
         comp: &mut CompilerContext,
-    ) -> (LitKind, Symbol) {
+    ) -> (LitKind, Ident) {
+        let span = Span::new(start, end);
         let mut kind = LitKind::Float;
-
         if empty_exponent {
-            let span = Span::new(start, end);
-            let emitted = comp.emit(EmptyExponent {
+            kind = LitKind::Err(comp.emit(EmptyExponent {
                 span: (span, self.file.id()),
-            });
-            kind = LitKind::Err(emitted);
+            }));
         }
-
         if base != Base::Decimal {
-            let span = Span::new(start, end);
-            let emitted = comp.emit(UnsupportedFloatBase {
+            kind = LitKind::Err(comp.emit(UnsupportedFloatBase {
                 span: (span, self.file.id()),
                 base,
-            });
-            kind = LitKind::Err(emitted)
+            }));
         }
-        (kind, Symbol::new(self.content_from_to(start, end)))
-    }
-
-    fn handle_byte_str(
-        &self,
-        terminated: bool,
-        start: ByteIndex,
-        end: ByteIndex,
-        comp: &mut CompilerContext,
-    ) -> (LitKind, Symbol) {
-        let kind = if !terminated {
-            let span = Span::new(start, end);
-            let emitted = comp.emit(UnterminatedLiteral {
-                span: (span, self.file.id()),
-                type_: "byte string",
-            });
-            LitKind::Err(emitted)
-        } else {
-            LitKind::ByteStr
-        };
-
-        let content = self.content_from_to(
-            start + ByteOffset::from_usize(2),
-            end - ByteOffset::from_usize(1),
-        );
-        (kind, Symbol::new(content))
+        (
+            kind,
+            Ident::new(Symbol::new(self.content_from_to(start, end)), span),
+        )
     }
 
     fn handle_byte(
@@ -163,24 +107,81 @@ impl Lexer<'_> {
         start: ByteIndex,
         end: ByteIndex,
         comp: &mut CompilerContext,
-    ) -> (LitKind, Symbol) {
+    ) -> (LitKind, Ident) {
+        let span = Span::new(start, end);
         let kind = if !terminated {
-            let span = Span::new(start, end);
-            let emitted = comp.emit(UnterminatedLiteral {
+            LitKind::Err(comp.emit(UnterminatedLiteral {
                 span: (span, self.file.id()),
                 type_: "byte",
-            });
-            LitKind::Err(emitted)
+            }))
         } else {
             LitKind::Byte
         };
-
         (
             kind,
-            Symbol::new(self.content_from_to(
-                start + ByteOffset::from_usize(2),
-                end - ByteOffset::from_usize(1),
-            )),
+            Ident::new(
+                Symbol::new(self.content_from_to(
+                    start + ByteOffset::from_usize(2),
+                    end - ByteOffset::from_usize(1),
+                )),
+                span,
+            ),
+        )
+    }
+
+    fn handle_byte_str(
+        &self,
+        terminated: bool,
+        start: ByteIndex,
+        end: ByteIndex,
+        comp: &mut CompilerContext,
+    ) -> (LitKind, Ident) {
+        let span = Span::new(start, end);
+        let kind = if !terminated {
+            LitKind::Err(comp.emit(UnterminatedLiteral {
+                span: (span, self.file.id()),
+                type_: "byte string",
+            }))
+        } else {
+            LitKind::ByteStr
+        };
+        (
+            kind,
+            Ident::new(
+                Symbol::new(self.content_from_to(
+                    start + ByteOffset::from_usize(2),
+                    end - ByteOffset::from_usize(1),
+                )),
+                span,
+            ),
+        )
+    }
+
+    fn handle_str(
+        &self,
+        terminated: bool,
+        start: ByteIndex,
+        end: ByteIndex,
+        comp: &mut CompilerContext,
+    ) -> (LitKind, Ident) {
+        let span = Span::new(start, end);
+        let kind = if !terminated {
+            LitKind::Err(comp.emit(UnterminatedLiteral {
+                span: (span, self.file.id()),
+                type_: "string",
+            }))
+        } else {
+            LitKind::Str
+        };
+        (
+            kind,
+            Ident::new(
+                Symbol::new(self.content_from_to(
+                    start + ByteOffset::from_usize(1),
+                    end - ByteOffset::from_usize(1),
+                )),
+                span,
+            ),
         )
     }
 
@@ -191,10 +192,9 @@ impl Lexer<'_> {
         comp: &mut CompilerContext,
     ) -> LitKind {
         let span = Span::new(start, end);
-        let emitted = comp.emit(NoDigitsLiteral {
+        LitKind::Err(comp.emit(NoDigitsLiteral {
             span: (span, self.file.id()),
-        });
-        LitKind::Err(emitted)
+        }))
     }
 
     fn validate_digits(
@@ -205,12 +205,10 @@ impl Lexer<'_> {
         comp: &mut CompilerContext,
     ) -> LitKind {
         let mut kind = LitKind::Integer;
-
         for (idx, c) in digits.char_indices() {
             if c == '_' {
                 continue;
             }
-
             if c.to_digit(base).is_none() {
                 let span = Span::new(
                     start + ByteOffset::from_usize(2 + idx),
@@ -222,7 +220,6 @@ impl Lexer<'_> {
                 }));
             }
         }
-
         kind
     }
 }

@@ -1,7 +1,10 @@
 use crate::{
     parser::{
         PResult, PToken, PTokenKind, Parser,
-        errors::{ElseBranchExpr, ElseIfAfterElse, UnexpectedToken},
+        errors::{
+            ElseBranchExpr, ElseIfAfterElse, InvalidLiteralSuffix, UnexpectedLiteralSuffix,
+            UnexpectedToken,
+        },
     },
     ptok,
 };
@@ -10,7 +13,7 @@ use brim_ast::{
     expr::{
         BinOpAssociativity, BinOpKind, ConditionBranch, ConstExpr, Expr, ExprKind, IfExpr, UnaryOp,
     },
-    token::{BinOpToken, Delimiter, Orientation, TokenKind},
+    token::{BinOpToken, Delimiter, Lit, LitKind, Orientation, TokenKind},
 };
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
@@ -162,10 +165,54 @@ impl<'a> Parser<'a> {
         Ok(primary)
     }
 
+    pub fn validate_suffix(&mut self, lit: Lit) -> PResult<'a, ()> {
+        if let Some(sym) = lit.suffix {
+            let suffix = sym.to_string();
+            let span = sym.span;
+
+            // Integer can be turned into a float but not the other way around
+            let valid_suffixes = match lit.kind {
+                LitKind::Integer => vec![
+                    "u8", "u16", "u32", "u64", "usize", "i8", "i16", "i32", "i64", "isize", "f32",
+                    "f64",
+                ],
+                LitKind::Float => vec!["f32", "f64"],
+                _ => vec![],
+            };
+            let msg = if valid_suffixes.is_empty() {
+                "This literal doesn't expect any suffix".to_string()
+            } else {
+                format!(
+                    "This literal expects one of the following suffixes: {}",
+                    valid_suffixes.join(", ")
+                )
+            };
+
+            // This means that the suffix is not expected in the literal
+            if valid_suffixes.is_empty() {
+                self.emit(UnexpectedLiteralSuffix {
+                    lit,
+                    span: (span, self.file),
+                    note: msg,
+                });
+            } else if !valid_suffixes.contains(&suffix.as_str()) {
+                self.emit(InvalidLiteralSuffix {
+                    lit,
+                    span: (span, self.file),
+                    note: msg,
+                });
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn parse_primary_expr(&mut self) -> PResult<'a, Expr> {
         match self.current().kind {
             TokenKind::Literal(lit) => {
                 let span = self.advance().span;
+                self.validate_suffix(lit)?;
+
                 Ok(self.new_expr(span, ExprKind::Literal(lit)))
             }
             TokenKind::Delimiter(Delimiter::Paren, Orientation::Open) => {

@@ -1,4 +1,4 @@
-use brim_ast::token::{AssignOpToken, TokenKind};
+use brim_ast::token::{AssignOpToken, Lit, TokenKind};
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
 use brim_span::span::Span;
@@ -127,4 +127,24 @@ pub struct UseStatementBraces {
 pub struct MissingFromKeyword {
     #[error]
     pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("unexpected suffix for literal: `{lit}`.")]
+pub struct UnexpectedLiteralSuffix {
+    pub lit: Lit,
+    #[error]
+    pub span: (Span, usize),
+    #[note]
+    pub note: String,
+}
+
+#[derive(Diagnostic)]
+#[error("found invalid suffix for literal: `{lit}`.")]
+pub struct InvalidLiteralSuffix {
+    pub lit: Lit,
+    #[error]
+    pub span: (Span, usize),
+    #[note]
+    pub note: String,
 }

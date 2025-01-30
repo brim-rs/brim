@@ -188,8 +188,8 @@ impl Token {
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Lit {
     pub kind: LitKind,
-    pub symbol: Symbol,
-    pub suffix: Option<Symbol>,
+    pub symbol: Ident,
+    pub suffix: Option<Ident>,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -206,7 +206,7 @@ pub enum LitKind {
 }
 
 impl Lit {
-    pub fn new(kind: LitKind, symbol: Symbol, suffix: Option<Symbol>) -> Self {
+    pub fn new(kind: LitKind, symbol: Ident, suffix: Option<Ident>) -> Self {
         Self {
             kind,
             symbol,
@@ -217,7 +217,12 @@ impl Lit {
 
 impl Display for Lit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.symbol)
+        write!(
+            f,
+            "{}{}",
+            self.symbol,
+            self.suffix.map_or("".to_string(), |s| s.to_string())
+        )
     }
 }
 
