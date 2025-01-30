@@ -7,6 +7,7 @@ use crate::lexer::{
 };
 use brim_ast::token::LitKind;
 use brim_ctx::compiler::CompilerContext;
+use brim_diagnostics::TemporaryDiagnosticContext;
 use brim_lexer::{Base, LiteralKind};
 use brim_span::{
     index::{ByteIndex, ByteOffset},
@@ -14,25 +15,26 @@ use brim_span::{
     symbols::Symbol,
 };
 
-impl Lexer<'_> {
+impl<'a> Lexer<'a> {
     pub fn lex_literal(
         &mut self,
         lit: LiteralKind,
         start: ByteIndex,
         end: ByteIndex,
-        comp: &mut CompilerContext,
     ) -> (LitKind, Symbol) {
+        let content = self.content_from_to(start, end).to_string();
+
         match lit {
             LiteralKind::Int { base, empty_int } => {
-                let content = self.content_from_to(start, end);
-                let symbol = Symbol::from(content);
+                let symbol = Symbol::from(content.clone());
 
                 let kind = if empty_int {
-                    self.handle_empty_int(start, end, comp)
+                    self.handle_empty_int(start, end)
                 } else if matches!(base, Base::Binary | Base::Octal) {
                     // Get the slice without the prefix (0b or 0o)
                     let digits = &content[2..];
-                    self.validate_digits(start, base as u32, digits, comp)
+                    let kind = self.validate_digits(start, base as u32, digits);
+                    kind
                 } else {
                     LitKind::Integer
                 };
@@ -42,27 +44,26 @@ impl Lexer<'_> {
             LiteralKind::Float {
                 base,
                 empty_exponent,
-            } => self.handle_float(base, empty_exponent, start, end, comp),
+            } => self.handle_float(base, empty_exponent, start, end),
             // TODO: In the future, validate the content of the string. Unescape etc.
-            LiteralKind::Byte { terminated } => self.handle_byte(terminated, start, end, comp),
+            LiteralKind::Byte { terminated } => self.handle_byte(terminated, start, end),
             LiteralKind::ByteStr { terminated } => {
-                self.handle_byte_str(terminated, start, end, comp)
+                self.handle_byte_str(terminated, start, end)
             }
-            LiteralKind::Str { terminated } => self.handle_str(terminated, start, end, comp),
-            LiteralKind::Char { terminated } => self.handle_char(terminated, start, end, comp),
+            LiteralKind::Str { terminated } => self.handle_str(terminated, start, end),
+            LiteralKind::Char { terminated } => self.handle_char(terminated, start, end),
         }
     }
 
     pub fn handle_char(
-        &self,
+        &mut self,
         terminated: bool,
         start: ByteIndex,
         end: ByteIndex,
-        comp: &mut CompilerContext,
     ) -> (LitKind, Symbol) {
         let kind = if !terminated {
             let span = Span::new(start, end);
-            let emitted = comp.emit(UnterminatedLiteral {
+            let emitted = self.ctx.emit_impl(UnterminatedLiteral {
                 span: (span, self.file.id()),
                 type_: "char",
             });
@@ -79,15 +80,14 @@ impl Lexer<'_> {
     }
 
     pub fn handle_str(
-        &self,
+        &mut self,
         terminated: bool,
         start: ByteIndex,
         end: ByteIndex,
-        comp: &mut CompilerContext,
     ) -> (LitKind, Symbol) {
         let kind = if !terminated {
             let span = Span::new(start, end);
-            let emitted = comp.emit(UnterminatedLiteral {
+            let emitted = self.ctx.emit_impl(UnterminatedLiteral {
                 span: (span, self.file.id()),
                 type_: "string",
             });
@@ -104,18 +104,17 @@ impl Lexer<'_> {
     }
 
     fn handle_float(
-        &self,
+        &mut self,
         base: Base,
         empty_exponent: bool,
         start: ByteIndex,
         end: ByteIndex,
-        comp: &mut CompilerContext,
     ) -> (LitKind, Symbol) {
         let mut kind = LitKind::Float;
 
         if empty_exponent {
             let span = Span::new(start, end);
-            let emitted = comp.emit(EmptyExponent {
+            let emitted = self.ctx.emit_impl(EmptyExponent {
                 span: (span, self.file.id()),
             });
             kind = LitKind::Err(emitted);
@@ -123,7 +122,7 @@ impl Lexer<'_> {
 
         if base != Base::Decimal {
             let span = Span::new(start, end);
-            let emitted = comp.emit(UnsupportedFloatBase {
+            let emitted = self.ctx.emit_impl(UnsupportedFloatBase {
                 span: (span, self.file.id()),
                 base,
             });
@@ -133,15 +132,14 @@ impl Lexer<'_> {
     }
 
     fn handle_byte_str(
-        &self,
+        &mut self,
         terminated: bool,
         start: ByteIndex,
         end: ByteIndex,
-        comp: &mut CompilerContext,
     ) -> (LitKind, Symbol) {
         let kind = if !terminated {
             let span = Span::new(start, end);
-            let emitted = comp.emit(UnterminatedLiteral {
+            let emitted = self.ctx.emit_impl(UnterminatedLiteral {
                 span: (span, self.file.id()),
                 type_: "byte string",
             });
@@ -158,15 +156,14 @@ impl Lexer<'_> {
     }
 
     fn handle_byte(
-        &self,
+        &mut self,
         terminated: bool,
         start: ByteIndex,
         end: ByteIndex,
-        comp: &mut CompilerContext,
     ) -> (LitKind, Symbol) {
         let kind = if !terminated {
             let span = Span::new(start, end);
-            let emitted = comp.emit(UnterminatedLiteral {
+            let emitted = self.ctx.emit_impl(UnterminatedLiteral {
                 span: (span, self.file.id()),
                 type_: "byte",
             });
@@ -185,24 +182,22 @@ impl Lexer<'_> {
     }
 
     fn handle_empty_int(
-        &self,
+        &mut self,
         start: ByteIndex,
         end: ByteIndex,
-        comp: &mut CompilerContext,
     ) -> LitKind {
         let span = Span::new(start, end);
-        let emitted = comp.emit(NoDigitsLiteral {
+        let emitted = self.ctx.emit_impl(NoDigitsLiteral {
             span: (span, self.file.id()),
         });
         LitKind::Err(emitted)
     }
 
     fn validate_digits(
-        &self,
+        &mut self,
         start: ByteIndex,
         base: u32,
         digits: &str,
-        comp: &mut CompilerContext,
     ) -> LitKind {
         let mut kind = LitKind::Integer;
 
@@ -216,7 +211,7 @@ impl Lexer<'_> {
                     start + ByteOffset::from_usize(2 + idx),
                     start + ByteOffset::from_usize(2 + idx + c.len_utf8()),
                 );
-                kind = LitKind::Err(comp.emit(InvalidDigitLiteral {
+                kind = LitKind::Err(self.ctx.emit_impl(InvalidDigitLiteral {
                     span: (span, self.file.id()),
                     base,
                 }));

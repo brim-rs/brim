@@ -1,20 +1,21 @@
 use brim_ast::item::{ItemKind, PathItemKind};
-use brim_ctx::{GlobalSymbolId, ModuleId, compiler::CompilerContext};
+use brim_ctx::compiler::CompilerContext;
+use brim_diagnostics::TemporaryDiagnosticContext;
 use brim_fs::loader::{BrimFileLoader, FileLoader};
-use brim_middle::{barrel::Barrel, modules::ModuleMap};
+use brim_middle::{GlobalSymbolId, ModuleId, barrel::Barrel, modules::ModuleMap};
 use brim_parser::parser::Parser;
 use brim_span::files::{add_file, get_path};
 use std::{collections::HashSet, path::PathBuf};
 
 #[derive(Debug)]
 pub struct Resolver<'a> {
-    pub ctx: &'a mut CompilerContext<'a>,
+    pub ctx: &'a mut TemporaryDiagnosticContext,
     pub map: ModuleMap,
     pub temp_loader: BrimFileLoader,
 }
 
 impl<'a> Resolver<'a> {
-    pub fn new(ctx: &'a mut CompilerContext<'a>) -> Self {
+    pub fn new(ctx: &'a mut TemporaryDiagnosticContext) -> Self {
         Self {
             ctx,
             map: ModuleMap::new(),
@@ -48,11 +49,9 @@ impl<'a> Resolver<'a> {
                 let contents = self.temp_loader.read_file(&ref_path)?;
                 let file = add_file(ref_path.clone(), contents);
                 let mut parser = Parser::new(file);
-                let mut nested_barrel = parser.parse_barrel(self.ctx)?;
+                let mut nested_barrel = parser.parse_barrel()?;
 
-                for diag in &parser.diags.dcx.diags {
-                    self.ctx.emit_diag(diag.clone());
-                }
+                self.ctx.extend(parser.dcx.diags);
 
                 self.map.add_import(
                     GlobalSymbolId {

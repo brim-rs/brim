@@ -4,6 +4,7 @@ use brim_ast::{
 };
 use brim_index::index_type;
 
+pub mod args;
 pub mod barrel;
 pub mod modules;
 pub mod walker;

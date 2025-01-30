@@ -1,20 +1,41 @@
-use crate::diag_ctx::DiagnosticContext;
-use brim_ast::ErrorEmitted;
-use brim_diagnostics::diagnostic::{Diagnostic, ToDiagnostic};
+use crate::{
+    diag_ctx::DiagnosticContext,
+    errors::{MainFunctionConstant, MainFunctionParams},
+    name::NameResolver,
+    validator::AstValidator,
+};
+use brim_ast::item::{ImportsKind, ItemKind};
+use brim_codegen::codegen::CppCodegen;
+use brim_diagnostics::{
+    ErrorEmitted, TemporaryDiagnosticContext,
+    diagnostic::{Diagnostic, ToDiagnostic},
+};
+use brim_hir::{
+    inference::infer_types,
+    items::HirFn,
+    transformer::{HirModuleMap, transform_module},
+};
+use brim_middle::{
+    GlobalSymbolId, ModuleId,
+    args::RunArgs,
+    modules::{ModuleMap, SymbolCollector},
+};
 #[cfg(not(feature = "snap"))]
 use brim_span::files::{SimpleFiles, files};
 
 #[derive(Debug, Clone)]
-pub struct CompilerContext<'a> {
+pub struct CompilerContext {
     dcx: DiagnosticContext,
-    pub emitted: Vec<Diagnostic<'a, usize>>,
+    pub emitted: Vec<Diagnostic<usize>>,
+    pub args: RunArgs,
 }
 
-impl<'a> CompilerContext<'a> {
-    pub fn new() -> Self {
+impl CompilerContext {
+    pub fn new(args: RunArgs) -> Self {
         Self {
             dcx: DiagnosticContext::new(),
             emitted: vec![],
+            args,
         }
     }
 
@@ -22,11 +43,11 @@ impl<'a> CompilerContext<'a> {
         &mut self.dcx
     }
 
-    pub fn emit(&mut self, diag: impl ToDiagnostic<'a> + 'a) -> ErrorEmitted {
+    pub fn emit(&mut self, diag: impl ToDiagnostic + 'static) -> ErrorEmitted {
         self.emit_inner(Box::new(diag))
     }
 
-    pub fn emit_diag(&mut self, diag: Diagnostic<'a, usize>) -> ErrorEmitted {
+    pub fn emit_diag(&mut self, diag: Diagnostic<usize>) -> ErrorEmitted {
         self.dcx
             .emit_inner(diag.clone(), &SimpleFiles::from_files(files()));
         self.emitted.push(diag);
@@ -34,12 +55,110 @@ impl<'a> CompilerContext<'a> {
         ErrorEmitted::new()
     }
 
-    pub fn emit_inner(&mut self, diag: Box<dyn ToDiagnostic<'a> + 'a>) -> ErrorEmitted {
+    pub fn emit_inner(&mut self, diag: Box<dyn ToDiagnostic>) -> ErrorEmitted {
         let diag_clone = diag.to_diagnostic();
         self.dcx
             .emit(&Box::new(diag), &SimpleFiles::from_files(files()));
         self.emitted.push(diag_clone);
 
         ErrorEmitted::new()
+    }
+    
+    pub fn extend_temp(&mut self, temp: TemporaryDiagnosticContext) {
+        for diag in temp.diags.iter() {
+            self.emit_diag(diag.clone());
+        }
+    }
+
+    /// Resolve and analyze the project form the main barrel
+    pub fn analyze(&mut self, mut map: ModuleMap) -> anyhow::Result<HirModuleMap> {
+        let map = &mut map;
+
+        let mut validator = AstValidator::new();
+        validator.validate(map.clone())?;
+        self.extend_temp(validator.ctx);
+
+        let mut collector = SymbolCollector::new(map);
+        collector.collect();
+
+        for module in map.modules.clone() {
+            let file_id = module.barrel.file_id;
+            for item in module.barrel.items {
+                match item.kind {
+                    ItemKind::Use(u) => {
+                        let module_id = ModuleId::from_usize(file_id);
+                        let module = map
+                            .module_by_import(GlobalSymbolId {
+                                mod_id: module_id,
+                                item_id: item.id,
+                            })
+                            .unwrap();
+                        let resolved_id = ModuleId::from_usize(module.barrel.file_id);
+
+                        let import_symbols: Vec<GlobalSymbolId> = match &u.imports {
+                            ImportsKind::All => map
+                                .find_symbols_in_module(Some(resolved_id))
+                                .iter()
+                                .map(|symbol| GlobalSymbolId {
+                                    mod_id: resolved_id,
+                                    item_id: symbol.item_id,
+                                })
+                                .collect(),
+                            ImportsKind::List(list) => list
+                                .iter()
+                                .flat_map(|import| {
+                                    map.find_symbol_by_name(&import.to_string(), Some(resolved_id))
+                                })
+                                .map(|symbol| GlobalSymbolId {
+                                    mod_id: resolved_id,
+                                    item_id: symbol.item_id,
+                                })
+                                .collect(),
+                        };
+
+                        map.update_modules_imports(module_id, import_symbols);
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        let mut name_resolver = NameResolver::new(map.clone());
+        name_resolver.resolve_names();
+        self.extend_temp(name_resolver.ctx);
+
+        let hir = &mut transform_module(name_resolver.map);
+        infer_types(hir);
+
+        // TODO: type checking etc.
+
+        Ok(hir.clone())
+    }
+
+    pub fn run_codegen(&mut self, hir: HirModuleMap) -> String {
+        let mut codegen = CppCodegen::new(hir.clone());
+        codegen.generate();
+
+        let code = codegen.code.build();
+        if self.args.codegen_debug {
+            println!("{}", code.clone());
+        }
+
+        code
+    }
+
+    /// More to be added
+    pub fn validate_main_function(&mut self, func: &HirFn, main: usize) {
+        if func.sig.params.params.len() != 0 {
+            self.emit(MainFunctionParams {
+                span: (func.sig.params.span, main),
+            });
+        }
+
+        if func.sig.constant {
+            self.emit(MainFunctionConstant {
+                span: (func.sig.span, main),
+            });
+        }
     }
 }

@@ -9,8 +9,8 @@ use brim_ast::{
     ty::{Const, PrimitiveType, Ty, TyKind},
 };
 
-impl<'a> Parser<'a> {
-    pub fn parse_type(&mut self) -> PResult<'a, Ty> {
+impl Parser {
+    pub fn parse_type(&mut self) -> PResult<Ty> {
         let span = self.current().span;
 
         let kind = if self.eat(TokenKind::BinOp(BinOpToken::And)) {
@@ -36,13 +36,13 @@ impl<'a> Parser<'a> {
                 }
             }
         };
-        
+
         let ty = Ty {
             span,
             kind,
             id: self.new_id(),
         };
-        
+
         if self.eat(TokenKind::Bang) {
             return Ok(Ty {
                 span,
@@ -54,7 +54,7 @@ impl<'a> Parser<'a> {
         Ok(ty)
     }
 
-    pub fn parse_const(&mut self) -> PResult<'a, TyKind> {
+    pub fn parse_const(&mut self) -> PResult<TyKind> {
         self.eat_keyword(ptok!(Const));
 
         if self.eat(TokenKind::BinOp(BinOpToken::And)) {
@@ -66,7 +66,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_ref(&mut self, constant: bool) -> PResult<'a, TyKind> {
+    pub fn parse_ref(&mut self, constant: bool) -> PResult<TyKind> {
         if self.current().is_keyword(Const) {
             self.emit(ConstAfter {
                 span: (self.prev().span, self.file),
@@ -78,7 +78,7 @@ impl<'a> Parser<'a> {
         Ok(TyKind::Ref(Box::new(ty), Const::from_bool(constant)))
     }
 
-    pub fn parse_ptr(&mut self, constant: bool) -> PResult<'a, TyKind> {
+    pub fn parse_ptr(&mut self, constant: bool) -> PResult<TyKind> {
         if self.current().is_keyword(Const) {
             self.emit(ConstAfter {
                 span: (self.prev().span, self.file),
@@ -90,7 +90,7 @@ impl<'a> Parser<'a> {
         Ok(TyKind::Ptr(Box::new(ty), Const::from_bool(constant)))
     }
 
-    pub fn parse_array(&mut self) -> PResult<'a, TyKind> {
+    pub fn parse_array(&mut self) -> PResult<TyKind> {
         self.expect_oparen()?;
 
         let ty = self.parse_type()?;
@@ -101,7 +101,7 @@ impl<'a> Parser<'a> {
         Ok(TyKind::Array(Box::new(ty), size))
     }
 
-    pub fn is_primitive(&mut self, ident: Ident) -> PResult<'a, Option<PrimitiveType>> {
+    pub fn is_primitive(&mut self, ident: Ident) -> PResult<Option<PrimitiveType>> {
         Ok(PrimitiveType::try_from_string(ident.to_string()))
     }
 }

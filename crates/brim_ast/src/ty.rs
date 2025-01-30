@@ -1,8 +1,9 @@
 use crate::{
-    ErrorEmitted, NodeId,
+    NodeId,
     expr::ConstExpr,
     item::{GenericArgs, Ident},
 };
+use brim_diagnostics::ErrorEmitted;
 use brim_span::span::Span;
 
 #[derive(Debug, Clone)]

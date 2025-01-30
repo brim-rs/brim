@@ -138,6 +138,7 @@ dependencies = [
  "brim-fs",
  "brim-hir",
  "brim-lexer",
+ "brim-middle",
  "brim-parser",
  "brim-shell",
  "brim-span",
@@ -148,6 +149,7 @@ dependencies = [
 name = "brim-ast"
 version = "0.1.0"
 dependencies = [
+ "brim-diagnostics",
  "brim-index",
  "brim-span",
  "brim-symbols-macro",
@@ -164,6 +166,7 @@ dependencies = [
  "backtrace",
  "brim",
  "brim-cpp-compiler",
+ "brim-ctx",
  "brim-parser",
  "clap",
  "colored",
@@ -177,8 +180,8 @@ name = "brim-codegen"
 version = "0.1.0"
 dependencies = [
  "brim-ast",
- "brim-ctx",
  "brim-hir",
+ "brim-middle",
 ]
 
 [[package]]
@@ -216,9 +219,14 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "brim-ast",
+ "brim-codegen",
+ "brim-diag-macro",
  "brim-diagnostics",
+ "brim-hir",
  "brim-index",
+ "brim-middle",
  "brim-span",
+ "tracing",
 ]
 
 [[package]]
@@ -258,6 +266,7 @@ name = "brim-hir"
 version = "0.1.0"
 dependencies = [
  "brim-ast",
+ "brim-diagnostics",
  "brim-index",
  "brim-middle",
  "brim-span",
@@ -281,6 +290,7 @@ dependencies = [
  "brim-ast",
  "brim-index",
  "brim-span",
+ "clap",
 ]
 
 [[package]]

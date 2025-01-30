@@ -46,22 +46,6 @@ generate_symbols! {
     SelfSmall = "self",
 }
 
-/// A struct that represents already emitted diagnostic
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub struct ErrorEmitted(());
-
-impl ErrorEmitted {
-    pub fn new() -> Self {
-        Self(())
-    }
-}
-
-impl PartialEq<()> for ErrorEmitted {
-    fn eq(&self, _: &()) -> bool {
-        true
-    }
-}
-
 index_type! {
     /// A unique identifier for a node in the AST.
     pub struct NodeId {}

@@ -1,6 +1,6 @@
 use crate::{
     cli::{
-        RunArgs, codegen_debug, debug_mode, dynamic_lib_mode, min_size_rel_mode, no_write, opt,
+        codegen_debug, debug_mode, dynamic_lib_mode, min_size_rel_mode, no_write, opt,
         rel_with_deb_info_mode, release_mode, static_lib_mode,
     },
     plural::plural,
@@ -8,15 +8,17 @@ use crate::{
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim::{
-    ModuleId, Shell,
+    ModuleId, Shell, TemporaryDiagnosticContext,
+    args::RunArgs,
     compiler::CompilerContext,
     create_file_parent_dirs,
     files::{SimpleFiles, files},
     resolver::Resolver,
-    session::{NoMainFunction, Session},
+    session::Session,
     toml::ProjectType,
 };
 use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
+use brim_ctx::errors::NoMainFunction;
 use brim_parser::parser::Parser;
 use clap::{ArgAction, ArgMatches, Command};
 use std::{collections::HashSet, process};
@@ -41,9 +43,9 @@ pub fn run_cmd() -> Command {
         .arg(codegen_debug())
 }
 
-pub fn run_command<'a>(
+pub fn run_command(
     sess: &mut Session,
-    comp: &'a mut CompilerContext<'a>,
+    comp: &mut CompilerContext,
     c_choice: ColorChoice,
     args: RunArgs,
 ) -> Result<()> {
@@ -69,22 +71,23 @@ pub fn run_command<'a>(
             )?;
 
             let mut parser = Parser::new(main_file);
-            let mut barrel = parser.parse_barrel(comp)?;
-            for diag in &parser.diags.dcx.diags {
+            let mut barrel = parser.parse_barrel()?;
+            for diag in &parser.dcx.diags {
                 comp.emit_diag(diag.clone());
             }
 
-            let mut resolver = Resolver::new(comp);
+            let resolver_temp = &mut TemporaryDiagnosticContext::new();
+            let mut resolver = Resolver::new(resolver_temp);
             let mut visited = HashSet::new();
             let module_map = resolver.create_module_map(&mut barrel, &mut visited)?;
 
-            let (hir, comp) = sess.analyze(module_map, resolver.ctx)?;
+            let hir = comp.analyze(module_map)?;
 
             let main_mod = hir.get_module(ModuleId::from_usize(main_file)).unwrap();
             let main_fn = main_mod.get_fn("main");
 
             if let Some(func) = main_fn {
-                sess.validate_main_function(func, comp, main_file);
+                comp.validate_main_function(func, main_file);
             } else {
                 comp.emit(NoMainFunction {
                     file: main_mod.path.display().to_string(),
@@ -100,7 +103,7 @@ pub fn run_command<'a>(
                 )
             }
 
-            let code = sess.run_codegen(hir);
+            let code = comp.run_codegen(hir);
             let file = build_dir.join("codegen").join("main.cpp");
 
             create_file_parent_dirs(&file)?;

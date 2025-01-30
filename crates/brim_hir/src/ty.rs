@@ -1,9 +1,9 @@
 use crate::{HirId, expr::HirConstExpr, items::HirGenericArgs};
 use brim_ast::{
-    ErrorEmitted,
     item::Ident,
     ty::{Const, PrimitiveType},
 };
+use brim_diagnostics::ErrorEmitted;
 use brim_span::span::Span;
 
 #[derive(Debug, Clone)]

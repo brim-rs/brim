@@ -7,6 +7,7 @@ edition = "2024"
 brim-ast = { workspace = true }
 brim-span = { workspace = true }
 brim-index = { workspace = true }
+clap = { workspace = true }
 
 [lints]
 workspace = true

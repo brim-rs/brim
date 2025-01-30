@@ -13,7 +13,7 @@ fn count_digits(n: usize) -> usize {
 }
 
 pub struct RichDiagnostic<'diagnostic, 'config, FileId> {
-    diagnostic: &'diagnostic Diagnostic<'diagnostic, FileId>,
+    diagnostic: &'diagnostic Diagnostic<FileId>,
     config: &'config DiagConfig,
 }
 
@@ -45,7 +45,7 @@ where
             location: Location,
             num_multi_labels: usize,
             lines: BTreeMap<usize, Line<'diagnostic>>,
-            max_label_style: LabelStyle<'diagnostic>,
+            max_label_style: LabelStyle,
         }
 
         impl<'diagnostic, FileId> LabeledFile<'diagnostic, FileId> {
@@ -69,8 +69,8 @@ where
             number: usize,
             range: std::ops::Range<usize>,
             // TODO: How do we reuse these allocations?
-            single_labels: Vec<SingleLabel<'diagnostic>>,
-            multi_labels: Vec<(usize, LabelStyle<'diagnostic>, MultiLabel<'diagnostic>)>,
+            single_labels: Vec<SingleLabel>,
+            multi_labels: Vec<(usize, LabelStyle, MultiLabel<'diagnostic>)>,
             must_render: bool,
         }
 
@@ -99,7 +99,7 @@ where
                     {
                         labeled_file.start = label.range.start;
                         labeled_file.location = files.location(label.file_id, label.range.start)?;
-                        labeled_file.max_label_style = label.style;
+                        labeled_file.max_label_style = label.style.clone();
                     }
                     labeled_file
                 }
@@ -111,7 +111,7 @@ where
                         location: files.location(label.file_id, label.range.start)?,
                         num_multi_labels: 0,
                         lines: BTreeMap::new(),
-                        max_label_style: label.style,
+                        max_label_style: label.style.clone(),
                     });
                     labeled_files
                         .last_mut()
@@ -167,7 +167,7 @@ where
                 };
 
                 line.single_labels
-                    .insert(index, (label.style, label_start..label_end, &label.message));
+                    .insert(index, (label.style.clone(), label_start..label_end, label.message.clone()));
 
                 line.must_render = true;
             } else {
@@ -184,7 +184,7 @@ where
 
                 start_line.multi_labels.push((
                     label_index,
-                    label.style,
+                    label.style.clone(),
                     MultiLabel::Top(label_start),
                 ));
 
@@ -199,7 +199,7 @@ where
                     let line = labeled_file.get_or_insert_line(line_index, line_range, line_number);
 
                     line.multi_labels
-                        .push((label_index, label.style, MultiLabel::Left));
+                        .push((label_index, label.style.clone(), MultiLabel::Left));
 
                     line.must_render |= line_index - start_line_index
                         <= self.config.start_context_lines
@@ -216,7 +216,7 @@ where
 
                 end_line.multi_labels.push((
                     label_index,
-                    label.style,
+                    label.style.clone(),
                     MultiLabel::Bottom(label_end, &label.message),
                 ));
 

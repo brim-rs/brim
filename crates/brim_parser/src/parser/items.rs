@@ -22,8 +22,8 @@ use brim_ast::{
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
 
-impl<'a> Parser<'a> {
-    pub fn parse_item(&mut self) -> PResult<'a, Option<Item>> {
+impl Parser {
+    pub fn parse_item(&mut self) -> PResult<Option<Item>> {
         if self.token_cursor.is_eof() {
             return Ok(None);
         }
@@ -49,7 +49,7 @@ impl<'a> Parser<'a> {
         }))
     }
 
-    pub fn parse_use(&mut self, span: Span) -> PResult<'a, (Ident, ItemKind)> {
+    pub fn parse_use(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {
         self.eat_keyword(ptok!(Use));
 
         let kind = if self.ahead(1).kind == TokenKind::BinOp(BinOpToken::Star) {
@@ -94,7 +94,7 @@ impl<'a> Parser<'a> {
         ))
     }
 
-    pub fn expect_path(&mut self) -> PResult<'a, Vec<PathItemKind>> {
+    pub fn expect_path(&mut self) -> PResult<Vec<PathItemKind>> {
         let mut path = vec![];
 
         loop {
@@ -119,11 +119,7 @@ impl<'a> Parser<'a> {
             || (self.current().is_keyword(Const) && self.ahead(1).is_keyword(Fn))
     }
 
-    pub fn parse_fn(
-        &mut self,
-        span: Span,
-        fn_ctx: FunctionContext,
-    ) -> PResult<'a, (Ident, ItemKind)> {
+    pub fn parse_fn(&mut self, span: Span, fn_ctx: FunctionContext) -> PResult<(Ident, ItemKind)> {
         let span = self.current().span;
         let (generics, sig) = self.parse_fn_signature(fn_ctx)?;
 
@@ -140,7 +136,7 @@ impl<'a> Parser<'a> {
         ))
     }
 
-    pub fn parse_fn_body(&mut self, fn_ctx: FunctionContext) -> PResult<'a, Option<Block>> {
+    pub fn parse_fn_body(&mut self, fn_ctx: FunctionContext) -> PResult<Option<Block>> {
         if self.eat(TokenKind::Semicolon) {
             if !fn_ctx.allows_empty_body() {
                 self.emit(EmptyBody {
@@ -161,7 +157,7 @@ impl<'a> Parser<'a> {
     pub fn parse_fn_signature(
         &mut self,
         fn_ctx: FunctionContext,
-    ) -> PResult<'a, (Generics, FnSignature)> {
+    ) -> PResult<(Generics, FnSignature)> {
         let span = self.current().span;
         let constant = self.parse_constant();
 
@@ -195,7 +191,7 @@ impl<'a> Parser<'a> {
         }))
     }
 
-    pub fn parse_return_type(&mut self) -> PResult<'a, FnReturnType> {
+    pub fn parse_return_type(&mut self) -> PResult<FnReturnType> {
         if self.eat(TokenKind::Arrow) {
             let ty = self.parse_type()?;
             Ok(FnReturnType::Ty(ty))
@@ -204,7 +200,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_fn_params(&mut self, fn_ctx: FunctionContext) -> PResult<'a, Vec<Param>> {
+    pub fn parse_fn_params(&mut self, fn_ctx: FunctionContext) -> PResult<Vec<Param>> {
         let mut params = vec![];
         if !self
             .current_token
@@ -255,7 +251,7 @@ impl<'a> Parser<'a> {
         Ok(params)
     }
 
-    pub fn parse_ident(&mut self) -> PResult<'a, Ident> {
+    pub fn parse_ident(&mut self) -> PResult<Ident> {
         let ident = match self.current().as_ident() {
             Some(ident) if ident.is_reserved() => self.expected_identifier_err()?,
             None => return self.expected_identifier_err(),
@@ -267,7 +263,7 @@ impl<'a> Parser<'a> {
         Ok(ident)
     }
 
-    pub fn expected_identifier_err(&self) -> PResult<'a, Ident> {
+    pub fn expected_identifier_err(&self) -> PResult<Ident> {
         let span = self.current().span;
 
         box_diag!(ExpectedIdentifier {

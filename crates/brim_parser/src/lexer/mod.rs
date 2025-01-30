@@ -3,10 +3,13 @@ mod identifiers;
 mod literals;
 mod unicode;
 
-use brim_ast::item::Ident;
 use crate::lexer::{errors::EmojiIdentifier, identifiers::nfc_normalize, unicode::UNICODE_ARRAY};
-use brim_ast::token::{AssignOpToken, BinOpToken, Delimiter, Lit, Orientation, Token, TokenKind};
+use brim_ast::{
+    item::Ident,
+    token::{AssignOpToken, BinOpToken, Delimiter, Lit, Orientation, Token, TokenKind},
+};
 use brim_ctx::compiler::CompilerContext;
+use brim_diagnostics::TemporaryDiagnosticContext;
 use brim_lexer::{PrimitiveToken, PrimitiveTokenKind};
 use brim_span::{
     files::SimpleFile,
@@ -19,21 +22,27 @@ use brim_span::{
 pub struct Lexer<'a> {
     pos: ByteIndex,
     file: &'a SimpleFile,
-    primitives: &'a mut Vec<PrimitiveToken>,
+    primitives: Vec<PrimitiveToken>,
+    pub ctx: TemporaryDiagnosticContext,
 }
 
-impl Lexer<'_> {
-    pub fn new<'a>(file: &'a SimpleFile, primitives: &'a mut Vec<PrimitiveToken>) -> Lexer<'a> {
+impl<'a> Lexer<'a> {
+    pub fn new(
+        file: &'a SimpleFile,
+        primitives: Vec<PrimitiveToken>,
+        lex_temp: TemporaryDiagnosticContext,
+    ) -> Lexer<'a> {
         Lexer {
             pos: ByteIndex::default(),
             file,
             primitives,
+            ctx: lex_temp,
         }
     }
 }
 
 impl<'a> Lexer<'a> {
-    pub fn next_token(&mut self, comp: &mut CompilerContext) -> Option<Token> {
+    pub fn next_token(&mut self) -> Option<Token> {
         if self.primitives.is_empty() {
             return None;
         }
@@ -63,7 +72,7 @@ impl<'a> Lexer<'a> {
             {
                 let symbol = nfc_normalize(self.content_from(start));
                 let span = Span::new(start, self.pos);
-                comp.emit(EmojiIdentifier {
+                self.ctx.emit_impl(EmojiIdentifier {
                     ident: symbol,
                     label: (span, self.file.id()),
                 });
@@ -72,7 +81,7 @@ impl<'a> Lexer<'a> {
 
             PrimitiveTokenKind::Literal { kind, suffix_start } => {
                 let suffix_start = start + ByteOffset(suffix_start as RawOffset);
-                let (kind, symbol) = self.lex_literal(kind, start, suffix_start, comp);
+                let (kind, symbol) = self.lex_literal(kind, start, suffix_start);
                 let suffix = if suffix_start < self.pos {
                     let string = self.content_from(suffix_start);
                     if string == "_" {
@@ -140,7 +149,7 @@ impl<'a> Lexer<'a> {
             PrimitiveTokenKind::Unknown => {
                 let span = Span::new(start, self.pos);
                 let content = self.content_from(start);
-                comp.emit(errors::UnknownToken {
+                self.ctx.emit_impl(errors::UnknownToken {
                     span: (span, self.file.id()),
                     token: content.to_string(),
                 });

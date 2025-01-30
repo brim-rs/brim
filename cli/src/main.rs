@@ -4,10 +4,10 @@ use crate::{commands::run::run_command, panic::setup_panic_handler};
 use anstream::ColorChoice;
 use anyhow::Result;
 use brim::{compiler::CompilerContext, session::Session, toml::Config};
+use clap::ArgMatches;
 use cli::cli;
 use std::{env, process::exit};
-use clap::ArgMatches;
-use crate::cli::RunArgs;
+use brim::args::RunArgs;
 
 pub mod cli;
 mod commands;
@@ -43,14 +43,14 @@ fn main() -> Result<()> {
     match cmd.0 {
         "run" => {
             let config = Config::get(&dir, Some(&cmd.1))?;
-            let comp = &mut CompilerContext::new();
+            let run_args = RunArgs::from_args(&cmd.1);
+
+            let comp = &mut CompilerContext::new(run_args.clone());
             let sess = &mut Session::new(dir, config, color_choice);
 
             if args.get_flag("time") {
                 sess.measure_time = true;
             }
-
-            let run_args= RunArgs::from_args(&cmd.1);
 
             exec_command(sess, comp, run_args, run_command)?;
         }
@@ -65,9 +65,9 @@ fn main() -> Result<()> {
 
 pub fn exec_command<'a>(
     sess: &'a mut Session,
-    comp: &'a mut CompilerContext<'a>,
+    comp: &'a mut CompilerContext,
     args: RunArgs,
-    func: impl FnOnce(&mut Session, &'a mut CompilerContext<'a>, ColorChoice, RunArgs) -> Result<()>,
+    func: impl FnOnce(&mut Session, &'a mut CompilerContext, ColorChoice, RunArgs) -> Result<()>,
 ) -> Result<()> {
     match func(sess, comp, sess.color_choice, args) {
         Ok(_) => Ok(()),

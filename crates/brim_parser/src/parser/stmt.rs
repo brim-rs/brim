@@ -11,8 +11,8 @@ use brim_ast::{
 };
 use brim_diagnostics::box_diag;
 
-impl<'a> Parser<'a> {
-    pub fn parse_block(&mut self, eat_braces: bool) -> PResult<'a, Block> {
+impl Parser {
+    pub fn parse_block(&mut self, eat_braces: bool) -> PResult<Block> {
         let mut stmts = vec![];
         let span_start = self.current().span;
         if eat_braces {
@@ -40,7 +40,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub fn parse_stmt(&mut self) -> PResult<'a, Stmt> {
+    pub fn parse_stmt(&mut self) -> PResult<Stmt> {
         let start = self.current().span;
 
         let kind = if self.current().is_keyword(Let) {
@@ -62,7 +62,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub fn parse_let(&mut self) -> PResult<'a, Let> {
+    pub fn parse_let(&mut self) -> PResult<Let> {
         let span = self.current().span;
         self.eat_keyword(ptok!(Let));
 

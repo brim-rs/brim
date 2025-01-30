@@ -8,8 +8,8 @@ use brim_ast::{
     token::TokenKind,
 };
 
-impl<'a> Parser<'a> {
-    pub fn parse_generics(&mut self) -> PResult<'a, Generics> {
+impl Parser {
+    pub fn parse_generics(&mut self) -> PResult<Generics> {
         let token = self.current().span;
         if !self.eat(TokenKind::Lt) {
             // no generics. return early
@@ -36,7 +36,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parses the generic arguments provided as an argument. eg: `foo<T, U>`
-    pub fn parse_argument_generics(&mut self) -> PResult<'a, GenericArgs> {
+    pub fn parse_argument_generics(&mut self) -> PResult<GenericArgs> {
         let token = self.current().span;
         if !self.eat(TokenKind::Lt) {
             // no generics. return early
@@ -79,7 +79,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub fn parse_generics_params(&mut self) -> PResult<'a, Vec<GenericParam>> {
+    pub fn parse_generics_params(&mut self) -> PResult<Vec<GenericParam>> {
         let mut params: Vec<GenericParam> = vec![];
 
         loop {

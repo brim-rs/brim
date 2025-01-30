@@ -218,13 +218,13 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
 
     Ok(TokenStream::from(quote! {
         #[allow(unused)]
-        impl<'a> ToDiagnostic<'a> for #struct_name {
+        impl ToDiagnostic for #struct_name {
             fn message(&self) -> String {
                 #(#message_field_refs)*
                 format!(#error_string)
             }
 
-            fn labels(&self) -> Vec<Label<'a, usize>> {
+            fn labels(&self) -> Vec<Label<usize>> {
                 vec![
                     #(#label_implementations,)*
                 ]

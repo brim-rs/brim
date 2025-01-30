@@ -18,19 +18,19 @@ use brim_ast::{
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
 
-impl<'a> Parser<'a> {
-    pub fn parse_const_expr(&mut self) -> PResult<'a, ConstExpr> {
+impl Parser {
+    pub fn parse_const_expr(&mut self) -> PResult<ConstExpr> {
         Ok(ConstExpr {
             expr: Box::new(self.parse_expr()?),
             id: self.new_id(),
         })
     }
 
-    pub fn parse_expr(&mut self) -> PResult<'a, Expr> {
+    pub fn parse_expr(&mut self) -> PResult<Expr> {
         self.parse_assignment_expr()
     }
 
-    fn parse_assignment_expr(&mut self) -> PResult<'a, Expr> {
+    fn parse_assignment_expr(&mut self) -> PResult<Expr> {
         let expr = self.parse_binary_expression()?;
 
         if let Some(op) = self.current().is_compound_assign() {
@@ -55,7 +55,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    pub fn parse_binary_expression(&mut self) -> PResult<'a, Expr> {
+    pub fn parse_binary_expression(&mut self) -> PResult<Expr> {
         let left = self.parse_unary_expr()?;
         self.parse_binary_expression_recurse(left, 0)
     }
@@ -91,7 +91,7 @@ impl<'a> Parser<'a> {
         &mut self,
         mut left: Expr,
         precedence: u8,
-    ) -> PResult<'a, Expr> {
+    ) -> PResult<Expr> {
         while let Some(operator) = self.parse_binary_operator() {
             let operator_precedence = operator.precedence();
             if operator_precedence < precedence {
@@ -123,7 +123,7 @@ impl<'a> Parser<'a> {
         Ok(left)
     }
 
-    fn parse_unary_expr(&mut self) -> PResult<'a, Expr> {
+    fn parse_unary_expr(&mut self) -> PResult<Expr> {
         if let Some(op) = self.peek_unary_op() {
             self.advance();
             let operand = self.parse_unary_expr()?;
@@ -136,7 +136,7 @@ impl<'a> Parser<'a> {
         self.parse_access_expr()
     }
 
-    pub fn parse_access_expr(&mut self) -> PResult<'a, Expr> {
+    pub fn parse_access_expr(&mut self) -> PResult<Expr> {
         let mut primary = self.parse_primary_expr()?;
 
         loop {
@@ -165,7 +165,7 @@ impl<'a> Parser<'a> {
         Ok(primary)
     }
 
-    pub fn validate_suffix(&mut self, lit: Lit) -> PResult<'a, ()> {
+    pub fn validate_suffix(&mut self, lit: Lit) -> PResult<()> {
         if let Some(sym) = lit.suffix {
             let suffix = sym.to_string();
             let span = sym.span;
@@ -207,7 +207,7 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    pub fn parse_primary_expr(&mut self) -> PResult<'a, Expr> {
+    pub fn parse_primary_expr(&mut self) -> PResult<Expr> {
         match self.current().kind {
             TokenKind::Literal(lit) => {
                 let span = self.advance().span;
@@ -265,7 +265,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_if(&mut self) -> PResult<'a, Expr> {
+    pub fn parse_if(&mut self) -> PResult<Expr> {
         let span = self.prev().span;
         let condition = self.parse_expr()?;
         let then_block = self.parse_block(true)?;

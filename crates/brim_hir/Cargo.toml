@@ -8,6 +8,7 @@ brim-span = { workspace = true }
 brim-index = { workspace = true }
 brim-ast = { workspace = true }
 brim-middle = { workspace = true }
+brim-diagnostics = { workspace = true }
 
 [lints]
 workspace = true

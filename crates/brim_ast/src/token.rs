@@ -1,6 +1,7 @@
-use crate::{ErrorEmitted, item::Ident};
+use crate::item::Ident;
 use brim_span::{span::Span, symbols::Symbol};
 use std::{cmp::PartialEq, fmt::Display};
+use brim_diagnostics::ErrorEmitted;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Token {

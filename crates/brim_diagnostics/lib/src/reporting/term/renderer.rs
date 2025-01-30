@@ -14,7 +14,7 @@ pub struct Locus {
     pub location: Location,
 }
 
-pub type SingleLabel<'diagnostic> = (LabelStyle<'diagnostic>, Range<usize>, &'diagnostic str);
+pub type SingleLabel = (LabelStyle, Range<usize>, String);
 
 pub enum MultiLabel<'diagnostic> {
     Top(usize),
@@ -30,7 +30,7 @@ enum VerticalBound {
     Bottom,
 }
 
-type Underline<'diag> = (LabelStyle<'diag>, VerticalBound);
+type Underline = (LabelStyle, VerticalBound);
 
 pub struct Renderer<'writer, 'config> {
     writer: &'writer mut dyn Write,
@@ -119,7 +119,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         line_number: usize,
         source: &str,
         severity: Severity,
-        single_labels: &[SingleLabel<'_>],
+        single_labels: &[SingleLabel],
         num_multi_labels: usize,
         multi_labels: &[(usize, LabelStyle, MultiLabel<'_>)],
     ) -> Result<(), Error> {
@@ -137,11 +137,11 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                             MultiLabel::Top(start)
                                 if *start <= source.len() - source.trim_start().len() =>
                             {
-                                self.label_multi_top_left(severity, *label_style)?;
+                                self.label_multi_top_left(severity, label_style.clone())?;
                             }
                             MultiLabel::Top(..) => self.inner_gutter_space()?,
                             MultiLabel::Left | MultiLabel::Bottom(..) => {
-                                self.label_multi_left(severity, *label_style, None)?;
+                                self.label_multi_left(severity, label_style.clone(), None)?;
                             }
                         }
                         multi_labels_iter.next();
@@ -156,9 +156,9 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                 let column_range = metrics.byte_index..(metrics.byte_index + ch.len_utf8());
 
                 let is_primary = single_labels.iter().any(|(ls, range, _)| {
-                    *ls == LabelStyle::Primary && is_overlapping(range, &column_range)
+                    ls.clone() == LabelStyle::Primary && is_overlapping(range, &column_range)
                 }) || multi_labels.iter().any(|(_, ls, label)| {
-                    *ls == LabelStyle::Primary
+                    ls.clone() == LabelStyle::Primary
                         && match label {
                             MultiLabel::Top(start) => column_range.start >= *start,
                             MultiLabel::Left => true,
@@ -236,14 +236,14 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                 let current_label_style = single_labels
                     .iter()
                     .filter(|(_, range, _)| is_overlapping(range, &column_range))
-                    .map(|(label_style, _, _)| *label_style)
+                    .map(|(label_style, _, _)| label_style.clone())
                     .max_by_key(label_priority_key);
 
                 if previous_label_style != current_label_style {
                     match current_label_style {
                         None => self.reset()?,
-                        Some(label_style) => {
-                            self.set_color(self.styles().label(severity, label_style))?;
+                        Some(ref label_style) => {
+                            self.set_color(self.styles().label(severity, label_style.clone()))?;
                         }
                     }
                 }
@@ -270,7 +270,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
 
             if let Some((_, (label_style, _, message))) = trailing_label {
                 write!(self, " ")?;
-                self.set_color(self.styles().label(severity, *label_style))?;
+                self.set_color(self.styles().label(severity, label_style.clone()))?;
                 write!(self, "{}", message)?;
                 self.reset()?;
             }
@@ -306,7 +306,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                             .char_indices()
                             .take_while(|(byte_index, _)| *byte_index < range.start),
                     )?;
-                    self.set_color(self.styles().label(severity, *label_style))?;
+                    self.set_color(self.styles().label(severity, label_style.clone()))?;
                     write!(self, "{}", message)?;
                     self.reset()?;
                     writeln!(self)?;
@@ -320,8 +320,8 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                 MultiLabel::Top(start) if *start <= source.len() - source.trim_start().len() => {
                     continue;
                 }
-                MultiLabel::Top(range) => (*label_style, range, None),
-                MultiLabel::Bottom(range, message) => (*label_style, range, Some(message)),
+                MultiLabel::Top(range) => (label_style.clone(), range, None),
+                MultiLabel::Bottom(range, message) => (label_style.clone(), range, Some(message)),
             };
 
             self.outer_gutter(outer_padding)?;
@@ -334,29 +334,41 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                     Some((i, (label_index, ls, label))) if *label_index == label_column => {
                         match label {
                             MultiLabel::Left => {
-                                self.label_multi_left(severity, *ls, underline.map(|(s, _)| s))?;
+                                self.label_multi_left(
+                                    severity,
+                                    ls.clone(),
+                                    underline.clone().map(|(s, _)| s),
+                                )?;
                             }
                             MultiLabel::Top(..) if multi_label_index > *i => {
-                                self.label_multi_left(severity, *ls, underline.map(|(s, _)| s))?;
+                                self.label_multi_left(
+                                    severity,
+                                    ls.clone(),
+                                    underline.clone().map(|(s, _)| s),
+                                )?;
                             }
                             MultiLabel::Bottom(..) if multi_label_index < *i => {
-                                self.label_multi_left(severity, *ls, underline.map(|(s, _)| s))?;
+                                self.label_multi_left(
+                                    severity,
+                                    ls.clone(),
+                                    underline.clone().map(|(s, _)| s),
+                                )?;
                             }
                             MultiLabel::Top(..) if multi_label_index == *i => {
-                                underline = Some((*ls, VerticalBound::Top));
-                                self.label_multi_top_left(severity, label_style)?
+                                underline = Some((ls.clone(), VerticalBound::Top));
+                                self.label_multi_top_left(severity, label_style.clone())?
                             }
                             MultiLabel::Bottom(..) if multi_label_index == *i => {
-                                underline = Some((*ls, VerticalBound::Bottom));
-                                self.label_multi_bottom_left(severity, label_style)?;
+                                underline = Some((ls.clone(), VerticalBound::Bottom));
+                                self.label_multi_bottom_left(severity, label_style.clone())?;
                             }
                             MultiLabel::Top(..) | MultiLabel::Bottom(..) => {
-                                self.inner_gutter_column(severity, underline)?;
+                                self.inner_gutter_column(severity, underline.clone())?;
                             }
                         }
                         multi_labels_iter.next();
                     }
-                    Some((_, _)) | None => self.inner_gutter_column(severity, underline)?,
+                    Some((_, _)) | None => self.inner_gutter_column(severity, underline.clone())?,
                 }
             }
 
@@ -496,15 +508,15 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         &mut self,
         severity: Severity,
         max_label_start: usize,
-        single_labels: &[SingleLabel<'_>],
-        trailing_label: Option<(usize, &SingleLabel<'_>)>,
+        single_labels: &[SingleLabel],
+        trailing_label: Option<(usize, &SingleLabel)>,
         char_indices: impl Iterator<Item = (usize, char)>,
     ) -> Result<(), Error> {
         for (metrics, ch) in self.char_metrics(char_indices) {
             let column_range = metrics.byte_index..(metrics.byte_index + ch.len_utf8());
             let label_style = hanging_labels(single_labels, trailing_label)
                 .filter(|(_, range, _)| column_range.contains(&range.start))
-                .map(|(label_style, _, _)| *label_style)
+                .map(|(label_style, _, _)| label_style.clone())
                 .max_by_key(label_priority_key);
 
             let mut spaces = match label_style {
@@ -577,7 +589,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         source: &str,
         start: usize,
     ) -> Result<(), Error> {
-        self.set_color(self.styles().label(severity, label_style))?;
+        self.set_color(self.styles().label(severity, label_style.clone()))?;
 
         for (metrics, _) in self
             .char_metrics(source.char_indices())
@@ -587,7 +599,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                 .try_for_each(|_| write!(self, "{}", self.chars().multi_top))?;
         }
 
-        let caret_start = match label_style {
+        let caret_start = match label_style.clone() {
             LabelStyle::Primary => self.config.chars.multi_primary_caret_start,
             LabelStyle::Error => self.config.chars.single_primary_caret,
             LabelStyle::Warning => self.config.chars.single_primary_caret,
@@ -608,7 +620,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         start: usize,
         message: &str,
     ) -> Result<(), Error> {
-        self.set_color(self.styles().label(severity, label_style))?;
+        self.set_color(self.styles().label(severity, label_style.clone()))?;
 
         for (metrics, _) in self
             .char_metrics(source.char_indices())
@@ -669,7 +681,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
             match multi_labels_iter.peek() {
                 Some((label_index, ls, label)) if *label_index == label_column => match label {
                     MultiLabel::Left | MultiLabel::Bottom(..) => {
-                        self.label_multi_left(severity, *ls, None)?;
+                        self.label_multi_left(severity, ls.clone(), None)?;
                         multi_labels_iter.next();
                     }
                     MultiLabel::Top(..) => {
@@ -730,9 +742,9 @@ fn label_priority_key(label_style: &LabelStyle) -> u8 {
 }
 
 fn hanging_labels<'labels, 'diagnostic>(
-    single_labels: &'labels [SingleLabel<'diagnostic>],
-    trailing_label: Option<(usize, &'labels SingleLabel<'diagnostic>)>,
-) -> impl 'labels + DoubleEndedIterator<Item = &'labels SingleLabel<'diagnostic>> {
+    single_labels: &'labels [SingleLabel],
+    trailing_label: Option<(usize, &'labels SingleLabel)>,
+) -> impl 'labels + DoubleEndedIterator<Item = &'labels SingleLabel> {
     single_labels
         .iter()
         .enumerate()

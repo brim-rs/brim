@@ -1,32 +1,34 @@
 mod errors;
 mod scopes;
 
-use crate::name::{
-    errors::{UndeclaredFunction, UndeclaredVariable},
-    scopes::{ScopeManager, VariableInfo},
+use crate::{
+    compiler::CompilerContext,
+    name::{
+        errors::{UndeclaredFunction, UndeclaredVariable},
+        scopes::{ScopeManager, VariableInfo},
+    },
 };
 use brim_ast::{
     expr::{Expr, ExprKind},
     item::{Block, FnDecl},
     stmts::Let,
 };
-use brim_ctx::{ModuleId, compiler::CompilerContext};
-use brim_diagnostics::diag_opt;
-use brim_middle::{modules::ModuleMap, walker::AstWalker};
+use brim_diagnostics::{TemporaryDiagnosticContext, diag_opt};
+use brim_middle::{ModuleId, modules::ModuleMap, walker::AstWalker};
 use tracing::debug;
 
 #[derive(Debug)]
-pub struct NameResolver<'a> {
-    pub ctx: &'a mut CompilerContext<'a>,
+pub struct NameResolver {
+    pub ctx: TemporaryDiagnosticContext,
     pub map: ModuleMap,
     pub scopes: ScopeManager,
     pub file: usize,
 }
 
-impl<'a> NameResolver<'a> {
-    pub fn new(ctx: &'a mut CompilerContext<'a>, map: ModuleMap) -> Self {
+impl NameResolver {
+    pub fn new(map: ModuleMap) -> Self {
         Self {
-            ctx,
+            ctx: TemporaryDiagnosticContext::new(),
             map,
             scopes: ScopeManager::new(0),
             file: 0,
@@ -66,17 +68,7 @@ impl<'a> NameResolver<'a> {
     }
 }
 
-impl<'a> AstWalker for NameResolver<'a> {
-    fn visit_block(&mut self, block: &mut Block) {
-        self.scopes.push_scope(self.file);
-
-        for stmt in block.stmts.iter_mut() {
-            self.visit_stmt(stmt);
-        }
-
-        self.scopes.pop_scope();
-    }
-
+impl AstWalker for NameResolver {
     fn visit_let(&mut self, let_stmt: &mut Let) {
         self.declare_variable(&let_stmt.ident.to_string(), VariableInfo {
             id: let_stmt.id,
@@ -87,6 +79,20 @@ impl<'a> AstWalker for NameResolver<'a> {
             },
             span: let_stmt.span,
         });
+        
+        if let Some(expr) = &mut let_stmt.value {
+            self.walk_expr(expr);
+        }
+    }
+
+    fn visit_block(&mut self, block: &mut Block) {
+        self.scopes.push_scope(self.file);
+
+        for stmt in block.stmts.iter_mut() {
+            self.visit_stmt(stmt);
+        }
+
+        self.scopes.pop_scope();
     }
 
     fn visit_fn(&mut self, func: &mut FnDecl) {
@@ -122,10 +128,10 @@ impl<'a> AstWalker for NameResolver<'a> {
             ExprKind::Return(inner) => self.visit_expr(inner),
             ExprKind::Var(var) => {
                 if !self.is_variable_declared(&var.name.to_string()) {
-                    self.ctx.emit(UndeclaredVariable {
+                    self.ctx.emit(Box::new(UndeclaredVariable {
                         span: (var.span, self.file),
                         name: var.name.to_string(),
-                    });
+                    }));
                 }
             }
             ExprKind::AssignOp(lhs, _, rhs) | ExprKind::Assign(lhs, rhs) => {
@@ -153,10 +159,10 @@ impl<'a> AstWalker for NameResolver<'a> {
                 let func_sym = self.map.resolve_symbol(&name, mod_id);
 
                 if let None = func_sym {
-                    self.ctx.emit(UndeclaredFunction {
+                    self.ctx.emit(Box::new(UndeclaredFunction {
                         span: (func.span, self.file),
                         name,
-                    });
+                    }));
                 }
 
                 for arg in args {

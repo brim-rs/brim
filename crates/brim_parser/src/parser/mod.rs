@@ -4,20 +4,23 @@ use crate::{
 };
 use anyhow::Result;
 use brim_ast::{
-    ErrorEmitted, NodeId, Pub, SYMBOL_STRINGS,
+    NodeId, Pub, SYMBOL_STRINGS,
     item::Visibility,
     token::{Delimiter, Orientation, Token, TokenKind},
 };
 use brim_ctx::compiler::CompilerContext;
-use brim_diagnostics::{TemporaryDiagnosticContext, box_diag, diagnostic::ToDiagnostic};
+use brim_diagnostics::{
+    ErrorEmitted, TemporaryDiagnosticContext, box_diag,
+    diagnostic::{Diagnostic, ToDiagnostic},
+};
 use brim_lexer::{PrimitiveToken, PrimitiveTokenKind, cursor::Cursor};
+use brim_middle::barrel::Barrel;
 use brim_span::{
     files::get_file,
     span::Span,
     symbols::{GLOBAL_INTERNER, Symbol},
 };
 use tracing::debug;
-use brim_middle::barrel::Barrel;
 
 mod cursor;
 mod errors;
@@ -28,7 +31,7 @@ mod stmt;
 mod ty;
 
 #[derive(Debug)]
-pub struct Parser<'a> {
+pub struct Parser {
     pub file: usize,
     pub primitives: Vec<PrimitiveToken>,
     /// Used for documentation generation to keep comments in the AST. Only in `brim doc`.
@@ -37,21 +40,8 @@ pub struct Parser<'a> {
     pub token_cursor: TokenCursor,
     pub current_token: Token,
     pub previous_token: Token,
-    pub diags: ParserDiagnostics<'a>,
     pub last_id: u32,
-}
-
-#[derive(Debug)]
-pub struct ParserDiagnostics<'a> {
-    pub dcx: TemporaryDiagnosticContext<'a>,
-}
-
-impl<'a> ParserDiagnostics<'a> {
-    pub fn new() -> Self {
-        Self {
-            dcx: TemporaryDiagnosticContext::new(),
-        }
-    }
+    pub dcx: TemporaryDiagnosticContext,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -91,7 +81,7 @@ pub enum PTokenKind {
     While,
 }
 
-pub type PResult<'a, T> = Result<T, Box<dyn ToDiagnostic<'a> + 'a>>;
+pub type PResult<T> = Result<T, Box<dyn ToDiagnostic>>;
 
 #[macro_export]
 macro_rules! ptok {
@@ -115,7 +105,7 @@ macro_rules! debug_ident {
     }
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn new(file: usize) -> Self {
         Self {
             file,
@@ -125,7 +115,7 @@ impl<'a> Parser<'a> {
             token_cursor: TokenCursor::new(vec![]),
             current_token: Token::new(TokenKind::Skipable, Span::DUMMY),
             previous_token: Token::new(TokenKind::Skipable, Span::DUMMY),
-            diags: ParserDiagnostics::new(),
+            dcx: TemporaryDiagnosticContext::new(),
             last_id: 0,
         }
     }
@@ -135,7 +125,7 @@ impl<'a> Parser<'a> {
         NodeId::from_u32(self.last_id)
     }
 
-    pub fn parse_barrel(&mut self, comp: &mut CompilerContext) -> Result<Barrel> {
+    pub fn parse_barrel(&mut self) -> Result<Barrel> {
         if !GLOBAL_INTERNER.lock().unwrap().initialized {
             GLOBAL_INTERNER.lock().unwrap().initialized = true;
 
@@ -161,10 +151,11 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let mut lexer = Lexer::new(&file, &mut self.primitives);
+        let lex_temp = TemporaryDiagnosticContext::new();
+        let mut lexer = Lexer::new(&file, self.primitives.clone(), lex_temp);
         let mut tokens = vec![];
 
-        while let Some(token) = lexer.next_token(comp) {
+        while let Some(token) = lexer.next_token() {
             if token.kind == TokenKind::Eof {
                 break;
             }
@@ -188,13 +179,15 @@ impl<'a> Parser<'a> {
                 Ok(Some(item)) => item,
                 Ok(None) => break,
                 Err(diag) => {
-                    self.diags.dcx.emit(diag);
+                    self.dcx.emit(diag);
                     break;
                 }
             };
 
             items.push(token);
         }
+
+        self.dcx.diags.extend(lexer.ctx.diags);
 
         Ok(Barrel {
             items,
@@ -260,8 +253,8 @@ impl<'a> Parser<'a> {
         self.token_cursor.tokens[self.token_cursor.current + n - 1].clone()
     }
 
-    pub fn emit(&mut self, diag: impl ToDiagnostic<'a> + 'a) -> ErrorEmitted {
-        self.diags.dcx.emit(Box::new(diag));
+    pub fn emit(&mut self, diag: impl ToDiagnostic + 'static) -> ErrorEmitted {
+        self.dcx.emit(Box::new(diag));
 
         ErrorEmitted::new()
     }
@@ -270,7 +263,7 @@ impl<'a> Parser<'a> {
         matches!(self.current().kind, TokenKind::Ident(_)) && !self.current().is_any_keyword()
     }
 
-    pub fn expect(&mut self, p: TokenKind) -> PResult<'a, Token> {
+    pub fn expect(&mut self, p: TokenKind) -> PResult<Token> {
         if self.current().kind == p {
             Ok(self.advance())
         } else {
@@ -282,27 +275,27 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn expect_oparen(&mut self) -> PResult<'a, Token> {
+    pub fn expect_oparen(&mut self) -> PResult<Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Paren, Orientation::Open))
     }
 
-    pub fn expect_cparen(&mut self) -> PResult<'a, Token> {
+    pub fn expect_cparen(&mut self) -> PResult<Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Paren, Orientation::Close))
     }
 
-    pub fn expect_obrace(&mut self) -> PResult<'a, Token> {
+    pub fn expect_obrace(&mut self) -> PResult<Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Brace, Orientation::Open))
     }
 
-    pub fn expect_cbrace(&mut self) -> PResult<'a, Token> {
+    pub fn expect_cbrace(&mut self) -> PResult<Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Brace, Orientation::Close))
     }
 
-    pub fn expect_obracket(&mut self) -> PResult<'a, Token> {
+    pub fn expect_obracket(&mut self) -> PResult<Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open))
     }
 
-    pub fn expect_cbracket(&mut self) -> PResult<'a, Token> {
+    pub fn expect_cbracket(&mut self) -> PResult<Token> {
         self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close))
     }
 

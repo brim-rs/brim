@@ -1,15 +1,10 @@
-use crate::{name::NameResolver, validator::AstValidator};
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim_ast::item::{ImportsKind, ItemKind};
 use brim_codegen::codegen::CppCodegen;
 use brim_config::toml::{Config, LibType, ProjectType};
-use brim_ctx::{GlobalSymbolId, ModuleId, compiler::CompilerContext};
+use brim_ctx::{compiler::CompilerContext, name::NameResolver, validator::AstValidator};
 use brim_diag_macro::Diagnostic;
-use brim_diagnostics::{
-    box_diag,
-    diagnostic::{Label, LabelStyle, Severity, ToDiagnostic},
-};
 use brim_fs::{
     loader::{BrimFileLoader, FileLoader},
     path,
@@ -20,7 +15,6 @@ use brim_hir::{
     transformer::{HirModuleMap, transform_module},
     ty::HirTyKind,
 };
-use brim_middle::modules::{ModuleMap, SymbolCollector};
 use brim_parser::parser::PResult;
 use brim_shell::Shell;
 use brim_span::{
@@ -134,123 +128,4 @@ impl Session {
     pub fn build_dir(&self) -> PathBuf {
         self.cwd.join("build")
     }
-
-    /// Resolve and analyze the project form the main barrel
-    pub fn analyze<'a>(
-        &mut self,
-        mut map: ModuleMap,
-        ctx: &'a mut CompilerContext<'a>,
-    ) -> Result<(HirModuleMap, &'a mut CompilerContext<'a>)> {
-        let map = &mut map;
-
-        let mut validator = AstValidator::new(ctx);
-        validator.validate(map.clone())?;
-
-        let mut collector = SymbolCollector::new(map);
-        collector.collect();
-
-        for module in map.modules.clone() {
-            let file_id = module.barrel.file_id;
-            for item in module.barrel.items {
-                match item.kind {
-                    ItemKind::Use(u) => {
-                        let module_id = ModuleId::from_usize(file_id);
-                        let module = map
-                            .module_by_import(GlobalSymbolId {
-                                mod_id: module_id,
-                                item_id: item.id,
-                            })
-                            .unwrap();
-                        let resolved_id = ModuleId::from_usize(module.barrel.file_id);
-
-                        let import_symbols: Vec<GlobalSymbolId> = match &u.imports {
-                            ImportsKind::All => map
-                                .find_symbols_in_module(Some(resolved_id))
-                                .iter()
-                                .map(|symbol| GlobalSymbolId {
-                                    mod_id: resolved_id,
-                                    item_id: symbol.item_id,
-                                })
-                                .collect(),
-                            ImportsKind::List(list) => list
-                                .iter()
-                                .flat_map(|import| {
-                                    map.find_symbol_by_name(&import.to_string(), Some(resolved_id))
-                                })
-                                .map(|symbol| GlobalSymbolId {
-                                    mod_id: resolved_id,
-                                    item_id: symbol.item_id,
-                                })
-                                .collect(),
-                        };
-
-                        map.update_modules_imports(module_id, import_symbols);
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        let mut name_resolver = NameResolver::new(validator.ctx, map.clone());
-        name_resolver.resolve_names();
-
-        let hir = &mut transform_module(name_resolver.map);
-        infer_types(hir);
-
-        // TODO: type checking etc.
-
-        Ok((hir.clone(), name_resolver.ctx))
-    }
-
-    pub fn run_codegen(&mut self, hir: HirModuleMap) -> String {
-        let mut codegen = CppCodegen::new(hir.clone());
-        codegen.generate();
-
-        let code = codegen.code.build();
-        if self.display_cpp {
-            println!("{}", code.clone());
-        }
-
-        code
-    }
-
-    /// More to be added
-    pub fn validate_main_function(
-        &mut self,
-        func: &HirFn,
-        comp: &mut CompilerContext,
-        main: usize,
-    ) {
-        if func.sig.params.params.len() != 0 {
-            comp.emit(MainFunctionParams {
-                span: (func.sig.params.span, main),
-            });
-        }
-
-        if func.sig.constant {
-            comp.emit(MainFunctionConstant {
-                span: (func.sig.span, main),
-            });
-        }
-    }
-}
-
-#[derive(Diagnostic)]
-#[error("entrypoint file: '{file}' doesn't contain a main function")]
-pub struct NoMainFunction {
-    pub file: String,
-}
-
-#[derive(Diagnostic)]
-#[error("main function cannot have parameters")]
-pub struct MainFunctionParams {
-    #[error("delete the parameters")]
-    pub span: (Span, usize),
-}
-
-#[derive(Diagnostic)]
-#[error("main function cannot be constant")]
-pub struct MainFunctionConstant {
-    #[error("delete the `const` keyword")]
-    pub span: (Span, usize),
 }

@@ -18,9 +18,9 @@ impl DiagnosticContext {
         }
     }
 
-    pub fn emit<'diags>(
+    pub fn emit(
         &mut self,
-        diag: &Box<dyn ToDiagnostic<'diags> + 'diags>,
+        diag: &Box<dyn ToDiagnostic>,
         files: &SimpleFiles,
     ) {
         let diag = diag.to_diagnostic();
@@ -28,13 +28,13 @@ impl DiagnosticContext {
         self.emit_inner(diag, files);
     }
 
-    pub fn emit_inner<'diags>(&mut self, diag: Diagnostic<'diags, usize>, files: &SimpleFiles) {
+    pub fn emit_inner(&mut self, diag: Diagnostic<usize>, files: &SimpleFiles) {
         emit(&mut stderr(), &self.config, files, &diag).unwrap();
     }
 
-    pub fn from_temporary<'diags>(
+    pub fn from_temporary(
         &mut self,
-        temp: &TemporaryDiagnosticContext<'diags>,
+        temp: &TemporaryDiagnosticContext,
         files: &SimpleFiles,
     ) {
         for diag in temp.diags.iter() {

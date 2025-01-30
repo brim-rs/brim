@@ -9,6 +9,11 @@ brim-span = { workspace = true }
 brim-diagnostics = { workspace = true }
 anyhow = { workspace = true }
 brim-index = { workspace = true }
+brim-middle = { workspace = true }
+brim-hir = { workspace = true }
+brim-codegen = { workspace = true }
+brim-diag-macro = { workspace = true }
+tracing = { workspace = true }
 
 [lints]
 workspace = true
