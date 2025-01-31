@@ -11,6 +11,7 @@ brim-diagnostics = { workspace = true }
 brim-diag-macro = { workspace = true }
 clap = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+convert_case = { workspace = true }
 
 [lints]
 workspace = true

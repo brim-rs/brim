@@ -8,15 +8,15 @@ use crate::{
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim::{
-    ModuleId, Shell, TemporaryDiagnosticContext, args::RunArgs, compiler::CompilerContext,
-    create_file_parent_dirs, resolver::Resolver, session::Session, toml::ProjectType,
+    ModuleId, Shell, args::RunArgs, compiler::CompilerContext, create_file_parent_dirs,
+    lints::Lints, resolver::Resolver, session::Session, temp_diag::TemporaryDiagnosticContext,
+    toml::ProjectType,
 };
 use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
 use brim_ctx::errors::NoMainFunction;
 use brim_parser::parser::Parser;
 use clap::Command;
 use std::{collections::HashSet, process};
-use brim::lints::Lints;
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -50,8 +50,6 @@ pub fn run_command(
     let project_name = sess.config.project.name.clone();
     let shell = &mut Shell::new(c_choice);
     let opt_level = sess.config.build.level.clone();
-    let lints = Lints::configure(&sess.config.lints);
-    println!("{:?}", lints);
 
     sess.measure_time(
         |sess| {

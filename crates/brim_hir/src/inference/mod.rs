@@ -279,20 +279,25 @@ impl<'a> TypeInference<'a> {
                 }
             }
             HirExprKind::Var(name) => {
-                let var = self
-                    .scope_manager
-                    .resolve_variable(&name.to_string())
-                    .unwrap();
-                &var.ty
+                let var = self.scope_manager.resolve_variable(&name.to_string());
+
+                if let Some(var) = var {
+                    &var.ty
+                } else {
+                    &HirTyKind::err()
+                }
             }
             HirExprKind::Call(ident, args) => {
                 let func = self
                     .hir
-                    // we unwrap, because this was already checked in the name resolver
-                    .resolve_symbol(&ident.as_ident().unwrap().to_string(), self.current_mod)
-                    .unwrap();
+                    .resolve_symbol(&ident.as_ident().unwrap().to_string(), self.current_mod);
 
-                &func.as_fn().ret_type
+                // TODO: take into account provided generic arguments
+                if let Some(func) = func {
+                    &func.as_fn().ret_type
+                } else {
+                    &HirTyKind::err()
+                }
             }
             HirExprKind::Literal(lit) => match lit.kind {
                 LitKind::Str => &HirTyKind::Primitive(PrimitiveType::Str),

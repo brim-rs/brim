@@ -39,14 +39,14 @@ macro_rules! define_lints {
         $(
             $( #[$meta:meta] )*
             $vis:vis struct $name:ident => $method_name:ident {
-                $( $field:ident : $ty:ty ),* $(,)?
+                $( $( #[$field_meta:meta] )* $field:ident : $ty:ty ),* $(,)?
             }
         )*
     ) => {
         $(
             $( #[$meta] )*
             $vis struct $name {
-                $( pub $field: $ty ),*
+                $( $( #[$field_meta] )* pub $field: $ty ),*
             }
 
             impl $name {
@@ -69,15 +69,11 @@ macro_rules! define_lints {
 
             pub fn configure(config: &LintsConfig) -> Self {
                 let mut l = Self::new();
-                
+
                 $(
-                    l.enabled_lints.insert(stringify!($name).to_string(), if let Some(enabled) = config.$method_name {
-                        enabled
-                    } else {
-                        true
-                    });
+                    l.enabled_lints.insert(stringify!($name).to_string(), config.$method_name.unwrap_or(true));
                 )*
-                
+
                 l
             }
         }
@@ -99,16 +95,20 @@ macro_rules! define_lints {
 
 define_lints! {
     #[derive(Diagnostic)]
-    #[warning("variable '{name}' is not snake case")]
+    #[warning("variable '{name}' should be snake case")]
     pub struct VariableNotSnakeCase => variable_not_snake_case {
         name: String,
+        new_name: String,
+        #[warning("rename to '{new_name}'")]
         span: (Span, usize),
     }
 
     #[derive(Diagnostic)]
-    #[warning("function '{name}' should have camel case")]
+    #[warning("function '{name}' should be camel case")]
     pub struct FunctionNotCamelCase => function_not_camel_case {
         name: String,
+        new_name: String,
+        #[warning("rename to '{new_name}'")]
         span: (Span, usize),
     }
 }

@@ -1,7 +1,7 @@
-use { div } from test;
+use { divSafe } from test;
 
 pub fn main() {
-    let y: f32 = 1f3;
+    let y: f32 = 1f32;
 
-    let x = div(q, 2);
+    let div_result = divSafe(2, 2);
 };

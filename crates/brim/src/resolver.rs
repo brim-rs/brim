@@ -1,10 +1,10 @@
 use brim_ast::item::{ItemKind, PathItemKind};
-use brim_diagnostics::TemporaryDiagnosticContext;
 use brim_fs::loader::{BrimFileLoader, FileLoader};
 use brim_middle::{GlobalSymbolId, ModuleId, barrel::Barrel, modules::ModuleMap};
 use brim_parser::parser::Parser;
 use brim_span::files::{add_file, get_path};
 use std::{collections::HashSet, path::PathBuf};
+use brim_middle::temp_diag::TemporaryDiagnosticContext;
 
 #[derive(Debug)]
 pub struct Resolver<'a> {

@@ -8,8 +8,8 @@ use brim_ast::{
     item::Ident,
     token::{AssignOpToken, BinOpToken, Delimiter, Lit, Orientation, Token, TokenKind},
 };
-use brim_diagnostics::TemporaryDiagnosticContext;
 use brim_lexer::{PrimitiveToken, PrimitiveTokenKind};
+use brim_middle::temp_diag::TemporaryDiagnosticContext;
 use brim_span::{
     files::SimpleFile,
     index::{ByteIndex, ByteOffset, RawOffset},

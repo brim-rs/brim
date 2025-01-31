@@ -6,10 +6,7 @@ use crate::{
 };
 use brim_ast::item::{ImportsKind, ItemKind};
 use brim_codegen::codegen::CppCodegen;
-use brim_diagnostics::{
-    ErrorEmitted, TemporaryDiagnosticContext,
-    diagnostic::{Diagnostic, ToDiagnostic},
-};
+use brim_diagnostics::{diagnostic::{Diagnostic, ToDiagnostic}, ErrorEmitted};
 use brim_hir::{
     inference::infer_types,
     items::HirFn,
@@ -20,6 +17,8 @@ use brim_middle::{
     args::RunArgs,
     modules::{ModuleMap, SymbolCollector},
 };
+use brim_middle::lints::Lints;
+use brim_middle::temp_diag::TemporaryDiagnosticContext;
 #[cfg(not(feature = "snap"))]
 use brim_span::files::{SimpleFiles, files};
 
@@ -28,14 +27,16 @@ pub struct CompilerContext {
     dcx: DiagnosticContext,
     pub emitted: Vec<Diagnostic<usize>>,
     pub args: RunArgs,
+    pub lints: &'static Lints,
 }
 
 impl CompilerContext {
-    pub fn new(args: RunArgs) -> Self {
+    pub fn new(args: RunArgs, lints: &'static Lints) -> Self {
         Self {
             dcx: DiagnosticContext::new(),
             emitted: vec![],
             args,
+            lints
         }
     }
 
@@ -123,7 +124,7 @@ impl CompilerContext {
             }
         }
 
-        let mut name_resolver = NameResolver::new(map.clone());
+        let mut name_resolver = NameResolver::new(map.clone(), self.lints);
         name_resolver.resolve_names();
         self.extend_temp(name_resolver.ctx);
 

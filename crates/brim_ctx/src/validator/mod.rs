@@ -3,11 +3,11 @@ mod errors;
 use crate::validator::errors::{DuplicateParam, TooManyParameters};
 use anyhow::Result;
 use brim_ast::item::{FnSignature, Item, ItemKind};
-use brim_diagnostics::TemporaryDiagnosticContext;
 use brim_middle::{modules::ModuleMap, walker::AstWalker};
 use brim_span::span::Span;
 use std::collections::HashMap;
 use tracing::debug;
+use brim_middle::temp_diag::TemporaryDiagnosticContext;
 
 #[derive(Debug)]
 pub struct AstValidator {

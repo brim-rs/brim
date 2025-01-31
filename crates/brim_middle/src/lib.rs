@@ -8,6 +8,7 @@ pub mod args;
 pub mod barrel;
 pub mod lints;
 pub mod modules;
+pub mod temp_diag;
 pub mod walker;
 
 index_type! {

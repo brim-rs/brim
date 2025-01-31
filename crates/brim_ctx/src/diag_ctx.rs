@@ -1,10 +1,10 @@
 use brim_diagnostics::{
-    TemporaryDiagnosticContext,
     diagnostic::{Diagnostic, ToDiagnostic},
     term::{DiagConfig, emit},
 };
 use brim_span::files::SimpleFiles;
 use std::{fmt::Debug, io::stderr};
+use brim_middle::temp_diag::TemporaryDiagnosticContext;
 
 #[derive(Debug, Clone)]
 pub struct DiagnosticContext {

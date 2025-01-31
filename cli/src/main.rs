@@ -3,7 +3,9 @@
 use crate::{commands::run::run_command, panic::setup_panic_handler};
 use anstream::ColorChoice;
 use anyhow::Result;
-use brim::{args::RunArgs, compiler::CompilerContext, session::Session, toml::Config};
+use brim::{
+    args::RunArgs, compiler::CompilerContext, lints::Lints, session::Session, toml::Config,
+};
 use cli::cli;
 use std::{env, process::exit};
 
@@ -43,14 +45,16 @@ fn main() -> Result<()> {
             let config = Config::get(&dir, Some(&cmd.1))?;
             let run_args = RunArgs::from_args(&cmd.1);
 
-            let comp = &mut CompilerContext::new(run_args.clone());
-            let sess = &mut Session::new(dir, config, color_choice);
+            let lints = Box::new(Lints::configure(&config.lints));
+            let lints: &'static Lints = Box::leak(lints);
+            let mut comp = CompilerContext::new(run_args.clone(), lints);
+            let mut sess = Session::new(dir, config, color_choice);
 
             if args.get_flag("time") {
                 sess.measure_time = true;
             }
 
-            exec_command(sess, comp, run_args, run_command)?;
+            exec_command(&mut sess, &mut comp, run_args, run_command)?;
         }
         _ => {
             eprintln!("Unknown command: {}", cmd.0);

@@ -10,9 +10,14 @@ use brim_ast::{
     item::{Block, FnDecl},
     stmts::Let,
 };
-use brim_diagnostics::{TemporaryDiagnosticContext, diag_opt};
-use brim_middle::{ModuleId, modules::ModuleMap, walker::AstWalker};
+use brim_diagnostics::diag_opt;
+use brim_middle::{
+    ModuleId, lints::Lints, modules::ModuleMap, temp_diag::TemporaryDiagnosticContext,
+    walker::AstWalker,
+};
+use convert_case::{Case, Casing};
 use tracing::debug;
+use brim_span::span::Span;
 
 #[derive(Debug)]
 pub struct NameResolver {
@@ -20,15 +25,17 @@ pub struct NameResolver {
     pub map: ModuleMap,
     pub scopes: ScopeManager,
     pub file: usize,
+    pub lints: &'static Lints,
 }
 
 impl NameResolver {
-    pub fn new(map: ModuleMap) -> Self {
+    pub fn new(map: ModuleMap, lints: &'static Lints) -> Self {
         Self {
             ctx: TemporaryDiagnosticContext::new(),
             map,
             scopes: ScopeManager::new(0),
             file: 0,
+            lints,
         }
     }
 
@@ -63,11 +70,24 @@ impl NameResolver {
     pub fn is_variable_declared(&self, name: &str) -> bool {
         self.scopes.resolve_variable(name).is_some()
     }
+    
+    pub fn validate_var_name(&mut self, name: &str, span: Span) {
+        let snake = name.to_case(Case::Snake);
+        if name != snake {
+            self.ctx.emit_lint(self.lints.variable_not_snake_case(
+                name.to_string(),
+                snake,
+                (span, self.file),
+            ));
+        }
+    }
 }
 
 impl AstWalker for NameResolver {
     fn visit_let(&mut self, let_stmt: &mut Let) {
-        self.declare_variable(&let_stmt.ident.to_string(), VariableInfo {
+        let name = let_stmt.ident.to_string();
+
+        self.declare_variable(&name, VariableInfo {
             id: let_stmt.id,
             is_const: if let Some(ty) = &let_stmt.ty {
                 ty.is_const()
@@ -76,6 +96,8 @@ impl AstWalker for NameResolver {
             },
             span: let_stmt.span,
         });
+
+        self.validate_var_name(&name, let_stmt.ident.span);
 
         if let Some(expr) = &mut let_stmt.value {
             self.walk_expr(expr);
@@ -94,6 +116,17 @@ impl AstWalker for NameResolver {
 
     fn visit_fn(&mut self, func: &mut FnDecl) {
         self.scopes = ScopeManager::new(self.file);
+        
+        let name = func.sig.name.to_string();
+        let camel = name.to_case(Case::Camel);
+        
+        if name != camel {
+            self.ctx.emit_lint(self.lints.function_not_camel_case(
+                name.to_string(),
+                camel,
+                (func.sig.name.span, self.file),
+            ));
+        }
 
         for param in &func.sig.params {
             self.declare_param(&param.name.to_string(), VariableInfo {
@@ -101,6 +134,8 @@ impl AstWalker for NameResolver {
                 is_const: false,
                 span: param.span,
             });
+            
+            self.validate_var_name(&param.name.to_string(), param.name.span);
         }
 
         if let Some(body) = &mut func.body {

@@ -21,7 +21,7 @@ pub struct UndeclaredVariable {
 }
 
 #[derive(Diagnostic)]
-#[error("function call to undeclared function `{name}`")]
+#[error("call to undeclared function `{name}`")]
 pub struct UndeclaredFunction {
     #[error("function `{name}` is not declared in this scope")]
     pub span: (Span, usize),
