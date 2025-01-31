@@ -11,3 +11,4 @@ toml_edit = { workspace = true }
 brim-fs = { workspace = true }
 clap = { workspace = true }
 thiserror = { workspace = true }
+brim-middle = { workspace = true }

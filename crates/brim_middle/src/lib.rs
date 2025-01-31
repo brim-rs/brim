@@ -6,6 +6,7 @@ use brim_index::index_type;
 
 pub mod args;
 pub mod barrel;
+pub mod lints;
 pub mod modules;
 pub mod walker;
 

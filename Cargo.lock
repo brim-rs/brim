@@ -190,6 +190,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "brim-fs",
+ "brim-middle",
  "clap",
  "serde",
  "thiserror",
@@ -288,9 +289,12 @@ name = "brim-middle"
 version = "0.1.0"
 dependencies = [
  "brim-ast",
+ "brim-diag-macro",
+ "brim-diagnostics",
  "brim-index",
  "brim-span",
  "clap",
+ "serde",
 ]
 
 [[package]]
