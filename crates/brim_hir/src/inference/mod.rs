@@ -15,6 +15,7 @@ use brim_ast::{
     ty::PrimitiveType,
 };
 use brim_middle::ModuleId;
+use crate::transformer::StoredHirItem;
 
 #[derive(Debug)]
 pub struct TypeInference<'a> {
@@ -55,6 +56,8 @@ pub fn infer_types(hir: &mut HirModuleMap) {
     };
 
     ti.infer();
+    
+    println!("{:#?}", ti.hir);
 }
 
 impl<'a> TypeInference<'a> {
@@ -332,6 +335,8 @@ impl<'a> TypeInference<'a> {
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
         expr.ty = kind.clone();
+        
+        self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(expr.clone()));
     }
 
     pub fn ty_with_suffix(&mut self, lit: &Lit, def: PrimitiveType) -> HirTyKind {

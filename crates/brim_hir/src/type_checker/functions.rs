@@ -16,8 +16,13 @@ impl TypeChecker {
         match stmt.kind {
             HirStmtKind::Expr(expr) => self.check_expr(expr),
             HirStmtKind::Let { ty, value, ident } => {
-                println!("{:#?}", ty);
-                println!("{:#?}", value);
+                let ty = ty.unwrap();
+                
+                if let Some(val) = value {
+                    let val_ty = val.ty;
+                    
+                    println!("Checking let statement: {} = {:?}", ident, val_ty);
+                }
             }
         }
     }
