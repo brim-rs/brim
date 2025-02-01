@@ -715,7 +715,7 @@ impl Transformer {
                     Box::new(self.transform_ty(*ok).kind),
                     Box::new(self.transform_ty(*err).kind),
                 ),
-                TyKind::Err(e) => HirTyKind::Err(e),
+                TyKind::Err(e) => panic!("on ty: {:?}", ty),
             },
         }
     }

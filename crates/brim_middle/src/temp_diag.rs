@@ -18,6 +18,10 @@ impl TemporaryDiagnosticContext {
     pub fn emit(&mut self, diag: Box<dyn ToDiagnostic>) {
         self.diags.push(diag.to_diagnostic());
     }
+    
+    pub fn emit_diag(&mut self, diag: Diagnostic<usize>) {
+        self.diags.push(diag);
+    }
 
     pub fn emit_impl(&mut self, diag: impl ToDiagnostic) -> ErrorEmitted {
         self.diags.push(diag.to_diagnostic());

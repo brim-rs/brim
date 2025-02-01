@@ -1,12 +1,16 @@
+mod errors;
 mod scope;
 
 use crate::{
     HirId,
     expr::{HirExpr, HirExprKind},
-    inference::scope::{TypeInfo, TypeScopeManager},
+    inference::{
+        errors::{CannotApplyBinary, CannotApplyUnary, CannotCompare},
+        scope::{TypeInfo, TypeScopeManager},
+    },
     items::{HirGenericKind, HirGenericParam, HirItem, HirItemKind},
     stmts::{HirStmt, HirStmtKind},
-    transformer::{HirModule, HirModuleMap},
+    transformer::{HirModule, HirModuleMap, StoredHirItem},
     ty::HirTyKind,
 };
 use brim_ast::{
@@ -15,7 +19,6 @@ use brim_ast::{
     ty::PrimitiveType,
 };
 use brim_middle::ModuleId;
-use crate::transformer::StoredHirItem;
 
 #[derive(Debug)]
 pub struct TypeInference<'a> {
@@ -56,7 +59,7 @@ pub fn infer_types(hir: &mut HirModuleMap) {
     };
 
     ti.infer();
-    
+
     println!("{:#?}", ti.hir);
 }
 
@@ -191,14 +194,22 @@ impl<'a> TypeInference<'a> {
                         if ty.is_numeric() {
                             ty
                         } else {
-                            &HirTyKind::err()
+                            &HirTyKind::err(CannotApplyUnary {
+                                span: (expr.span.clone(), self.current_mod.as_usize()),
+                                op: UnaryOp::Minus,
+                                ty: ty.clone(),
+                            })
                         }
                     }
                     (UnaryOp::Deref, ty) => {
                         if ty.can_be_dereferenced() {
                             ty
                         } else {
-                            &HirTyKind::err()
+                            &HirTyKind::err(CannotApplyUnary {
+                                span: (expr.span.clone(), self.current_mod.as_usize()),
+                                op: UnaryOp::Deref,
+                                ty: ty.clone(),
+                            })
                         }
                     }
                     (UnaryOp::Not, ty) => &HirTyKind::Primitive(PrimitiveType::Bool),
@@ -227,6 +238,7 @@ impl<'a> TypeInference<'a> {
                 self.assign_generic(lhs);
                 self.assign_generic(rhs);
 
+                let opc = op.clone();
                 match (op, &lhs.ty, &rhs.ty) {
                     // Numeric operations
                     (
@@ -251,7 +263,12 @@ impl<'a> TypeInference<'a> {
 
                             &HirTyKind::Primitive(ty)
                         } else {
-                            &HirTyKind::err()
+                            &HirTyKind::err(CannotApplyBinary {
+                                span: (expr.span.clone(), self.current_mod.as_usize()),
+                                op: opc,
+                                lhs: l.clone(),
+                                rhs: r.clone(),
+                            })
                         }
                     }
 
@@ -268,7 +285,12 @@ impl<'a> TypeInference<'a> {
                         if l.can_be_logically_compared_to(r) {
                             &HirTyKind::Primitive(PrimitiveType::Bool)
                         } else {
-                            &HirTyKind::err()
+                            &HirTyKind::err(CannotCompare {
+                                span: (expr.span.clone(), self.current_mod.as_usize()),
+                                op: opc,
+                                lhs: l.clone(),
+                                rhs: r.clone(),
+                            })
                         }
                     }
 
@@ -276,7 +298,11 @@ impl<'a> TypeInference<'a> {
                         if l.is_bool() && r.is_bool() {
                             &HirTyKind::Primitive(PrimitiveType::Bool)
                         } else {
-                            &HirTyKind::err()
+                            &HirTyKind::err(CannotApplyUnary {
+                                span: (expr.span.clone(), self.current_mod.as_usize()),
+                                op: UnaryOp::Not,
+                                ty: l.clone(),
+                            })
                         }
                     }
                 }
@@ -287,7 +313,8 @@ impl<'a> TypeInference<'a> {
                 if let Some(var) = var {
                     &var.ty
                 } else {
-                    &HirTyKind::err()
+                    // &HirTyKind::err()
+                    panic!()
                 }
             }
             HirExprKind::Call(ident, args) => {
@@ -299,7 +326,7 @@ impl<'a> TypeInference<'a> {
                 if let Some(func) = func {
                     &func.as_fn().ret_type
                 } else {
-                    &HirTyKind::err()
+                    &HirTyKind::Placeholder
                 }
             }
             HirExprKind::Literal(lit) => match lit.kind {
@@ -335,8 +362,10 @@ impl<'a> TypeInference<'a> {
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
         expr.ty = kind.clone();
-        
-        self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(expr.clone()));
+
+        self.hir
+            .hir_items
+            .insert(expr.id, StoredHirItem::Expr(expr.clone()));
     }
 
     pub fn ty_with_suffix(&mut self, lit: &Lit, def: PrimitiveType) -> HirTyKind {

@@ -3,8 +3,10 @@ use brim_ast::{
     item::Ident,
     ty::{Const, PrimitiveType},
 };
-use brim_diagnostics::ErrorEmitted;
+use brim_diagnostics::{ErrorEmitted, diagnostic::ToDiagnostic};
 use brim_span::span::Span;
+use std::fmt::{Debug, Display};
+use brim_diagnostics::diagnostic::Diagnostic;
 
 #[derive(Debug, Clone)]
 pub struct HirTy {
@@ -37,10 +39,29 @@ pub enum HirTyKind {
     Result(Box<HirTyKind>, Box<HirTyKind>),
 
     /// Indicating that the compiler failed to determine the type
-    Err(ErrorEmitted),
+    Err(Diagnostic<usize>),
 
     /// Placeholder for the type of expression that has not been type checked yet
     Placeholder,
+}
+
+impl Display for HirTyKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            HirTyKind::Ref(ty, _) => write!(f, "&{}", ty),
+            HirTyKind::Ptr(ty, _) => write!(f, "*{}", ty),
+            HirTyKind::Const(ty) => write!(f, "const {}", ty),
+            HirTyKind::Array(ty, len) => write!(f, "[{}; {:?}]", ty, len),
+            HirTyKind::Vec(ty) => write!(f, "{}[]", ty),
+            HirTyKind::Primitive(p) => write!(f, "{:?}", p),
+            HirTyKind::Ident { ident, generics } => {
+                write!(f, "{}{}", ident, generics)
+            }
+            HirTyKind::Result(ok, err) => write!(f, "{}!{}", ok, err),
+            HirTyKind::Err(diag) => write!(f, ""),
+            HirTyKind::Placeholder => write!(f, "_"),
+        }
+    }
 }
 
 impl HirTyKind {
@@ -74,8 +95,8 @@ impl HirTyKind {
         }
     }
 
-    pub fn err() -> Self {
-        HirTyKind::Err(ErrorEmitted::new())
+    pub fn err(diag: impl ToDiagnostic + 'static) -> Self {
+        HirTyKind::Err(diag.to_diagnostic())
     }
 
     pub fn void() -> Self {

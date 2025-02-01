@@ -6,6 +6,7 @@ use crate::{
     transformer::{HirModule, HirModuleMap},
 };
 use brim_middle::temp_diag::TemporaryDiagnosticContext;
+use crate::ty::HirTyKind;
 
 #[derive(Debug)]
 pub struct TypeChecker {
@@ -33,6 +34,12 @@ impl TypeChecker {
                 HirItemKind::Fn(func) => self.check_fn(func),
                 _ => {}
             }
+        }
+    }
+    
+    pub fn possible_ty_error(&mut self, ty: HirTyKind) {
+        if let HirTyKind::Err(err) = ty {
+            self.ctx.emit_diag(err)
         }
     }
 }

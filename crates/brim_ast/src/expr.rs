@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::{
     NodeId,
     item::{Block, Ident},
@@ -79,6 +80,17 @@ pub enum UnaryOp {
     Try,
 }
 
+impl Display for UnaryOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UnaryOp::Minus => write!(f, "- (numeric negation)"),
+            UnaryOp::Not => write!(f, "! (logical negation)"),
+            UnaryOp::Deref => write!(f, "* (dereference)"),
+            UnaryOp::Try => write!(f, "try (try operator)"),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum BinOpKind {
     /// `<`
@@ -119,6 +131,32 @@ pub enum BinOpKind {
     ShiftLeft,
     /// `>>`
     ShiftRight,
+}
+
+impl Display for BinOpKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BinOpKind::Lt => write!(f, "< (less than)"),
+            BinOpKind::Le => write!(f, "<= (less than or equal)"),
+            BinOpKind::EqEq => write!(f, "== (equal)"),
+            BinOpKind::Ne => write!(f, "!= (not equal)"),
+            BinOpKind::Ge => write!(f, ">= (greater than or equal)"),
+            BinOpKind::Gt => write!(f, "> (greater than)"),
+            BinOpKind::AndAnd => write!(f, "&& (logical and)"),
+            BinOpKind::OrOr => write!(f, "|| (logical or)"),
+            BinOpKind::Plus => write!(f, "+ (addition)"),
+            BinOpKind::Minus => write!(f, "- (subtraction)"),
+            BinOpKind::Multiply => write!(f, "* (multiplication)"),
+            BinOpKind::Power => write!(f, "** (exponentiation)"),
+            BinOpKind::Divide => write!(f, "/ (division)"),
+            BinOpKind::Modulo => write!(f, "% (modulo)"),
+            BinOpKind::Caret => write!(f, "^ (bitwise xor)"),
+            BinOpKind::And => write!(f, "& (bitwise and)"),
+            BinOpKind::Or => write!(f, "| (bitwise or)"),
+            BinOpKind::ShiftLeft => write!(f, "<< (bitwise shift left)"),
+            BinOpKind::ShiftRight => write!(f, ">> (bitwise shift right)"),
+        }
+    }
 }
 
 /// Enum representing the associativity of a binary operator.

@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::{
     HirId,
     expr::HirConstExpr,
@@ -88,6 +89,19 @@ pub struct HirGenerics {
 pub struct HirGenericArgs {
     pub span: Span,
     pub params: Vec<HirGenericArg>,
+}
+
+impl Display for HirGenericArgs {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<")?;
+        for (i, param) in self.params.iter().enumerate() {
+            if i != 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}", param.ty.kind)?;
+        }
+        write!(f, ">")
+    }
 }
 
 #[derive(Clone, Debug)]
