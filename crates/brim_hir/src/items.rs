@@ -104,10 +104,22 @@ impl Display for HirGenericArgs {
     }
 }
 
+impl PartialEq for HirGenericArgs {
+    fn eq(&self, other: &Self) -> bool {
+        self.params == other.params
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct HirGenericArg {
     pub id: HirId,
     pub ty: HirTy,
+}
+
+impl PartialEq for HirGenericArg {
+    fn eq(&self, other: &Self) -> bool {
+        self.ty.kind == other.ty.kind
+    }
 }
 
 #[derive(Clone, Debug)]
