@@ -1,3 +1,5 @@
+#![feature(let_chains)]
+
 use brim_index::index_type;
 
 pub mod expr;

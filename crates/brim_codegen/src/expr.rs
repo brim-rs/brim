@@ -7,7 +7,7 @@ use brim_hir::expr::{HirExpr, HirExprKind};
 
 impl CppCodegen {
     pub fn generate_expr(&mut self, expr: HirExpr) -> String {
-        let mut apply_parent = false;
+        let mut apply_paren = false;
 
         let code = match expr.kind {
             HirExprKind::Block(block) => {
@@ -22,14 +22,14 @@ impl CppCodegen {
                 format!("return {};", expr)
             }
             HirExprKind::Binary(lhs, op, rhs) => {
-                apply_parent = true;
+                apply_paren = true;
                 let lhs = self.generate_expr(*lhs);
                 let rhs = self.generate_expr(*rhs);
                 format!("{} {} {}", lhs, self.bin_op(op), rhs)
             }
             HirExprKind::Var(ident) => ident.name.to_string(),
             HirExprKind::Call(func, args) => {
-                apply_parent = true;
+                apply_paren = true;
                 let fn_name = func.as_ident().unwrap().to_string();
                 let func_mod_id = self
                     .hir
@@ -91,17 +91,30 @@ impl CppCodegen {
             _ => todo!("{:?}", expr.kind),
         };
 
-        if apply_parent {
+        if apply_paren {
             format!("({})", code)
         } else {
             code
         }
     }
 
+    pub fn generate_suffix(&self, suffix: &str) -> String {
+        match suffix {
+            "f32" => "f",
+            "f64" => "",
+            _ => suffix,
+        }
+        .to_string()
+    }
+
     pub fn generate_lit(&self, lit: Lit) -> String {
         if let LitKind::Integer | LitKind::Float = lit.kind {
             if let Some(suffix) = lit.suffix {
-                format!("{}{}", lit.symbol, suffix)
+                format!(
+                    "{}{}",
+                    lit.symbol,
+                    self.generate_suffix(&suffix.to_string())
+                )
             } else {
                 lit.symbol.to_string()
             }

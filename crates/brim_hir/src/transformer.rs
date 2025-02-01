@@ -12,14 +12,14 @@ use brim_ast::{
     expr::{BinOpKind, ConstExpr, Expr, ExprKind},
     item::{Block, FnReturnType, GenericKind, ImportsKind, Item, ItemKind},
     stmts::{Stmt, StmtKind},
-    token::AssignOpToken,
+    token::{AssignOpToken, Lit, LitKind},
     ty::TyKind,
 };
 use brim_middle::{
     GlobalSymbolId, ModuleId,
     modules::{Module, ModuleMap},
 };
-use brim_span::span::Span;
+use brim_span::{span::Span, symbols::Symbol};
 use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Clone, Debug)]
@@ -590,7 +590,23 @@ impl Transformer {
                     Box::new(self.transform_expr(*expr).0),
                     Box::new(self.transform_expr(*index).0),
                 ),
-                ExprKind::Literal(lit) => HirExprKind::Literal(lit),
+                ExprKind::Literal(lit) => {
+                    // When literal is an integer with f32 suffix, we need to convert it to float,
+                    // because C++ compiler will error
+                    if let LitKind::Integer = lit.kind
+                        && lit.suffix.is_some_and(|s| s.to_string() == "f32")
+                    {
+                        let sym = lit.symbol.to_string();
+
+                        HirExprKind::Literal(Lit {
+                            kind: LitKind::Float,
+                            suffix: lit.suffix,
+                            symbol: Symbol::new(&format!("{}.0", sym)),
+                        })
+                    } else {
+                        HirExprKind::Literal(lit)
+                    }
+                }
                 ExprKind::Paren(expr) => self.transform_expr(*expr).0.kind,
                 ExprKind::Return(expr) => {
                     HirExprKind::Return(Box::new(self.transform_expr(*expr).0))
