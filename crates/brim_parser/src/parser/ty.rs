@@ -91,13 +91,13 @@ impl Parser {
     }
 
     pub fn parse_array(&mut self) -> PResult<TyKind> {
-        self.expect_oparen()?;
+        self.expect_obracket()?;
 
         let ty = self.parse_type()?;
         self.expect(TokenKind::Semicolon)?;
-        let size = self.parse_const_expr()?;
+        let size = self.parse_expr()?;
 
-        self.expect_cparen()?;
+        self.expect_cbracket()?;
         Ok(TyKind::Array(Box::new(ty), size))
     }
 

@@ -26,6 +26,8 @@ impl HirExpr {
 // We no longer need parenthesized expressions, because the tree defines the structure.
 #[derive(Clone, Debug)]
 pub enum HirExprKind {
+    /// Array literals: `[1, 2, 3]`.
+    Array(Vec<HirExpr>),
     /// Binary operations with desugared operands.
     Binary(Box<HirExpr>, BinOpKind, Box<HirExpr>),
     /// Unary operations.

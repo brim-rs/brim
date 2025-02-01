@@ -4,4 +4,6 @@ pub fn main() {
     let y: f32 = 32.3f32;
 
     let div_result = divSafe(2, 2);
+
+    let arr: [i32; 3] = [1, 2, 3];
 };

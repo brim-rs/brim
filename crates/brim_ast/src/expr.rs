@@ -1,10 +1,10 @@
-use std::fmt::Display;
 use crate::{
     NodeId,
     item::{Block, Ident},
     token::{AssignOpToken, Lit},
 };
 use brim_span::span::Span;
+use std::fmt::Display;
 
 #[derive(Clone, Debug)]
 pub struct Expr {
@@ -24,6 +24,8 @@ impl Expr {
 
 #[derive(Clone, Debug)]
 pub enum ExprKind {
+    /// `[1, 2, 3]`
+    Array(Vec<Expr>),
     /// `1 + 2`, `x * y`
     Binary(Box<Expr>, BinOpKind, Box<Expr>),
     /// `try x()`, `!x`
@@ -50,6 +52,8 @@ pub enum ExprKind {
     Block(Block),
     /// `func(x, y)`
     Call(Box<Expr>, Vec<Expr>),
+    /// `comptime { ... }`
+    Comptime(Box<Expr>),
 }
 
 #[derive(Clone, Debug)]
@@ -195,10 +199,4 @@ impl BinOpKind {
             BinOpKind::OrOr => 10,
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct ConstExpr {
-    pub id: NodeId,
-    pub expr: Box<Expr>,
 }

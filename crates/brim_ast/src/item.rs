@@ -1,6 +1,6 @@
 use crate::{
     Break, Empty, NodeId, While,
-    expr::ConstExpr,
+    expr::Expr,
     stmts::Stmt,
     ty::{Const, Ty},
 };
@@ -176,7 +176,7 @@ pub struct GenericParam {
 #[derive(Clone, Debug)]
 pub enum GenericKind {
     Type { default: Option<Ty> },
-    NonType { default: Option<ConstExpr>, ty: Ty },
+    NonType { default: Option<Expr>, ty: Ty },
 }
 
 #[derive(Clone, Debug)]

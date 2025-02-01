@@ -107,7 +107,7 @@ impl Parser {
                 };
 
                 let const_expr = if self.eat(TokenKind::Eq) {
-                    let expr = self.parse_const_expr()?;
+                    let expr = self.parse_expr()?;
                     Some(expr)
                 } else {
                     None

@@ -1,10 +1,10 @@
 use crate::{
     NodeId,
-    expr::ConstExpr,
     item::{GenericArgs, Ident},
 };
 use brim_diagnostics::ErrorEmitted;
 use brim_span::span::Span;
+use crate::expr::Expr;
 
 #[derive(Debug, Clone)]
 pub struct Ty {
@@ -50,7 +50,7 @@ pub enum TyKind {
     /// Const type eg. `const T` (brim) -> `const T` (C++)
     Const(Box<Ty>),
     /// Array type eg. `[T; N]` (brim) -> `T[N]` (C++)
-    Array(Box<Ty>, ConstExpr),
+    Array(Box<Ty>, Expr),
     /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim
     /// is the same as array in C++.
     Vec(Box<Ty>),

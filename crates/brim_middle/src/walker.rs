@@ -100,6 +100,12 @@ pub trait AstWalker {
                     self.visit_expr(arg);
                 }
             }
+            ExprKind::Comptime(inner) => self.visit_expr(inner),
+            ExprKind::Array(items) => {
+                for item in items {
+                    self.visit_expr(item);
+                }
+            }
         }
     }
 

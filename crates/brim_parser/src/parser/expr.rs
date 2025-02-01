@@ -9,23 +9,14 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Else, If, Return, Try,
-    expr::{
-        BinOpAssociativity, BinOpKind, ConditionBranch, ConstExpr, Expr, ExprKind, IfExpr, UnaryOp,
-    },
+    Comptime, Else, If, Return, Try,
+    expr::{BinOpAssociativity, BinOpKind, ConditionBranch, Expr, ExprKind, IfExpr, UnaryOp},
     token::{BinOpToken, Delimiter, Lit, LitKind, Orientation, TokenKind},
 };
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
 
 impl Parser {
-    pub fn parse_const_expr(&mut self) -> PResult<ConstExpr> {
-        Ok(ConstExpr {
-            expr: Box::new(self.parse_expr()?),
-            id: self.new_id(),
-        })
-    }
-
     pub fn parse_expr(&mut self) -> PResult<Expr> {
         self.parse_assignment_expr()
     }
@@ -221,6 +212,18 @@ impl Parser {
                 self.expect_cparen()?;
                 Ok(self.new_expr(expr.span, ExprKind::Paren(Box::new(expr))))
             }
+            TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
+                self.advance();
+                let mut elements = Vec::new();
+                while !self.is_paren(Orientation::Close) {
+                    elements.push(self.parse_expr()?);
+                    if !self.eat(TokenKind::Comma) {
+                        break;
+                    }
+                }
+                self.expect_cbracket()?;
+                Ok(self.new_expr(self.current().span, ExprKind::Array(elements)))
+            }
             TokenKind::Ident(sym) => {
                 if self.eat_keyword(ptok!(Return)) {
                     let expr = self.parse_expr()?;
@@ -230,6 +233,15 @@ impl Parser {
                     ))
                 } else if self.eat_keyword(ptok!(If)) {
                     self.parse_if()
+                } else if self.eat_keyword(ptok!(Comptime)) {
+                    self.expect_obrace()?;
+                    let expr = self.parse_expr()?;
+                    self.expect_cbrace()?;
+
+                    Ok(self.new_expr(
+                        self.current().span.to(expr.span),
+                        ExprKind::Comptime(Box::new(expr)),
+                    ))
                 } else {
                     let span = self.current().span;
                     let ident = self.parse_ident()?;

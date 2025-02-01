@@ -214,6 +214,11 @@ impl Lit {
             suffix,
         }
     }
+
+    /// Only use when you are sure that the literal is an integer.
+    pub fn to_int(&self) -> usize {
+        self.symbol.to_string().parse().unwrap()
+    }
 }
 
 impl Display for Lit {

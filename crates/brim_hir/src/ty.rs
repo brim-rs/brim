@@ -9,6 +9,7 @@ use brim_diagnostics::{
 };
 use brim_span::span::Span;
 use std::fmt::{Debug, Display};
+use brim_ast::token::{Lit, LitKind};
 
 #[derive(Debug, Clone)]
 pub struct HirTy {
@@ -26,7 +27,7 @@ pub enum HirTyKind {
     /// Const type eg. `const T` (brim) -> `const T` (C++)
     Const(Box<HirTyKind>),
     /// Array type eg. `[T; N]` (brim) -> `T[N]` (C++)
-    Array(Box<HirTyKind>, HirConstExpr),
+    Array(Box<HirTyKind>, usize),
     /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim
     /// is the same as array in C++.
     Vec(Box<HirTyKind>),
@@ -156,6 +157,19 @@ impl HirTyKind {
             }
             (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.can_be_logically_compared_to(&ty2),
             _ => false,
+        }
+    }
+    
+    pub fn from_lit(lit: &Lit) -> Self {
+        match lit.kind {
+            LitKind::Integer => HirTyKind::Primitive(PrimitiveType::I32),
+            LitKind::Float => HirTyKind::Primitive(PrimitiveType::F32),
+            LitKind::Bool => HirTyKind::Primitive(PrimitiveType::Bool),
+            LitKind::Char => HirTyKind::Primitive(PrimitiveType::Char),
+            LitKind::Str => HirTyKind::Primitive(PrimitiveType::Str),
+            LitKind::ByteStr => HirTyKind::Vec(Box::new(HirTyKind::Primitive(PrimitiveType::U8))),
+            LitKind::Byte => HirTyKind::Primitive(PrimitiveType::U8),
+            _ => unimplemented!(),
         }
     }
 }

@@ -201,6 +201,12 @@ impl AstWalker for NameResolver {
                     self.visit_expr(arg);
                 }
             }
+            ExprKind::Comptime(_) => {}
+            ExprKind::Array(items) => {
+                for item in items {
+                    self.visit_expr(item);
+                }
+            }
         }
     }
 }

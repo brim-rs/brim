@@ -9,11 +9,11 @@ use crate::{
     ty::{HirTy, HirTyKind},
 };
 use brim_ast::{
-    expr::{BinOpKind, ConstExpr, Expr, ExprKind},
+    expr::{BinOpKind, Expr, ExprKind},
     item::{Block, FnReturnType, GenericKind, ImportsKind, Item, ItemKind},
     stmts::{Stmt, StmtKind},
     token::{AssignOpToken, Lit, LitKind},
-    ty::TyKind,
+    ty::{PrimitiveType, TyKind},
 };
 use brim_middle::{
     GlobalSymbolId, ModuleId,
@@ -21,6 +21,7 @@ use brim_middle::{
 };
 use brim_span::{span::Span, symbols::Symbol};
 use std::{collections::HashMap, path::PathBuf};
+use crate::comptime::errors::ComptimeExprExpectedTy;
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -565,7 +566,7 @@ impl Transformer {
             },
             GenericKind::NonType { ty, default } => HirGenericKind::Const {
                 ty: self.transform_ty(ty),
-                default: default.map(|expr| self.transform_const_expr(expr)),
+                default: default.map(|expr| self.expect_from_comptime(expr)),
             },
         }
     }
@@ -671,6 +672,13 @@ impl Transformer {
                         })
                         .collect(),
                 }),
+                ExprKind::Comptime(expr) => self.transform_comptime_expr(*expr),
+                ExprKind::Array(items) => HirExprKind::Array(
+                    items
+                        .iter()
+                        .map(|item| self.transform_expr(item.clone()).0)
+                        .collect(),
+                ),
             },
             ty: HirTyKind::Placeholder,
         };
@@ -687,10 +695,19 @@ impl Transformer {
                 TyKind::Ptr(ty, cnst) => {
                     HirTyKind::Ptr(Box::new(self.transform_ty(*ty).kind), cnst)
                 }
-                TyKind::Array(ty, len) => HirTyKind::Array(
-                    Box::new(self.transform_ty(*ty).kind),
-                    self.transform_const_expr(len),
-                ),
+                TyKind::Array(ty, expr) => {
+                    let len = self.expect_from_comptime(expr.clone());
+
+                    if LitKind::Integer != len.kind {
+                        HirTyKind::err(ComptimeExprExpectedTy {
+                            span: (expr.span, self.current_mod_id.as_usize()),
+                            expected_ty: HirTyKind::Primitive(PrimitiveType::I32),
+                            actual_ty: HirTyKind::from_lit(&len),
+                        })
+                    } else {
+                        HirTyKind::Array(Box::new(self.transform_ty(*ty).kind), len.to_int())
+                    }
+                }
                 TyKind::Ref(ty, cnst) => {
                     HirTyKind::Ref(Box::new(self.transform_ty(*ty).kind), cnst)
                 }
@@ -717,16 +734,6 @@ impl Transformer {
                 ),
                 TyKind::Err(e) => panic!("on ty: {:?}", ty),
             },
-        }
-    }
-
-    pub fn transform_const_expr(&mut self, expr: ConstExpr) -> HirConstExpr {
-        let (_, id) = self.transform_expr(*expr.expr.clone());
-
-        HirConstExpr {
-            id: self.hir_id(),
-            span: expr.expr.span,
-            body: id,
         }
     }
 

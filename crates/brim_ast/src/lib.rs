@@ -18,6 +18,7 @@ generate_symbols! {
     Catch = "catch",
     Const = "const",
     Continue = "continue",
+    Comptime = "comptime",
     Else = "else",
     Enum = "enum",
     Empty = "",

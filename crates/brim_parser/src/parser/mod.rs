@@ -53,6 +53,7 @@ pub enum PTokenKind {
     Catch,
     Const,
     Continue,
+    Comptime,
     Else,
     Enum,
     False,

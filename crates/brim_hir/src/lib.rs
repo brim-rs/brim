@@ -2,6 +2,7 @@
 
 use brim_index::index_type;
 
+mod comptime;
 pub mod expr;
 pub mod inference;
 pub mod items;

@@ -1,13 +1,15 @@
-use std::fmt::Display;
 use crate::{
     HirId,
     expr::HirConstExpr,
     ty::{HirTy, HirTyKind},
 };
-use brim_ast::item::Ident;
+use brim_ast::{
+    item::Ident,
+    token::{Lit, LitKind},
+};
 use brim_middle::{GlobalSymbolId, ModuleId};
 use brim_span::span::Span;
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf};
 
 #[derive(Clone, Debug)]
 pub struct HirItem {
@@ -139,11 +141,6 @@ pub struct HirGenericParam {
 
 #[derive(Clone, Debug)]
 pub enum HirGenericKind {
-    Type {
-        default: Option<HirTy>,
-    },
-    Const {
-        ty: HirTy,
-        default: Option<HirConstExpr>,
-    },
+    Type { default: Option<HirTy> },
+    Const { ty: HirTy, default: Option<Lit> },
 }
