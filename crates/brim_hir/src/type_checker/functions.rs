@@ -23,9 +23,6 @@ impl TypeChecker {
                 if let Some(val) = value {
                     let val_ty = val.ty;
 
-                    self.possible_ty_error(&ty);
-                    self.possible_ty_error(&val_ty);
-
                     if ty != val_ty {}
                 }
             }

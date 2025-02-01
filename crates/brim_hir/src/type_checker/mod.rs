@@ -36,10 +36,4 @@ impl TypeChecker {
             }
         }
     }
-
-    pub fn possible_ty_error(&mut self, ty: &HirTyKind) {
-        if let HirTyKind::Err(err) = ty {
-            self.ctx.emit_diag(err.clone())
-        }
-    }
 }

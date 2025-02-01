@@ -55,7 +55,7 @@ impl<'a> TypeScope {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TypeScopeManager {
     scope_stack: Vec<TypeScope>,
 }

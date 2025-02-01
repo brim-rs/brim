@@ -42,7 +42,7 @@ pub enum HirTyKind {
     Result(Box<HirTyKind>, Box<HirTyKind>),
 
     /// Indicating that the compiler failed to determine the type
-    Err(Diagnostic<usize>),
+    Err(ErrorEmitted),
 
     /// Placeholder for the type of expression that has not been type checked yet
     Placeholder,
@@ -130,8 +130,8 @@ impl HirTyKind {
         }
     }
 
-    pub fn err(diag: impl ToDiagnostic + 'static) -> Self {
-        HirTyKind::Err(diag.to_diagnostic())
+    pub fn err() -> Self {
+        HirTyKind::Err(ErrorEmitted::new())
     }
 
     pub fn void() -> Self {

@@ -4,6 +4,7 @@ use crate::{
     name::NameResolver,
     validator::AstValidator,
 };
+use anyhow::Result;
 use brim_ast::item::{ImportsKind, ItemKind};
 use brim_codegen::codegen::CppCodegen;
 use brim_diagnostics::{
@@ -23,7 +24,6 @@ use brim_middle::{
     modules::{ModuleMap, SymbolCollector},
     temp_diag::TemporaryDiagnosticContext,
 };
-#[cfg(not(feature = "snap"))]
 use brim_span::files::{SimpleFiles, files};
 
 #[derive(Debug, Clone)]
@@ -76,7 +76,7 @@ impl CompilerContext {
     }
 
     /// Resolve and analyze the project form the main barrel
-    pub fn analyze(&mut self, mut map: ModuleMap) -> anyhow::Result<HirModuleMap> {
+    pub fn analyze(&mut self, mut map: ModuleMap) -> Result<HirModuleMap> {
         let map = &mut map;
 
         let mut validator = AstValidator::new();
@@ -132,15 +132,21 @@ impl CompilerContext {
         name_resolver.resolve_names();
         self.extend_temp(name_resolver.ctx);
 
-        let hir = &mut transform_module(name_resolver.map);
-        infer_types(hir);
+        let (hir, hir_temp) = &mut transform_module(name_resolver.map);
+        self.extend_temp(hir_temp.clone());
+        let ti = infer_types(hir);
 
-        // TODO: type checking etc.
-        let mut type_analyzer = TypeChecker::new(hir.clone());
-        type_analyzer.check();
-        self.extend_temp(type_analyzer.ctx);
+        self.extend_temp(ti.temp.clone());
 
-        Ok(type_analyzer.hir.clone())
+        if ti.temp.diags.is_empty() {
+            let mut type_analyzer = TypeChecker::new(hir.clone());
+            type_analyzer.check();
+            self.extend_temp(type_analyzer.ctx);
+
+            Ok(type_analyzer.hir.clone())
+        } else {
+            Ok(hir.clone())
+        }
     }
 
     pub fn run_codegen(&mut self, hir: HirModuleMap) -> String {

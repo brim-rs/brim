@@ -9,8 +9,7 @@ use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim::{
     ModuleId, Shell, args::RunArgs, compiler::CompilerContext, create_file_parent_dirs,
-    lints::Lints, resolver::Resolver, session::Session, temp_diag::TemporaryDiagnosticContext,
-    toml::ProjectType,
+    resolver::Resolver, session::Session, temp_diag::TemporaryDiagnosticContext, toml::ProjectType,
 };
 use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
 use brim_ctx::errors::NoMainFunction;
@@ -89,14 +88,7 @@ pub fn run_command(
                 });
             }
 
-            let emitted = comp.emitted.len();
-            if emitted > 0 {
-                bail!(
-                    "Compilation failed due to {} {}",
-                    emitted,
-                    plural(emitted, "error", "errors")
-                )
-            }
+            bail_on_errors(comp.emitted.len())?;
 
             let code = comp.run_codegen(hir);
             let file = build_dir.join("codegen").join("main.cpp");
@@ -143,6 +135,18 @@ pub fn run_command(
         },
         "to execute project",
     )?;
+
+    Ok(())
+}
+
+pub fn bail_on_errors(len: usize) -> anyhow::Result<()> {
+    if len > 0 {
+        bail!(
+            "Compilation failed due to {} previous {}",
+            len,
+            plural(len, "error", "errors")
+        )
+    }
 
     Ok(())
 }

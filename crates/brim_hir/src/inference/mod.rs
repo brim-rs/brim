@@ -18,7 +18,8 @@ use brim_ast::{
     token::{Lit, LitKind},
     ty::PrimitiveType,
 };
-use brim_middle::ModuleId;
+use brim_diagnostics::diagnostic::ToDiagnostic;
+use brim_middle::{ModuleId, temp_diag::TemporaryDiagnosticContext};
 
 #[derive(Debug)]
 pub struct TypeInference<'a> {
@@ -26,9 +27,10 @@ pub struct TypeInference<'a> {
     pub ctx: InferCtx,
     pub scope_manager: TypeScopeManager,
     pub current_mod: ModuleId,
+    pub temp: TemporaryDiagnosticContext,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InferCtx {
     /// Generics available in the current scope.
     pub generics: Vec<HirGenericParam>,
@@ -50,17 +52,17 @@ impl InferCtx {
     }
 }
 
-pub fn infer_types(hir: &mut HirModuleMap) {
-    let ti = &mut TypeInference {
+pub fn infer_types(hir: &mut HirModuleMap) -> TypeInference {
+    let mut ti = TypeInference {
         hir,
         ctx: InferCtx::new(),
         scope_manager: TypeScopeManager::new(),
         current_mod: ModuleId::from_usize(0),
+        temp: TemporaryDiagnosticContext::new(),
     };
-
     ti.infer();
 
-    println!("{:#?}", ti.hir);
+    ti
 }
 
 impl<'a> TypeInference<'a> {
@@ -194,7 +196,7 @@ impl<'a> TypeInference<'a> {
                         if ty.is_numeric() {
                             ty
                         } else {
-                            &HirTyKind::err(CannotApplyUnary {
+                            &self.ret_with_error(CannotApplyUnary {
                                 span: (expr.span.clone(), self.current_mod.as_usize()),
                                 op: UnaryOp::Minus,
                                 ty: ty.clone(),
@@ -205,7 +207,7 @@ impl<'a> TypeInference<'a> {
                         if ty.can_be_dereferenced() {
                             ty
                         } else {
-                            &HirTyKind::err(CannotApplyUnary {
+                            &self.ret_with_error(CannotApplyUnary {
                                 span: (expr.span.clone(), self.current_mod.as_usize()),
                                 op: UnaryOp::Deref,
                                 ty: ty.clone(),
@@ -263,7 +265,7 @@ impl<'a> TypeInference<'a> {
 
                             &HirTyKind::Primitive(ty)
                         } else {
-                            &HirTyKind::err(CannotApplyBinary {
+                            &self.ret_with_error(CannotApplyBinary {
                                 span: (expr.span.clone(), self.current_mod.as_usize()),
                                 op: opc,
                                 lhs: l.clone(),
@@ -285,7 +287,7 @@ impl<'a> TypeInference<'a> {
                         if l.can_be_logically_compared_to(r) {
                             &HirTyKind::Primitive(PrimitiveType::Bool)
                         } else {
-                            &HirTyKind::err(CannotCompare {
+                            &self.ret_with_error(CannotCompare {
                                 span: (expr.span.clone(), self.current_mod.as_usize()),
                                 op: opc,
                                 lhs: l.clone(),
@@ -298,7 +300,7 @@ impl<'a> TypeInference<'a> {
                         if l.is_bool() && r.is_bool() {
                             &HirTyKind::Primitive(PrimitiveType::Bool)
                         } else {
-                            &HirTyKind::err(CannotApplyUnary {
+                            &self.ret_with_error(CannotApplyUnary {
                                 span: (expr.span.clone(), self.current_mod.as_usize()),
                                 op: UnaryOp::Not,
                                 ty: l.clone(),
@@ -376,5 +378,10 @@ impl<'a> TypeInference<'a> {
         } else {
             HirTyKind::Primitive(def)
         }
+    }
+
+    pub fn ret_with_error(&mut self, err: impl ToDiagnostic + 'static) -> HirTyKind {
+        self.temp.emit(Box::new(err));
+        HirTyKind::err()
     }
 }

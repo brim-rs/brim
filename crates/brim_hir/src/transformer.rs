@@ -21,6 +21,8 @@ use brim_middle::{
 };
 use brim_span::{span::Span, symbols::Symbol};
 use std::{collections::HashMap, path::PathBuf};
+use brim_diagnostics::diagnostic::ToDiagnostic;
+use brim_middle::temp_diag::TemporaryDiagnosticContext;
 use crate::comptime::errors::ComptimeExprExpectedTy;
 
 #[derive(Clone, Debug)]
@@ -29,9 +31,9 @@ pub struct LocId {
     pub module: ModuleId,
 }
 
-pub fn transform_module(map: ModuleMap) -> HirModuleMap {
+pub fn transform_module(map: ModuleMap) -> (HirModuleMap, TemporaryDiagnosticContext) {
     let mut transformer = Transformer::new(map);
-    transformer.transform_modules()
+    (transformer.transform_modules(), transformer.ctx)
 }
 
 #[derive(Debug, Clone)]
@@ -310,6 +312,7 @@ pub struct Transformer {
     pub last_id: usize,
     pub module_map: ModuleMap,
     current_mod_id: ModuleId,
+    pub ctx: TemporaryDiagnosticContext,
 }
 
 impl Transformer {
@@ -319,6 +322,7 @@ impl Transformer {
             last_id: 0,
             module_map,
             current_mod_id: ModuleId::from_usize(0),
+            ctx: TemporaryDiagnosticContext::new(),
         }
     }
 
@@ -699,7 +703,7 @@ impl Transformer {
                     let len = self.expect_from_comptime(expr.clone());
 
                     if LitKind::Integer != len.kind {
-                        HirTyKind::err(ComptimeExprExpectedTy {
+                        self.ret_with_error(ComptimeExprExpectedTy {
                             span: (expr.span, self.current_mod_id.as_usize()),
                             expected_ty: HirTyKind::Primitive(PrimitiveType::I32),
                             actual_ty: HirTyKind::from_lit(&len),
@@ -735,6 +739,11 @@ impl Transformer {
                 TyKind::Err(e) => panic!("on ty: {:?}", ty),
             },
         }
+    }
+
+    pub fn ret_with_error(&mut self, err: impl ToDiagnostic + 'static) -> HirTyKind {
+        self.ctx.emit(Box::new(err));
+        HirTyKind::err()
     }
 
     pub fn hir_id(&mut self) -> HirId {

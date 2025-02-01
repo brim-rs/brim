@@ -12,7 +12,7 @@ use std::{env, process::exit};
 pub mod cli;
 mod commands;
 mod panic;
-mod plural;
+pub mod plural;
 
 fn main() -> Result<()> {
     setup_panic_handler();

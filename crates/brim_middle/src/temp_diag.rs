@@ -5,6 +5,7 @@ use brim_diagnostics::{
 };
 use std::fmt::Debug;
 
+#[derive(Clone)]
 /// Struct to store diagnostics to be later emitted by the main diagnostic context
 pub struct TemporaryDiagnosticContext {
     pub diags: Vec<Diagnostic<usize>>,
@@ -18,7 +19,7 @@ impl TemporaryDiagnosticContext {
     pub fn emit(&mut self, diag: Box<dyn ToDiagnostic>) {
         self.diags.push(diag.to_diagnostic());
     }
-    
+
     pub fn emit_diag(&mut self, diag: Diagnostic<usize>) {
         self.diags.push(diag);
     }
