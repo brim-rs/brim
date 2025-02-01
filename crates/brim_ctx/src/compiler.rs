@@ -6,19 +6,23 @@ use crate::{
 };
 use brim_ast::item::{ImportsKind, ItemKind};
 use brim_codegen::codegen::CppCodegen;
-use brim_diagnostics::{diagnostic::{Diagnostic, ToDiagnostic}, ErrorEmitted};
+use brim_diagnostics::{
+    ErrorEmitted,
+    diagnostic::{Diagnostic, ToDiagnostic},
+};
 use brim_hir::{
     inference::infer_types,
     items::HirFn,
     transformer::{HirModuleMap, transform_module},
+    type_checker::TypeChecker,
 };
 use brim_middle::{
     GlobalSymbolId, ModuleId,
     args::RunArgs,
+    lints::Lints,
     modules::{ModuleMap, SymbolCollector},
+    temp_diag::TemporaryDiagnosticContext,
 };
-use brim_middle::lints::Lints;
-use brim_middle::temp_diag::TemporaryDiagnosticContext;
 #[cfg(not(feature = "snap"))]
 use brim_span::files::{SimpleFiles, files};
 
@@ -36,7 +40,7 @@ impl CompilerContext {
             dcx: DiagnosticContext::new(),
             emitted: vec![],
             args,
-            lints
+            lints,
         }
     }
 
@@ -132,8 +136,11 @@ impl CompilerContext {
         infer_types(hir);
 
         // TODO: type checking etc.
+        let mut type_analyzer = TypeChecker::new(hir.clone());
+        type_analyzer.check();
+        self.extend_temp(type_analyzer.ctx);
 
-        Ok(hir.clone())
+        Ok(type_analyzer.hir.clone())
     }
 
     pub fn run_codegen(&mut self, hir: HirModuleMap) -> String {
