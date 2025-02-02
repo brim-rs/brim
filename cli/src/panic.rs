@@ -2,8 +2,8 @@ use anyhow::Result;
 use colored::Colorize;
 use std::path::PathBuf;
 
-pub fn setup_panic_handler() {
-    std::panic::set_hook(Box::new(|info| {
+pub fn setup_panic_handler(no_backtrace: bool) {
+    std::panic::set_hook(Box::new(move |info| {
         let message = match (
             info.payload().downcast_ref::<&str>(),
             info.payload().downcast_ref::<String>(),
@@ -35,6 +35,11 @@ Location: {}
             location,
             message.bright_red(),
         );
+
+        if no_backtrace {
+            eprintln!("{}", text.bold());
+            return;
+        }
 
         let mut backtrace = String::new();
         backtrace += &"Backtrace:\n".bright_red().to_string();

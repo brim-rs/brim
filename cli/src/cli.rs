@@ -108,5 +108,11 @@ pub fn cli() -> Command {
                 .action(ArgAction::SetTrue)
                 .global(true),
         )
+        .arg(
+            opt("no-backtrace", "Do not print a backtrace on panic")
+                .long("no-backtrace")
+                .action(ArgAction::SetTrue)
+                .global(true),
+        )
         .subcommand(run_cmd())
 }

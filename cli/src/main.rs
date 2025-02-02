@@ -15,11 +15,13 @@ mod panic;
 pub mod plural;
 
 fn main() -> Result<()> {
-    setup_panic_handler();
     let args = cli().try_get_matches().unwrap_or_else(|err| {
         err.print().expect("Error printing error");
         exit(1);
     });
+    setup_panic_handler(
+        args.get_flag("no-backtrace"),
+    );
     let verbose = args.get_flag("verbose");
 
     unsafe { env::set_var("BRIM_LOG", if verbose { "trace" } else { "info" }) };
