@@ -27,3 +27,13 @@ pub struct UndeclaredFunction {
     pub span: (Span, usize),
     pub name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("attempted to access variable from outside comptime scope")]
+pub struct AccessOutsideComptime {
+    #[error("variable `{name}` is not accessible outside comptime scope")]
+    pub span: (Span, usize),
+    #[notel("declared here")]
+    pub decl: (Span, usize),
+    pub name: String,
+}

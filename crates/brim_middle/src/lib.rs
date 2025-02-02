@@ -1,4 +1,3 @@
-use anyhow::bail;
 use brim_ast::{
     NodeId,
     item::{FnDecl, Ident},

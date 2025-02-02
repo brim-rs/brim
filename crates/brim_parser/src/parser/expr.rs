@@ -234,14 +234,10 @@ impl Parser {
                 } else if self.eat_keyword(ptok!(If)) {
                     self.parse_if()
                 } else if self.eat_keyword(ptok!(Comptime)) {
-                    self.expect_obrace()?;
-                    let expr = self.parse_expr()?;
-                    self.expect_cbrace()?;
+                    let block = self.parse_block(true)?;
+                    let expr = self.new_expr(block.span, ExprKind::Block(block));
 
-                    Ok(self.new_expr(
-                        self.current().span.to(expr.span),
-                        ExprKind::Comptime(Box::new(expr)),
-                    ))
+                    Ok(self.new_expr(self.current().span, ExprKind::Comptime(Box::new(expr))))
                 } else {
                     let span = self.current().span;
                     let ident = self.parse_ident()?;

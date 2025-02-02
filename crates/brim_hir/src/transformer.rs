@@ -24,6 +24,7 @@ use std::{collections::HashMap, path::PathBuf};
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::temp_diag::TemporaryDiagnosticContext;
 use crate::comptime::errors::ComptimeExprExpectedTy;
+use crate::comptime::EvaluatorContext;
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -313,6 +314,7 @@ pub struct Transformer {
     pub module_map: ModuleMap,
     current_mod_id: ModuleId,
     pub ctx: TemporaryDiagnosticContext,
+    pub eval: EvaluatorContext,
 }
 
 impl Transformer {
@@ -323,6 +325,7 @@ impl Transformer {
             module_map,
             current_mod_id: ModuleId::from_usize(0),
             ctx: TemporaryDiagnosticContext::new(),
+            eval: EvaluatorContext::new()
         }
     }
 

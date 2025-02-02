@@ -14,6 +14,7 @@ pub enum LabelStyle {
     Primary,
     Warning,
     Error,
+    Note,
     Add(String),
 }
 

@@ -253,6 +253,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                     Some(LabelStyle::Error) => Some(self.chars().single_primary_caret),
                     Some(LabelStyle::Warning) => Some(self.chars().single_primary_caret),
                     Some(LabelStyle::Add(_)) => Some(self.chars().plus),
+                    Some(LabelStyle::Note) => Some(self.chars().note_bullet),
 
                     None if metrics.byte_index < max_label_end => Some(' '),
                     None => None,
@@ -604,6 +605,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
             LabelStyle::Error => self.config.chars.single_primary_caret,
             LabelStyle::Warning => self.config.chars.single_primary_caret,
             LabelStyle::Add(_) => self.config.chars.plus,
+            LabelStyle::Note => self.config.chars.note_bullet,
         };
 
         write!(self, "{}", caret_start)?;
@@ -635,6 +637,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
             LabelStyle::Error => self.config.chars.single_primary_caret,
             LabelStyle::Warning => self.config.chars.single_primary_caret,
             LabelStyle::Add(_) => self.config.chars.plus,
+            LabelStyle::Note => self.config.chars.note_bullet,
         };
         write!(self, "{}", caret_end)?;
         if !message.is_empty() {
@@ -738,6 +741,7 @@ fn label_priority_key(label_style: &LabelStyle) -> u8 {
         LabelStyle::Warning => 2,
         LabelStyle::Primary => 3,
         LabelStyle::Error => 4,
+        LabelStyle::Note => 5,
     }
 }
 

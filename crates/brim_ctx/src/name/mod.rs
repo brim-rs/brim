@@ -1,9 +1,9 @@
 mod errors;
-mod scopes;
+pub mod scopes;
 
 use crate::name::{
-    errors::{UndeclaredFunction, UndeclaredVariable},
-    scopes::{ScopeManager, VariableInfo},
+    errors::{AccessOutsideComptime, UndeclaredFunction, UndeclaredVariable},
+    scopes::Scope,
 };
 use brim_ast::{
     expr::{Expr, ExprKind},
@@ -15,9 +15,10 @@ use brim_middle::{
     ModuleId, lints::Lints, modules::ModuleMap, temp_diag::TemporaryDiagnosticContext,
     walker::AstWalker,
 };
-use convert_case::{Case, Casing};
-use tracing::debug;
 use brim_span::span::Span;
+use convert_case::{Case, Casing};
+use scopes::{ScopeManager, VariableInfo};
+use tracing::debug;
 
 #[derive(Debug)]
 pub struct NameResolver {
@@ -26,6 +27,7 @@ pub struct NameResolver {
     pub scopes: ScopeManager,
     pub file: usize,
     pub lints: &'static Lints,
+    pub inside_comptime: bool,
 }
 
 impl NameResolver {
@@ -36,6 +38,7 @@ impl NameResolver {
             scopes: ScopeManager::new(0),
             file: 0,
             lints,
+            inside_comptime: false,
         }
     }
 
@@ -67,10 +70,10 @@ impl NameResolver {
     }
 
     // Check if a variable is declared in any accessible scope
-    pub fn is_variable_declared(&self, name: &str) -> bool {
-        self.scopes.resolve_variable(name).is_some()
+    pub fn is_variable_declared(&self, name: &str) -> Option<(Scope, &VariableInfo)> {
+        self.scopes.resolve_variable(name)
     }
-    
+
     pub fn validate_var_name(&mut self, name: &str, span: Span) {
         let snake = name.to_case(Case::Snake);
         if name != snake {
@@ -105,7 +108,7 @@ impl AstWalker for NameResolver {
     }
 
     fn visit_block(&mut self, block: &mut Block) {
-        self.scopes.push_scope(self.file);
+        self.scopes.push_scope(self.file, self.inside_comptime);
 
         for stmt in block.stmts.iter_mut() {
             self.visit_stmt(stmt);
@@ -116,10 +119,10 @@ impl AstWalker for NameResolver {
 
     fn visit_fn(&mut self, func: &mut FnDecl) {
         self.scopes = ScopeManager::new(self.file);
-        
+
         let name = func.sig.name.to_string();
         let camel = name.to_case(Case::Camel);
-        
+
         if name != camel {
             self.ctx.emit_lint(self.lints.function_not_camel_case(
                 name.to_string(),
@@ -134,7 +137,7 @@ impl AstWalker for NameResolver {
                 is_const: false,
                 span: param.span,
             });
-            
+
             self.validate_var_name(&param.name.to_string(), param.name.span);
         }
 
@@ -158,12 +161,23 @@ impl AstWalker for NameResolver {
             ExprKind::Literal(_) => {}
             ExprKind::Paren(inner) => self.visit_expr(inner),
             ExprKind::Return(inner) => self.visit_expr(inner),
-            ExprKind::Var(var) => {
-                if !self.is_variable_declared(&var.name.to_string()) {
-                    self.ctx.emit(Box::new(UndeclaredVariable {
-                        span: (var.span, self.file),
-                        name: var.name.to_string(),
-                    }));
+            ExprKind::Var(ident) => {
+                let var_name = ident.name.to_string();
+                let scope = self.is_variable_declared(&var_name);
+
+                if let Some((scope, var)) = scope {
+                    if self.inside_comptime && !scope.inside_comptime {
+                        self.ctx.emit_impl(AccessOutsideComptime {
+                            span: (ident.span, self.file),
+                            name: var_name,
+                            decl: (var.span, self.file),
+                        });
+                    }
+                } else {
+                    self.ctx.emit_impl(UndeclaredVariable {
+                        span: (ident.span, self.file),
+                        name: var_name.clone(),
+                    });
                 }
             }
             ExprKind::AssignOp(lhs, _, rhs) | ExprKind::Assign(lhs, rhs) => {
@@ -201,7 +215,11 @@ impl AstWalker for NameResolver {
                     self.visit_expr(arg);
                 }
             }
-            ExprKind::Comptime(_) => {}
+            ExprKind::Comptime(expr) => {
+                self.inside_comptime = true;
+                self.visit_expr(expr);
+                self.inside_comptime = false;
+            }
             ExprKind::Array(items) => {
                 for item in items {
                     self.visit_expr(item);

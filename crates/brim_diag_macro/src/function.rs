@@ -13,7 +13,7 @@ pub enum MacroFunctionError {
     MissingAttribute,
 }
 
-const VALID_SEVERITIES: &[&str] = &["help", "warning", "error", "bug"];
+const VALID_SEVERITIES: &[&str] = &["help", "warning", "error", "bug", "notel"];
 
 fn get_string_literal(expr: &Expr) -> Result<String, MacroFunctionError> {
     match expr {
@@ -40,6 +40,7 @@ fn get_label_style(severity: &str) -> proc_macro2::TokenStream {
     match severity.to_lowercase().as_str() {
         "error" => quote! { LabelStyle::Error },
         "warning" => quote! { LabelStyle::Warning },
+        "notel" => quote! { LabelStyle::Note },
         _ => quote! { LabelStyle::Primary },
     }
 }

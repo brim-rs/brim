@@ -75,6 +75,7 @@ impl Styles {
             (LabelStyle::Error, _) => &self.error_label,
             (LabelStyle::Warning, _) => &self.warning_label,
             (LabelStyle::Add(_), _) => &self.add_label,
+            (LabelStyle::Note, _) => &self.primary_label_note,
         }
     }
 
@@ -150,7 +151,7 @@ impl Chars {
             snippet_start: "-->".into(),
             source_border_left: '|',
             source_border_left_break: '.',
-            note_bullet: '=',
+            note_bullet: '-',
             single_primary_caret: '^',
             single_secondary_caret: '-',
             multi_primary_caret_start: '^',
@@ -172,7 +173,7 @@ impl Chars {
             snippet_start: "-->".into(),
             source_border_left: '|',
             source_border_left_break: '.',
-            note_bullet: '=',
+            note_bullet: '-',
             single_primary_caret: '^',
             single_secondary_caret: '-',
             multi_primary_caret_start: '^',

@@ -1,3 +1,5 @@
+#![feature(let_chains)]
+
 pub mod compiler;
 pub mod diag_ctx;
 pub mod errors;

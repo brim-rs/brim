@@ -1,14 +1,28 @@
-use crate::name::errors::RedeclaredVariable;
 use brim_ast::{NodeId, item::Param};
-use brim_diagnostics::{OptionalDiag, box_diag};
+use brim_diag_macro::Diagnostic;
+use brim_diagnostics::{
+    OptionalDiag, box_diag,
+    diagnostic::{Label, LabelStyle, Severity, ToDiagnostic},
+};
 use brim_span::span::Span;
 use std::collections::HashMap;
+
+#[derive(Diagnostic)]
+#[error("found redeclaration of variable `{name}`")]
+pub struct RedeclaredVariable {
+    #[error("first defined here")]
+    pub span: (Span, usize),
+    #[error("redeclared here")]
+    pub redecl: (Span, usize),
+    pub name: String,
+}
 
 #[derive(Debug, Clone)]
 pub struct Scope {
     variables: HashMap<String, VariableInfo>,
     parent: Option<Box<Scope>>,
     file: usize,
+    pub inside_comptime: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -34,14 +48,16 @@ impl<'a> Scope {
             variables: HashMap::new(),
             parent: None,
             file,
+            inside_comptime: false,
         }
     }
 
-    pub fn new_child(parent: &Scope, file: usize) -> Self {
+    pub fn new_child(parent: &Scope, file: usize, inside_comptime: bool) -> Self {
         Self {
             variables: HashMap::new(),
             parent: Some(Box::new(parent.clone())),
             file,
+            inside_comptime,
         }
     }
 
@@ -66,10 +82,10 @@ impl<'a> Scope {
     }
 
     // Resolve a variable, checking current and parent scopes
-    pub fn resolve_variable(&self, name: &str) -> Option<&VariableInfo> {
+    pub fn resolve_variable(&self, name: &str) -> Option<(Scope, &VariableInfo)> {
         // First check in current scope
         if let Some(var) = self.variables.get(name) {
-            return Some(var);
+            return Some((self.clone(), var));
         }
 
         // If not found, check parent scopes
@@ -91,9 +107,9 @@ impl<'a> ScopeManager {
         }
     }
 
-    pub fn push_scope(&mut self, file: usize) {
+    pub fn push_scope(&mut self, file: usize, inside: bool) {
         let current_scope = self.current_scope();
-        let new_scope = Scope::new_child(current_scope, file);
+        let new_scope = Scope::new_child(current_scope, file, inside);
         self.scope_stack.push(new_scope);
     }
 
@@ -109,7 +125,7 @@ impl<'a> ScopeManager {
             .expect("Scope stack should never be empty")
     }
 
-    pub fn resolve_variable(&self, name: &str) -> Option<&VariableInfo> {
+    pub fn resolve_variable(&self, name: &str) -> Option<(Scope, &VariableInfo)> {
         self.scope_stack
             .last()
             .and_then(|scope| scope.resolve_variable(name))
