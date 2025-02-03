@@ -88,6 +88,14 @@ impl CppCodegen {
                     condition, then_block, else_block, else_ifs
                 )
             }
+            HirExprKind::Array(exprs) => {
+                let exprs = exprs
+                    .iter()
+                    .map(|expr| self.generate_expr(expr.clone()))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                format!("{{ {} }}", exprs)
+            }
             _ => todo!("{:?}", expr.kind),
         };
 

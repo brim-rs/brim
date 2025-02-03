@@ -49,6 +49,11 @@ impl CppCodegen {
                 format!("std::vector<{}>", ty)
             }
 
+            HirTyKind::Array(ty, size) => {
+                let ty = self.generate_ty(*ty);
+                format!("std::array<{}, {}>", ty, size)
+            }
+
             HirTyKind::Const(ty) => {
                 let ty = self.generate_ty(*ty);
                 format!("const {}", ty)

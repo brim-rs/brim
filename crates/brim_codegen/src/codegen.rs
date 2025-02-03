@@ -14,7 +14,7 @@ impl CppCodegen {
     pub fn new(hir: HirModuleMap) -> Self {
         let mut code = CodeBuilder::new(4);
 
-        for import in &["string", "vector", "cstdint", "expected"] {
+        for import in &["string", "vector", "cstdint", "expected", "array"] {
             code.add_line(&format!("#include <{}>", import));
         }
 
