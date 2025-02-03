@@ -203,6 +203,8 @@ pub enum LitKind {
     Str,
     ByteStr,
     CStr,
+    /// Only used by the comptime evaluator
+    None,
     Err(ErrorEmitted),
 }
 

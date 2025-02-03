@@ -1,5 +1,6 @@
 use crate::{
     HirId,
+    comptime::errors::ComptimeExprExpectedTy,
     expr::{HirBlock, HirConditionBranch, HirConstExpr, HirExpr, HirExprKind, HirIfExpr},
     items::{
         HirFn, HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind,
@@ -15,16 +16,14 @@ use brim_ast::{
     token::{AssignOpToken, Lit, LitKind},
     ty::{PrimitiveType, TyKind},
 };
+use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{
     GlobalSymbolId, ModuleId,
     modules::{Module, ModuleMap},
+    temp_diag::TemporaryDiagnosticContext,
 };
 use brim_span::{span::Span, symbols::Symbol};
 use std::{collections::HashMap, path::PathBuf};
-use brim_diagnostics::diagnostic::ToDiagnostic;
-use brim_middle::temp_diag::TemporaryDiagnosticContext;
-use crate::comptime::errors::ComptimeExprExpectedTy;
-use crate::comptime::EvaluatorContext;
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -312,9 +311,8 @@ pub struct Transformer {
     pub map: HirModuleMap,
     pub last_id: usize,
     pub module_map: ModuleMap,
-    current_mod_id: ModuleId,
+    pub current_mod_id: ModuleId,
     pub ctx: TemporaryDiagnosticContext,
-    pub eval: EvaluatorContext,
 }
 
 impl Transformer {
@@ -325,7 +323,6 @@ impl Transformer {
             module_map,
             current_mod_id: ModuleId::from_usize(0),
             ctx: TemporaryDiagnosticContext::new(),
-            eval: EvaluatorContext::new()
         }
     }
 
@@ -573,7 +570,7 @@ impl Transformer {
             },
             GenericKind::NonType { ty, default } => HirGenericKind::Const {
                 ty: self.transform_ty(ty),
-                default: default.map(|expr| self.expect_from_comptime(expr)),
+                default: default.map(|expr| self.transform_comptime_expr(expr)),
             },
         }
     }
@@ -679,7 +676,9 @@ impl Transformer {
                         })
                         .collect(),
                 }),
-                ExprKind::Comptime(expr) => self.transform_comptime_expr(*expr),
+                ExprKind::Comptime(expr) => {
+                    HirExprKind::Literal(self.transform_comptime_expr(*expr))
+                }
                 ExprKind::Array(items) => HirExprKind::Array(
                     items
                         .iter()
@@ -703,13 +702,13 @@ impl Transformer {
                     HirTyKind::Ptr(Box::new(self.transform_ty(*ty).kind), cnst)
                 }
                 TyKind::Array(ty, expr) => {
-                    let len = self.expect_from_comptime(expr.clone());
+                    let len = self.transform_comptime_expr(expr.clone());
 
                     if LitKind::Integer != len.kind {
                         self.ret_with_error(ComptimeExprExpectedTy {
                             span: (expr.span, self.current_mod_id.as_usize()),
                             expected_ty: HirTyKind::Primitive(PrimitiveType::I32),
-                            actual_ty: HirTyKind::from_lit(&len),
+                            actual_ty: HirTyKind::from_lit(&len.kind),
                         })
                     } else {
                         HirTyKind::Array(Box::new(self.transform_ty(*ty).kind), len.to_int())

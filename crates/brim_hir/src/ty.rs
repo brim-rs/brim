@@ -160,8 +160,8 @@ impl HirTyKind {
         }
     }
     
-    pub fn from_lit(lit: &Lit) -> Self {
-        match lit.kind {
+    pub fn from_lit(lit: &LitKind) -> Self {
+        match lit {
             LitKind::Integer => HirTyKind::Primitive(PrimitiveType::I32),
             LitKind::Float => HirTyKind::Primitive(PrimitiveType::F32),
             LitKind::Bool => HirTyKind::Primitive(PrimitiveType::Bool),

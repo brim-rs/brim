@@ -21,6 +21,13 @@ impl HirExpr {
             _ => None,
         }
     }
+    
+    pub fn as_block(&self) -> &HirBlock {
+        match &self.kind {
+            HirExprKind::Block(block) => block,
+            _ => panic!("Expected block expression"),
+        }
+    }
 }
 
 // We no longer need parenthesized expressions, because the tree defines the structure.

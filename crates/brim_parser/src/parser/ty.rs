@@ -4,10 +4,13 @@ use crate::{
 };
 use brim_ast::{
     Const,
-    item::Ident,
+    expr::Expr,
+    item::{Block, Ident},
+    stmts::{Stmt, StmtKind},
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
     ty::{Const, PrimitiveType, Ty, TyKind},
 };
+use brim_ast::expr::ExprKind;
 
 impl Parser {
     pub fn parse_type(&mut self) -> PResult<Ty> {
@@ -95,7 +98,9 @@ impl Parser {
 
         let ty = self.parse_type()?;
         self.expect(TokenKind::Semicolon)?;
-        let size = self.parse_expr()?;
+        let size_expr = self.parse_expr()?;
+        let size_block = self.block_from_expr(size_expr);
+        let size = self.new_expr(size_block.span, ExprKind::Block(size_block));
 
         self.expect_cbracket()?;
         Ok(TyKind::Array(Box::new(ty), size))
@@ -103,5 +108,17 @@ impl Parser {
 
     pub fn is_primitive(&mut self, ident: Ident) -> PResult<Option<PrimitiveType>> {
         Ok(PrimitiveType::try_from_string(ident.to_string()))
+    }
+
+    pub fn block_from_expr(&mut self, expr: Expr) -> Block {
+        Block {
+            id: self.new_id(),
+            span: expr.span,
+            stmts: vec![Stmt {
+                id: self.new_id(),
+                kind: StmtKind::Expr(expr.clone()),
+                span: expr.span,
+            }],
+        }
     }
 }
