@@ -4,6 +4,7 @@ use crate::{
     type_checker::{TypeChecker, errors::CannotInitializeVariable},
 };
 use brim_ast::stmts::Stmt;
+use crate::inference::scope::TypeInfo;
 
 impl TypeChecker {
     pub fn check_fn(&mut self, func: HirFn) {
@@ -21,17 +22,28 @@ impl TypeChecker {
                 let ty = ty.unwrap();
 
                 if let Some(val) = value {
-                    let val_ty = val.ty;
+                    let val_ty = val.ty.clone();
 
                     if ty != val_ty {
                         self.ctx.emit_impl(CannotInitializeVariable {
                             span: (stmt.span, self.mod_id),
                             name: ident.to_string(),
-                            ty,
+                            ty: ty.clone(),
                             val_ty,
                         });
                     }
+                
+                    self.check_expr(val);
                 }
+                
+                self.scope_manager.declare_variable(
+                    ident.to_string(),
+                    TypeInfo {
+                        ty,
+                        span: stmt.span,
+                    },
+                    true,
+                );
             }
         }
     }

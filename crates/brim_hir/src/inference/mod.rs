@@ -1,5 +1,5 @@
 mod errors;
-mod scope;
+pub mod scope;
 
 use crate::{
     HirId,
@@ -192,7 +192,6 @@ impl<'a> TypeInference<'a> {
 
                 match (op, &operand.ty) {
                     (UnaryOp::Try, ty) => ty,
-                    // Unary minus only applies to numeric types. We assign err, that will be later emitted in the type checker. Same goes for the rest of the cases.
                     (UnaryOp::Minus, ty) => {
                         if ty.is_numeric() {
                             ty
@@ -335,10 +334,10 @@ impl<'a> TypeInference<'a> {
             HirExprKind::Literal(lit) => match lit.kind {
                 LitKind::Str => &HirTyKind::Primitive(PrimitiveType::Str),
                 LitKind::Byte => &HirTyKind::Primitive(PrimitiveType::U8),
-                // TODO: should be array, but we don't really have way to transform the length to a constant expression. Maybe we will evaluate it before.
-                LitKind::ByteStr => {
-                    &HirTyKind::Vec(Box::new(HirTyKind::Primitive(PrimitiveType::U8)))
-                }
+                LitKind::ByteStr => &HirTyKind::Array(
+                    Box::new(HirTyKind::Primitive(PrimitiveType::U8)),
+                    lit.symbol.to_string().len(),
+                ),
                 LitKind::Char => &HirTyKind::Primitive(PrimitiveType::Char),
                 LitKind::Bool => &HirTyKind::Primitive(PrimitiveType::Bool),
                 LitKind::Integer => &self.ty_with_suffix(lit, PrimitiveType::I32),

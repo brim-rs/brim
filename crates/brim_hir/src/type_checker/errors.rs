@@ -13,3 +13,13 @@ pub struct CannotInitializeVariable {
     pub ty: HirTyKind,
     pub val_ty: HirTyKind,
 }
+
+#[derive(Diagnostic)]
+#[error("function parameter `{name}` expected value of type `{expected}`, found `{found}`")]
+pub struct FunctionParameterTypeMismatch {
+    #[error]
+    pub span: (Span, usize),
+    pub name: String,
+    pub expected: HirTyKind,
+    pub found: HirTyKind,
+}
