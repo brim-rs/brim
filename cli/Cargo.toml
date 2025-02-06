@@ -16,3 +16,4 @@ backtrace = "0.3.74"
 brim-parser = { workspace = true }
 brim-cpp-compiler = { workspace = true }
 brim-ctx = { workspace = true }
+toml_edit = { workspace = true }

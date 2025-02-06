@@ -15,7 +15,7 @@ use tracing::debug;
 #[derive(Debug)]
 pub struct Session {
     pub config: Config,
-    cwd: PathBuf,
+    pub cwd: PathBuf,
     pub color_choice: ColorChoice,
     start: Instant,
     pub measure_time: bool,

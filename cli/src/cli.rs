@@ -1,6 +1,7 @@
 use crate::commands::run::run_cmd;
 use brim::styles::{ERROR, HEADER, INVALID, LITERAL, PLACEHOLDER, USAGE, VALID};
 use clap::{Arg, ArgAction, Command, builder::Styles};
+use crate::commands::init::init_cmd;
 
 pub fn opt(name: &'static str, help: &'static str) -> Arg {
     Arg::new(name).long(name).help(help).action(ArgAction::Set)
@@ -115,4 +116,5 @@ pub fn cli() -> Command {
                 .global(true),
         )
         .subcommand(run_cmd())
+        .subcommand(init_cmd())
 }

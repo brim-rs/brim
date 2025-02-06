@@ -25,11 +25,7 @@ impl Transformer {
     pub fn transform_comptime_expr(&mut self, expr: Expr) -> Lit {
         let (expr, _) = self.transform_expr(expr);
 
-        let lit = Evaluator::new(self.current_mod_id).eval_block(expr.as_block());
-
-        println!("{:?}", lit);
-
-        lit
+        Evaluator::new(self.current_mod_id).eval_block(expr.as_block())
     }
 }
 
