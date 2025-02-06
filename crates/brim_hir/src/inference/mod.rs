@@ -140,10 +140,11 @@ impl<'a> TypeInference<'a> {
         match &mut stmt.kind {
             HirStmtKind::Expr(expr) => self.infer_expr(expr),
             HirStmtKind::Let { ty, value, ident } => {
-                if let None = ty {
-                    if let Some(value) = value {
-                        self.infer_expr(value);
-                        *ty = Some(value.ty.clone());
+                if let Some(value) = value {
+                    self.infer_expr(value);
+
+                    if let None = ty {
+                        ty.replace(value.ty.clone());
                     }
                 }
 

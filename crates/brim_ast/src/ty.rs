@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::{
     NodeId,
     item::{GenericArgs, Ident},
@@ -144,5 +145,33 @@ impl PrimitiveType {
             // Default case
             _ => None,
         }
+    }
+}
+
+impl Display for PrimitiveType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use PrimitiveType::*;
+
+        let s = match self {
+            I8 => "i8",
+            I16 => "i16",
+            I32 => "i32",
+            I64 => "i64",
+
+            U8 => "u8",
+            U16 => "u16",
+            U32 => "u32",
+            U64 => "u64",
+
+            F32 => "f32",
+            F64 => "f64",
+
+            Bool => "bool",
+            Char => "char",
+            Str => "str",
+            Void => "void",
+        };
+
+        write!(f, "{}", s)
     }
 }

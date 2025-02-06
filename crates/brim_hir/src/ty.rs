@@ -56,7 +56,7 @@ impl Display for HirTyKind {
             HirTyKind::Const(ty) => write!(f, "const {}", ty),
             HirTyKind::Array(ty, len) => write!(f, "[{}; {:?}]", ty, len),
             HirTyKind::Vec(ty) => write!(f, "{}[]", ty),
-            HirTyKind::Primitive(p) => write!(f, "{:?}", p),
+            HirTyKind::Primitive(p) => write!(f, "{}", p),
             HirTyKind::Ident { ident, generics } => {
                 write!(f, "{}{}", ident, generics)
             }
