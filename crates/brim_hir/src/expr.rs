@@ -1,7 +1,7 @@
-use crate::{HirId, stmts::HirStmt, ty::HirTyKind};
+use crate::{items::{HirCallParam, HirParam}, stmts::HirStmt, ty::HirTyKind, HirId};
 use brim_ast::{
     expr::{BinOpKind, UnaryOp},
-    item::Ident,
+    item::{Ident, Param},
     token::Lit,
 };
 use brim_span::span::Span;
@@ -52,7 +52,7 @@ pub enum HirExprKind {
     /// Conditionals desugared into a single structure.
     If(HirIfExpr),
     /// Function calls.
-    Call(Box<HirExpr>, Vec<HirExpr>),
+    Call(Box<HirExpr>, Vec<HirExpr>, Vec<HirCallParam>),
     /// Block of statements or expressions.
     Block(HirBlock),
     /// Return statement: `return x`.
