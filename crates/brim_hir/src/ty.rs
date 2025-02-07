@@ -37,6 +37,7 @@ pub enum HirTyKind {
     Ident {
         ident: Ident,
         generics: HirGenericArgs,
+        is_generic: bool,
     },
     /// Result type eg. `T!E` (brim) -> `std::expected<T, E>` (C++).
     Result(Box<HirTyKind>, Box<HirTyKind>),
@@ -57,8 +58,12 @@ impl Display for HirTyKind {
             HirTyKind::Array(ty, len) => write!(f, "[{}; {:?}]", ty, len),
             HirTyKind::Vec(ty) => write!(f, "{}[]", ty),
             HirTyKind::Primitive(p) => write!(f, "{}", p),
-            HirTyKind::Ident { ident, generics } => {
-                write!(f, "{}{}", ident, generics)
+            HirTyKind::Ident { ident, generics, .. } => {
+                write!(f, "{}{}", ident, if generics.params.len() > 0 {
+                    generics.to_string()
+                } else {
+                    "".to_string()
+                })
             }
             HirTyKind::Result(ok, err) => write!(f, "{}!{}", ok, err),
             HirTyKind::Err(diag) => write!(f, ""),
@@ -83,12 +88,14 @@ impl PartialEq for HirTyKind {
                 HirTyKind::Ident {
                     ident: id1,
                     generics: gen1,
+                    is_generic: is_generic1
                 },
                 HirTyKind::Ident {
                     ident: id2,
                     generics: gen2,
+                    is_generic: is_generic2
                 },
-            ) => id1 == id2 && gen1 == gen2,
+            ) => id1 == id2 && gen1 == gen2 && is_generic1 == is_generic2,
             (HirTyKind::Result(ok1, err1), HirTyKind::Result(ok2, err2)) => {
                 ok1 == ok2 && err1 == err2
             }

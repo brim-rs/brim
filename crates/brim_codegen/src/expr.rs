@@ -28,7 +28,7 @@ impl CppCodegen {
                 format!("{} {} {}", lhs, self.bin_op(op), rhs)
             }
             HirExprKind::Var(ident) => ident.name.to_string(),
-            HirExprKind::Call(func, args) => {
+            HirExprKind::Call(func, args, _) => {
                 apply_paren = true;
                 let fn_name = func.as_ident().unwrap().to_string();
                 let func_mod_id = self

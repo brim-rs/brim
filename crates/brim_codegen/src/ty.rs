@@ -24,7 +24,9 @@ impl CppCodegen {
                 }
             }
 
-            HirTyKind::Ident { ident, generics } => {
+            HirTyKind::Ident {
+                ident, generics, ..
+            } => {
                 format!(
                     "{}{}",
                     ident,

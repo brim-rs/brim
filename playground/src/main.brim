@@ -1,5 +1,5 @@
 use { divSafe } from test;
 
 pub fn main() {
-    let x: i32 = divSafe(10, 2);
+    let x = divSafe(10, 2);
 };

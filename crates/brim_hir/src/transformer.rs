@@ -462,9 +462,9 @@ impl Transformer {
                         constant: f_decl.sig.constant.as_bool(),
                         name: f_decl.sig.name,
                         return_type: if let FnReturnType::Ty(ty) = f_decl.sig.return_type {
-                            Some(self.transform_ty(ty))
+                            self.transform_ty(ty).kind
                         } else {
-                            None
+                            HirTyKind::Primitive(PrimitiveType::Void)
                         },
                         params: HirFnParams {
                             span: if params.is_empty() {
@@ -489,7 +489,7 @@ impl Transformer {
                         },
                         span: f_decl.sig.span,
                     },
-                    ret_type: HirTyKind::Placeholder,
+                    resolved_type: HirTyKind::Placeholder,
                     body,
                 })
             }
@@ -657,7 +657,7 @@ impl Transformer {
                     args.iter()
                         .map(|arg| self.transform_expr(arg.clone()).0)
                         .collect(),
-                        vec![]
+                    vec![],
                 ),
                 ExprKind::If(if_expr) => HirExprKind::If(HirIfExpr {
                     span: if_expr.span,
@@ -734,6 +734,7 @@ impl Transformer {
                             .collect(),
                         span: generics.span,
                     },
+                    is_generic: false,
                 },
                 TyKind::Result(ok, err) => HirTyKind::Result(
                     Box::new(self.transform_ty(*ok).kind),

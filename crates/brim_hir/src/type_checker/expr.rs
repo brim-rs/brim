@@ -14,7 +14,7 @@ impl TypeChecker {
                 }
                 self.scope_manager.pop_scope();
             }
-            HirExprKind::Call(func, args) => {
+            HirExprKind::Call(func, args, call_params) => {
                 let ident = func.as_ident().unwrap().to_string();
                 let func = self
                     .hir
@@ -22,13 +22,12 @@ impl TypeChecker {
                     .unwrap()
                     .as_fn();
 
-                for arg in args.iter().zip(func.sig.params.params.iter()) {
-                    let (arg_expr, arg_ty) = arg;
-                    if arg_expr.ty != arg_ty.ty.kind {
+                for (arg_expr, arg_ty) in args.iter().zip(call_params) {
+                    if arg_expr.ty != arg_ty.ty {
                         self.ctx.emit_impl(FunctionParameterTypeMismatch {
                             span: (expr.span, self.mod_id),
                             name: ident.clone(),
-                            expected: arg_ty.ty.kind.clone(),
+                            expected: arg_ty.ty.clone(),
                             found: arg_expr.ty.clone(),
                         });
                     }

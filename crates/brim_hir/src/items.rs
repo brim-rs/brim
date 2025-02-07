@@ -61,7 +61,7 @@ pub struct HirFn {
     /// ID of the function body block
     pub body: Option<HirId>,
     /// Return type specified by the user or the default return type. Different from the signature return type.
-    pub ret_type: HirTyKind,
+    pub resolved_type: HirTyKind,
 }
 
 #[derive(Clone, Debug)]
@@ -69,7 +69,7 @@ pub struct HirFnSig {
     pub constant: bool,
     pub name: Ident,
     /// We use option instead of FnReturnType
-    pub return_type: Option<HirTy>,
+    pub return_type: HirTyKind,
     pub params: HirFnParams,
     pub generics: HirGenerics,
     pub span: Span,
@@ -85,6 +85,19 @@ pub struct HirFnParams {
 pub struct HirGenerics {
     pub params: Vec<HirGenericParam>,
     pub span: Span,
+}
+
+impl HirGenerics {
+    pub fn is_generic(&self, ty: &HirTyKind) -> Option<HirGenericParam> {
+        if let HirTyKind::Ident { ident, .. } = ty {
+            self.params
+                .iter()
+                .find(|g| g.name.to_string() == *ident.to_string())
+                .cloned()
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -109,6 +122,19 @@ impl Display for HirGenericArgs {
 impl PartialEq for HirGenericArgs {
     fn eq(&self, other: &Self) -> bool {
         self.params == other.params
+    }
+}
+
+impl HirGenericArgs {
+    pub fn new(span: Span, params: Vec<HirGenericArg>) -> Self {
+        Self { span, params }
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            span: Span::DUMMY,
+            params: vec![],
+        }
     }
 }
 
@@ -137,6 +163,7 @@ pub struct HirCallParam {
     pub span: Span,
     pub name: Ident,
     pub ty: HirTyKind,
+    pub from_generic: Option<HirGenericParam>,
 }
 
 #[derive(Clone, Debug)]
