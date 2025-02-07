@@ -11,8 +11,14 @@ impl TypeChecker {
         if let Some(body) = func.body {
             let body = self.hir.get_expr(body);
 
+            self.current_fn = Some(func.clone());
             self.check_expr(body.clone());
+            self.current_fn = None;
         }
+    }
+    
+    pub fn current_fn(&self) -> &HirFn {
+        self.current_fn.as_ref().unwrap()
     }
 
     pub fn check_stmt(&mut self, stmt: HirStmt) {

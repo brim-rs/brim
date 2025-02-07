@@ -9,6 +9,7 @@ use crate::{
 };
 use brim_middle::temp_diag::TemporaryDiagnosticContext;
 use crate::inference::scope::TypeScopeManager;
+use crate::items::HirFn;
 
 #[derive(Debug)]
 pub struct TypeChecker {
@@ -16,6 +17,7 @@ pub struct TypeChecker {
     pub hir: HirModuleMap,
     pub mod_id: usize,
     pub scope_manager: TypeScopeManager,
+    pub current_fn: Option<HirFn>,
 }
 
 impl TypeChecker {
@@ -25,6 +27,7 @@ impl TypeChecker {
             hir,
             mod_id: 0,
             scope_manager: TypeScopeManager::new(),
+            current_fn: None,
         }
     }
 

@@ -41,6 +41,10 @@ pub enum HirTyKind {
     },
     /// Result type eg. `T!E` (brim) -> `std::expected<T, E>` (C++).
     Result(Box<HirTyKind>, Box<HirTyKind>),
+    /// Ok type eg. `@ok` (brim) -> `std::expected<T, E>` (C++)
+    ResOk(Box<HirTyKind>),
+    /// Error type eg. `@err` (brim) -> `std::unexpected<T, E>` (C++)
+    ResErr(Box<HirTyKind>),
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),
@@ -66,6 +70,8 @@ impl Display for HirTyKind {
                 })
             }
             HirTyKind::Result(ok, err) => write!(f, "{}!{}", ok, err),
+            HirTyKind::ResOk(ty) => write!(f, "@ok{}", ty),
+            HirTyKind::ResErr(ty) => write!(f, "@err{}", ty),
             HirTyKind::Err(diag) => write!(f, ""),
             HirTyKind::Placeholder => write!(f, "_"),
         }
@@ -177,6 +183,13 @@ impl HirTyKind {
             LitKind::ByteStr => HirTyKind::Vec(Box::new(HirTyKind::Primitive(PrimitiveType::U8))),
             LitKind::Byte => HirTyKind::Primitive(PrimitiveType::U8),
             _ => unimplemented!(),
+        }
+    }
+    
+    pub fn is_result(&self) -> Option<(Box<HirTyKind>, Box<HirTyKind>)> {
+        match self {
+            HirTyKind::Result(ok, err) => Some((ok.clone(), err.clone())),
+            _ => None,
         }
     }
 }

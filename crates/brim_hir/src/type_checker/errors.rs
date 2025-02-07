@@ -23,3 +23,13 @@ pub struct FunctionParameterTypeMismatch {
     pub expected: HirTyKind,
     pub found: HirTyKind,
 }
+
+#[derive(Diagnostic)]
+#[error("function `{name}` expected return type of `{expected}`, found `{found}`")]
+pub struct FunctionReturnTypeMismatch {
+    #[error]
+    pub span: (Span, usize),
+    pub name: String,
+    pub expected: HirTyKind,
+    pub found: HirTyKind,
+}

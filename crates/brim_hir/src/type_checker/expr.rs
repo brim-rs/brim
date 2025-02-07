@@ -1,6 +1,9 @@
 use crate::{
     expr::{HirExpr, HirExprKind},
-    type_checker::{TypeChecker, errors::FunctionParameterTypeMismatch},
+    type_checker::{
+        TypeChecker,
+        errors::{FunctionParameterTypeMismatch, FunctionReturnTypeMismatch},
+    },
 };
 use brim_middle::ModuleId;
 
@@ -32,6 +35,12 @@ impl TypeChecker {
                         });
                     }
                 }
+            }
+            HirExprKind::Return(expr) => {
+                let func = self.current_fn();
+                let ret_ty = &func.sig.return_type;
+
+                if let Some((ok, err)) = ret_ty.is_result() {}
             }
             _ => {}
         }
