@@ -23,7 +23,7 @@ use brim_middle::{
     temp_diag::TemporaryDiagnosticContext,
 };
 use brim_span::{span::Span, symbols::Symbol};
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, vec};
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -657,6 +657,7 @@ impl Transformer {
                     args.iter()
                         .map(|arg| self.transform_expr(arg.clone()).0)
                         .collect(),
+                        vec![]
                 ),
                 ExprKind::If(if_expr) => HirExprKind::If(HirIfExpr {
                     span: if_expr.span,

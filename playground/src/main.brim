@@ -1,3 +1,5 @@
+use { divSafe } from test;
+
 pub fn main() {
-    let x: i32 = "string";
+    let x: i32 = divSafe(10, 2);
 };

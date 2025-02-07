@@ -133,6 +133,13 @@ pub struct HirParam {
 }
 
 #[derive(Clone, Debug)]
+pub struct HirCallParam {
+    pub span: Span,
+    pub name: Ident,
+    pub ty: HirTyKind,
+}
+
+#[derive(Clone, Debug)]
 pub struct HirGenericParam {
     pub id: HirId,
     pub name: Ident,

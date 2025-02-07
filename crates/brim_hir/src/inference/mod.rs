@@ -2,16 +2,10 @@ mod errors;
 mod scope;
 
 use crate::{
-    HirId,
-    expr::{HirExpr, HirExprKind},
-    inference::{
+    expr::{HirExpr, HirExprKind}, inference::{
         errors::{CannotApplyBinary, CannotApplyUnary, CannotCompare},
         scope::{TypeInfo, TypeScopeManager},
-    },
-    items::{HirGenericKind, HirGenericParam, HirItem, HirItemKind},
-    stmts::{HirStmt, HirStmtKind},
-    transformer::{HirModule, HirModuleMap, StoredHirItem},
-    ty::HirTyKind,
+    }, items::{HirCallParam, HirGenericKind, HirGenericParam, HirItem, HirItemKind, HirParam}, stmts::{HirStmt, HirStmtKind}, transformer::{HirModule, HirModuleMap, StoredHirItem}, ty::HirTyKind, HirId
 };
 use brim_ast::{
     expr::{BinOpKind, UnaryOp},
@@ -93,6 +87,11 @@ impl<'a> TypeInference<'a> {
             HirItemKind::Fn(f) => {
                 self.scope_manager.push_scope();
 
+                self.ctx.clear_generics();
+                for generic in &f.sig.generics.params {
+                    self.ctx.push_generic(generic.clone());
+                }
+
                 for param in &f.sig.params.params {
                     let param_type = param.ty.kind.clone();
                     let type_info = TypeInfo {
@@ -106,10 +105,6 @@ impl<'a> TypeInference<'a> {
                     );
                 }
 
-                self.ctx.clear_generics();
-                for generic in &f.sig.generics.params {
-                    self.ctx.push_generic(generic.clone());
-                }
 
                 f.ret_type = f
                     .sig
@@ -174,6 +169,7 @@ impl<'a> TypeInference<'a> {
 
     fn assign_generic(&self, expr: &mut HirExpr) {
         if let Some(generic) = self.is_generic(&expr.ty) {
+            println!("{:#?}", generic);
             if let HirGenericKind::Type {
                 default: Some(default),
             } = generic.kind
@@ -215,7 +211,7 @@ impl<'a> TypeInference<'a> {
                             })
                         }
                     }
-                    (UnaryOp::Not, ty) => &HirTyKind::Primitive(PrimitiveType::Bool),
+                    (UnaryOp::Not, _) => &HirTyKind::Primitive(PrimitiveType::Bool),
                 }
             }
             HirExprKind::Block(block) => &{
@@ -320,14 +316,25 @@ impl<'a> TypeInference<'a> {
                     panic!()
                 }
             }
-            HirExprKind::Call(ident, args) => {
-                let func = self
-                    .hir
-                    .resolve_symbol(&ident.as_ident().unwrap().to_string(), self.current_mod);
+            HirExprKind::Call(ident, args, params) => {
+                let func_ident = ident.as_ident().unwrap().to_string();
+                let func = self.hir.resolve_symbol(&func_ident, self.current_mod).cloned();
 
                 // TODO: take into account provided generic arguments
                 if let Some(func) = func {
-                    &func.as_fn().ret_type
+                    let func_params = func.as_fn().sig.params.params.clone();
+                    for (args, param) in args.iter_mut().zip(func_params) {
+                        self.infer_expr(args);
+
+                        self.assign_generic(args);
+                        params.push(HirCallParam {
+                                span: param.span.clone(),
+                                name: func.ident.to_owned(),
+                                ty: args.ty.clone(),
+                        });
+                    }
+
+                    ret_type
                 } else {
                     &HirTyKind::Placeholder
                 }
