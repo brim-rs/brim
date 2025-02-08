@@ -12,6 +12,7 @@ use brim_diagnostics::{
     diagnostic::{Diagnostic, ToDiagnostic},
 };
 use brim_hir::{
+    builtin::expand_builtins,
     inference::infer_types,
     items::HirFn,
     transformer::{HirModuleMap, transform_module},
@@ -135,10 +136,10 @@ impl CompilerContext {
         let (hir, hir_temp) = &mut transform_module(name_resolver.map);
         self.extend_temp(hir_temp.clone());
         let ti = infer_types(hir);
-
         self.extend_temp(ti.temp.clone());
 
         if ti.temp.diags.is_empty() {
+            expand_builtins(hir);
             let mut type_analyzer = TypeChecker::new(hir.clone());
             type_analyzer.check();
             self.extend_temp(type_analyzer.ctx);

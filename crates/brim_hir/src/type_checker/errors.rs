@@ -33,3 +33,13 @@ pub struct FunctionReturnTypeMismatch {
     pub expected: HirTyKind,
     pub found: HirTyKind,
 }
+
+#[derive(Diagnostic)]
+#[error("Result({variant}) variant expected `{ok}` type, found `{found}`")]
+pub struct ExpectedResultVariant {
+    #[error]
+    pub span: (Span, usize),
+    pub ok: HirTyKind,
+    pub found: HirTyKind,
+    pub variant: String,
+}

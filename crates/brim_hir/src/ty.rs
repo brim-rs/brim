@@ -192,4 +192,18 @@ impl HirTyKind {
             _ => None,
         }
     }
+    
+    pub fn is_ok_variant(&self) -> Option<Box<HirTyKind>> {
+        match self {
+            HirTyKind::ResOk(ty) => Some(ty.clone()),
+            _ => None,
+        }
+    }
+    
+    pub fn is_err_variant(&self) -> Option<Box<HirTyKind>> {
+        match self {
+            HirTyKind::ResErr(ty) => Some(ty.clone()),
+            _ => None,
+        }
+    }
 }

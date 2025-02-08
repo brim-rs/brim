@@ -201,10 +201,10 @@ impl Parser {
     pub fn parse_primary_expr(&mut self) -> PResult<Expr> {
         match self.current().kind {
             TokenKind::Literal(lit) => {
-                let span = self.advance().span;
+                self.advance();
                 self.validate_suffix(lit)?;
 
-                Ok(self.new_expr(span, ExprKind::Literal(lit)))
+                Ok(self.new_expr(self.prev().span, ExprKind::Literal(lit)))
             }
             TokenKind::Delimiter(Delimiter::Paren, Orientation::Open) => {
                 self.advance();

@@ -123,6 +123,10 @@ impl<'a> TypeInference<'a> {
             }
             _ => {}
         }
+        
+        self.hir
+            .hir_items
+            .insert(item.id, StoredHirItem::Item(item.clone()));
     }
 
     fn infer_body(&mut self, body_id: HirId) {
@@ -154,6 +158,10 @@ impl<'a> TypeInference<'a> {
                 );
             }
         }
+        
+        self.hir
+            .hir_items
+            .insert(stmt.id, StoredHirItem::Stmt(stmt.clone()));
     }
 
     fn is_generic(&self, ty: &HirTyKind) -> Option<HirGenericParam> {
@@ -423,6 +431,13 @@ impl<'a> TypeInference<'a> {
                 // For now, we will just use placeholder until we figure out how to compare types.
                 &HirTyKind::Placeholder
             }
+            HirExprKind::Builtin(_, args) => {
+                for arg in args {
+                    self.infer_expr(arg);
+                }
+                
+                &HirTyKind::Placeholder
+            },
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
         expr.ty = kind.clone();
