@@ -1,6 +1,6 @@
 use brim_ast::{
     expr::{Expr, ExprKind},
-    item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Item, ItemKind, Use},
+    item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Use},
     stmts::{Let, Stmt, StmtKind},
     ty::Ty,
 };
@@ -44,6 +44,8 @@ pub trait AstWalker {
     fn visit_signature(&mut self, signature: &mut FnSignature) {
         self.walk_signature(signature);
     }
+
+    fn visit_builtin(&mut self, name: &mut Ident, _args: &mut Vec<Expr>) {}
 
     // Walk methods - traverse child nodes
     fn walk_item(&mut self, item: &mut Item) {
@@ -106,6 +108,7 @@ pub trait AstWalker {
                     self.visit_expr(item);
                 }
             }
+            ExprKind::Builtin(ident, args) => self.visit_builtin(ident, args),
         }
     }
 

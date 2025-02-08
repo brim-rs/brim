@@ -57,6 +57,8 @@ pub enum HirExprKind {
     Block(HirBlock),
     /// Return statement: `return x`.
     Return(Box<HirExpr>),
+    /// Built-in functions.
+    Builtin(Ident, Vec<HirExpr>),
 }
 
 #[derive(Clone, Debug)]

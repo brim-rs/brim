@@ -224,6 +224,24 @@ impl Parser {
                 self.expect_cbracket()?;
                 Ok(self.new_expr(self.current().span, ExprKind::Array(elements)))
             }
+            TokenKind::At => {
+                let span = self.current().span;
+                self.advance();
+
+                let ident = self.parse_ident()?;
+
+                self.expect_oparen()?;
+                let mut args = Vec::new();
+                while !self.is_paren(Orientation::Close) {
+                    args.push(self.parse_expr()?);
+                    if !self.eat(TokenKind::Comma) {
+                        break;
+                    }
+                }
+                self.expect_cparen()?;
+
+                Ok(self.new_expr(span.to(self.prev().span), ExprKind::Builtin(ident, args)))
+            }
             TokenKind::Ident(sym) => {
                 if self.eat_keyword(ptok!(Return)) {
                     let expr = self.parse_expr()?;

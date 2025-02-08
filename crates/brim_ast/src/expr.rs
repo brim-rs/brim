@@ -50,8 +50,10 @@ pub enum ExprKind {
     If(IfExpr),
     /// `{ ... }`
     Block(Block),
-    /// `func(x, y)`
+    /// `func(x, y)`. 
     Call(Box<Expr>, Vec<Expr>),
+    /// `@ok`, `@err` builtins
+    Builtin(Ident, Vec<Expr>),
     /// `comptime { ... }`
     Comptime(Box<Expr>),
 }

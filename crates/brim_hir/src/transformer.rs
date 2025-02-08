@@ -1,5 +1,6 @@
 use crate::{
     HirId,
+    builtin::get_builtin_function,
     comptime::errors::ComptimeExprExpectedTy,
     expr::{HirBlock, HirConditionBranch, HirConstExpr, HirExpr, HirExprKind, HirIfExpr},
     items::{
@@ -19,6 +20,7 @@ use brim_ast::{
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{
     GlobalSymbolId, ModuleId,
+    builtins::BUILTIN_FUNCTIONS,
     modules::{Module, ModuleMap},
     temp_diag::TemporaryDiagnosticContext,
 };
@@ -686,6 +688,25 @@ impl Transformer {
                         .map(|item| self.transform_expr(item.clone()).0)
                         .collect(),
                 ),
+                ExprKind::Builtin(ident, args) => {
+                    let func = get_builtin_function(&ident.to_string());
+
+                    if let Some(func) = func {
+                        let args = args
+                            .iter()
+                            .map(|arg| self.transform_expr(arg.clone()).0)
+                            .collect::<Vec<_>>();
+
+                        (func.func)(self, args).kind
+                    } else {
+                        HirExprKind::Builtin(
+                            ident,
+                            args.iter()
+                                .map(|arg| self.transform_expr(arg.clone()).0)
+                                .collect(),
+                        )
+                    }
+                }
             },
             ty: HirTyKind::Placeholder,
         };

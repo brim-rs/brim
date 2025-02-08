@@ -12,8 +12,8 @@ use brim_ast::{
 };
 use brim_diagnostics::diag_opt;
 use brim_middle::{
-    ModuleId, lints::Lints, modules::ModuleMap, temp_diag::TemporaryDiagnosticContext,
-    walker::AstWalker,
+    ModuleId, builtins::BUILTIN_FUNCTIONS, lints::Lints, modules::ModuleMap,
+    temp_diag::TemporaryDiagnosticContext, walker::AstWalker,
 };
 use brim_span::span::Span;
 use convert_case::{Case, Casing};
@@ -223,6 +223,17 @@ impl AstWalker for NameResolver {
             ExprKind::Array(items) => {
                 for item in items {
                     self.visit_expr(item);
+                }
+            }
+            ExprKind::Builtin(ident, _) => {
+                let name = ident.to_string();
+                let func = BUILTIN_FUNCTIONS.get(&name);
+
+                if let None = func {
+                    self.ctx.emit(Box::new(UndeclaredFunction {
+                        span: (ident.span, self.file),
+                        name,
+                    }));
                 }
             }
         }

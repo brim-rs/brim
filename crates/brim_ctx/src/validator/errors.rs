@@ -20,3 +20,12 @@ pub struct DuplicateParam {
     pub dup: (Span, usize),
     pub name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("builtin function expected {expected} arguments, found {found}")]
+pub struct BuiltinFunctionArgCount {
+    #[error("expected {expected} arguments")]
+    pub span: (Span, usize),
+    pub expected: usize,
+    pub found: usize,
+}

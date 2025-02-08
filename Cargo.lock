@@ -299,6 +299,7 @@ dependencies = [
  "brim-span",
  "clap",
  "convert_case",
+ "lazy_static",
  "serde",
 ]
 

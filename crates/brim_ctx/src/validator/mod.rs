@@ -1,13 +1,18 @@
 mod errors;
 
-use crate::validator::errors::{DuplicateParam, TooManyParameters};
+use crate::validator::errors::{BuiltinFunctionArgCount, DuplicateParam, TooManyParameters};
 use anyhow::Result;
-use brim_ast::item::{FnSignature, Item, ItemKind};
-use brim_middle::{modules::ModuleMap, walker::AstWalker};
+use brim_ast::{
+    expr::Expr,
+    item::{FnSignature, Ident, Item, ItemKind},
+};
+use brim_middle::{
+    builtins::BUILTIN_FUNCTIONS, modules::ModuleMap, temp_diag::TemporaryDiagnosticContext,
+    walker::AstWalker,
+};
 use brim_span::span::Span;
 use std::collections::HashMap;
 use tracing::debug;
-use brim_middle::temp_diag::TemporaryDiagnosticContext;
 
 #[derive(Debug)]
 pub struct AstValidator {
@@ -72,6 +77,21 @@ impl AstWalker for AstValidator {
                 }
             }
             _ => {}
+        }
+    }
+
+    fn visit_builtin(&mut self, ident: &mut Ident, args: &mut Vec<Expr>) {
+        let name = ident.to_string();
+        let func = BUILTIN_FUNCTIONS.get(&name);
+
+        if let Some(func) = func {
+            if args.len() != func.expected_args {
+                self.ctx.emit_impl(BuiltinFunctionArgCount {
+                    span: (ident.span.clone(), self.current_file),
+                    expected: func.expected_args,
+                    found: args.len(),
+                });
+            }
         }
     }
 }
