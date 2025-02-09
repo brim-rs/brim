@@ -2,6 +2,11 @@ use crate::CodeBuilder;
 use brim_hir::transformer::{HirModule, HirModuleMap};
 use brim_middle::ModuleId;
 use std::collections::{HashMap, HashSet, VecDeque};
+use brim_hir::Codegen;
+use brim_hir::expr::HirExpr;
+use brim_hir::items::HirItem;
+use brim_hir::stmts::HirStmt;
+use brim_hir::ty::{HirTy, HirTyKind};
 
 #[derive(Debug)]
 pub struct CppCodegen {
@@ -25,7 +30,33 @@ impl CppCodegen {
         }
     }
 
-    pub fn generate(&mut self) {
+    pub fn add_main(&mut self) {
+        self.code.add_line("int main() {");
+        self.code.increase_indent();
+        self.code.add_line("module0::main();");
+        self.code.add_line("return 0;");
+        self.code.decrease_indent();
+        self.code.add_line("}");
+    }
+
+  
+}
+
+impl Codegen for CppCodegen {
+    fn generate_module(&mut self, module: HirModule) {
+        self.code
+            .add_line(&format!("namespace module{} {{", module.mod_id.as_u32()));
+        self.code.increase_indent();
+
+        for item in module.items {
+            self.generate_item(item);
+        }
+
+        self.code.decrease_indent();
+        self.code.add_line("}");
+    }
+
+    fn generate(&mut self) {
         let mut graph: HashMap<ModuleId, HashSet<ModuleId>> = HashMap::new();
         let mut indegree: HashMap<ModuleId, usize> = HashMap::new();
         let mut module_map: HashMap<ModuleId, HirModule> = HashMap::new();
@@ -83,25 +114,19 @@ impl CppCodegen {
         self.add_main();
     }
 
-    pub fn add_main(&mut self) {
-        self.code.add_line("int main() {");
-        self.code.increase_indent();
-        self.code.add_line("module0::main();");
-        self.code.add_line("return 0;");
-        self.code.decrease_indent();
-        self.code.add_line("}");
+    fn generate_item(&mut self, item: HirItem) {
+        self.generate_item(item);
     }
 
-    pub fn generate_module(&mut self, module: HirModule) {
-        self.code
-            .add_line(&format!("namespace module{} {{", module.mod_id.as_u32()));
-        self.code.increase_indent();
+    fn generate_expr(&mut self, expr: HirExpr) -> String {
+        self.generate_expr(expr)
+    }
 
-        for item in module.items {
-            self.generate_item(item);
-        }
+    fn generate_stmt(&mut self, stmt: HirStmt) -> String {
+        self.generate_stmt(stmt)
+    }
 
-        self.code.decrease_indent();
-        self.code.add_line("}");
+    fn generate_ty(&mut self, ty: HirTyKind) -> String {
+        self.generate_ty(ty)
     }
 }

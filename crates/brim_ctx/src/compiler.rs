@@ -11,13 +11,7 @@ use brim_diagnostics::{
     ErrorEmitted,
     diagnostic::{Diagnostic, ToDiagnostic},
 };
-use brim_hir::{
-    builtin::expand_builtins,
-    inference::infer_types,
-    items::HirFn,
-    transformer::{HirModuleMap, transform_module},
-    type_checker::TypeChecker,
-};
+use brim_hir::{builtin::expand_builtins, inference::infer_types, items::HirFn, transformer::{HirModuleMap, transform_module}, type_checker::TypeChecker, Codegen};
 use brim_middle::{
     GlobalSymbolId, ModuleId,
     args::RunArgs,

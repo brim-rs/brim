@@ -42,6 +42,7 @@ pub fn transform_module(map: ModuleMap) -> (HirModuleMap, TemporaryDiagnosticCon
 pub struct HirModuleMap {
     pub modules: Vec<HirModule>,
     pub hir_items: HashMap<HirId, StoredHirItem>,
+    pub expanded_by_builtins: HashMap<HirId, String>,
 }
 
 impl HirModuleMap {
@@ -50,6 +51,7 @@ impl HirModuleMap {
         Self {
             modules: Vec::new(),
             hir_items: HashMap::new(),
+            expanded_by_builtins: HashMap::new(),
         }
     }
 
@@ -578,6 +580,8 @@ impl Transformer {
     }
 
     pub fn transform_expr(&mut self, expr: Expr) -> (HirExpr, HirId) {
+        let mut fn_name: Option<String> = None;
+
         let expr = HirExpr {
             id: self.hir_id(),
             span: expr.span,
@@ -688,12 +692,16 @@ impl Transformer {
                         .map(|item| self.transform_expr(item.clone()).0)
                         .collect(),
                 ),
-                ExprKind::Builtin(ident, args) => HirExprKind::Builtin(
-                    ident,
-                    args.iter()
-                        .map(|arg| self.transform_expr(arg.clone()).0)
-                        .collect(),
-                ),
+                ExprKind::Builtin(ident, args) => {
+                    fn_name = Some(ident.to_string());
+
+                    HirExprKind::Builtin(
+                        ident,
+                        args.iter()
+                            .map(|arg| self.transform_expr(arg.clone()).0)
+                            .collect(),
+                    )
+                }
             },
             ty: HirTyKind::Placeholder,
         };

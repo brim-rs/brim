@@ -1,20 +1,23 @@
 use crate::{
-    HirId,
+    Codegen, HirId,
     expr::{HirExpr, HirExprKind},
     items::{HirCallParam, HirGenericKind, HirItem, HirItemKind},
     stmts::{HirStmt, HirStmtKind},
     transformer::{HirModule, HirModuleMap, StoredHirItem, Transformer},
     ty::HirTyKind,
 };
+use std::any::Any;
 
 #[derive(Debug, Clone)]
 pub struct BuiltInFunction {
     pub func: fn(&mut Vec<HirExpr>) -> HirExpr,
+    pub codegen: fn(&mut dyn Codegen, &mut Vec<HirExpr>) -> String,
 }
 
 #[macro_export]
 macro_rules! builtin_function {
-    (fn $name:ident($($arg:ident),* $(, ...$rest:ident)?) {$($body:tt)*}) => {
+    (fn $name:ident($($arg:ident),* $(, ...$rest:ident)?) {$($body:tt)*}
+     codegen($cg_ctx:ident) {$($cg_body:tt)*}) => {
         #[allow(unused_mut, unused_variables)]
         pub fn $name() -> BuiltInFunction {
             fn inner(args: &mut Vec<HirExpr>) -> HirExpr {
@@ -25,8 +28,17 @@ macro_rules! builtin_function {
                 $($body)*
             }
 
+            fn codegen_inner($cg_ctx: &mut dyn Codegen, args: &mut Vec<HirExpr>) -> String {
+                let mut iter = args.iter_mut();
+                $(let mut $arg = iter.next().unwrap();)*
+                $(let $rest = iter.collect::<Vec<_>>();)?
+
+                $($cg_body)*
+            }
+
             BuiltInFunction {
                 func: inner,
+                codegen: codegen_inner,
             }
         }
     };
@@ -38,6 +50,9 @@ builtin_function! {
 
         value.clone()
     }
+    codegen(ctx) {
+        format!("{}", ctx.generate_expr(value.clone()))
+    }
 }
 
 builtin_function! {
@@ -45,6 +60,9 @@ builtin_function! {
         value.ty = HirTyKind::ResErr(Box::new(value.ty.clone()));
 
         value.clone()
+    }
+    codegen(ctx) {
+        format!("std::unexpected({})", ctx.generate_expr(value.clone()))
     }
 }
 
@@ -127,6 +145,7 @@ impl<'a> BuiltInExpander<'a> {
     }
 
     fn expand_expr(&mut self, expr: &mut HirExpr) {
+        let mut fn_name: Option<String> = None;
         match &mut expr.kind {
             HirExprKind::Unary(op, operand) => {
                 self.expand_expr(operand);
@@ -167,7 +186,8 @@ impl<'a> BuiltInExpander<'a> {
                 if let Some(func) = func {
                     let x = (func.func)(args);
 
-                    *expr = x;
+                    fn_name = Some(name.to_string());
+                    *expr = x.clone();
                 }
             }
             _ => {}
@@ -176,5 +196,9 @@ impl<'a> BuiltInExpander<'a> {
         self.hir
             .hir_items
             .insert(expr.id, StoredHirItem::Expr(expr.clone()));
+        
+        if let Some(fn_name) = fn_name {
+            self.hir.expanded_by_builtins.insert(expr.id, fn_name);
+        }
     }
 }

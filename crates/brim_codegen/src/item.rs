@@ -5,7 +5,7 @@ impl CppCodegen {
     pub fn generate_item(&mut self, item: HirItem) {
         match item.kind {
             HirItemKind::Fn(decl) => {
-                let ret = self.generate_ty(decl.resolved_type);
+                let ret = self.generate_ty(decl.sig.return_type);
                 self.generate_generics(&decl.sig.generics);
 
                 let params = decl
