@@ -7,6 +7,7 @@ use brim_ast::{
     item::{GenericArg, GenericArgs, GenericKind, GenericParam, Generics},
     token::TokenKind,
 };
+use brim_middle::ExperimentalFeatureNotEnabled;
 
 impl Parser {
     pub fn parse_generics(&mut self) -> PResult<Generics> {
@@ -29,10 +30,16 @@ impl Parser {
             });
         }
 
-        Ok(Generics {
-            span: token.to(self.prev().span),
-            params,
-        })
+        let span = token.to(self.prev().span);
+        if !self.experimental.generics {
+            self.emit(ExperimentalFeatureNotEnabled {
+                span: (span, self.file),
+                feature: "generics".to_string(),
+                note: "enable the `generics` feature in brim.toml to use generics".to_string(),
+            });
+        }
+
+        Ok(Generics { span, params })
     }
 
     /// Parses the generic arguments provided as an argument. eg: `foo<T, U>`

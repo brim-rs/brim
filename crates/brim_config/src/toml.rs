@@ -4,6 +4,7 @@ use brim_fs::walk_dir::walk_for_file;
 use clap::ArgMatches;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, fs::read_to_string, path::PathBuf};
+use brim_middle::experimental::Experimental;
 use brim_middle::lints::LintsConfig;
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
@@ -12,7 +13,8 @@ pub struct BrimConfig {
     pub tasks: Option<HashMap<String, String>>,
     pub dependencies: Option<HashMap<String, Dependency>>,
     pub build: Option<BuildConfig>,
-    pub lints: Option<LintsConfig>
+    pub lints: Option<LintsConfig>,
+    pub experimental: Option<Experimental>,
 }
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
@@ -89,7 +91,8 @@ pub struct Config {
     pub tasks: Option<HashMap<String, String>>,
     pub dependencies: HashMap<String, Dependency>,
     pub build: ParsedBuildConfig,
-    pub lints: LintsConfig
+    pub lints: LintsConfig,
+    pub experimental: Experimental,
 }
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
@@ -154,13 +157,15 @@ impl Config {
         }
         
         let lints = config.lints.unwrap_or(LintsConfig::default());
+        let experimental = config.experimental.unwrap_or(Experimental::default());
 
         Ok(Self {
             project,
             tasks,
             dependencies: dependencies.unwrap_or(HashMap::new()),
             build,
-            lints
+            lints,
+            experimental,
         })
     }
 

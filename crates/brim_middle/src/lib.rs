@@ -3,10 +3,15 @@ use brim_ast::{
     item::{FnDecl, Ident},
 };
 use brim_index::index_type;
+use brim_ast::expr::{BinOpKind, UnaryOp};
+use brim_diag_macro::Diagnostic;
+use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
+use brim_span::span::Span;
 
 pub mod args;
 pub mod barrel;
 pub mod builtins;
+pub mod experimental;
 pub mod lints;
 pub mod modules;
 pub mod temp_diag;
@@ -48,3 +53,14 @@ impl GlobalSymbol {
 pub enum GlobalSymbolKind {
     Fn(FnDecl),
 }
+
+#[derive(Diagnostic)]
+#[error("experimental feature `{feature}` is not enabled on this build")]
+pub struct ExperimentalFeatureNotEnabled {
+    #[error]
+    pub span: (Span, usize),
+    pub feature: String,
+    #[note]
+    pub note: String,
+}
+

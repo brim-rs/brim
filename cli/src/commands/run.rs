@@ -64,7 +64,7 @@ pub fn run_command(
                 format!("{} in {} mode", project_name, opt_level),
             )?;
 
-            let mut parser = Parser::new(main_file);
+            let mut parser = Parser::new(main_file, sess.config.experimental.clone());
             let mut barrel = parser.parse_barrel()?;
             for diag in &parser.dcx.diags {
                 comp.emit_diag(diag.clone());
@@ -73,7 +73,8 @@ pub fn run_command(
             let resolver_temp = &mut TemporaryDiagnosticContext::new();
             let mut resolver = Resolver::new(resolver_temp);
             let mut visited = HashSet::new();
-            let module_map = resolver.create_module_map(&mut barrel, &mut visited)?;
+            let module_map = resolver.create_module_map(&mut barrel, &mut visited, sess.config.experimental.clone())?;
+            comp.extend_temp(resolver_temp.clone());
 
             let hir = comp.analyze(module_map)?;
 

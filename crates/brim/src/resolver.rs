@@ -4,6 +4,7 @@ use brim_middle::{GlobalSymbolId, ModuleId, barrel::Barrel, modules::ModuleMap};
 use brim_parser::parser::Parser;
 use brim_span::files::{add_file, get_path};
 use std::{collections::HashSet, path::PathBuf};
+use brim_middle::experimental::Experimental;
 use brim_middle::temp_diag::TemporaryDiagnosticContext;
 
 #[derive(Debug)]
@@ -26,6 +27,7 @@ impl<'a> Resolver<'a> {
         &mut self,
         barrel: &mut Barrel,
         visited: &mut HashSet<PathBuf>,
+        experimental: Experimental
     ) -> anyhow::Result<ModuleMap> {
         let file_id = barrel.file_id.clone();
         let mut ref_path = get_path(file_id.clone())?;
@@ -47,7 +49,7 @@ impl<'a> Resolver<'a> {
 
                 let contents = self.temp_loader.read_file(&ref_path)?;
                 let file = add_file(ref_path.clone(), contents);
-                let mut parser = Parser::new(file);
+                let mut parser = Parser::new(file, experimental.clone());
                 let mut nested_barrel = parser.parse_barrel()?;
 
                 self.ctx.extend(parser.dcx.diags);
@@ -60,7 +62,7 @@ impl<'a> Resolver<'a> {
                     ref_path.clone(),
                 );
 
-                self.create_module_map(&mut nested_barrel, visited)?;
+                self.create_module_map(&mut nested_barrel, visited, experimental.clone())?;
             }
         }
 

@@ -17,6 +17,7 @@ use brim_span::{
     symbols::{GLOBAL_INTERNER, Symbol},
 };
 use tracing::debug;
+use brim_middle::experimental::Experimental;
 use brim_middle::temp_diag::TemporaryDiagnosticContext;
 
 mod cursor;
@@ -39,6 +40,7 @@ pub struct Parser {
     pub previous_token: Token,
     pub last_id: u32,
     pub dcx: TemporaryDiagnosticContext,
+    pub experimental: Experimental
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -104,7 +106,7 @@ macro_rules! debug_ident {
 }
 
 impl Parser {
-    pub fn new(file: usize) -> Self {
+    pub fn new(file: usize, experimental: Experimental) -> Self {
         Self {
             file,
             primitives: vec![],
@@ -115,6 +117,7 @@ impl Parser {
             previous_token: Token::new(TokenKind::Skipable, Span::DUMMY),
             dcx: TemporaryDiagnosticContext::new(),
             last_id: 0,
+            experimental,
         }
     }
 
