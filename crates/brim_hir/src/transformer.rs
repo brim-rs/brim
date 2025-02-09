@@ -517,6 +517,7 @@ impl Transformer {
                         .clone(),
                 })
             }
+            ItemKind::Struct(struc) => todo!("structs"),
         };
 
         let item = HirItem {

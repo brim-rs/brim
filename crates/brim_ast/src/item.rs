@@ -86,6 +86,24 @@ pub enum ItemKind {
     Fn(FnDecl),
     /// Use statement
     Use(Use),
+    /// Struct declaration eg. `struct Foo { ... }`
+    Struct(Struct),
+}
+
+#[derive(Clone, Debug)]
+pub struct Struct {
+    pub span: Span,
+    pub fields: Vec<Field>,
+    // pub generics: Generics,
+}
+
+#[derive(Clone, Debug)]
+pub struct Field {
+    pub id: NodeId,
+    pub span: Span,
+    pub ident: Ident,
+    pub ty: Ty,
+    pub vis: Visibility,
 }
 
 #[derive(Clone, Debug)]

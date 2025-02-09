@@ -1,5 +1,8 @@
-use { divSafe } from test;
+struct Vec2 {
+    x: f32,
+    y: f32,
+}
 
 pub fn main() {
-    let x = divSafe(10, 2);
+    let v = Vec2 { x: 1.0, y: 2.0 };
 };

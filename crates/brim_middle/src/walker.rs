@@ -4,6 +4,7 @@ use brim_ast::{
     stmts::{Let, Stmt, StmtKind},
     ty::Ty,
 };
+use brim_ast::item::Struct;
 
 pub trait AstWalker {
     // Visit methods - customize behavior for each node type
@@ -32,6 +33,8 @@ pub trait AstWalker {
     fn visit_generics(&mut self, _generics: &mut Generics) {}
 
     fn visit_use(&mut self, _use_stmt: &mut Use) {}
+    
+    fn visit_struct(&mut self, _str: &mut Struct) {}
 
     fn visit_fn(&mut self, func: &mut FnDecl) {
         self.visit_generics(&mut func.generics);
@@ -52,6 +55,7 @@ pub trait AstWalker {
         match &mut item.kind {
             ItemKind::Fn(func) => self.visit_fn(func),
             ItemKind::Use(use_stmt) => self.visit_use(use_stmt),
+            ItemKind::Struct(str) => self.visit_struct(str),
         }
     }
 

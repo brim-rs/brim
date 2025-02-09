@@ -10,10 +10,10 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Const, Fn, From, Parent, SelfSmall, Use,
+    Const, Fn, From, Parent, SelfSmall, Struct, Use,
     item::{
-        Block, FnDecl, FnReturnType, FnSignature, FunctionContext, Generics, Ident, ImportsKind,
-        Item, ItemKind, Param, PathItemKind, Use,
+        Block, Field, FnDecl, FnReturnType, FnSignature, FunctionContext, Generics, Ident,
+        ImportsKind, Item, ItemKind, Param, PathItemKind, Struct, Use,
     },
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
     ty,
@@ -35,6 +35,8 @@ impl Parser {
             self.parse_fn(span, FunctionContext::Item)?
         } else if self.current().is_keyword(Use) {
             self.parse_use(span)?
+        } else if self.current().is_keyword(Struct) {
+            self.parse_struct(span)?
         } else {
             return Ok(None);
         };
@@ -47,6 +49,36 @@ impl Parser {
             kind,
             ident,
         }))
+    }
+
+    pub fn parse_struct(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {
+        self.eat_keyword(ptok!(Struct));
+
+        let ident = self.parse_ident()?;
+        self.expect_obrace()?;
+
+        let mut fields = vec![];
+
+        while !self.is_brace(Orientation::Close) {
+            let vis = self.parse_visibility();
+            let ident = self.parse_ident()?;
+            self.expect(TokenKind::Colon)?;
+            let ty = self.parse_type()?;
+
+            fields.push(Field {
+                id: self.new_id(),
+                span: vis.span.to(self.prev().span),
+                ident,
+                ty,
+                vis,
+            });
+
+            if !self.eat(TokenKind::Comma) {
+                break;
+            }
+        }
+
+        Ok((ident, ItemKind::Struct(Struct { span, fields })))
     }
 
     pub fn parse_use(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {
