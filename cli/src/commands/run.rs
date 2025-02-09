@@ -75,6 +75,7 @@ pub fn run_command(
             let mut visited = HashSet::new();
             let module_map = resolver.create_module_map(&mut barrel, &mut visited, sess.config.experimental.clone())?;
             comp.extend_temp(resolver_temp.clone());
+            bail_on_errors(comp.emitted.len())?;
 
             let hir = comp.analyze(module_map)?;
 

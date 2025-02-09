@@ -1,3 +1,5 @@
+use { divSafe } from test;
+
 struct Vec2 {
     x: f32,
     y: f32,
@@ -5,4 +7,5 @@ struct Vec2 {
 
 pub fn main() {
     let v = Vec2 { x: 1.0, y: 2.0 };
+    let z = divSafe(1, 0);
 };

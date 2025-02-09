@@ -119,7 +119,7 @@ impl Parser {
         Ok((
             Ident::dummy(),
             ItemKind::Use(Use {
-                span,
+                span: span.to(self.current().span),
                 imports: kind,
                 path,
             }),
