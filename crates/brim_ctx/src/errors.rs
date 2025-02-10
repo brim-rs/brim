@@ -21,3 +21,25 @@ pub struct MainFunctionConstant {
     #[error("delete the `const` keyword")]
     pub span: (Span, usize),
 }
+
+#[derive(Diagnostic)]
+#[error("symbol `{name}` not found in module `{module}`")]
+pub struct SymbolNotFound {
+    #[error("symbol `{name}` not found")]
+    pub span: (Span, usize),
+    pub name: String,
+    pub module: String,
+}
+
+#[derive(Diagnostic)]
+#[error("symbol `{name}` imported from module `{module}` found but is private")]
+pub struct SymbolPrivate {
+    #[error("imported here")]
+    pub imported: (Span, usize),
+    #[error("defined here")]
+    pub defined: (Span, usize),
+    pub name: String,
+    pub module: String,
+    #[note]
+    pub note: &'static str,
+}

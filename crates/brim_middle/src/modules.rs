@@ -69,14 +69,13 @@ impl ModuleMap {
         &self,
         name: &str,
         module_id: Option<ModuleId>,
-    ) -> Vec<&GlobalSymbol> {
+    ) -> Option<&GlobalSymbol> {
         self.symbols
             .iter()
-            .filter(|(id, symbol)| {
+            .find(|(id, symbol)| {
                 symbol.name.to_string() == name && module_id.map_or(true, |mid| id.mod_id == mid)
             })
             .map(|(_, symbol)| symbol)
-            .collect()
     }
 
     pub fn find_symbols_in_module(&self, module_id: Option<ModuleId>) -> Vec<&GlobalSymbol> {
@@ -184,6 +183,7 @@ impl<'a> AstWalker for SymbolCollector<'a> {
                     GlobalSymbolKind::Fn(f.clone()),
                     item.id,
                     id,
+                    item.vis.clone()
                 ));
             }
             _ => {}

@@ -216,7 +216,7 @@ impl Parser {
 
         Ok((generics, FnSignature {
             constant,
-            span,
+            span: span.to(self.prev().span),
             name: ident,
             params,
             return_type: ret_type,

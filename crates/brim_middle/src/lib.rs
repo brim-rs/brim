@@ -4,6 +4,7 @@ use brim_ast::{
 };
 use brim_index::index_type;
 use brim_ast::expr::{BinOpKind, UnaryOp};
+use brim_ast::item::Visibility;
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
 use brim_span::span::Span;
@@ -36,15 +37,23 @@ pub struct GlobalSymbol {
     pub name: Ident,
     pub kind: GlobalSymbolKind,
     pub item_id: NodeId,
+    pub vis: Visibility
 }
 
 impl GlobalSymbol {
-    pub fn new(name: Ident, kind: GlobalSymbolKind, id: NodeId, gid: GlobalSymbolId) -> Self {
+    pub fn new(name: Ident, kind: GlobalSymbolKind, id: NodeId, gid: GlobalSymbolId, vis: Visibility) -> Self {
         Self {
             name,
             kind,
             item_id: id,
             id: gid,
+            vis
+        }
+    }
+    
+    pub fn span(&self) -> Span {
+        match self.kind {
+            GlobalSymbolKind::Fn(ref decl) => decl.sig.span,
         }
     }
 }

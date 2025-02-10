@@ -1,17 +1,24 @@
 use crate::{
     diag_ctx::DiagnosticContext,
-    errors::{MainFunctionConstant, MainFunctionParams},
+    errors::{MainFunctionConstant, MainFunctionParams, SymbolNotFound, SymbolPrivate},
     name::NameResolver,
     validator::AstValidator,
 };
 use anyhow::Result;
-use brim_ast::item::{ImportsKind, ItemKind};
+use brim_ast::item::{ImportsKind, ItemKind, Visibility, VisibilityKind};
 use brim_codegen::codegen::CppCodegen;
 use brim_diagnostics::{
     ErrorEmitted,
     diagnostic::{Diagnostic, ToDiagnostic},
 };
-use brim_hir::{builtin::expand_builtins, inference::infer_types, items::HirFn, transformer::{HirModuleMap, transform_module}, type_checker::TypeChecker, Codegen};
+use brim_hir::{
+    Codegen,
+    builtin::expand_builtins,
+    inference::infer_types,
+    items::HirFn,
+    transformer::{HirModuleMap, transform_module},
+    type_checker::TypeChecker,
+};
 use brim_middle::{
     GlobalSymbolId, ModuleId,
     args::RunArgs,
@@ -19,7 +26,7 @@ use brim_middle::{
     modules::{ModuleMap, SymbolCollector},
     temp_diag::TemporaryDiagnosticContext,
 };
-use brim_span::files::{SimpleFiles, files};
+use brim_span::files::{SimpleFiles, files, get_file};
 
 #[derive(Debug, Clone)]
 pub struct CompilerContext {
@@ -106,12 +113,45 @@ impl CompilerContext {
                                 .collect(),
                             ImportsKind::List(list) => list
                                 .iter()
-                                .flat_map(|import| {
-                                    map.find_symbol_by_name(&import.to_string(), Some(resolved_id))
+                                .map(|import| {
+                                    (
+                                        map.find_symbol_by_name(
+                                            &import.to_string(),
+                                            Some(resolved_id),
+                                        ),
+                                        import,
+                                    )
                                 })
-                                .map(|symbol| GlobalSymbolId {
-                                    mod_id: resolved_id,
-                                    item_id: symbol.item_id,
+                                .filter_map(|(symbol, import)| {
+                                    let mod_path = get_file(resolved_id.as_usize())
+                                        .unwrap()
+                                        .name()
+                                        .display()
+                                        .to_string();
+                                    if let Some(s) = symbol {
+                                        if s.vis.kind == VisibilityKind::Private {
+                                            self.emit(SymbolPrivate {
+                                                imported: (import.span, file_id),
+                                                defined: (s.span(), resolved_id.as_usize()),
+                                                name: import.to_string(),
+                                                module: mod_path,
+                                                note: "mark this item as public by adding `pub` at the beginning",
+                                            });
+                                        }
+
+                                        Some(GlobalSymbolId {
+                                            mod_id: resolved_id,
+                                            item_id: s.item_id,
+                                        })
+                                    } else {
+                                        self.emit(SymbolNotFound {
+                                            span: (import.span, file_id),
+                                            name: import.to_string(),
+                                            module: mod_path,
+                                        });
+
+                                        None
+                                    }
                                 })
                                 .collect(),
                         };

@@ -68,7 +68,7 @@ impl Visibility {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum VisibilityKind {
     Public,
     Private,
