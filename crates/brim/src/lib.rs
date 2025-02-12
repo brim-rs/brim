@@ -13,3 +13,4 @@ pub use brim_lexer::*;
 pub use brim_middle::*;
 pub use brim_shell::*;
 pub use brim_span::*;
+pub use brim_hir::*;

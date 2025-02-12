@@ -4,15 +4,16 @@ use crate::{
     comptime::errors::ComptimeExprExpectedTy,
     expr::{HirBlock, HirConditionBranch, HirConstExpr, HirExpr, HirExprKind, HirIfExpr},
     items::{
-        HirFn, HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind,
-        HirGenericParam, HirGenerics, HirImportsKind, HirItem, HirItemKind, HirParam, HirUse,
+        HirField, HirFn, HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind,
+        HirGenericParam, HirGenerics, HirImportsKind, HirItem, HirItemKind, HirParam, HirStruct,
+        HirUse,
     },
     stmts::{HirStmt, HirStmtKind},
     ty::{HirTy, HirTyKind},
 };
 use brim_ast::{
     expr::{BinOpKind, Expr, ExprKind},
-    item::{Block, FnReturnType, GenericKind, ImportsKind, Item, ItemKind},
+    item::{Block, FnReturnType, GenericKind, Generics, ImportsKind, Item, ItemKind},
     stmts::{Stmt, StmtKind},
     token::{AssignOpToken, Lit, LitKind},
     ty::{PrimitiveType, TyKind},
@@ -478,19 +479,7 @@ impl Transformer {
                             },
                             params,
                         },
-                        generics: HirGenerics {
-                            params: f_decl
-                                .generics
-                                .params
-                                .iter()
-                                .map(|param| HirGenericParam {
-                                    id: HirId::from_u32(param.id.as_u32()),
-                                    name: param.ident,
-                                    kind: self.hir_generic_kind(param.kind.clone()),
-                                })
-                                .collect(),
-                            span: f_decl.generics.span,
-                        },
+                        generics: self.transform_generics(f_decl.generics),
                         span: f_decl.sig.span,
                     },
                     resolved_type: HirTyKind::Placeholder,
@@ -517,7 +506,22 @@ impl Transformer {
                         .clone(),
                 })
             }
-            ItemKind::Struct(struc) => todo!("structs"),
+            ItemKind::Struct(struc) => HirItemKind::Struct(HirStruct {
+                ident: struc.ident,
+                fields: struc
+                    .fields
+                    .iter()
+                    .map(|field| HirField {
+                        id: self.hir_id(),
+                        span: field.span,
+                        ident: field.ident,
+                        ty: self.transform_ty(field.ty.clone()).kind,
+                        vis: field.vis.clone(),
+                    })
+                    .collect(),
+                generics: self.transform_generics(struc.generics),
+                span: struc.span,
+            }),
         };
 
         let item = HirItem {
@@ -537,6 +541,21 @@ impl Transformer {
             .insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
 
         item
+    }
+
+    pub fn transform_generics(&mut self, generics: Generics) -> HirGenerics {
+        HirGenerics {
+            params: generics
+                .params
+                .iter()
+                .map(|param| HirGenericParam {
+                    id: self.hir_id(),
+                    name: param.ident,
+                    kind: self.hir_generic_kind(param.kind.clone()),
+                })
+                .collect(),
+            span: generics.span,
+        }
     }
 
     pub fn transform_block(&mut self, block: Block) -> HirBlock {

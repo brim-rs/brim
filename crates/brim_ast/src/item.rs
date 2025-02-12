@@ -93,8 +93,9 @@ pub enum ItemKind {
 #[derive(Clone, Debug)]
 pub struct Struct {
     pub span: Span,
+    pub ident: Ident,
     pub fields: Vec<Field>,
-    // pub generics: Generics,
+    pub generics: Generics,
 }
 
 #[derive(Clone, Debug)]

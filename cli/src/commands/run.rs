@@ -10,6 +10,7 @@ use anyhow::{Result, bail};
 use brim::{
     ModuleId, Shell, args::RunArgs, compiler::CompilerContext, create_file_parent_dirs,
     resolver::Resolver, session::Session, temp_diag::TemporaryDiagnosticContext, toml::ProjectType,
+    transformer::StoredHirItem,
 };
 use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
 use brim_ctx::errors::NoMainFunction;

@@ -3,13 +3,12 @@ use crate::{
     expr::HirConstExpr,
     ty::{HirTy, HirTyKind},
 };
-use brim_ast::{
-    item::Ident,
-    token::{Lit, LitKind},
-};
+use brim_ast::{item::Ident, token::{Lit, LitKind}, NodeId};
 use brim_middle::{GlobalSymbolId, ModuleId};
 use brim_span::span::Span;
 use std::{fmt::Display, path::PathBuf};
+use brim_ast::item::{Field, Generics, Visibility};
+use brim_ast::ty::Ty;
 
 #[derive(Clone, Debug)]
 pub struct HirItem {
@@ -38,6 +37,25 @@ pub enum HirItemKind {
     Fn(HirFn),
     /// Import statement
     Use(HirUse),
+    /// Struct definition
+    Struct(HirStruct)
+}
+
+#[derive(Clone, Debug)]
+pub struct HirStruct {
+    pub span: Span,
+    pub ident: Ident,
+    pub fields: Vec<HirField>,
+    pub generics: HirGenerics,
+}
+
+#[derive(Clone, Debug)]
+pub struct HirField {
+    pub id: HirId,
+    pub span: Span,
+    pub ident: Ident,
+    pub ty: HirTyKind,
+    pub vis: Visibility,
 }
 
 #[derive(Clone, Debug)]

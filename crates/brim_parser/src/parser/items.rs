@@ -55,6 +55,8 @@ impl Parser {
         self.eat_keyword(ptok!(Struct));
 
         let ident = self.parse_ident()?;
+        let generics = self.parse_generics()?;
+
         self.expect_obrace()?;
 
         let mut fields = vec![];
@@ -78,7 +80,15 @@ impl Parser {
             }
         }
 
-        Ok((ident, ItemKind::Struct(Struct { span, fields })))
+        Ok((
+            ident,
+            ItemKind::Struct(Struct {
+                ident,
+                generics,
+                span,
+                fields,
+            }),
+        ))
     }
 
     pub fn parse_use(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {
