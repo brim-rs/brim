@@ -44,7 +44,7 @@ impl NameResolver {
 
     pub fn resolve_names(&mut self) {
         for module in self.map.modules.clone() {
-            debug!("AST validating module: {:?}", module.barrel.file_id);
+            debug!("Resolving names for module: {:?}", module.barrel.file_id);
 
             self.file = module.barrel.file_id;
             for mut item in module.barrel.items {

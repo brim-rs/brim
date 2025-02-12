@@ -15,6 +15,7 @@ use brim_ast::{
 };
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
+use tracing::debug;
 
 impl Parser {
     pub fn parse_expr(&mut self) -> PResult<Expr> {
@@ -25,6 +26,8 @@ impl Parser {
         let expr = self.parse_binary_expression()?;
 
         if let Some(op) = self.current().is_compound_assign() {
+            debug!("Found compound assignment operator: {:?}", op);
+
             self.advance();
             let right = self.parse_assignment_expr()?;
             return Ok(self.new_expr(
@@ -34,6 +37,7 @@ impl Parser {
         }
 
         if self.current().is_assign() {
+            debug!("Found assignment operator");
             self.advance();
 
             let right = self.parse_assignment_expr()?;
@@ -116,6 +120,8 @@ impl Parser {
 
     fn parse_unary_expr(&mut self) -> PResult<Expr> {
         if let Some(op) = self.peek_unary_op() {
+            debug!("Found unary operator: {:?}", op);
+
             self.advance();
             let operand = self.parse_unary_expr()?;
             return Ok(self.new_expr(
@@ -139,6 +145,8 @@ impl Parser {
                         primary.span.to(ident.span),
                         ExprKind::Field(Box::new(primary), ident),
                     );
+
+                    debug!("Parsed field access expression");
                 }
                 TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
                     self.advance();
@@ -148,6 +156,8 @@ impl Parser {
                         primary.span.to(index.span),
                         ExprKind::Index(Box::new(primary), Box::new(index)),
                     );
+
+                    debug!("Parsed index expression");
                 }
                 _ => break,
             }
@@ -207,6 +217,8 @@ impl Parser {
                 Ok(self.new_expr(self.prev().span, ExprKind::Literal(lit)))
             }
             TokenKind::Delimiter(Delimiter::Paren, Orientation::Open) => {
+                debug!("Found parenthesized expression");
+
                 self.advance();
                 let expr = self.parse_expr()?;
                 self.expect_cparen()?;
@@ -222,6 +234,8 @@ impl Parser {
                     }
                 }
                 self.expect_cbracket()?;
+
+                debug!("Parsed array expression");
                 Ok(self.new_expr(self.current().span, ExprKind::Array(elements)))
             }
             TokenKind::At => {
@@ -240,11 +254,14 @@ impl Parser {
                 }
                 self.expect_cparen()?;
 
+                debug!("Parsed builtin function with name: {}", ident);
                 Ok(self.new_expr(span.to(self.prev().span), ExprKind::Builtin(ident, args)))
             }
             TokenKind::Ident(sym) => {
                 if self.eat_keyword(ptok!(Return)) {
                     let expr = self.parse_expr()?;
+
+                    debug!("Parsed return expression");
                     Ok(self.new_expr(
                         self.current().span.to(expr.span),
                         ExprKind::Return(Box::new(expr)),
@@ -255,6 +272,7 @@ impl Parser {
                     let block = self.parse_block(true)?;
                     let expr = self.new_expr(block.span, ExprKind::Block(block));
 
+                    debug!("Parsed comptime expression");
                     Ok(self.new_expr(self.current().span, ExprKind::Comptime(Box::new(expr))))
                 } else {
                     let span = self.current().span;
@@ -273,11 +291,14 @@ impl Parser {
 
                         self.expect_cparen()?;
                         let var = self.new_expr(span, ExprKind::Var(ident));
+
+                        debug!("Parsed function call expression");
                         Ok(self.new_expr(
                             span.to(self.prev().span),
                             ExprKind::Call(Box::new(var), args),
                         ))
                     } else {
+                        debug!("Parsed variable expression: {}", ident);
                         Ok(self.new_expr(ident.span, ExprKind::Var(ident)))
                     }
                 }
@@ -334,6 +355,8 @@ impl Parser {
         }
 
         let then_block = self.new_expr(then_block.span, ExprKind::Block(then_block));
+
+        debug!("Parsed if expression");
         Ok(self.new_expr(
             span,
             ExprKind::If(IfExpr {

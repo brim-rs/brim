@@ -10,15 +10,15 @@ use brim_ast::{
 };
 use brim_diagnostics::{ErrorEmitted, box_diag, diagnostic::ToDiagnostic};
 use brim_lexer::{PrimitiveToken, PrimitiveTokenKind, cursor::Cursor};
-use brim_middle::barrel::Barrel;
+use brim_middle::{
+    barrel::Barrel, experimental::Experimental, temp_diag::TemporaryDiagnosticContext,
+};
 use brim_span::{
     files::get_file,
     span::Span,
     symbols::{GLOBAL_INTERNER, Symbol},
 };
 use tracing::debug;
-use brim_middle::experimental::Experimental;
-use brim_middle::temp_diag::TemporaryDiagnosticContext;
 
 mod cursor;
 mod errors;
@@ -40,7 +40,7 @@ pub struct Parser {
     pub previous_token: Token,
     pub last_id: u32,
     pub dcx: TemporaryDiagnosticContext,
-    pub experimental: Experimental
+    pub experimental: Experimental,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -139,6 +139,8 @@ impl Parser {
         }
 
         let file = get_file(self.file)?;
+        debug!("======= Parsing barrel with id: {}", self.file);
+
         let content = file.source().clone();
         let mut cursor = Cursor::new(&content);
 
@@ -174,7 +176,6 @@ impl Parser {
 
         // Advance to get the first token
         self.advance();
-
         loop {
             let token = match self.parse_item() {
                 Ok(Some(item)) => item,
@@ -189,6 +190,7 @@ impl Parser {
         }
 
         self.dcx.diags.extend(lexer.ctx.diags);
+        debug!("======= Finished parsing barrel with id: {}", self.file);
 
         Ok(Barrel {
             items,

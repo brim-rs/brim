@@ -21,6 +21,7 @@ use brim_ast::{
 };
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
+use tracing::debug;
 
 impl Parser {
     pub fn parse_item(&mut self) -> PResult<Option<Item>> {
@@ -80,6 +81,9 @@ impl Parser {
             }
         }
 
+        self.expect_cbrace()?;
+
+        debug!("Parsed struct: {:?}", ident);
         Ok((
             ident,
             ItemKind::Struct(Struct {
@@ -126,6 +130,8 @@ impl Parser {
         }
 
         let path = self.expect_path()?;
+
+        debug!("Parsed use statement: {:?}", path);
         Ok((
             Ident::dummy(),
             ItemKind::Use(Use {
@@ -166,6 +172,8 @@ impl Parser {
         let (generics, sig) = self.parse_fn_signature(fn_ctx)?;
 
         let body = self.parse_fn_body(fn_ctx)?;
+
+        debug!("=== Parsed function: {:?}", sig);
 
         Ok((
             sig.name,
@@ -219,6 +227,8 @@ impl Parser {
         }
 
         let ident = self.parse_ident()?;
+        debug!("=== Starting to parse function: {}", ident);
+
         let generics = self.parse_generics()?;
         let params = self.parse_fn_params(fn_ctx)?;
 

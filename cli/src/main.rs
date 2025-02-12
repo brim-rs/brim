@@ -1,30 +1,34 @@
 #![feature(let_chains)]
 
-use crate::{commands::run::run_command, panic::setup_panic_handler};
+use crate::{
+    commands::{init::init_command, run::run_command},
+    panic::setup_panic_handler,
+};
 use anstream::ColorChoice;
 use anyhow::Result;
-use brim::{args::RunArgs, compiler::CompilerContext, lints::Lints, session::Session, toml::Config, Shell};
+use brim::{
+    Shell, args::RunArgs, compiler::CompilerContext, lints::Lints, session::Session, toml::Config,
+};
 use cli::cli;
 use std::{env, process::exit};
-use crate::commands::init::init_command;
+use crate::tracing::setup_tracing;
 
 pub mod cli;
 mod commands;
 mod panic;
 pub mod plural;
+mod tracing;
 
 fn main() -> Result<()> {
     let args = cli().try_get_matches().unwrap_or_else(|err| {
         err.print().expect("Error printing error");
         exit(1);
     });
-    setup_panic_handler(
-        args.get_flag("no-backtrace"),
-    );
+    setup_panic_handler(args.get_flag("no-backtrace"));
     let verbose = args.get_flag("verbose");
 
     unsafe { env::set_var("BRIM_LOG", if verbose { "trace" } else { "info" }) };
-    // setup_tracing(verbose);
+    setup_tracing();
 
     let cmd = match args.subcommand() {
         Some((cmd, args)) => (cmd, args),
@@ -58,15 +62,13 @@ fn main() -> Result<()> {
 
             exec_command(&mut sess, &mut comp, run_args, run_command)
         }
-        "init" => {
-            init_command(shell, &cmd.1)
-        }
+        "init" => init_command(shell, &cmd.1),
         _ => {
             eprintln!("Unknown command: {}", cmd.0);
             exit(1);
         }
     };
-    
+
     match res {
         Ok(_) => Ok(()),
         Err(err) => {
