@@ -123,7 +123,7 @@ impl<'a> TypeInference<'a> {
             }
             _ => {}
         }
-        
+
         self.hir
             .hir_items
             .insert(item.id, StoredHirItem::Item(item.clone()));
@@ -158,7 +158,7 @@ impl<'a> TypeInference<'a> {
                 );
             }
         }
-        
+
         self.hir
             .hir_items
             .insert(stmt.id, StoredHirItem::Stmt(stmt.clone()));
@@ -435,8 +435,13 @@ impl<'a> TypeInference<'a> {
                 for arg in args {
                     self.infer_expr(arg);
                 }
-                
+
                 &HirTyKind::Placeholder
+            }
+            HirExprKind::StructConstructor(ident, args, _) => &HirTyKind::Ident {
+                ident: ident.clone(),
+                generics: args.clone(),
+                is_generic: false,
             },
             _ => todo!("infer_expr: {:?}", expr.kind),
         };

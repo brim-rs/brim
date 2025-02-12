@@ -2,7 +2,7 @@ mod errors;
 pub mod scopes;
 
 use crate::name::{
-    errors::{AccessOutsideComptime, UndeclaredFunction, UndeclaredVariable},
+    errors::{AccessOutsideComptime, UndeclaredFunction, UndeclaredStruct, UndeclaredVariable},
     scopes::Scope,
 };
 use brim_ast::{
@@ -234,6 +234,23 @@ impl AstWalker for NameResolver {
                         span: (ident.span, self.file),
                         name,
                     }));
+                }
+            }
+            ExprKind::StructConstructor(ident, _, fields) => {
+                let name = ident.to_string();
+                let mod_id = ModuleId::from_usize(self.file);
+
+                let func_sym = self.map.resolve_symbol(&name, mod_id);
+
+                if let None = func_sym {
+                    self.ctx.emit(Box::new(UndeclaredStruct {
+                        span: (ident.span, self.file),
+                        name,
+                    }));
+                }
+
+                for (_, field) in fields {
+                    self.visit_expr(field);
                 }
             }
         }

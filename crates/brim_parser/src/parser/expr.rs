@@ -11,10 +11,12 @@ use crate::{
 use brim_ast::{
     Comptime, Else, If, Return, Try,
     expr::{BinOpAssociativity, BinOpKind, ConditionBranch, Expr, ExprKind, IfExpr, UnaryOp},
+    item::Ident,
     token::{BinOpToken, Delimiter, Lit, LitKind, Orientation, TokenKind},
 };
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
+use std::collections::HashMap;
 use tracing::debug;
 
 impl Parser {
@@ -296,6 +298,30 @@ impl Parser {
                         Ok(self.new_expr(
                             span.to(self.prev().span),
                             ExprKind::Call(Box::new(var), args),
+                        ))
+                    } else if self.is_brace(Orientation::Open) {
+                        self.advance();
+
+                        let mut fields: HashMap<Ident, Expr> = HashMap::new();
+                        let generics = self.parse_argument_generics()?;
+
+                        while !self.is_brace(Orientation::Close) {
+                            let ident = self.parse_ident()?;
+                            self.expect(TokenKind::Colon)?;
+                            let field = self.parse_expr()?;
+
+                            fields.insert(ident, field);
+
+                            if !self.eat(TokenKind::Comma) {
+                                break;
+                            }
+                        }
+
+                        self.expect_cbrace()?;
+
+                        Ok(self.new_expr(
+                            span.to(self.prev().span),
+                            ExprKind::StructConstructor(ident, generics, fields),
                         ))
                     } else {
                         debug!("Parsed variable expression: {}", ident);

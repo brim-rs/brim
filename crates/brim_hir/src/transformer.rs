@@ -27,6 +27,7 @@ use brim_middle::{
 };
 use brim_span::{span::Span, symbols::Symbol};
 use std::{collections::HashMap, path::PathBuf, vec};
+use brim_ast::item::GenericArgs;
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -722,12 +723,38 @@ impl Transformer {
                             .collect(),
                     )
                 }
+                ExprKind::StructConstructor(ident, generics, fields) => {
+                    HirExprKind::StructConstructor(
+                        ident,
+                        self.transform_generic_arguments(generics),
+                        fields
+                            .iter()
+                            .map(|(ident, expr)| {
+                                (ident.clone(), self.transform_expr(expr.clone()).0)
+                            })
+                            .collect(),
+                    )
+                }
             },
             ty: HirTyKind::Placeholder,
         };
         self.map.insert_hir_expr(expr.id, expr.clone());
 
         (expr.clone(), expr.id)
+    }
+    
+    pub fn transform_generic_arguments(&mut self, generics: GenericArgs) -> HirGenericArgs {
+        HirGenericArgs {
+            params: generics
+                .params
+                .iter()
+                .map(|param| HirGenericArg {
+                    id: self.hir_id(),
+                    ty: self.transform_ty(param.ty.clone()),
+                })
+                .collect(),
+            span: generics.span,
+        }
     }
 
     pub fn transform_ty(&mut self, ty: brim_ast::ty::Ty) -> HirTy {
@@ -759,17 +786,7 @@ impl Transformer {
                 TyKind::Const(ty) => HirTyKind::Const(Box::new(self.transform_ty(*ty).kind)),
                 TyKind::Ident { ident, generics } => HirTyKind::Ident {
                     ident,
-                    generics: HirGenericArgs {
-                        params: generics
-                            .params
-                            .iter()
-                            .map(|param| HirGenericArg {
-                                id: self.hir_id(),
-                                ty: self.transform_ty(param.ty.clone()),
-                            })
-                            .collect(),
-                        span: generics.span,
-                    },
+                    generics: self.transform_generic_arguments(generics),
                     is_generic: false,
                 },
                 TyKind::Result(ok, err) => HirTyKind::Result(

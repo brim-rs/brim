@@ -1,10 +1,13 @@
 use brim_ast::{
     expr::{Expr, ExprKind},
-    item::{Block, FnDecl, FnReturnType, FnSignature, Generics, Ident, Item, ItemKind, Use},
+    item::{
+        Block, FnDecl, FnReturnType, FnSignature, GenericArgs, Generics, Ident, Item, ItemKind,
+        Struct, Use,
+    },
     stmts::{Let, Stmt, StmtKind},
     ty::Ty,
 };
-use brim_ast::item::Struct;
+use std::collections::HashMap;
 
 pub trait AstWalker {
     // Visit methods - customize behavior for each node type
@@ -33,8 +36,16 @@ pub trait AstWalker {
     fn visit_generics(&mut self, _generics: &mut Generics) {}
 
     fn visit_use(&mut self, _use_stmt: &mut Use) {}
-    
+
     fn visit_struct(&mut self, _str: &mut Struct) {}
+
+    fn visit_struct_constructor(
+        &mut self,
+        _ident: &mut Ident,
+        generic_args: &mut GenericArgs,
+        _fields: &mut HashMap<Ident, Expr>,
+    ) {
+    }
 
     fn visit_fn(&mut self, func: &mut FnDecl) {
         self.visit_generics(&mut func.generics);
@@ -113,6 +124,9 @@ pub trait AstWalker {
                 }
             }
             ExprKind::Builtin(ident, args) => self.visit_builtin(ident, args),
+            ExprKind::StructConstructor(ident, gens, fields) => {
+                self.visit_struct_constructor(ident, gens, fields)
+            }
         }
     }
 

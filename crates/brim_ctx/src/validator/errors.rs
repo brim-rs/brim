@@ -29,3 +29,13 @@ pub struct BuiltinFunctionArgCount {
     pub expected: usize,
     pub found: usize,
 }
+
+#[derive(Diagnostic)]
+#[error("found duplicate initializer for field `{name}` in struct")]
+pub struct DuplicateFieldInitializer {
+    #[error("first initializer for field `{name}`")]
+    pub first: (Span, usize),
+    #[error("second initializer for field `{name}`")]
+    pub second: (Span, usize),
+    pub name: String,
+}

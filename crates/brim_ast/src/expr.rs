@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::{
     NodeId,
     item::{Block, Ident},
@@ -5,6 +6,7 @@ use crate::{
 };
 use brim_span::span::Span;
 use std::fmt::Display;
+use crate::item::GenericArgs;
 
 #[derive(Clone, Debug)]
 pub struct Expr {
@@ -56,6 +58,8 @@ pub enum ExprKind {
     Builtin(Ident, Vec<Expr>),
     /// `comptime { ... }`
     Comptime(Box<Expr>),
+    /// `Vec2 {x: 1, y: 2}`
+    StructConstructor(Ident, GenericArgs, HashMap<Ident, Expr>)
 }
 
 #[derive(Clone, Debug)]

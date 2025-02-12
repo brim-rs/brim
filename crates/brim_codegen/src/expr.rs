@@ -7,6 +7,7 @@ use brim_hir::{
     builtin::get_builtin_function,
     expr::{HirExpr, HirExprKind},
 };
+use std::fmt::format;
 
 impl CppCodegen {
     pub fn generate_expr(&mut self, expr: HirExpr) -> String {
@@ -104,6 +105,30 @@ impl CppCodegen {
                         .collect::<Vec<String>>()
                         .join(", ");
                     format!("{{ {} }}", exprs)
+                }
+                // Default constructor for structs
+                HirExprKind::StructConstructor(ident, generics, fields) => {
+                    let mut code = format!(
+                        "{}{}",
+                        ident.name,
+                        if generics.params.is_empty() {
+                            "".to_string()
+                        } else {
+                            format!("<{}>", self.generate_generic_args(&generics))
+                        }
+                    );
+
+                    if !fields.is_empty() {
+                        let fields = fields
+                            .iter()
+                            .map(|(field, expr)| {
+                                format!("{}: {}", field.name, self.generate_expr(expr.clone()))
+                            })
+                            .collect::<Vec<String>>()
+                            .join(", ");
+                        code.push_str(&format!(" {{ {} }}", fields));
+                    }
+                    code
                 }
                 _ => todo!("{:?}", expr.kind),
             };

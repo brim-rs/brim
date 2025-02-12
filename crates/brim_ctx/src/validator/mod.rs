@@ -1,6 +1,8 @@
 mod errors;
 
-use crate::validator::errors::{BuiltinFunctionArgCount, DuplicateParam, TooManyParameters};
+use crate::validator::errors::{
+    BuiltinFunctionArgCount, DuplicateFieldInitializer, DuplicateParam, TooManyParameters,
+};
 use anyhow::Result;
 use brim_ast::{
     expr::Expr,
@@ -13,6 +15,7 @@ use brim_middle::{
 use brim_span::span::Span;
 use std::collections::HashMap;
 use tracing::debug;
+use brim_ast::item::GenericArgs;
 
 #[derive(Debug)]
 pub struct AstValidator {
@@ -77,6 +80,23 @@ impl AstWalker for AstValidator {
                 }
             }
             _ => {}
+        }
+    }
+
+    fn visit_struct_constructor(&mut self, _ident: &mut Ident, _: &mut GenericArgs, fields: &mut HashMap<Ident, Expr>) {
+        let mut seen: HashMap<String, Span> = HashMap::new();
+
+        for (ident, _) in fields.iter() {
+            let ident_name = ident.to_string();
+            if let Some(original_span) = seen.get(&ident_name) {
+                self.ctx.emit(Box::new(DuplicateFieldInitializer {
+                    second: (original_span.clone(), self.current_file),
+                    first: (ident.span.clone(), self.current_file),
+                    name: ident_name,
+                }));
+            } else {
+                seen.insert(ident_name, ident.span.clone());
+            }
         }
     }
 

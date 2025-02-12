@@ -1,12 +1,11 @@
 use brim_ast::{
     NodeId,
-    item::{FnDecl, Ident},
+    expr::{BinOpKind, UnaryOp},
+    item::{FnDecl, Ident, Struct, Visibility},
 };
-use brim_index::index_type;
-use brim_ast::expr::{BinOpKind, UnaryOp};
-use brim_ast::item::Visibility;
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
+use brim_index::index_type;
 use brim_span::span::Span;
 
 pub mod args;
@@ -37,23 +36,30 @@ pub struct GlobalSymbol {
     pub name: Ident,
     pub kind: GlobalSymbolKind,
     pub item_id: NodeId,
-    pub vis: Visibility
+    pub vis: Visibility,
 }
 
 impl GlobalSymbol {
-    pub fn new(name: Ident, kind: GlobalSymbolKind, id: NodeId, gid: GlobalSymbolId, vis: Visibility) -> Self {
+    pub fn new(
+        name: Ident,
+        kind: GlobalSymbolKind,
+        id: NodeId,
+        gid: GlobalSymbolId,
+        vis: Visibility,
+    ) -> Self {
         Self {
             name,
             kind,
             item_id: id,
             id: gid,
-            vis
+            vis,
         }
     }
-    
+
     pub fn span(&self) -> Span {
         match self.kind {
             GlobalSymbolKind::Fn(ref decl) => decl.sig.span,
+            GlobalSymbolKind::Struct(ref decl) => decl.span,
         }
     }
 }
@@ -61,6 +67,7 @@ impl GlobalSymbol {
 #[derive(Debug, Clone)]
 pub enum GlobalSymbolKind {
     Fn(FnDecl),
+    Struct(Struct),
 }
 
 #[derive(Diagnostic)]
@@ -72,4 +79,3 @@ pub struct ExperimentalFeatureNotEnabled {
     #[note]
     pub note: String,
 }
-

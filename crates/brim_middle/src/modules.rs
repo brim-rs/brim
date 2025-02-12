@@ -183,7 +183,16 @@ impl<'a> AstWalker for SymbolCollector<'a> {
                     GlobalSymbolKind::Fn(f.clone()),
                     item.id,
                     id,
-                    item.vis.clone()
+                    item.vis.clone(),
+                ));
+            }
+            ItemKind::Struct(s) => {
+                self.map.add_symbol(GlobalSymbol::new(
+                    item.ident,
+                    GlobalSymbolKind::Struct(s.clone()),
+                    item.id,
+                    id,
+                    item.vis.clone(),
                 ));
             }
             _ => {}

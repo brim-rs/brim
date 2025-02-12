@@ -27,3 +27,11 @@ pub struct AccessOutsideComptime {
     pub decl: (Span, usize),
     pub name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("struct `{name}` is not declared in this scope")]
+pub struct UndeclaredStruct {
+    #[error("struct `{name}` is not declared in this scope")]
+    pub span: (Span, usize),
+    pub name: String,
+}

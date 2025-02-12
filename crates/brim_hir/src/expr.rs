@@ -1,10 +1,17 @@
-use crate::{items::{HirCallParam, HirParam}, stmts::HirStmt, ty::HirTyKind, HirId};
+use crate::{
+    HirId,
+    items::{HirCallParam, HirParam},
+    stmts::HirStmt,
+    ty::HirTyKind,
+};
 use brim_ast::{
     expr::{BinOpKind, UnaryOp},
-    item::{Ident, Param},
+    item::{GenericArgs, Ident, Param},
     token::Lit,
 };
 use brim_span::span::Span;
+use std::collections::HashMap;
+use crate::items::HirGenericArgs;
 
 #[derive(Clone, Debug)]
 pub struct HirExpr {
@@ -21,7 +28,7 @@ impl HirExpr {
             _ => None,
         }
     }
-    
+
     pub fn as_block(&self) -> &HirBlock {
         match &self.kind {
             HirExprKind::Block(block) => block,
@@ -59,6 +66,8 @@ pub enum HirExprKind {
     Return(Box<HirExpr>),
     /// Built-in functions.
     Builtin(Ident, Vec<HirExpr>),
+    /// Struct constructor.
+    StructConstructor(Ident, HirGenericArgs, HashMap<Ident, HirExpr>),
 }
 
 #[derive(Clone, Debug)]
