@@ -32,6 +32,22 @@ impl CppCodegen {
                     code.add_line(&body_code);
                 });
             }
+            HirItemKind::Struct(s) => {
+                self.generate_generics(&s.generics);
+                self.code
+                    .add_line(&format!("struct {} {{", s.ident.name.to_string()));
+                self.code.increase_indent();
+
+                for field in s.fields {
+                    let ty = self.generate_ty(field.ty.clone());
+
+                    self.code
+                        .add_line(&format!("{} {};", ty, field.ident.to_string()));
+                }
+
+                self.code.decrease_indent();
+                self.code.add_line("};");
+            }
             _ => {}
         }
     }

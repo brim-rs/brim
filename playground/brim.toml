@@ -5,3 +5,6 @@ type = "bin"
 
 [build]
 lib_type = "dynamic"
+
+[experimental]
+generics = true
