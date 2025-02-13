@@ -6,6 +6,7 @@ use crate::{
 };
 use brim_span::span::Span;
 use std::fmt::Display;
+use indexmap::IndexMap;
 use crate::item::GenericArgs;
 
 #[derive(Clone, Debug)]
@@ -59,7 +60,7 @@ pub enum ExprKind {
     /// `comptime { ... }`
     Comptime(Box<Expr>),
     /// `Vec2 {x: 1, y: 2}`
-    StructConstructor(Ident, GenericArgs, HashMap<Ident, Expr>)
+    StructConstructor(Ident, GenericArgs, IndexMap<Ident, Expr>)
 }
 
 #[derive(Clone, Debug)]

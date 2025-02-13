@@ -10,6 +10,7 @@ brim-ast = { workspace = true }
 brim-middle = { workspace = true }
 brim-diagnostics = { workspace = true }
 brim-diag-macro = { workspace = true }
+indexmap = { workspace = true }
 
 [lints]
 workspace = true

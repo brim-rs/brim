@@ -1,6 +1,7 @@
 use crate::{
     expr::{HirExpr, HirExprKind},
     items::HirGenericKind,
+    ty::HirTyKind,
     type_checker::{
         TypeChecker,
         errors::{
@@ -9,6 +10,8 @@ use crate::{
     },
 };
 use brim_middle::ModuleId;
+use brim_span::span::Span;
+use crate::type_checker::errors::FieldMismatch;
 
 impl TypeChecker {
     pub fn check_expr(&mut self, expr: HirExpr) {
@@ -88,16 +91,57 @@ impl TypeChecker {
                             });
                         }
                     } else {
-                        self.ctx.emit_impl(FunctionReturnTypeMismatch {
-                            span: (expr.span, self.mod_id),
-                            name: func.sig.name.to_string(),
-                            expected: ret_ty.clone(),
-                            found: expr.ty.clone(),
+                        self.mismatch(
+                            expr.span,
+                            ret_ty.clone(),
+                            expr.ty.clone(),
+                            func.sig.name.to_string(),
+                        );
+                    }
+                } else {
+                    if ret_ty != &expr.ty {
+                        self.mismatch(
+                            expr.span,
+                            ret_ty.clone(),
+                            expr.ty.clone(),
+                            func.sig.name.to_string(),
+                        );
+                    }
+                }
+
+                self.check_expr(*expr);
+            }
+            HirExprKind::StructConstructor(ident, generics, fields) => {
+                let str = self
+                    .hir
+                    .resolve_symbol(&ident.to_string(), ModuleId::from_usize(self.mod_id))
+                    .unwrap()
+                    .as_struct()
+                    .clone();
+
+                for (ident, field) in fields {
+                    let field_ty = str.get_field(&ident.to_string()).unwrap().ty.clone();
+
+                    if field.ty != field_ty {
+                        self.ctx.emit_impl(FieldMismatch {
+                            span: (field.span, self.mod_id),
+                            field: ident.to_string(),
+                            expected: field_ty,
+                            found: field.ty,
                         });
                     }
                 }
             }
             _ => {}
         }
+    }
+
+    fn mismatch(&mut self, span: Span, expected: HirTyKind, found: HirTyKind, name: String) {
+        self.ctx.emit_impl(FunctionParameterTypeMismatch {
+            span: (span, self.mod_id),
+            name,
+            expected,
+            found,
+        });
     }
 }

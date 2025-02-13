@@ -1,6 +1,6 @@
 use crate::{
     HirId,
-    items::{HirCallParam, HirParam},
+    items::{HirCallParam, HirGenericArgs, HirParam},
     stmts::HirStmt,
     ty::HirTyKind,
 };
@@ -11,7 +11,7 @@ use brim_ast::{
 };
 use brim_span::span::Span;
 use std::collections::HashMap;
-use crate::items::HirGenericArgs;
+use indexmap::IndexMap;
 
 #[derive(Clone, Debug)]
 pub struct HirExpr {
@@ -67,7 +67,7 @@ pub enum HirExprKind {
     /// Built-in functions.
     Builtin(Ident, Vec<HirExpr>),
     /// Struct constructor.
-    StructConstructor(Ident, HirGenericArgs, HashMap<Ident, HirExpr>),
+    StructConstructor(Ident, HirGenericArgs, IndexMap<Ident, HirExpr>),
 }
 
 #[derive(Clone, Debug)]

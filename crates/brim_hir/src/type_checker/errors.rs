@@ -43,3 +43,13 @@ pub struct ExpectedResultVariant {
     pub found: HirTyKind,
     pub variant: String,
 }
+
+#[derive(Diagnostic)]
+#[error("field `{field}` expected type `{expected}`, found `{found}`")]
+pub struct FieldMismatch {
+    #[error]
+    pub span: (Span, usize),
+    pub field: String,
+    pub expected: HirTyKind,
+    pub found: HirTyKind,
+}

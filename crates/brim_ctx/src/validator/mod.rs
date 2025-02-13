@@ -6,16 +6,16 @@ use crate::validator::errors::{
 use anyhow::Result;
 use brim_ast::{
     expr::Expr,
-    item::{FnSignature, Ident, Item, ItemKind},
+    item::{FnSignature, GenericArgs, Ident, Item, ItemKind},
 };
 use brim_middle::{
     builtins::BUILTIN_FUNCTIONS, modules::ModuleMap, temp_diag::TemporaryDiagnosticContext,
     walker::AstWalker,
 };
 use brim_span::span::Span;
+use indexmap::IndexMap;
 use std::collections::HashMap;
 use tracing::debug;
-use brim_ast::item::GenericArgs;
 
 #[derive(Debug)]
 pub struct AstValidator {
@@ -83,7 +83,12 @@ impl AstWalker for AstValidator {
         }
     }
 
-    fn visit_struct_constructor(&mut self, _ident: &mut Ident, _: &mut GenericArgs, fields: &mut HashMap<Ident, Expr>) {
+    fn visit_struct_constructor(
+        &mut self,
+        _ident: &mut Ident,
+        _: &mut GenericArgs,
+        fields: &mut IndexMap<Ident, Expr>,
+    ) {
         let mut seen: HashMap<String, Span> = HashMap::new();
 
         for (ident, _) in fields.iter() {

@@ -17,6 +17,7 @@ use brim_ast::{
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
 use std::collections::HashMap;
+use indexmap::IndexMap;
 use tracing::debug;
 
 impl Parser {
@@ -302,7 +303,7 @@ impl Parser {
                     } else if self.is_brace(Orientation::Open) {
                         self.advance();
 
-                        let mut fields: HashMap<Ident, Expr> = HashMap::new();
+                        let mut fields: IndexMap<Ident, Expr> = IndexMap::new();
                         let generics = self.parse_argument_generics()?;
 
                         while !self.is_brace(Orientation::Close) {

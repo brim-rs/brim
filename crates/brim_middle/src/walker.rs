@@ -7,6 +7,7 @@ use brim_ast::{
     stmts::{Let, Stmt, StmtKind},
     ty::Ty,
 };
+use indexmap::IndexMap;
 use std::collections::HashMap;
 
 pub trait AstWalker {
@@ -43,7 +44,7 @@ pub trait AstWalker {
         &mut self,
         _ident: &mut Ident,
         generic_args: &mut GenericArgs,
-        _fields: &mut HashMap<Ident, Expr>,
+        _fields: &mut IndexMap<Ident, Expr>,
     ) {
     }
 

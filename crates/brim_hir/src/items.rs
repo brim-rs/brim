@@ -29,6 +29,13 @@ impl HirItem {
             _ => panic!("Expected function item"),
         }
     }
+    
+    pub fn as_struct(&self) -> &HirStruct {
+        match &self.kind {
+            HirItemKind::Struct(s) => s,
+            _ => panic!("Expected struct item"),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -47,6 +54,12 @@ pub struct HirStruct {
     pub ident: Ident,
     pub fields: Vec<HirField>,
     pub generics: HirGenerics,
+}
+
+impl HirStruct {
+    pub fn get_field(&self, name: &str) -> Option<&HirField> {
+        self.fields.iter().find(|f| f.ident.to_string() == name)
+    }
 }
 
 #[derive(Clone, Debug)]

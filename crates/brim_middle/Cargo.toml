@@ -14,6 +14,7 @@ serde = { workspace = true, features = ["derive"] }
 convert_case = { workspace = true }
 anyhow = { workspace = true }
 lazy_static = { workspace = true }
+indexmap = { workspace = true }
 
 [lints]
 workspace = true
