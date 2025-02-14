@@ -38,7 +38,7 @@ impl CppCodegen {
                             generics
                                 .params
                                 .iter()
-                                .map(|p| self.generate_ty(p.ty.kind.clone()))
+                                .map(|p| self.generate_ty(p.ty.clone()))
                                 .collect::<Vec<_>>()
                                 .join(", ")
                         )

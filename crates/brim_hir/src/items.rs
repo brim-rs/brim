@@ -3,12 +3,15 @@ use crate::{
     expr::HirConstExpr,
     ty::{HirTy, HirTyKind},
 };
-use brim_ast::{item::Ident, token::{Lit, LitKind}, NodeId};
+use brim_ast::{
+    NodeId,
+    item::{Field, Generics, Ident, Visibility},
+    token::{Lit, LitKind},
+    ty::Ty,
+};
 use brim_middle::{GlobalSymbolId, ModuleId};
 use brim_span::span::Span;
 use std::{fmt::Display, path::PathBuf};
-use brim_ast::item::{Field, Generics, Visibility};
-use brim_ast::ty::Ty;
 
 #[derive(Clone, Debug)]
 pub struct HirItem {
@@ -29,7 +32,7 @@ impl HirItem {
             _ => panic!("Expected function item"),
         }
     }
-    
+
     pub fn as_struct(&self) -> &HirStruct {
         match &self.kind {
             HirItemKind::Struct(s) => s,
@@ -45,7 +48,7 @@ pub enum HirItemKind {
     /// Import statement
     Use(HirUse),
     /// Struct definition
-    Struct(HirStruct)
+    Struct(HirStruct),
 }
 
 #[derive(Clone, Debug)]
@@ -144,7 +147,7 @@ impl Display for HirGenericArgs {
             if i != 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{}", param.ty.kind)?;
+            write!(f, "{}", param.ty)?;
         }
         write!(f, ">")
     }
@@ -172,12 +175,12 @@ impl HirGenericArgs {
 #[derive(Clone, Debug)]
 pub struct HirGenericArg {
     pub id: HirId,
-    pub ty: HirTy,
+    pub ty: HirTyKind,
 }
 
 impl PartialEq for HirGenericArg {
     fn eq(&self, other: &Self) -> bool {
-        self.ty.kind == other.ty.kind
+        self.ty == other.ty
     }
 }
 

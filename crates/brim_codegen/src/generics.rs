@@ -46,7 +46,7 @@ impl CppCodegen {
         let gens = {
             let mut gens = String::new();
             for param in &generics.params {
-                gens.push_str(&format!("{}", self.generate_ty(param.ty.kind.clone())));
+                gens.push_str(&format!("{}", self.generate_ty(param.ty.clone())));
             }
             gens
         };

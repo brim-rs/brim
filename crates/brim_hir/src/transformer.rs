@@ -13,7 +13,7 @@ use crate::{
 };
 use brim_ast::{
     expr::{BinOpKind, Expr, ExprKind},
-    item::{Block, FnReturnType, GenericKind, Generics, ImportsKind, Item, ItemKind},
+    item::{Block, FnReturnType, GenericArgs, GenericKind, Generics, ImportsKind, Item, ItemKind},
     stmts::{Stmt, StmtKind},
     token::{AssignOpToken, Lit, LitKind},
     ty::{PrimitiveType, TyKind},
@@ -27,7 +27,6 @@ use brim_middle::{
 };
 use brim_span::{span::Span, symbols::Symbol};
 use std::{collections::HashMap, path::PathBuf, vec};
-use brim_ast::item::GenericArgs;
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -742,7 +741,7 @@ impl Transformer {
 
         (expr.clone(), expr.id)
     }
-    
+
     pub fn transform_generic_arguments(&mut self, generics: GenericArgs) -> HirGenericArgs {
         HirGenericArgs {
             params: generics
@@ -750,7 +749,7 @@ impl Transformer {
                 .iter()
                 .map(|param| HirGenericArg {
                     id: self.hir_id(),
-                    ty: self.transform_ty(param.ty.clone()),
+                    ty: self.transform_ty(param.ty.clone()).kind,
                 })
                 .collect(),
             span: generics.span,

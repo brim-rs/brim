@@ -9,12 +9,12 @@ use crate::{
         scope::{TypeInfo, TypeScopeManager},
     },
     items::{
-        HirCallParam, HirGenericArgs, HirGenericKind, HirGenericParam, HirItem, HirItemKind,
-        HirParam,
+        HirCallParam, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam, HirItem,
+        HirItemKind, HirParam,
     },
     stmts::{HirStmt, HirStmtKind},
     transformer::{HirModule, HirModuleMap, StoredHirItem},
-    ty::HirTyKind,
+    ty::{HirTy, HirTyKind},
 };
 use brim_ast::{
     expr::{BinOpKind, UnaryOp},
@@ -23,7 +23,7 @@ use brim_ast::{
 };
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{ModuleId, temp_diag::TemporaryDiagnosticContext};
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 #[derive(Debug)]
 pub struct TypeInference<'a> {
@@ -339,7 +339,7 @@ impl<'a> TypeInference<'a> {
 
                 let fn_def = func.as_fn();
                 let func_params = fn_def.sig.params.params.clone();
-                let mut generic_types: HashMap<String, HirTyKind> = HashMap::new();
+                let mut generic_types: IndexMap<String, HirTyKind> = IndexMap::new();
 
                 for (arg, fn_param) in args.iter_mut().zip(func_params) {
                     self.infer_expr(arg);
@@ -401,6 +401,81 @@ impl<'a> TypeInference<'a> {
                 self.replace_generics(&mut ty, &generic_types);
                 &ty.clone()
             }
+            HirExprKind::StructConstructor(ident, generics, fields) => {
+                let str = self
+                    .hir
+                    .resolve_symbol(&ident.to_string(), self.current_mod)
+                    .cloned()
+                    .unwrap();
+
+                let str = str.as_struct();
+                let mut generic_types: IndexMap<String, HirTyKind> = IndexMap::new();
+
+                for (ident, expr) in fields.iter_mut() {
+                    let str_field = str.get_field(&ident.to_string()).unwrap();
+                    self.infer_expr(expr);
+
+                    if let Some(generic_param) = str.generics.is_generic(&str_field.ty) {
+                        match &generic_param.kind {
+                            HirGenericKind::Type { default } => {
+                                let inferred_type = if let Some(def) = default {
+                                    def.kind.clone()
+                                } else if expr.ty == expr.ty {
+                                    expr.ty.clone()
+                                } else {
+                                    expr.ty.clone()
+                                };
+
+                                generic_types
+                                    .insert(generic_param.name.to_string(), inferred_type.clone());
+                            }
+                            HirGenericKind::Const { .. } => {}
+                        }
+                    }
+                }
+
+                if let Some(generic_param) = str.generics.is_generic(&expr.ty) {
+                    match &generic_param.kind {
+                        HirGenericKind::Type { default } => {
+                            let inferred_type = if let Some(def) = default {
+                                def.kind.clone()
+                            } else if expr.ty == expr.ty {
+                                expr.ty.clone()
+                            } else {
+                                expr.ty.clone()
+                            };
+
+                            generic_types
+                                .insert(generic_param.name.to_string(), inferred_type.clone());
+                        }
+                        HirGenericKind::Const { .. } => {}
+                    }
+                }
+
+                self.replace_generics(&mut expr.ty, &generic_types);
+
+                // Generics have to be sorted in the way the are defined in the struct.
+                let mut sorted_generics = IndexMap::new();
+
+                for generic in &str.generics.params {
+                    if let Some(ty) = generic_types.get(&generic.name.to_string()) {
+                        sorted_generics.insert(generic.id, ty.clone());
+                    }
+                }
+                let collected: Vec<HirGenericArg> = sorted_generics
+                    .iter()
+                    .map(|(id, ty)| HirGenericArg {
+                        id: *id,
+                        ty: ty.clone(),
+                    })
+                    .collect();
+
+                &HirTyKind::Ident {
+                    ident: ident.clone(),
+                    generics: HirGenericArgs::new(expr.span.clone(), collected),
+                    is_generic: false,
+                }
+            }
             HirExprKind::Literal(lit) => match lit.kind {
                 LitKind::Str => &HirTyKind::Primitive(PrimitiveType::Str),
                 LitKind::Byte => &HirTyKind::Primitive(PrimitiveType::U8),
@@ -442,13 +517,13 @@ impl<'a> TypeInference<'a> {
                 for (_, arg) in args {
                     self.infer_expr(arg);
                 }
-                
+
                 &HirTyKind::Ident {
                     ident: ident.clone(),
                     generics: gens.clone(),
                     is_generic: false,
                 }
-            },
+            }
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
         expr.ty = kind.clone();
@@ -459,7 +534,7 @@ impl<'a> TypeInference<'a> {
     }
 
     /// Replace generic types with inferred types.
-    pub fn replace_generics(&self, ty: &mut HirTyKind, generics: &HashMap<String, HirTyKind>) {
+    pub fn replace_generics(&self, ty: &mut HirTyKind, generics: &IndexMap<String, HirTyKind>) {
         match ty {
             HirTyKind::Ident { ident, .. } => {
                 if generics.contains_key(&ident.to_string()) {
