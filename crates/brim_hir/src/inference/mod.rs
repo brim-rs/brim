@@ -401,7 +401,10 @@ impl<'a> TypeInference<'a> {
                 self.replace_generics(&mut ty, &generic_types);
                 &ty.clone()
             }
-            HirExprKind::StructConstructor(ident, generics, fields) => {
+            HirExprKind::StructConstructor(hir_struct) => {
+                let fields = &mut hir_struct.fields;
+                let ident = &hir_struct.name;
+
                 let str = self
                     .hir
                     .resolve_symbol(&ident.to_string(), self.current_mod)
@@ -426,11 +429,27 @@ impl<'a> TypeInference<'a> {
                                     expr.ty.clone()
                                 };
 
-                                generic_types
-                                    .insert(generic_param.name.to_string(), inferred_type.clone());
+                                // If another field has a generic that was already inferred, we don't want to overwrite it.
+                                if let Some(existing) = generic_types
+                                    .insert(generic_param.name.to_string(), inferred_type.clone())
+                                {
+                                    hir_struct.field_types.insert(ident.clone(), existing);
+                                } else {
+                                    hir_struct
+                                        .field_types
+                                        .insert(ident.clone(), inferred_type.clone());
+                                }
                             }
-                            HirGenericKind::Const { .. } => {}
+                            HirGenericKind::Const { .. } => {
+                                hir_struct
+                                    .field_types
+                                    .insert(ident.clone(), expr.ty.clone());
+                            }
                         }
+                    } else {
+                        hir_struct
+                            .field_types
+                            .insert(ident.clone(), expr.ty.clone());
                     }
                 }
 
@@ -454,7 +473,7 @@ impl<'a> TypeInference<'a> {
 
                 self.replace_generics(&mut expr.ty, &generic_types);
 
-                // Generics have to be sorted in the way the are defined in the struct.
+                // Generics have to be sorted in the way they are defined in the struct.
                 let mut sorted_generics = IndexMap::new();
 
                 for generic in &str.generics.params {
@@ -512,17 +531,6 @@ impl<'a> TypeInference<'a> {
                 }
 
                 &HirTyKind::Placeholder
-            }
-            HirExprKind::StructConstructor(ident, gens, args) => {
-                for (_, arg) in args {
-                    self.infer_expr(arg);
-                }
-
-                &HirTyKind::Ident {
-                    ident: ident.clone(),
-                    generics: gens.clone(),
-                    is_generic: false,
-                }
             }
             _ => todo!("infer_expr: {:?}", expr.kind),
         };

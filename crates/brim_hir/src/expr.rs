@@ -10,8 +10,8 @@ use brim_ast::{
     token::Lit,
 };
 use brim_span::span::Span;
-use std::collections::HashMap;
 use indexmap::IndexMap;
+use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct HirExpr {
@@ -67,7 +67,16 @@ pub enum HirExprKind {
     /// Built-in functions.
     Builtin(Ident, Vec<HirExpr>),
     /// Struct constructor.
-    StructConstructor(Ident, HirGenericArgs, IndexMap<Ident, HirExpr>),
+    StructConstructor(HirStructConstructor),
+}
+
+#[derive(Clone, Debug)]
+pub struct HirStructConstructor {
+    pub id: HirId,
+    pub name: Ident,
+    pub generics: HirGenericArgs,
+    pub fields: IndexMap<Ident, HirExpr>,
+    pub field_types: HashMap<Ident, HirTyKind>,
 }
 
 #[derive(Clone, Debug)]

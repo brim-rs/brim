@@ -5,13 +5,13 @@ use crate::{
     type_checker::{
         TypeChecker,
         errors::{
-            ExpectedResultVariant, FunctionParameterTypeMismatch, FunctionReturnTypeMismatch,
+            ExpectedResultVariant, FieldMismatch, FunctionParameterTypeMismatch,
+            FunctionReturnTypeMismatch,
         },
     },
 };
 use brim_middle::ModuleId;
 use brim_span::span::Span;
-use crate::type_checker::errors::FieldMismatch;
 
 impl TypeChecker {
     pub fn check_expr(&mut self, expr: HirExpr) {
@@ -111,7 +111,10 @@ impl TypeChecker {
 
                 self.check_expr(*expr);
             }
-            HirExprKind::StructConstructor(ident, generics, fields) => {
+            HirExprKind::StructConstructor(hir_struct) => {
+                let fields = hir_struct.fields;
+                let ident = hir_struct.name.to_string();
+
                 let str = self
                     .hir
                     .resolve_symbol(&ident.to_string(), ModuleId::from_usize(self.mod_id))
@@ -120,7 +123,7 @@ impl TypeChecker {
                     .clone();
 
                 for (ident, field) in fields {
-                    let field_ty = str.get_field(&ident.to_string()).unwrap().ty.clone();
+                    let field_ty = hir_struct.field_types.get(&ident).unwrap().clone();
 
                     if field.ty != field_ty {
                         self.ctx.emit_impl(FieldMismatch {

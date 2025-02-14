@@ -107,7 +107,10 @@ impl CppCodegen {
                     format!("{{ {} }}", exprs)
                 }
                 // Default constructor for structs
-                HirExprKind::StructConstructor(ident, generics, fields) => {
+                HirExprKind::StructConstructor(str) => {
+                    let ident = str.name.clone();
+                    let generics = str.generics.clone();
+                    let fields = str.fields.clone();
                     let mut code = format!(
                         "{}{}",
                         ident.name,

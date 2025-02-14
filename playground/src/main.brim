@@ -6,6 +6,6 @@ struct Vec2<T> {
 }
 
 pub fn main() {
-    let v = Vec2 { x: 2.6, y: 2.0 };
+    let v = Vec2 { x: "str", y: 2.6 };
     let z = divSafe(1, 0);
 };

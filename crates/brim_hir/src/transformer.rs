@@ -2,7 +2,10 @@ use crate::{
     HirId,
     builtin::get_builtin_function,
     comptime::errors::ComptimeExprExpectedTy,
-    expr::{HirBlock, HirConditionBranch, HirConstExpr, HirExpr, HirExprKind, HirIfExpr},
+    expr::{
+        HirBlock, HirConditionBranch, HirConstExpr, HirExpr, HirExprKind, HirIfExpr,
+        HirStructConstructor,
+    },
     items::{
         HirField, HirFn, HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind,
         HirGenericParam, HirGenerics, HirImportsKind, HirItem, HirItemKind, HirParam, HirStruct,
@@ -723,16 +726,18 @@ impl Transformer {
                     )
                 }
                 ExprKind::StructConstructor(ident, generics, fields) => {
-                    HirExprKind::StructConstructor(
-                        ident,
-                        self.transform_generic_arguments(generics),
-                        fields
+                    HirExprKind::StructConstructor(HirStructConstructor {
+                        id: self.hir_id(),
+                        name: ident,
+                        generics: self.transform_generic_arguments(generics),
+                        fields: fields
                             .iter()
                             .map(|(ident, expr)| {
                                 (ident.clone(), self.transform_expr(expr.clone()).0)
                             })
                             .collect(),
-                    )
+                        field_types: HashMap::new(),
+                    })
                 }
             },
             ty: HirTyKind::Placeholder,
