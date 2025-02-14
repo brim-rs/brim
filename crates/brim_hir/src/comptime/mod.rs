@@ -9,17 +9,13 @@ use crate::{
     expr::{HirBlock, HirExpr, HirExprKind},
     stmts::HirStmtKind,
     transformer::Transformer,
-    ty::HirTyKind,
 };
 use brim_ast::{
     Empty,
     expr::Expr,
     token::{Lit, LitKind},
-    ty::PrimitiveType,
 };
-use brim_diagnostics::ErrorEmitted;
 use brim_middle::{ModuleId, temp_diag::TemporaryDiagnosticContext};
-use brim_span::symbols::Symbol;
 
 impl Transformer {
     pub fn transform_comptime_expr(&mut self, expr: Expr) -> Lit {

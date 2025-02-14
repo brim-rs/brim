@@ -3,13 +3,11 @@ mod expr;
 mod functions;
 
 use crate::{
-    items::HirItemKind,
+    inference::scope::TypeScopeManager,
+    items::{HirFn, HirItemKind},
     transformer::{HirModule, HirModuleMap},
-    ty::HirTyKind,
 };
 use brim_middle::temp_diag::TemporaryDiagnosticContext;
-use crate::inference::scope::TypeScopeManager;
-use crate::items::HirFn;
 
 #[derive(Debug)]
 pub struct TypeChecker {

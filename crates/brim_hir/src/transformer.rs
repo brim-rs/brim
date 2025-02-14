@@ -1,11 +1,7 @@
 use crate::{
     HirId,
-    builtin::get_builtin_function,
     comptime::errors::ComptimeExprExpectedTy,
-    expr::{
-        HirBlock, HirConditionBranch, HirConstExpr, HirExpr, HirExprKind, HirIfExpr,
-        HirStructConstructor,
-    },
+    expr::{HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfExpr, HirStructConstructor},
     items::{
         HirField, HirFn, HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind,
         HirGenericParam, HirGenerics, HirImportsKind, HirItem, HirItemKind, HirParam, HirStruct,
@@ -24,7 +20,6 @@ use brim_ast::{
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{
     GlobalSymbolId, ModuleId,
-    builtins::BUILTIN_FUNCTIONS,
     modules::{Module, ModuleMap},
     temp_diag::TemporaryDiagnosticContext,
 };
@@ -219,7 +214,7 @@ impl HirModuleMap {
     pub fn find_symbols_in_module(&self, module_id: Option<ModuleId>) -> Vec<&HirItem> {
         self.hir_items
             .iter()
-            .filter_map(|(id, item)| {
+            .filter_map(|(_, item)| {
                 if let StoredHirItem::Item(item) = item {
                     if module_id.map_or(true, |mid| item.old_sym_id.mod_id == mid) {
                         Some(item)
@@ -236,7 +231,7 @@ impl HirModuleMap {
     pub fn find_symbol_by_name(&self, name: &str, module_id: Option<ModuleId>) -> Vec<&HirItem> {
         self.hir_items
             .iter()
-            .filter_map(|(id, item)| {
+            .filter_map(|(_, item)| {
                 if let StoredHirItem::Item(item) = item {
                     if item.ident.to_string() == name
                         && module_id.map_or(true, |mid| item.old_sym_id.mod_id == mid)
@@ -603,8 +598,6 @@ impl Transformer {
     }
 
     pub fn transform_expr(&mut self, expr: Expr) -> (HirExpr, HirId) {
-        let mut fn_name: Option<String> = None;
-
         let expr = HirExpr {
             id: self.hir_id(),
             span: expr.span,
@@ -715,16 +708,12 @@ impl Transformer {
                         .map(|item| self.transform_expr(item.clone()).0)
                         .collect(),
                 ),
-                ExprKind::Builtin(ident, args) => {
-                    fn_name = Some(ident.to_string());
-
-                    HirExprKind::Builtin(
-                        ident,
-                        args.iter()
-                            .map(|arg| self.transform_expr(arg.clone()).0)
-                            .collect(),
-                    )
-                }
+                ExprKind::Builtin(ident, args) => HirExprKind::Builtin(
+                    ident,
+                    args.iter()
+                        .map(|arg| self.transform_expr(arg.clone()).0)
+                        .collect(),
+                ),
                 ExprKind::StructConstructor(ident, generics, fields) => {
                     HirExprKind::StructConstructor(HirStructConstructor {
                         id: self.hir_id(),
@@ -797,7 +786,7 @@ impl Transformer {
                     Box::new(self.transform_ty(*ok).kind),
                     Box::new(self.transform_ty(*err).kind),
                 ),
-                TyKind::Err(e) => panic!("on ty: {:?}", ty),
+                TyKind::Err(_) => panic!("on ty: {:?}", ty),
             },
         }
     }

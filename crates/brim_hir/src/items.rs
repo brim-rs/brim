@@ -1,13 +1,10 @@
 use crate::{
     HirId,
-    expr::HirConstExpr,
     ty::{HirTy, HirTyKind},
 };
 use brim_ast::{
-    NodeId,
-    item::{Field, Generics, Ident, Visibility},
-    token::{Lit, LitKind},
-    ty::Ty,
+    item::{Ident, Visibility},
+    token::Lit,
 };
 use brim_middle::{GlobalSymbolId, ModuleId};
 use brim_span::span::Span;

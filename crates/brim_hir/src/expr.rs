@@ -1,12 +1,12 @@
 use crate::{
     HirId,
-    items::{HirCallParam, HirGenericArgs, HirParam},
+    items::{HirCallParam, HirGenericArgs},
     stmts::HirStmt,
     ty::HirTyKind,
 };
 use brim_ast::{
     expr::{BinOpKind, UnaryOp},
-    item::{GenericArgs, Ident, Param},
+    item::Ident,
     token::Lit,
 };
 use brim_span::span::Span;

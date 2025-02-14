@@ -1,13 +1,11 @@
-use std::collections::HashMap;
 use crate::{
     NodeId,
-    item::{Block, Ident},
+    item::{Block, GenericArgs, Ident},
     token::{AssignOpToken, Lit},
 };
 use brim_span::span::Span;
-use std::fmt::Display;
 use indexmap::IndexMap;
-use crate::item::GenericArgs;
+use std::fmt::Display;
 
 #[derive(Clone, Debug)]
 pub struct Expr {
@@ -53,14 +51,14 @@ pub enum ExprKind {
     If(IfExpr),
     /// `{ ... }`
     Block(Block),
-    /// `func(x, y)`. 
+    /// `func(x, y)`.
     Call(Box<Expr>, Vec<Expr>),
     /// `@ok`, `@err` builtins
     Builtin(Ident, Vec<Expr>),
     /// `comptime { ... }`
     Comptime(Box<Expr>),
     /// `Vec2 {x: 1, y: 2}`
-    StructConstructor(Ident, GenericArgs, IndexMap<Ident, Expr>)
+    StructConstructor(Ident, GenericArgs, IndexMap<Ident, Expr>),
 }
 
 #[derive(Clone, Debug)]

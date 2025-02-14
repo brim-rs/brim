@@ -1,6 +1,6 @@
 pub mod reporting;
 
-use crate::diagnostic::{Diagnostic, ToDiagnostic};
+use crate::diagnostic::ToDiagnostic;
 pub use reporting::*;
 use std::fmt::Debug;
 

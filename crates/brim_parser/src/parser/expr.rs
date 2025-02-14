@@ -16,8 +16,8 @@ use brim_ast::{
 };
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
-use std::collections::HashMap;
 use indexmap::IndexMap;
+use std::collections::HashMap;
 use tracing::debug;
 
 impl Parser {
@@ -260,7 +260,7 @@ impl Parser {
                 debug!("Parsed builtin function with name: {}", ident);
                 Ok(self.new_expr(span.to(self.prev().span), ExprKind::Builtin(ident, args)))
             }
-            TokenKind::Ident(sym) => {
+            TokenKind::Ident(_) => {
                 if self.eat_keyword(ptok!(Return)) {
                     let expr = self.parse_expr()?;
 
@@ -370,7 +370,7 @@ impl Parser {
                 if self.current().kind != TokenKind::Delimiter(Delimiter::Brace, Orientation::Open)
                 {
                     // we eat until we find the brace of the opening of the else block
-                    let span_of_brace = self.eat_until_brace(Orientation::Open);
+                    let _ = self.eat_until_brace(Orientation::Open);
 
                     self.emit(ElseBranchExpr {
                         span: (span.to(self.prev().span), self.file),

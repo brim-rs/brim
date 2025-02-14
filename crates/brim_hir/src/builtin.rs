@@ -1,12 +1,11 @@
 use crate::{
     Codegen, HirId,
     expr::{HirExpr, HirExprKind},
-    items::{HirCallParam, HirGenericKind, HirItem, HirItemKind},
+    items::{HirItem, HirItemKind},
     stmts::{HirStmt, HirStmtKind},
-    transformer::{HirModule, HirModuleMap, StoredHirItem, Transformer},
+    transformer::{HirModule, HirModuleMap, StoredHirItem},
     ty::HirTyKind,
 };
-use std::any::Any;
 
 #[derive(Debug, Clone)]
 pub struct BuiltInFunction {
@@ -132,7 +131,7 @@ impl<'a> BuiltInExpander<'a> {
     fn expand_stmt(&mut self, stmt: &mut HirStmt) {
         match &mut stmt.kind {
             HirStmtKind::Expr(expr) => self.expand_expr(expr),
-            HirStmtKind::Let { ty, value, ident } => {
+            HirStmtKind::Let { value, .. } => {
                 if let Some(value) = value {
                     self.expand_expr(value);
                 }
@@ -147,7 +146,7 @@ impl<'a> BuiltInExpander<'a> {
     fn expand_expr(&mut self, expr: &mut HirExpr) {
         let mut fn_name: Option<String> = None;
         match &mut expr.kind {
-            HirExprKind::Unary(op, operand) => {
+            HirExprKind::Unary(_, operand) => {
                 self.expand_expr(operand);
             }
             HirExprKind::Block(block) => {
@@ -158,7 +157,7 @@ impl<'a> BuiltInExpander<'a> {
             HirExprKind::Return(expr) => {
                 self.expand_expr(expr);
             }
-            HirExprKind::Binary(lhs, op, rhs) => {
+            HirExprKind::Binary(lhs, _, rhs) => {
                 self.expand_expr(lhs);
                 self.expand_expr(rhs);
             }
@@ -196,7 +195,7 @@ impl<'a> BuiltInExpander<'a> {
         self.hir
             .hir_items
             .insert(expr.id, StoredHirItem::Expr(expr.clone()));
-        
+
         if let Some(fn_name) = fn_name {
             self.hir.expanded_by_builtins.insert(expr.id, fn_name);
         }

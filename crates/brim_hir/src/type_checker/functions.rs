@@ -1,10 +1,9 @@
 use crate::{
+    inference::scope::TypeInfo,
     items::HirFn,
     stmts::{HirStmt, HirStmtKind},
     type_checker::{TypeChecker, errors::CannotInitializeVariable},
 };
-use brim_ast::stmts::Stmt;
-use crate::inference::scope::TypeInfo;
 
 impl TypeChecker {
     pub fn check_fn(&mut self, func: HirFn) {
@@ -16,7 +15,7 @@ impl TypeChecker {
             self.current_fn = None;
         }
     }
-    
+
     pub fn current_fn(&self) -> &HirFn {
         self.current_fn.as_ref().unwrap()
     }
@@ -38,10 +37,10 @@ impl TypeChecker {
                             val_ty,
                         });
                     }
-                
+
                     self.check_expr(val);
                 }
-                
+
                 self.scope_manager.declare_variable(
                     ident.to_string(),
                     TypeInfo {

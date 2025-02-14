@@ -1,5 +1,4 @@
 use crate::ty::HirTyKind;
-use brim_ast::expr::{BinOpKind, UnaryOp};
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
 use brim_span::span::Span;

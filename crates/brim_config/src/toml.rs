@@ -1,11 +1,10 @@
 use crate::errors::ConfigError;
 use anyhow::{Context, Result, ensure};
 use brim_fs::walk_dir::walk_for_file;
+use brim_middle::{experimental::Experimental, lints::LintsConfig};
 use clap::ArgMatches;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, fs::read_to_string, path::PathBuf};
-use brim_middle::experimental::Experimental;
-use brim_middle::lints::LintsConfig;
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct BrimConfig {
@@ -155,7 +154,7 @@ impl Config {
                 build.lib_type = LibType::Static;
             }
         }
-        
+
         let lints = config.lints.unwrap_or(LintsConfig::default());
         let experimental = config.experimental.unwrap_or(Experimental::default());
 

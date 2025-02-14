@@ -10,11 +10,11 @@ use crate::{
     },
     items::{
         HirCallParam, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam, HirItem,
-        HirItemKind, HirParam,
+        HirItemKind,
     },
     stmts::{HirStmt, HirStmtKind},
     transformer::{HirModule, HirModuleMap, StoredHirItem},
-    ty::{HirTy, HirTyKind},
+    ty::HirTyKind,
 };
 use brim_ast::{
     expr::{BinOpKind, UnaryOp},
@@ -355,13 +355,17 @@ impl<'a> TypeInference<'a> {
                                     arg.ty.clone()
                                 };
 
-                                generic_types
-                                    .insert(generic_param.name.to_string(), inferred_type.clone());
+                                let mut final_ty = inferred_type.clone();
+                                if let Some(existing) = generic_types
+                                    .insert(generic_param.name.to_string(), inferred_type.clone())
+                                {
+                                    final_ty = existing;
+                                }
 
                                 params.push(HirCallParam {
                                     span: fn_param.span,
                                     name: func.ident,
-                                    ty: inferred_type,
+                                    ty: final_ty,
                                     from_generic: Some(generic_param),
                                 });
                             }
@@ -378,7 +382,7 @@ impl<'a> TypeInference<'a> {
                         params.push(HirCallParam {
                             span: fn_param.span,
                             name: func.ident,
-                            ty: arg.ty.clone(),
+                            ty: fn_param.ty.kind.clone(),
                             from_generic: None,
                         });
                     }

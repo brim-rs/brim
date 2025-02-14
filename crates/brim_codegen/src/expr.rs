@@ -7,7 +7,6 @@ use brim_hir::{
     builtin::get_builtin_function,
     expr::{HirExpr, HirExprKind},
 };
-use std::fmt::format;
 
 impl CppCodegen {
     pub fn generate_expr(&mut self, expr: HirExpr) -> String {

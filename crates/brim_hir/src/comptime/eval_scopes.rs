@@ -1,10 +1,5 @@
-use crate::HirId;
-use brim_ast::{
-    NodeId,
-    item::Param,
-    token::{Lit, LitKind},
-};
-use brim_diagnostics::{OptionalDiag, box_diag};
+use brim_ast::token::Lit;
+use brim_diagnostics::OptionalDiag;
 use brim_span::span::Span;
 use std::collections::HashMap;
 

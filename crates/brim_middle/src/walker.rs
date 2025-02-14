@@ -8,7 +8,6 @@ use brim_ast::{
     ty::Ty,
 };
 use indexmap::IndexMap;
-use std::collections::HashMap;
 
 pub trait AstWalker {
     // Visit methods - customize behavior for each node type
@@ -43,7 +42,7 @@ pub trait AstWalker {
     fn visit_struct_constructor(
         &mut self,
         _ident: &mut Ident,
-        generic_args: &mut GenericArgs,
+        _generic_args: &mut GenericArgs,
         _fields: &mut IndexMap<Ident, Expr>,
     ) {
     }

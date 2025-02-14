@@ -1,8 +1,8 @@
+use crate::ty::HirTyKind;
 use brim_ast::expr::{BinOpKind, UnaryOp};
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
 use brim_span::span::Span;
-use crate::ty::HirTyKind;
 
 #[derive(Diagnostic)]
 #[error("cannot apply unary operator `{op}` to type `{ty}`")]

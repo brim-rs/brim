@@ -2,9 +2,9 @@ use brim_diagnostics::{
     diagnostic::{Diagnostic, ToDiagnostic},
     term::{DiagConfig, emit},
 };
+use brim_middle::temp_diag::TemporaryDiagnosticContext;
 use brim_span::files::SimpleFiles;
 use std::{fmt::Debug, io::stderr};
-use brim_middle::temp_diag::TemporaryDiagnosticContext;
 
 #[derive(Debug, Clone)]
 pub struct DiagnosticContext {
@@ -28,7 +28,7 @@ impl DiagnosticContext {
         emit(&mut stderr(), &self.config, files, &diag).unwrap();
     }
 
-    pub fn from_temporary(&mut self, temp: &TemporaryDiagnosticContext, files: &SimpleFiles) {
+    pub fn extend_temporary(&mut self, temp: &TemporaryDiagnosticContext, files: &SimpleFiles) {
         for diag in temp.diags.iter() {
             self.emit_inner(diag.clone(), files);
         }

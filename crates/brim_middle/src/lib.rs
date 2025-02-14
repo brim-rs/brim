@@ -1,6 +1,5 @@
 use brim_ast::{
     NodeId,
-    expr::{BinOpKind, UnaryOp},
     item::{FnDecl, Ident, Struct, Visibility},
 };
 use brim_diag_macro::Diagnostic;

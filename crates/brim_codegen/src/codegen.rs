@@ -1,12 +1,14 @@
 use crate::CodeBuilder;
-use brim_hir::transformer::{HirModule, HirModuleMap};
+use brim_hir::{
+    Codegen,
+    expr::HirExpr,
+    items::HirItem,
+    stmts::HirStmt,
+    transformer::{HirModule, HirModuleMap},
+    ty::HirTyKind,
+};
 use brim_middle::ModuleId;
 use std::collections::{HashMap, HashSet, VecDeque};
-use brim_hir::Codegen;
-use brim_hir::expr::HirExpr;
-use brim_hir::items::HirItem;
-use brim_hir::stmts::HirStmt;
-use brim_hir::ty::{HirTy, HirTyKind};
 
 #[derive(Debug)]
 pub struct CppCodegen {
@@ -38,8 +40,6 @@ impl CppCodegen {
         self.code.decrease_indent();
         self.code.add_line("}");
     }
-
-  
 }
 
 impl Codegen for CppCodegen {

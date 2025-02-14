@@ -1,11 +1,11 @@
-use std::fmt::Display;
 use crate::{
     NodeId,
+    expr::Expr,
     item::{GenericArgs, Ident},
 };
 use brim_diagnostics::ErrorEmitted;
 use brim_span::span::Span;
-use crate::expr::Expr;
+use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub struct Ty {

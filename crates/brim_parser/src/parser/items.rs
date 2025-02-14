@@ -167,7 +167,7 @@ impl Parser {
             || (self.current().is_keyword(Const) && self.ahead(1).is_keyword(Fn))
     }
 
-    pub fn parse_fn(&mut self, span: Span, fn_ctx: FunctionContext) -> PResult<(Ident, ItemKind)> {
+    pub fn parse_fn(&mut self, _: Span, fn_ctx: FunctionContext) -> PResult<(Ident, ItemKind)> {
         let span = self.current().span;
         let (generics, sig) = self.parse_fn_signature(fn_ctx)?;
 

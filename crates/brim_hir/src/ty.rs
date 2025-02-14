@@ -1,15 +1,12 @@
-use crate::{HirId, expr::HirConstExpr, items::HirGenericArgs};
+use crate::{HirId, items::HirGenericArgs};
 use brim_ast::{
     item::Ident,
+    token::LitKind,
     ty::{Const, PrimitiveType},
 };
-use brim_diagnostics::{
-    ErrorEmitted,
-    diagnostic::{Diagnostic, ToDiagnostic},
-};
+use brim_diagnostics::ErrorEmitted;
 use brim_span::span::Span;
 use std::fmt::{Debug, Display};
-use brim_ast::token::{Lit, LitKind};
 
 #[derive(Debug, Clone)]
 pub struct HirTy {
@@ -62,17 +59,24 @@ impl Display for HirTyKind {
             HirTyKind::Array(ty, len) => write!(f, "[{}; {:?}]", ty, len),
             HirTyKind::Vec(ty) => write!(f, "{}[]", ty),
             HirTyKind::Primitive(p) => write!(f, "{}", p),
-            HirTyKind::Ident { ident, generics, .. } => {
-                write!(f, "{}{}", ident, if generics.params.len() > 0 {
-                    generics.to_string()
-                } else {
-                    "".to_string()
-                })
+            HirTyKind::Ident {
+                ident, generics, ..
+            } => {
+                write!(
+                    f,
+                    "{}{}",
+                    ident,
+                    if generics.params.len() > 0 {
+                        generics.to_string()
+                    } else {
+                        "".to_string()
+                    }
+                )
             }
             HirTyKind::Result(ok, err) => write!(f, "{}!{}", ok, err),
             HirTyKind::ResOk(ty) => write!(f, "@ok{}", ty),
             HirTyKind::ResErr(ty) => write!(f, "@err{}", ty),
-            HirTyKind::Err(diag) => write!(f, ""),
+            HirTyKind::Err(_) => write!(f, ""),
             HirTyKind::Placeholder => write!(f, "_"),
         }
     }
@@ -94,12 +98,12 @@ impl PartialEq for HirTyKind {
                 HirTyKind::Ident {
                     ident: id1,
                     generics: gen1,
-                    is_generic: is_generic1
+                    is_generic: is_generic1,
                 },
                 HirTyKind::Ident {
                     ident: id2,
                     generics: gen2,
-                    is_generic: is_generic2
+                    is_generic: is_generic2,
                 },
             ) => id1 == id2 && gen1 == gen2 && is_generic1 == is_generic2,
             (HirTyKind::Result(ok1, err1), HirTyKind::Result(ok2, err2)) => {
@@ -172,7 +176,7 @@ impl HirTyKind {
             _ => false,
         }
     }
-    
+
     pub fn from_lit(lit: &LitKind) -> Self {
         match lit {
             LitKind::Integer => HirTyKind::Primitive(PrimitiveType::I32),
@@ -185,21 +189,21 @@ impl HirTyKind {
             _ => unimplemented!(),
         }
     }
-    
+
     pub fn is_result(&self) -> Option<(Box<HirTyKind>, Box<HirTyKind>)> {
         match self {
             HirTyKind::Result(ok, err) => Some((ok.clone(), err.clone())),
             _ => None,
         }
     }
-    
+
     pub fn is_ok_variant(&self) -> Option<Box<HirTyKind>> {
         match self {
             HirTyKind::ResOk(ty) => Some(ty.clone()),
             _ => None,
         }
     }
-    
+
     pub fn is_err_variant(&self) -> Option<Box<HirTyKind>> {
         match self {
             HirTyKind::ResErr(ty) => Some(ty.clone()),

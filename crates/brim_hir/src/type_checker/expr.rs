@@ -1,13 +1,9 @@
 use crate::{
     expr::{HirExpr, HirExprKind},
-    items::HirGenericKind,
     ty::HirTyKind,
     type_checker::{
         TypeChecker,
-        errors::{
-            ExpectedResultVariant, FieldMismatch, FunctionParameterTypeMismatch,
-            FunctionReturnTypeMismatch,
-        },
+        errors::{ExpectedResultVariant, FieldMismatch, FunctionParameterTypeMismatch},
     },
 };
 use brim_middle::ModuleId;
@@ -38,16 +34,11 @@ impl TypeChecker {
             }
             HirExprKind::Call(func, args, call_params) => {
                 let ident = func.as_ident().unwrap().to_string();
-                let func = self
-                    .hir
-                    .resolve_symbol(&ident, ModuleId::from_usize(self.mod_id))
-                    .unwrap()
-                    .as_fn();
 
                 for (arg_expr, arg_ty) in args.iter().zip(call_params) {
                     if arg_expr.ty != arg_ty.ty {
                         self.ctx.emit_impl(FunctionParameterTypeMismatch {
-                            span: (expr.span, self.mod_id),
+                            span: (arg_expr.span, self.mod_id),
                             name: ident.clone(),
                             expected: arg_ty.ty.clone(),
                             found: arg_expr.ty.clone(),
@@ -113,14 +104,6 @@ impl TypeChecker {
             }
             HirExprKind::StructConstructor(hir_struct) => {
                 let fields = hir_struct.fields;
-                let ident = hir_struct.name.to_string();
-
-                let str = self
-                    .hir
-                    .resolve_symbol(&ident.to_string(), ModuleId::from_usize(self.mod_id))
-                    .unwrap()
-                    .as_struct()
-                    .clone();
 
                 for (ident, field) in fields {
                     let field_ty = hir_struct.field_types.get(&ident).unwrap().clone();

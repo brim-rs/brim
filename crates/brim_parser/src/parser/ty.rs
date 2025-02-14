@@ -4,13 +4,12 @@ use crate::{
 };
 use brim_ast::{
     Const,
-    expr::Expr,
+    expr::{Expr, ExprKind},
     item::{Block, Ident},
     stmts::{Stmt, StmtKind},
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
     ty::{Const, PrimitiveType, Ty, TyKind},
 };
-use brim_ast::expr::ExprKind;
 
 impl Parser {
     pub fn parse_type(&mut self) -> PResult<Ty> {
@@ -106,7 +105,7 @@ impl Parser {
         Ok(TyKind::Array(Box::new(ty), size))
     }
 
-    pub fn is_primitive(&mut self, ident: Ident) -> PResult<Option<PrimitiveType>> {
+    pub fn is_primitive(&self, ident: Ident) -> PResult<Option<PrimitiveType>> {
         Ok(PrimitiveType::try_from_string(ident.to_string()))
     }
 

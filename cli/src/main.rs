@@ -3,6 +3,7 @@
 use crate::{
     commands::{init::init_command, run::run_command},
     panic::setup_panic_handler,
+    tracing::setup_tracing,
 };
 use anstream::ColorChoice;
 use anyhow::Result;
@@ -11,7 +12,6 @@ use brim::{
 };
 use cli::cli;
 use std::{env, process::exit};
-use crate::tracing::setup_tracing;
 
 pub mod cli;
 mod commands;
