@@ -17,7 +17,6 @@ use brim_ast::{
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
 use indexmap::IndexMap;
-use std::collections::HashMap;
 use tracing::debug;
 
 impl Parser {

@@ -4,7 +4,7 @@ use clap::{Arg, ArgAction, ArgMatches, Command};
 use std::{
     env,
     fmt::{Display, Formatter, Result as FmtResult},
-    fs::{self, File},
+    fs::{self},
     path::{Path, PathBuf},
     process::Command as ProcessCommand,
 };

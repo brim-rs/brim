@@ -59,7 +59,7 @@ pub trait AstWalker {
         self.walk_signature(signature);
     }
 
-    fn visit_builtin(&mut self, name: &mut Ident, _args: &mut Vec<Expr>) {}
+    fn visit_builtin(&mut self, _name: &mut Ident, _args: &mut Vec<Expr>) {}
 
     // Walk methods - traverse child nodes
     fn walk_item(&mut self, item: &mut Item) {

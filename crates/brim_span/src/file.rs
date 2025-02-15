@@ -115,7 +115,7 @@ where
         Ok(PathBuf::from(self.name(id)))
     }
 
-    fn source(&'a self, id: FileId) -> Result<&str, Error> {
+    fn source(&'a self, id: FileId) -> Result<&'a str, Error> {
         Ok(self.source(id).as_ref())
     }
 

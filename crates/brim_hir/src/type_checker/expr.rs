@@ -6,7 +6,6 @@ use crate::{
         errors::{ExpectedResultVariant, FieldMismatch, FunctionParameterTypeMismatch},
     },
 };
-use brim_middle::ModuleId;
 use brim_span::span::Span;
 
 impl TypeChecker {

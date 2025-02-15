@@ -178,7 +178,7 @@ impl<'a> Cursor<'a> {
             None => return PrimitiveToken::new(PrimitiveTokenKind::Eof, 0),
         };
         let token_kind = match first_char {
-            c if is_whitespace(first_char) => {
+            _ if is_whitespace(first_char) => {
                 self.eat_while(is_whitespace);
                 Whitespace
             }

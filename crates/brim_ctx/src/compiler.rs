@@ -5,7 +5,7 @@ use crate::{
     validator::AstValidator,
 };
 use anyhow::Result;
-use brim_ast::item::{ImportsKind, ItemKind, Visibility, VisibilityKind};
+use brim_ast::item::{ImportsKind, ItemKind, VisibilityKind};
 use brim_codegen::codegen::CppCodegen;
 use brim_diagnostics::{
     ErrorEmitted,

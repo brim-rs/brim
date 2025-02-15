@@ -142,7 +142,7 @@ impl<'a> Lexer<'a> {
             PrimitiveTokenKind::At => TokenKind::At,
             PrimitiveTokenKind::Tilde => TokenKind::Tilde,
             PrimitiveTokenKind::QuestionMark => TokenKind::QuestionMark,
-            PrimitiveTokenKind::Colon => self.try_lex_colon_or_double_colon(start),
+            PrimitiveTokenKind::Colon => self.try_lex_colon_or_double_colon(),
             PrimitiveTokenKind::Dollar => TokenKind::Dollar,
 
             PrimitiveTokenKind::Unknown => {
@@ -163,7 +163,7 @@ impl<'a> Lexer<'a> {
         Some(Token::new(kind, span))
     }
 
-    fn try_lex_colon_or_double_colon(&mut self, start: ByteIndex) -> TokenKind {
+    fn try_lex_colon_or_double_colon(&mut self) -> TokenKind {
         self.try_multi_char_token(
             &[(PrimitiveTokenKind::Colon, TokenKind::DoubleColon)],
             TokenKind::Colon,

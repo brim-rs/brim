@@ -43,19 +43,6 @@ impl CppCodegen {
 }
 
 impl Codegen for CppCodegen {
-    fn generate_module(&mut self, module: HirModule) {
-        self.code
-            .add_line(&format!("namespace module{} {{", module.mod_id.as_u32()));
-        self.code.increase_indent();
-
-        for item in module.items {
-            self.generate_item(item);
-        }
-
-        self.code.decrease_indent();
-        self.code.add_line("}");
-    }
-
     fn generate(&mut self) {
         let mut graph: HashMap<ModuleId, HashSet<ModuleId>> = HashMap::new();
         let mut indegree: HashMap<ModuleId, usize> = HashMap::new();
@@ -112,6 +99,19 @@ impl Codegen for CppCodegen {
         }
 
         self.add_main();
+    }
+
+    fn generate_module(&mut self, module: HirModule) {
+        self.code
+            .add_line(&format!("namespace module{} {{", module.mod_id.as_u32()));
+        self.code.increase_indent();
+
+        for item in module.items {
+            self.generate_item(item);
+        }
+
+        self.code.decrease_indent();
+        self.code.add_line("}");
     }
 
     fn generate_item(&mut self, item: HirItem) {

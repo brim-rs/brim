@@ -27,8 +27,7 @@ impl CppCodegen {
                             param.name.to_string()
                         ));
                         if let Some(default) = default {
-                            todo!("default const value");
-                            // gens.push_str(&format!(" = {}", self.transform_const_expr(default.clone())));
+                            gens.push_str(&format!(" = {}", self.generate_lit(default.clone())));
                         }
                     }
                 }

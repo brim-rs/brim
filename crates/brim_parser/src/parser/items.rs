@@ -33,7 +33,7 @@ impl Parser {
         let vis = self.parse_visibility();
 
         let (ident, kind) = if self.is_function() {
-            self.parse_fn(span, FunctionContext::Item)?
+            self.parse_fn(FunctionContext::Item)?
         } else if self.current().is_keyword(Use) {
             self.parse_use(span)?
         } else if self.current().is_keyword(Struct) {
@@ -167,8 +167,7 @@ impl Parser {
             || (self.current().is_keyword(Const) && self.ahead(1).is_keyword(Fn))
     }
 
-    pub fn parse_fn(&mut self, _: Span, fn_ctx: FunctionContext) -> PResult<(Ident, ItemKind)> {
-        let span = self.current().span;
+    pub fn parse_fn(&mut self, fn_ctx: FunctionContext) -> PResult<(Ident, ItemKind)> {
         let (generics, sig) = self.parse_fn_signature(fn_ctx)?;
 
         let body = self.parse_fn_body(fn_ctx)?;
