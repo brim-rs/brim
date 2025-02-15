@@ -61,12 +61,6 @@ impl CppCodegen {
                 format!("const {}", ty)
             }
 
-            HirTyKind::Result(ok, err) => {
-                let ok = self.generate_ty(*ok);
-                let err = self.generate_ty(*err);
-                format!("std::expected<{}, {}>", ok, err)
-            }
-
             // Only for now, this will be replaced in type checking
             HirTyKind::Placeholder | HirTyKind::Err(_) => "auto".to_string(),
 

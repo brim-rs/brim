@@ -39,21 +39,11 @@ impl Parser {
             }
         };
 
-        let ty = Ty {
+        Ok(Ty {
             span,
             kind,
             id: self.new_id(),
-        };
-
-        if self.eat(TokenKind::Bang) {
-            return Ok(Ty {
-                span,
-                kind: TyKind::Result(Box::new(ty), Box::new(self.parse_type()?)),
-                id: self.new_id(),
-            });
-        }
-
-        Ok(ty)
+        })
     }
 
     pub fn parse_const(&mut self) -> PResult<TyKind> {

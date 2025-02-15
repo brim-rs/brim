@@ -3,6 +3,7 @@ pub mod scope;
 
 use crate::{
     HirId,
+    builtin::expand_builtins,
     expr::{HirExpr, HirExprKind},
     inference::{
         errors::{CannotApplyBinary, CannotApplyUnary, CannotCompare},
@@ -57,6 +58,8 @@ impl InferCtx {
 }
 
 pub fn infer_types(hir: &mut HirModuleMap) -> TypeInference {
+    expand_builtins(hir);
+
     let mut ti = TypeInference {
         hir,
         ctx: InferCtx::new(),
@@ -555,10 +558,6 @@ impl<'a> TypeInference<'a> {
             }
             HirTyKind::Array(ty, _) => self.replace_generics(ty, generics),
             HirTyKind::Vec(ty) => self.replace_generics(ty, generics),
-            HirTyKind::Result(ok, err) => {
-                self.replace_generics(ok, generics);
-                self.replace_generics(err, generics);
-            }
             _ => {}
         }
     }

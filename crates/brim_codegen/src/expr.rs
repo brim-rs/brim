@@ -16,7 +16,12 @@ impl CppCodegen {
             let func = get_builtin_function(fn_name).unwrap();
 
             self.hir.expanded_by_builtins.remove(&expr.id);
-            (func.codegen)(self, &mut vec![expr.clone()])
+
+            if let Some(codegen) = func.codegen {
+                (codegen)(self, &mut vec![expr.clone()])
+            } else {
+                self.generate_expr(expr)
+            }
         } else {
             return match expr.kind {
                 HirExprKind::Block(block) => {

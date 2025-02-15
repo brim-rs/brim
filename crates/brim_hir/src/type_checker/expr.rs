@@ -3,7 +3,7 @@ use crate::{
     ty::HirTyKind,
     type_checker::{
         TypeChecker,
-        errors::{ExpectedResultVariant, FieldMismatch, FunctionParameterTypeMismatch},
+        errors::{FieldMismatch, FunctionParameterTypeMismatch, FunctionReturnTypeMismatch},
     },
 };
 use brim_span::span::Span;
@@ -49,54 +49,13 @@ impl TypeChecker {
                 let func = self.current_fn();
                 let ret_ty = &func.sig.return_type;
 
-                if let Some((ok, err)) = ret_ty.is_result() {
-                    if let Some(ok_ty) = expr.ty.is_ok_variant() {
-                        let any = if let Some(_) = func.sig.generics.is_generic(&ok) {
-                            true
-                        } else {
-                            false
-                        };
-
-                        if ok != ok_ty && !any {
-                            self.ctx.emit_impl(ExpectedResultVariant {
-                                span: (expr.span, self.mod_id),
-                                ok: *ok,
-                                found: *ok_ty,
-                                variant: "Ok".to_string(),
-                            });
-                        }
-                    } else if let Some(err_ty) = expr.ty.is_err_variant() {
-                        let any = if let Some(_) = func.sig.generics.is_generic(&err) {
-                            true
-                        } else {
-                            false
-                        };
-
-                        if err != err_ty && !any {
-                            self.ctx.emit_impl(ExpectedResultVariant {
-                                span: (expr.span, self.mod_id),
-                                ok: *err,
-                                found: *err_ty,
-                                variant: "Err".to_string(),
-                            });
-                        }
-                    } else {
-                        self.mismatch(
-                            expr.span,
-                            ret_ty.clone(),
-                            expr.ty.clone(),
-                            func.sig.name.to_string(),
-                        );
-                    }
-                } else {
-                    if ret_ty != &expr.ty {
-                        self.mismatch(
-                            expr.span,
-                            ret_ty.clone(),
-                            expr.ty.clone(),
-                            func.sig.name.to_string(),
-                        );
-                    }
+                if ret_ty != &expr.ty {
+                    self.ctx.emit_impl(FunctionReturnTypeMismatch {
+                        span: (expr.span, self.mod_id),
+                        expected: ret_ty.clone(),
+                        found: expr.ty.clone(),
+                        name: func.sig.name.to_string(),
+                    });
                 }
 
                 self.check_expr(*expr);

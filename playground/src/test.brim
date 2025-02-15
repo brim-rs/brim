@@ -1,7 +1,0 @@
-pub fn divSafe(x: i32, y: i32) -> i32!str {
-    if y == 0 {
-        return @err("Division by zero");
-    }
-
-    return @ok(x / y);
-};

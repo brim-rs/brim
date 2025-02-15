@@ -173,7 +173,6 @@ impl CompilerContext {
         self.extend_temp(ti.temp.clone());
 
         if ti.temp.diags.is_empty() {
-            expand_builtins(hir);
             let mut type_analyzer = TypeChecker::new(hir.clone());
             type_analyzer.check();
             self.extend_temp(type_analyzer.ctx);

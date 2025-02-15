@@ -6,17 +6,39 @@ use crate::{
     transformer::{HirModule, HirModuleMap, StoredHirItem},
     ty::HirTyKind,
 };
+use brim_ast::{
+    token::{Lit, LitKind},
+    ty::PrimitiveType,
+};
+use brim_span::symbols::Symbol;
 
 #[derive(Debug, Clone)]
 pub struct BuiltInFunction {
     pub func: fn(&mut Vec<HirExpr>) -> HirExpr,
-    pub codegen: fn(&mut dyn Codegen, &mut Vec<HirExpr>) -> String,
+    pub codegen: Option<fn(&mut dyn Codegen, &mut Vec<HirExpr>) -> String>,
 }
 
 #[macro_export]
 macro_rules! builtin_function {
+    (fn $name:ident($($arg:ident),* $(, ...$rest:ident)?) {$($body:tt)*}) => {
+        #[allow(unused_mut, unused_variables)]
+        pub fn $name() -> BuiltInFunction {
+            fn inner(args: &mut Vec<HirExpr>) -> HirExpr {
+                let mut iter = args.iter_mut();
+                $(let mut $arg = iter.next().unwrap();)*
+                $(let $rest = iter.collect::<Vec<_>>();)?
+
+                $($body)*
+            }
+
+            BuiltInFunction {
+                func: inner,
+                codegen: None,
+            }
+        }
+    };
     (fn $name:ident($($arg:ident),* $(, ...$rest:ident)?) {$($body:tt)*}
-     codegen($cg_ctx:ident) {$($cg_body:tt)*}) => {
+        codegen($cg_ctx:ident) {$($cg_body:tt)*}) => {
         #[allow(unused_mut, unused_variables)]
         pub fn $name() -> BuiltInFunction {
             fn inner(args: &mut Vec<HirExpr>) -> HirExpr {
@@ -37,38 +59,34 @@ macro_rules! builtin_function {
 
             BuiltInFunction {
                 func: inner,
-                codegen: codegen_inner,
+                codegen: Some(codegen_inner),
             }
         }
     };
 }
 
 builtin_function! {
-    fn ok(value) {
-        value.ty = HirTyKind::ResOk(Box::new(value.ty.clone()));
-
-        value.clone()
-    }
-    codegen(ctx) {
-        format!("{}", ctx.generate_expr(value.clone()))
-    }
-}
-
-builtin_function! {
-    fn err(value) {
-        value.ty = HirTyKind::ResErr(Box::new(value.ty.clone()));
-
-        value.clone()
-    }
-    codegen(ctx) {
-        format!("std::unexpected({})", ctx.generate_expr(value.clone()))
+    fn os() {
+        HirExpr {
+            id: HirId::dummy(),
+            ty: HirTyKind::Primitive(PrimitiveType::Str),
+            kind: HirExprKind::Literal(Lit::new(LitKind::Str, Symbol::new(&if cfg!(target_os = "linux") {
+                "linux"
+            } else if cfg!(target_os = "macos") {
+                "macos"
+            } else if cfg!(target_os = "windows") {
+                "windows"
+            } else {
+                panic!("Unsupported operating system")
+            }), None)),
+            span: Default::default(),
+        }
     }
 }
 
 pub fn get_builtin_function(name: &str) -> Option<BuiltInFunction> {
     match name {
-        "ok" => Some(ok()),
-        "err" => Some(err()),
+        "os" => Some(os()),
         _ => None,
     }
 }

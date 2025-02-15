@@ -36,12 +36,6 @@ pub enum HirTyKind {
         generics: HirGenericArgs,
         is_generic: bool,
     },
-    /// Result type eg. `T!E` (brim) -> `std::expected<T, E>` (C++).
-    Result(Box<HirTyKind>, Box<HirTyKind>),
-    /// Ok type eg. `@ok` (brim) -> `std::expected<T, E>` (C++)
-    ResOk(Box<HirTyKind>),
-    /// Error type eg. `@err` (brim) -> `std::unexpected<T, E>` (C++)
-    ResErr(Box<HirTyKind>),
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),
@@ -73,9 +67,6 @@ impl Display for HirTyKind {
                     }
                 )
             }
-            HirTyKind::Result(ok, err) => write!(f, "{}!{}", ok, err),
-            HirTyKind::ResOk(ty) => write!(f, "@ok{}", ty),
-            HirTyKind::ResErr(ty) => write!(f, "@err{}", ty),
             HirTyKind::Err(_) => write!(f, ""),
             HirTyKind::Placeholder => write!(f, "_"),
         }
@@ -106,9 +97,6 @@ impl PartialEq for HirTyKind {
                     is_generic: is_generic2,
                 },
             ) => id1 == id2 && gen1 == gen2 && is_generic1 == is_generic2,
-            (HirTyKind::Result(ok1, err1), HirTyKind::Result(ok2, err2)) => {
-                ok1 == ok2 && err1 == err2
-            }
             (HirTyKind::Err(diag1), HirTyKind::Err(diag2)) => diag1 == diag2,
             (HirTyKind::Placeholder, HirTyKind::Placeholder) => true,
             _ => false,
@@ -187,27 +175,6 @@ impl HirTyKind {
             LitKind::ByteStr => HirTyKind::Vec(Box::new(HirTyKind::Primitive(PrimitiveType::U8))),
             LitKind::Byte => HirTyKind::Primitive(PrimitiveType::U8),
             _ => unimplemented!(),
-        }
-    }
-
-    pub fn is_result(&self) -> Option<(Box<HirTyKind>, Box<HirTyKind>)> {
-        match self {
-            HirTyKind::Result(ok, err) => Some((ok.clone(), err.clone())),
-            _ => None,
-        }
-    }
-
-    pub fn is_ok_variant(&self) -> Option<Box<HirTyKind>> {
-        match self {
-            HirTyKind::ResOk(ty) => Some(ty.clone()),
-            _ => None,
-        }
-    }
-
-    pub fn is_err_variant(&self) -> Option<Box<HirTyKind>> {
-        match self {
-            HirTyKind::ResErr(ty) => Some(ty.clone()),
-            _ => None,
         }
     }
 }

@@ -10,13 +10,9 @@ pub struct FunctionData {
 lazy_static! {
     pub static ref BUILTIN_FUNCTIONS: HashMap<String, FunctionData> = {
         let mut m = HashMap::new();
-        m.insert("ok".to_string(), FunctionData {
-            description: "Returns an Ok variant with the given value",
-            expected_args: 1,
-        });
-        m.insert("err".to_string(), FunctionData {
-            description: "Returns an Err variant with the given value",
-            expected_args: 1,
+        m.insert("os".to_string(), FunctionData {
+            description: "Returns the operating system",
+            expected_args: 0,
         });
         m
     };

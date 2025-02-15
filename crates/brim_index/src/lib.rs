@@ -50,6 +50,11 @@ macro_rules! index_type {
             $vis const fn as_usize(self) -> usize {
                 self.value as usize
             }
+
+            #[inline]
+            $vis const fn dummy() -> Self {
+                Self::from_u32(0xFFFF_FF00)
+            }
         }
 
         impl From<u32> for $name {
