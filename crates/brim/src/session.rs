@@ -114,4 +114,8 @@ impl Session {
     pub fn build_dir(&self) -> PathBuf {
         self.cwd.join("build")
     }
+
+    pub fn dep_dir(&self, name: &str) -> PathBuf {
+        self.build_dir().join("deps").join(name)
+    }
 }

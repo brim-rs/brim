@@ -1,0 +1,19 @@
+
+# Build and temporary files
+/target
+*.log
+.cache
+
+# Environment files
+.env
+.env.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-specific files
+.DS_Store
+Thumbs.db

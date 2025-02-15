@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{Result, anyhow};
 use std::path::PathBuf;
 
 pub mod loader;
@@ -30,4 +30,34 @@ pub fn create_file_parent_dirs(file: &PathBuf) -> anyhow::Result<()> {
         return Err(anyhow!("No parent directory"));
     }
     Ok(())
+}
+
+pub fn remove_prefix(path: &PathBuf) -> PathBuf {
+    let path_str = path.to_str().unwrap_or("");
+    let normalized_str = if path_str.starts_with(r"\\?\") {
+        &path_str[4..] // Strip the \\?\ prefix
+    } else {
+        path_str
+    };
+    PathBuf::from(normalized_str)
+}
+
+pub fn normalize_path(path: &PathBuf, root: &PathBuf) -> PathBuf {
+    let mut temp = path.clone();
+
+    if temp.is_relative() {
+        temp = root.join(temp);
+    }
+    temp = normalize_slashes(&temp);
+    remove_prefix(&temp)
+}
+
+pub fn normalize_slashes(path: &PathBuf) -> PathBuf {
+    let path_str = path.to_str().unwrap_or("");
+    let normalized_str = if cfg!(windows) {
+        path_str.replace("\\", "/")
+    } else {
+        path_str.to_string()
+    };
+    PathBuf::from(normalized_str)
 }

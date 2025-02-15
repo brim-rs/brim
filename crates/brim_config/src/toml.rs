@@ -20,6 +20,8 @@ pub struct BrimConfig {
 pub struct BuildConfig {
     pub level: Option<OptLevel>,
     pub lib_type: Option<LibType>,
+    pub std: Option<PathBuf>,
+    pub core: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -84,6 +86,12 @@ pub struct Dependency {
     pub branch: Option<String>,
 }
 
+impl Dependency {
+    pub fn is_special(name: &str) -> bool {
+        matches!(name, "std" | "core")
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Config {
     pub project: ProjectConfig,
@@ -98,19 +106,19 @@ pub struct Config {
 pub struct ParsedBuildConfig {
     pub level: OptLevel,
     pub lib_type: LibType,
+    pub std: PathBuf,
+    pub core: PathBuf,
 }
 
 impl Config {
     pub fn get(cwd: &PathBuf, args: Option<&ArgMatches>) -> Result<Self> {
         let path =
             walk_for_file(cwd.clone(), "brim.toml").ok_or(ConfigError::ConfigFileNotFound)?;
-
         let content = read_to_string(&path).context("Failed to read brim.toml")?;
 
         let config: BrimConfig = toml::from_str(&content).context("Failed to parse brim.toml")?;
 
         let project_type = config.project.r#type.clone();
-
         if !matches!(project_type, ProjectType::Lib | ProjectType::Bin) {
             return Err(ConfigError::InvalidProjectType(format!("{:?}", project_type)).into());
         }
@@ -121,48 +129,72 @@ impl Config {
     pub fn parse(config: BrimConfig, args: Option<&ArgMatches>) -> Result<Self> {
         let project = config.project;
         let tasks = config.tasks;
-        let dependencies = config.dependencies;
+        let dependencies = config.dependencies.unwrap_or_default();
 
-        ensure!(project.name.len() > 0, "Project name can't be empty");
+        ensure!(!project.name.is_empty(), "Project name can't be empty");
+        let brim_path = dirs::home_dir().unwrap().join(".brim");
+        let default_std = brim_path.join("std");
+        let default_core = brim_path.join("core");
 
-        let mut build = if let Some(build) = config.build {
-            ParsedBuildConfig {
-                level: build.level.unwrap_or(OptLevel::Debug),
-                lib_type: build.lib_type.unwrap_or(LibType::Static),
-            }
-        } else {
-            ParsedBuildConfig {
+        let mut build = config.build.map_or_else(
+            || ParsedBuildConfig {
                 level: OptLevel::Debug,
                 lib_type: LibType::Static,
-            }
-        };
+                std: default_std.clone(),
+                core: default_core.clone(),
+            },
+            |build| ParsedBuildConfig {
+                level: build.level.unwrap_or(OptLevel::Debug),
+                lib_type: build.lib_type.unwrap_or(LibType::Static),
+                std: build.std.unwrap_or(default_std.clone()),
+                core: build.core.unwrap_or(default_core.clone()),
+            },
+        );
 
         if let Some(args) = args {
-            if args.get_flag("release") {
-                build.level = OptLevel::Release;
+            build.level = if args.get_flag("release") {
+                OptLevel::Release
             } else if args.get_flag("min-size-rel") {
-                build.level = OptLevel::MinSizeRel;
+                OptLevel::MinSizeRel
             } else if args.get_flag("rel-with-deb-info") {
-                build.level = OptLevel::RelWithDebInfo;
+                OptLevel::RelWithDebInfo
             } else {
-                build.level = OptLevel::Debug;
-            }
+                OptLevel::Debug
+            };
 
-            if args.get_flag("dynamic") {
-                build.lib_type = LibType::Dynamic;
+            build.lib_type = if args.get_flag("dynamic") {
+                LibType::Dynamic
             } else {
-                build.lib_type = LibType::Static;
-            }
+                LibType::Static
+            };
         }
 
-        let lints = config.lints.unwrap_or(LintsConfig::default());
-        let experimental = config.experimental.unwrap_or(Experimental::default());
+        let lints = config.lints.unwrap_or_default();
+        let experimental = config.experimental.unwrap_or_default();
+
+        let std_dep = Dependency {
+            version: None,
+            path: Some(build.std.to_string_lossy().into_owned()),
+            github: None,
+            branch: None,
+        };
+
+        let core_dep = Dependency {
+            version: None,
+            path: Some(build.core.to_string_lossy().into_owned()),
+            github: None,
+            branch: None,
+        };
+
+        let mut dependencies = dependencies;
+        dependencies.insert("std".to_string(), std_dep);
+        dependencies.insert("core".to_string(), core_dep);
 
         Ok(Self {
             project,
             tasks,
-            dependencies: dependencies.unwrap_or(HashMap::new()),
             build,
+            dependencies,
             lints,
             experimental,
         })

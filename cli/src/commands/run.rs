@@ -71,9 +71,9 @@ pub fn run_command(
             }
 
             let resolver_temp = &mut TemporaryDiagnosticContext::new();
-            let mut resolver = Resolver::new(resolver_temp);
+            let mut resolver = Resolver::new(resolver_temp, sess);
             let mut visited = HashSet::new();
-            let module_map = resolver.create_module_map(&mut barrel, &mut visited, sess.config.experimental.clone())?;
+            let module_map = resolver.create_module_map(&mut barrel, &mut visited)?;
             comp.extend_temp(resolver_temp.clone());
             bail_on_errors(comp.emitted.len())?;
 

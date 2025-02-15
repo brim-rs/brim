@@ -114,7 +114,7 @@ pub struct Use {
     pub imports: ImportsKind,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum PathItemKind {
     Parent,
     Module(Ident),

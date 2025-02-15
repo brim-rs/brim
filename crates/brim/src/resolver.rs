@@ -1,7 +1,12 @@
+use crate::session::Session;
 use brim_ast::item::{ItemKind, PathItemKind};
+use brim_config::toml::Dependency;
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
-use brim_fs::loader::{BrimFileLoader, FileLoader};
+use brim_fs::{
+    loader::{BrimFileLoader, FileLoader},
+    normalize_path,
+};
 use brim_middle::{
     GlobalSymbolId, ModuleId, barrel::Barrel, experimental::Experimental, modules::ModuleMap,
     temp_diag::TemporaryDiagnosticContext,
@@ -11,21 +16,28 @@ use brim_span::{
     files::{add_file, get_path},
     span::Span,
 };
-use std::{collections::HashSet, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
 #[derive(Debug)]
 pub struct Resolver<'a> {
     pub ctx: &'a mut TemporaryDiagnosticContext,
     pub map: ModuleMap,
     pub temp_loader: BrimFileLoader,
+    pub file: usize,
+    pub sess: &'a mut Session,
 }
 
 impl<'a> Resolver<'a> {
-    pub fn new(ctx: &'a mut TemporaryDiagnosticContext) -> Self {
+    pub fn new(ctx: &'a mut TemporaryDiagnosticContext, sess: &'a mut Session) -> Self {
         Self {
             ctx,
             map: ModuleMap::new(),
             temp_loader: BrimFileLoader,
+            file: 0,
+            sess,
         }
     }
 
@@ -33,9 +45,9 @@ impl<'a> Resolver<'a> {
         &mut self,
         barrel: &mut Barrel,
         visited: &mut HashSet<PathBuf>,
-        experimental: Experimental,
     ) -> anyhow::Result<ModuleMap> {
         let file_id = barrel.file_id.clone();
+        self.file = file_id;
         let mut ref_path = get_path(file_id.clone())?;
 
         if visited.contains(&ref_path) {
@@ -47,7 +59,12 @@ impl<'a> Resolver<'a> {
 
         for item in barrel.items.iter_mut() {
             if let ItemKind::Use(use_stmt) = &mut item.kind {
-                let path = self.build_path(&use_stmt.path);
+                let path = self.build_path(&use_stmt.path, use_stmt.span.clone());
+
+                if path.is_none() {
+                    continue;
+                }
+                let path = path.unwrap();
 
                 ref_path.pop();
                 ref_path.push(path.clone());
@@ -62,6 +79,8 @@ impl<'a> Resolver<'a> {
 
                     continue;
                 }
+
+                let experimental = self.sess.config.experimental.clone();
 
                 let contents = self.temp_loader.read_file(&ref_path)?;
                 let file = add_file(ref_path.clone(), contents);
@@ -78,7 +97,7 @@ impl<'a> Resolver<'a> {
                     ref_path.clone(),
                 );
 
-                self.create_module_map(&mut nested_barrel, visited, experimental.clone())?;
+                self.create_module_map(&mut nested_barrel, visited)?;
             }
         }
 
@@ -105,22 +124,73 @@ impl<'a> Resolver<'a> {
         display_path
     }
 
-    pub fn build_path(&self, path: &Vec<PathItemKind>) -> PathBuf {
+    pub fn build_path(&mut self, path: &Vec<PathItemKind>, span: Span) -> Option<PathBuf> {
         let mut path_buf = PathBuf::new();
 
-        for part in path {
-            match part {
-                PathItemKind::Module(ident) => {
-                    path_buf.push(ident.name.as_str().expect("expected module name"))
+        if path[0] == PathItemKind::Current {
+            for part in path {
+                match part {
+                    PathItemKind::Module(ident) => {
+                        path_buf.push(ident.name.as_str().expect("expected module name"))
+                    }
+                    PathItemKind::Parent => {
+                        path_buf.pop();
+                    }
+                    _ => {}
                 }
-                PathItemKind::Parent => {
-                    path_buf.pop();
-                }
-                _ => {}
             }
+        } else {
+            let dep_name = match &path[0] {
+                PathItemKind::Module(ident) => ident.name.as_str().expect("expected module name"),
+                _ => "".to_string(),
+            };
+            let dep = self.sess.config.dependencies.get(&dep_name);
+
+            if let Some(dep) = dep {
+                if dep_name == "std" {
+                    path_buf.push(normalize_path(&self.sess.config.build.std, &self.sess.cwd));
+                } else if dep_name == "core" {
+                    path_buf.push(normalize_path(&self.sess.config.build.core, &self.sess.cwd));
+                } else {
+                    let dep_name = if let Some(ver) = &dep.version {
+                        format!("{}-{}", dep_name, ver)
+                    } else {
+                        dep_name.clone()
+                    };
+
+                    path_buf.push(self.sess.dep_dir(&dep_name));
+
+                    // TODO: add handling for paths, versions etc
+                }
+
+                if path.len() > 1 {
+                    for part in path.iter().skip(1) {
+                        match part {
+                            PathItemKind::Module(ident) => {
+                                path_buf.push(ident.name.as_str().expect("expected module name"))
+                            }
+                            PathItemKind::Parent => {
+                                path_buf.pop();
+                            }
+                            _ => {}
+                        }
+                    }
+                } else {
+                    path_buf.push("main.brim");
+                }
+            } else {
+                self.ctx.emit_impl(DependencyNotFound {
+                    span: (span, self.file),
+                    dep: dep_name,
+                });
+                return None;
+            }
+
+            println!("{:?}", path_buf);
+            return Some(path_buf);
         }
 
-        path_buf
+        Some(path_buf)
     }
 }
 
@@ -131,4 +201,12 @@ pub struct ModuleNotFound {
     pub span: (Span, usize),
     pub original_name: String,
     pub path: String,
+}
+
+#[derive(Diagnostic)]
+#[error("dependency `{dep}` not found")]
+pub struct DependencyNotFound {
+    #[error]
+    pub span: (Span, usize),
+    pub dep: String,
 }

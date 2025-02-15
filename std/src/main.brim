@@ -1,0 +1,6 @@
+
+use { println } from std::debug;
+
+pub fn main() {
+    println("Hello, world!");
+};
