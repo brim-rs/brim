@@ -148,6 +148,15 @@ impl Parser {
         loop {
             if self.eat_keyword(ptok!(Parent)) {
                 path.push(PathItemKind::Parent);
+            } else if self.eat_keyword(ptok!(SelfSmall)) {
+                if !path.is_empty() {
+                    self.emit(InvalidModifierOrder {
+                        span: (self.prev().span, self.file),
+                        message: "`self` keyword should be placed at the beginning of the path".to_string(),
+                    });
+                }
+                
+                path.push(PathItemKind::Current);
             } else {
                 let ident = self.parse_ident()?;
                 path.push(PathItemKind::Module(ident));

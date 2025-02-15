@@ -94,6 +94,7 @@ impl<'a> Resolver<'a> {
                     display_path.push_str(&*ident.name.as_str().expect("expected module name"))
                 }
                 PathItemKind::Parent => display_path.push_str("parent"),
+                PathItemKind::Current => display_path.push_str("self"),
             }
 
             if i < path.len() - 1 {
@@ -115,6 +116,7 @@ impl<'a> Resolver<'a> {
                 PathItemKind::Parent => {
                     path_buf.pop();
                 }
+                _ => {}
             }
         }
 

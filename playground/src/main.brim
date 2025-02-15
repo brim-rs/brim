@@ -1,4 +1,4 @@
-use { divSafe } from test;
+use { divSafe } from self:test;
 
 struct Vec2<T> {
     x: T,

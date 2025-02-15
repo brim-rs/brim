@@ -118,6 +118,7 @@ pub struct Use {
 pub enum PathItemKind {
     Parent,
     Module(Ident),
+    Current,
 }
 
 #[derive(Clone, Debug)]
