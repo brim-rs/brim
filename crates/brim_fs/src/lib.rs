@@ -64,3 +64,8 @@ pub fn normalize_slashes(path: &PathBuf) -> PathBuf {
     };
     PathBuf::from(normalized_str)
 }
+
+pub fn canonicalize_path(path: PathBuf) -> Result<PathBuf> {
+    let path = path.canonicalize()?;
+    Ok(remove_prefix(&path))
+}

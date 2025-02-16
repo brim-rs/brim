@@ -4,6 +4,7 @@ use brim_config::toml::Dependency;
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
 use brim_fs::{
+    canonicalize_path,
     loader::{BrimFileLoader, FileLoader},
     normalize_path,
 };
@@ -21,6 +22,7 @@ use brim_span::{
 };
 use std::{
     collections::{HashMap, HashSet},
+    fs::canonicalize,
     path::{Path, PathBuf},
 };
 
@@ -84,6 +86,8 @@ impl<'a> Resolver<'a> {
                     });
                     continue;
                 }
+
+                let full_path = canonicalize_path(full_path)?;
 
                 let content = self.temp_loader.read_file(&full_path)?;
                 let file = self.sess.add_file(full_path.clone(), content.clone());
