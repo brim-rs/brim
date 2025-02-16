@@ -3,7 +3,7 @@ use crate::{
         PResult, PToken, PTokenKind, Parser,
         errors::{
             EmptyBody, ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder,
-            MissingFromKeyword, MissingParamList, SelfOutsideMethod, UnnecessarySelf,
+            MissingFromKeyword, MissingParamList, SelfOutsideMethod, UnknownItem, UnnecessarySelf,
             UseStatementBraces,
         },
     },
@@ -39,7 +39,10 @@ impl Parser {
         } else if self.current().is_keyword(Struct) {
             self.parse_struct(span)?
         } else {
-            return Ok(None);
+            box_diag!(UnknownItem {
+                span: (span, self.file),
+                found: self.current().kind,
+            })
         };
         self.eat_semis();
 
@@ -152,10 +155,11 @@ impl Parser {
                 if !path.is_empty() {
                     self.emit(InvalidModifierOrder {
                         span: (self.prev().span, self.file),
-                        message: "`self` keyword should be placed at the beginning of the path".to_string(),
+                        message: "`self` keyword should be placed at the beginning of the path"
+                            .to_string(),
                     });
                 }
-                
+
                 path.push(PathItemKind::Current);
             } else {
                 let ident = self.parse_ident()?;

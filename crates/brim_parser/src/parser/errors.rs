@@ -148,3 +148,11 @@ pub struct InvalidLiteralSuffix {
     #[note]
     pub note: String,
 }
+
+#[derive(Diagnostic)]
+#[error("unknown item. found `{found}`.")]
+pub struct UnknownItem {
+    pub found: TokenKind,
+    #[error]
+    pub span: (Span, usize),
+}

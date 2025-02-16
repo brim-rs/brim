@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use std::path::PathBuf;
+use std::path::{MAIN_SEPARATOR, PathBuf};
 
 pub mod loader;
 pub mod walk_dir;
@@ -52,10 +52,13 @@ pub fn normalize_path(path: &PathBuf, root: &PathBuf) -> PathBuf {
     remove_prefix(&temp)
 }
 
+pub const SEP: char = std::path::MAIN_SEPARATOR;
+
 pub fn normalize_slashes(path: &PathBuf) -> PathBuf {
     let path_str = path.to_str().unwrap_or("");
+    let sep = &SEP.to_string();
     let normalized_str = if cfg!(windows) {
-        path_str.replace("\\", "/")
+        path_str.replace("\\", sep).replace("/", sep)
     } else {
         path_str.to_string()
     };

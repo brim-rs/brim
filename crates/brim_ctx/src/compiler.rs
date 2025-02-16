@@ -27,6 +27,7 @@ use brim_middle::{
     temp_diag::TemporaryDiagnosticContext,
 };
 use brim_span::files::{SimpleFiles, files, get_file};
+use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub struct CompilerContext {
@@ -90,75 +91,77 @@ impl CompilerContext {
 
         for module in map.modules.clone() {
             let file_id = module.barrel.file_id;
-            for item in module.barrel.items {
-                match item.kind {
-                    ItemKind::Use(u) => {
-                        let module_id = ModuleId::from_usize(file_id);
-                        let module = map
-                            .module_by_import(GlobalSymbolId {
-                                mod_id: module_id,
-                                item_id: item.id,
-                            })
-                            .unwrap();
-                        let resolved_id = ModuleId::from_usize(module.barrel.file_id);
 
-                        let import_symbols: Vec<GlobalSymbolId> = match &u.imports {
-                            ImportsKind::All => map
-                                .find_symbols_in_module(Some(resolved_id))
+            for item in module.barrel.items {
+                if let ItemKind::Use(u) = item.kind {
+                    let module_id = ModuleId::from_usize(file_id);
+                    debug!(
+                        "Resolving import (id: {}) from module (id: {})",
+                        item.id.as_usize(),
+                        module_id.as_usize()
+                    );
+
+                    let resolved_module = map
+                        .module_by_import(GlobalSymbolId {
+                            mod_id: module_id,
+                            item_id: item.id,
+                        })
+                        .unwrap();
+
+                    let resolved_id = ModuleId::from_usize(resolved_module.barrel.file_id);
+
+                    let import_symbols: Vec<GlobalSymbolId> = match &u.imports {
+                        ImportsKind::All => {
+                            map.find_symbols_in_module(Some(resolved_id))
                                 .iter()
                                 .map(|symbol| GlobalSymbolId {
                                     mod_id: resolved_id,
                                     item_id: symbol.item_id,
                                 })
-                                .collect(),
-                            ImportsKind::List(list) => list
-                                .iter()
-                                .map(|import| {
-                                    (
-                                        map.find_symbol_by_name(
-                                            &import.to_string(),
-                                            Some(resolved_id),
-                                        ),
-                                        import,
-                                    )
-                                })
-                                .filter_map(|(symbol, import)| {
+                                .collect()
+                        }
+                        ImportsKind::List(list) => {
+                            list.iter()
+                                .filter_map(|import| {
                                     let mod_path = get_file(resolved_id.as_usize())
                                         .unwrap()
                                         .name()
                                         .display()
                                         .to_string();
-                                    if let Some(s) = symbol {
-                                        if s.vis.kind == VisibilityKind::Private {
-                                            self.emit(SymbolPrivate {
-                                                imported: (import.span, file_id),
-                                                defined: (s.span(), resolved_id.as_usize()),
+
+                                    println!("Importing symbol: {} {}", import, resolved_id.as_usize());
+                                    match map.find_symbol_by_name(&import.to_string(), Some(resolved_id)) {
+                                        Some(symbol) => {
+                                            if symbol.vis.kind == VisibilityKind::Private {
+                                                self.emit(SymbolPrivate {
+                                                    imported: (import.span, file_id),
+                                                    defined: (symbol.span(), resolved_id.as_usize()),
+                                                    name: import.to_string(),
+                                                    module: mod_path,
+                                                    note: "mark this item as public by adding `pub` at the beginning",
+                                                });
+                                            }
+
+                                            Some(GlobalSymbolId {
+                                                mod_id: resolved_id,
+                                                item_id: symbol.item_id,
+                                            })
+                                        }
+                                        None => {
+                                            self.emit(SymbolNotFound {
+                                                span: (import.span, file_id),
                                                 name: import.to_string(),
                                                 module: mod_path,
-                                                note: "mark this item as public by adding `pub` at the beginning",
                                             });
+                                            None
                                         }
-
-                                        Some(GlobalSymbolId {
-                                            mod_id: resolved_id,
-                                            item_id: s.item_id,
-                                        })
-                                    } else {
-                                        self.emit(SymbolNotFound {
-                                            span: (import.span, file_id),
-                                            name: import.to_string(),
-                                            module: mod_path,
-                                        });
-
-                                        None
                                     }
                                 })
-                                .collect(),
-                        };
+                                .collect()
+                        }
+                    };
 
-                        map.update_modules_imports(module_id, import_symbols);
-                    }
-                    _ => {}
+                    map.update_modules_imports(module_id, import_symbols);
                 }
             }
         }

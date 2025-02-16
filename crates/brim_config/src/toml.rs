@@ -215,4 +215,12 @@ impl Config {
     pub fn library_path(&self, default: PathBuf) -> PathBuf {
         self.project.lib.clone().unwrap_or(default)
     }
+
+    pub fn main_dir(&self) -> PathBuf {
+        if self.is_bin() {
+            self.binary_path(PathBuf::from("\\src\\"))
+        } else {
+            self.library_path(PathBuf::from("\\src\\"))
+        }
+    }
 }

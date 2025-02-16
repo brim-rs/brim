@@ -1,0 +1,10 @@
+type Handle = match @os() {
+    "windows" => i32,
+    "linux" => i32,
+    "macos" => i32,
+    else => i32
+};
+
+pub struct File {
+    handle: Handle
+}

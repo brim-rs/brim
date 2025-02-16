@@ -1,5 +1,5 @@
 use crate::session::Session;
-use brim_ast::item::{ItemKind, PathItemKind};
+use brim_ast::item::{Ident, ImportsKind, ItemKind, PathItemKind, Use};
 use brim_config::toml::Dependency;
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
@@ -8,7 +8,10 @@ use brim_fs::{
     normalize_path,
 };
 use brim_middle::{
-    GlobalSymbolId, ModuleId, barrel::Barrel, experimental::Experimental, modules::ModuleMap,
+    GlobalSymbolId, ModuleId,
+    barrel::Barrel,
+    experimental::Experimental,
+    modules::{Module, ModuleMap},
     temp_diag::TemporaryDiagnosticContext,
 };
 use brim_parser::parser::Parser;
@@ -18,7 +21,7 @@ use brim_span::{
 };
 use std::{
     collections::{HashMap, HashSet},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 #[derive(Debug)]
@@ -46,9 +49,9 @@ impl<'a> Resolver<'a> {
         barrel: &mut Barrel,
         visited: &mut HashSet<PathBuf>,
     ) -> anyhow::Result<ModuleMap> {
-        let file_id = barrel.file_id.clone();
+        let file_id = barrel.file_id;
         self.file = file_id;
-        let mut ref_path = get_path(file_id.clone())?;
+        let ref_path = get_path(file_id)?;
 
         if visited.contains(&ref_path) {
             return Ok(self.map.clone());
@@ -59,33 +62,34 @@ impl<'a> Resolver<'a> {
 
         for item in barrel.items.iter_mut() {
             if let ItemKind::Use(use_stmt) = &mut item.kind {
-                let path = self.build_path(&use_stmt.path, use_stmt.span.clone());
+                let path = &use_stmt.path.clone();
+                let span = use_stmt.span.clone();
 
-                if path.is_none() {
-                    continue;
-                }
-                let path = path.unwrap();
+                let path_buf = match self.build_path(path, span.clone()) {
+                    Some(p) => p,
+                    None => continue,
+                };
 
-                ref_path.pop();
-                ref_path.push(path.clone());
-                ref_path.set_extension("brim");
+                let full_path = if path[0] == PathItemKind::Current {
+                    self.sess.cwd.join(&path_buf)
+                } else {
+                    path_buf.clone()
+                };
 
-                if !self.temp_loader.file_exists(&ref_path) {
+                if !self.temp_loader.check_if_exists(&full_path).is_ok() {
                     self.ctx.emit_impl(ModuleNotFound {
-                        span: (use_stmt.span.clone(), file_id),
-                        original_name: self.build_display_path(&use_stmt.path),
-                        path: ref_path.display().to_string(),
+                        span: (span, self.file),
+                        original_name: self.build_display_path(path),
+                        path: full_path.to_string_lossy().to_string(),
                     });
-
                     continue;
                 }
 
-                let experimental = self.sess.config.experimental.clone();
+                let content = self.temp_loader.read_file(&full_path)?;
+                let file = self.sess.add_file(full_path.clone(), content.clone());
 
-                let contents = self.temp_loader.read_file(&ref_path)?;
-                let file = add_file(ref_path.clone(), contents);
-                let mut parser = Parser::new(file, experimental.clone());
-                let mut nested_barrel = parser.parse_barrel()?;
+                let mut parser = Parser::new(file, self.sess.config.experimental.clone());
+                let mut barrel = parser.parse_barrel()?;
 
                 self.ctx.extend(parser.dcx.diags);
 
@@ -94,10 +98,10 @@ impl<'a> Resolver<'a> {
                         mod_id: ModuleId::from_usize(file_id),
                         item_id: item.id,
                     },
-                    ref_path.clone(),
+                    full_path.clone(),
                 );
 
-                self.create_module_map(&mut nested_barrel, visited)?;
+                self.create_module_map(&mut barrel, visited)?;
             }
         }
 
@@ -124,6 +128,24 @@ impl<'a> Resolver<'a> {
         display_path
     }
 
+    pub fn main_dir(&mut self, mut path: PathBuf) -> PathBuf {
+        if self.sess.config.is_bin() {
+            if let Some(bin_path) = &self.sess.config.project.bin {
+                path.push(bin_path.parent().unwrap_or_else(|| "src".as_ref()));
+            } else {
+                path.push("src");
+            }
+        } else {
+            if let Some(lib_path) = &self.sess.config.project.lib {
+                path.push(lib_path.parent().unwrap_or_else(|| "src".as_ref()));
+            } else {
+                path.push("src");
+            }
+        }
+
+        path
+    }
+
     pub fn build_path(&mut self, path: &Vec<PathItemKind>, span: Span) -> Option<PathBuf> {
         let mut path_buf = PathBuf::new();
 
@@ -142,55 +164,77 @@ impl<'a> Resolver<'a> {
         } else {
             let dep_name = match &path[0] {
                 PathItemKind::Module(ident) => ident.name.as_str().expect("expected module name"),
-                _ => "".to_string(),
+                _ => return None,
             };
-            let dep = self.sess.config.dependencies.get(&dep_name);
 
-            if let Some(dep) = dep {
-                if dep_name == "std" {
-                    path_buf.push(normalize_path(&self.sess.config.build.std, &self.sess.cwd));
-                } else if dep_name == "core" {
-                    path_buf.push(normalize_path(&self.sess.config.build.core, &self.sess.cwd));
+            let dep = match self.sess.config.dependencies.get(&dep_name.clone()) {
+                Some(dep) => dep,
+                None => {
+                    self.ctx.emit_impl(DependencyNotFound {
+                        span: (span, self.file),
+                        dep: dep_name.to_string(),
+                    });
+                    return None;
+                }
+            };
+
+            if Dependency::is_special(&dep_name) {
+                path_buf = if dep_name == "std" {
+                    normalize_path(&self.sess.config.build.std, &self.sess.cwd)
+                } else {
+                    normalize_path(&self.sess.config.build.core, &self.sess.cwd)
+                };
+            } else {
+                let base_path = if let Some(path) = &dep.path {
+                    normalize_path(&PathBuf::from(path), &self.sess.cwd)
+                } else if let Some(github) = &dep.github {
+                    self.sess.dep_dir(&format!(
+                        "{}-{}",
+                        github,
+                        dep.branch.as_deref().unwrap_or("main")
+                    ))
                 } else {
                     let dep_name = if let Some(ver) = &dep.version {
                         format!("{}-{}", dep_name, ver)
                     } else {
-                        dep_name.clone()
+                        dep_name.to_string()
                     };
+                    self.sess.dep_dir(&dep_name)
+                };
 
-                    path_buf.push(self.sess.dep_dir(&dep_name));
-
-                    // TODO: add handling for paths, versions etc
-                }
-
-                if path.len() > 1 {
-                    for part in path.iter().skip(1) {
-                        match part {
-                            PathItemKind::Module(ident) => {
-                                path_buf.push(ident.name.as_str().expect("expected module name"))
-                            }
-                            PathItemKind::Parent => {
-                                path_buf.pop();
-                            }
-                            _ => {}
-                        }
-                    }
-                } else {
-                    path_buf.push("main.brim");
-                }
-            } else {
-                self.ctx.emit_impl(DependencyNotFound {
-                    span: (span, self.file),
-                    dep: dep_name,
-                });
-                return None;
+                path_buf.push(base_path);
             }
-
-            println!("{:?}", path_buf);
-            return Some(path_buf);
+            let main = self.main_dir(path_buf.clone());
+            path_buf = self.build_filename(main, path);
         }
 
-        Some(path_buf)
+        Some(path_buf.with_extension("brim"))
+    }
+
+    pub fn build_filename(&mut self, path: PathBuf, paths: &Vec<PathItemKind>) -> PathBuf {
+        let mut path_buf = path.clone();
+
+        if paths.len() > 1 {
+            for part in paths.iter().skip(1) {
+                match part {
+                    PathItemKind::Module(ident) => {
+                        path_buf.push(ident.name.as_str().expect("expected module name"))
+                    }
+                    PathItemKind::Parent => {
+                        path_buf.pop();
+                    }
+                    _ => {}
+                }
+            }
+        } else {
+            if self.sess.config.is_bin() {
+                path_buf.push("main.brim");
+            } else {
+                path_buf.push("lib.brim");
+            }
+        }
+
+        path_buf
     }
 }
 
