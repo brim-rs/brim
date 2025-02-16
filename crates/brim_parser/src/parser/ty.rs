@@ -3,9 +3,9 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Const,
+    Const, Type,
     expr::{Expr, ExprKind},
-    item::{Block, Ident},
+    item::{Block, Ident, Item, ItemKind, TypeAlias},
     stmts::{Stmt, StmtKind},
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
     ty::{Const, PrimitiveType, Ty, TyKind},
@@ -109,5 +109,26 @@ impl Parser {
                 span: expr.span,
             }],
         }
+    }
+
+    pub fn parse_type_alias(&mut self) -> PResult<(Ident, ItemKind)> {
+        let span = self.current().span;
+        self.eat_keyword(ptok!(Type));
+
+        let ident = self.parse_ident()?;
+        let generics = self.parse_generics()?;
+        self.expect(TokenKind::Eq)?;
+
+        let ty = self.parse_type()?;
+
+        Ok((
+            ident,
+            ItemKind::TypeAlias(TypeAlias {
+                span,
+                generics,
+                ident,
+                ty,
+            }),
+        ))
     }
 }

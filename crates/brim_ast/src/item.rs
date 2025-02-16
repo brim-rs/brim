@@ -88,6 +88,16 @@ pub enum ItemKind {
     Use(Use),
     /// Struct declaration eg. `struct Foo { ... }`
     Struct(Struct),
+    /// Type alias eg. `type Foo = i32;`
+    TypeAlias(TypeAlias),
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeAlias {
+    pub span: Span,
+    pub ident: Ident,
+    pub ty: Ty,
+    pub generics: Generics,
 }
 
 #[derive(Clone, Debug)]

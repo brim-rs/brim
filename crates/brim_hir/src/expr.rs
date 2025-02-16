@@ -12,6 +12,7 @@ use brim_ast::{
 use brim_span::span::Span;
 use indexmap::IndexMap;
 use std::collections::HashMap;
+use brim_ast::expr::Expr;
 
 #[derive(Clone, Debug)]
 pub struct HirExpr {
@@ -68,6 +69,16 @@ pub enum HirExprKind {
     Builtin(Ident, Vec<HirExpr>),
     /// Struct constructor.
     StructConstructor(HirStructConstructor),
+    /// Match expressions.
+    Match(Box<HirExpr>, Vec<HirMatchArm>),
+}
+
+#[derive(Clone, Debug)]
+pub enum HirMatchArm {
+    /// `case 1 => { ... }`
+    Case(HirExpr, HirExpr),
+    /// `else => { ... }`
+    Else(HirExpr),
 }
 
 #[derive(Clone, Debug)]

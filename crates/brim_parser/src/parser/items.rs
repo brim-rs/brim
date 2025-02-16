@@ -10,7 +10,7 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Const, Fn, From, Parent, SelfSmall, Struct, Use,
+    Const, Fn, From, Parent, SelfSmall, Struct, Type, Use,
     item::{
         Block, Field, FnDecl, FnReturnType, FnSignature, FunctionContext, Generics, Ident,
         ImportsKind, Item, ItemKind, Param, PathItemKind, Struct, Use,
@@ -38,6 +38,8 @@ impl Parser {
             self.parse_use(span)?
         } else if self.current().is_keyword(Struct) {
             self.parse_struct(span)?
+        } else if self.current().is_keyword(Type) {
+            self.parse_type_alias()?
         } else {
             box_diag!(UnknownItem {
                 span: (span, self.file),

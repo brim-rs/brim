@@ -46,6 +46,16 @@ pub enum HirItemKind {
     Use(HirUse),
     /// Struct definition
     Struct(HirStruct),
+    /// Type alias
+    TypeAlias(HirTypeAlias),
+}
+
+#[derive(Clone, Debug)]
+pub struct HirTypeAlias {
+    pub span: Span,
+    pub ident: Ident,
+    pub ty: HirTyKind,
+    pub generics: HirGenerics,
 }
 
 #[derive(Clone, Debug)]

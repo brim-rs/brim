@@ -68,6 +68,7 @@ pub enum PTokenKind {
     Let,
     Loop,
     Null,
+    Match,
     Parent,
     Pub,
     Return,
@@ -77,6 +78,7 @@ pub enum PTokenKind {
     Then,
     Trait,
     True,
+    Type,
     Use,
     While,
 }
@@ -332,5 +334,14 @@ impl Parser {
 
     pub fn is_bracket(&self, o: Orientation) -> bool {
         self.current().is_delimiter(Delimiter::Bracket, o)
+    }
+
+    pub fn eat_possible(&mut self, p: TokenKind) -> bool {
+        if self.current().kind == p {
+            self.advance();
+            true
+        } else {
+            false
+        }
     }
 }

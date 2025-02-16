@@ -93,6 +93,8 @@ pub enum TokenKind {
     Dot,
     /// `->`
     Arrow,
+    /// `=>`
+    FatArrow,
     /// `$`
     Dollar,
     /// `;`
@@ -291,6 +293,7 @@ impl Display for TokenKind {
             TokenKind::QuestionMark => write!(f, "?"),
             TokenKind::Bang => write!(f, "!"),
             TokenKind::DoubleColon => write!(f, "::"),
+            TokenKind::FatArrow => write!(f, "=>"),
             TokenKind::Eq => write!(f, "="),
             TokenKind::Lt => write!(f, "<"),
             TokenKind::Le => write!(f, "<="),

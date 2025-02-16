@@ -132,7 +132,7 @@ impl<'a> Lexer<'a> {
             PrimitiveTokenKind::Pipe => self.try_lex_or_assign(),
             PrimitiveTokenKind::LessThan => self.try_lex_shift_left_assign(),
             PrimitiveTokenKind::GreaterThan => self.try_lex_shift_right_assign(),
-            PrimitiveTokenKind::Equals => self.try_lex_double_equals(),
+            PrimitiveTokenKind::Equals => self.try_lex_starting_with_equals(),
             PrimitiveTokenKind::Bang => self.try_lex_not_equals(),
 
             // Symbols
@@ -270,8 +270,15 @@ impl<'a> Lexer<'a> {
         )
     }
 
-    fn try_lex_double_equals(&mut self) -> TokenKind {
-        self.try_compound_token(PrimitiveTokenKind::Equals, TokenKind::EqEq, TokenKind::Eq)
+    /// One of: `=>`, `=`, or `==`
+    fn try_lex_starting_with_equals(&mut self) -> TokenKind {
+        self.try_multi_char_token(
+            &[
+                (PrimitiveTokenKind::GreaterThan, TokenKind::FatArrow),
+                (PrimitiveTokenKind::Equals, TokenKind::EqEq),
+            ],
+            TokenKind::Eq,
+        )
     }
 
     fn try_lex_not_equals(&mut self) -> TokenKind {

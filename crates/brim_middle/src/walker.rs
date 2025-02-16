@@ -8,6 +8,8 @@ use brim_ast::{
     ty::Ty,
 };
 use indexmap::IndexMap;
+use brim_ast::expr::MatchArm;
+use brim_ast::item::TypeAlias;
 
 pub trait AstWalker {
     // Visit methods - customize behavior for each node type
@@ -39,6 +41,8 @@ pub trait AstWalker {
 
     fn visit_struct(&mut self, _str: &mut Struct) {}
 
+    fn visit_type_alias(&mut self, _type_alias: &mut TypeAlias) {}
+
     fn visit_struct_constructor(
         &mut self,
         _ident: &mut Ident,
@@ -67,6 +71,7 @@ pub trait AstWalker {
             ItemKind::Fn(func) => self.visit_fn(func),
             ItemKind::Use(use_stmt) => self.visit_use(use_stmt),
             ItemKind::Struct(str) => self.visit_struct(str),
+            ItemKind::TypeAlias(type_alias) => self.visit_type_alias(type_alias),
         }
     }
 
@@ -126,6 +131,20 @@ pub trait AstWalker {
             ExprKind::Builtin(ident, args) => self.visit_builtin(ident, args),
             ExprKind::StructConstructor(ident, gens, fields) => {
                 self.visit_struct_constructor(ident, gens, fields)
+            }
+            ExprKind::Match(expr, arms) => {
+                self.visit_expr(expr);
+                for arm in arms {
+                    match arm {
+                        MatchArm::Case(pat, block) => {
+                            self.visit_expr(pat);
+                            self.visit_expr(block);
+                        }
+                        MatchArm::Else(block) => {
+                            self.visit_expr(block);
+                        }
+                    }
+                }
             }
         }
     }

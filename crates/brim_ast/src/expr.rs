@@ -59,6 +59,16 @@ pub enum ExprKind {
     Comptime(Box<Expr>),
     /// `Vec2 {x: 1, y: 2}`
     StructConstructor(Ident, GenericArgs, IndexMap<Ident, Expr>),
+    /// `match x { ... }`
+    Match(Box<Expr>, Vec<MatchArm>),
+}
+
+#[derive(Clone, Debug)]
+pub enum MatchArm {
+    /// `case 1 => { ... }`
+    Case(Expr, Expr),
+    /// `else => { ... }`
+    Else(Expr),
 }
 
 #[derive(Clone, Debug)]

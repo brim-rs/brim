@@ -25,6 +25,9 @@ use brim_middle::{
 };
 use brim_span::{span::Span, symbols::Symbol};
 use std::{collections::HashMap, path::PathBuf, vec};
+use brim_ast::expr::MatchArm;
+use crate::expr::HirMatchArm;
+use crate::items::HirTypeAlias;
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -520,6 +523,12 @@ impl Transformer {
                 generics: self.transform_generics(struc.generics),
                 span: struc.span,
             }),
+            ItemKind::TypeAlias(type_alias) => HirItemKind::TypeAlias(HirTypeAlias {
+                span: type_alias.span,
+                ident: type_alias.ident,
+                ty: self.transform_ty(type_alias.ty.clone()).kind,
+                generics: self.transform_generics(type_alias.generics),
+            }),
         };
 
         let item = HirItem {
@@ -727,6 +736,25 @@ impl Transformer {
                             .collect(),
                         field_types: HashMap::new(),
                     })
+                }
+                ExprKind::Match(expr, arms) => {
+                    let arms = arms
+                        .iter()
+                        .map(|arm| match arm {
+                            MatchArm::Else(block) => HirMatchArm::Else(
+                                self.transform_expr(block.clone()).0,
+                            ),
+                            MatchArm::Case(pat, block) => HirMatchArm::Case(
+                                self.transform_expr(pat.clone()).0,
+                                self.transform_expr(block.clone()).0,
+                            ),
+                        })
+                        .collect();
+
+                    HirExprKind::Match(
+                        Box::new(self.transform_expr(*expr).0),
+                        arms,
+                    )
                 }
             },
             ty: HirTyKind::Placeholder,

@@ -21,7 +21,6 @@ generate_symbols! {
     Comptime = "comptime",
     Else = "else",
     Enum = "enum",
-    Empty = "",
     False = "false",
     Fn = "fn",
     For = "for",
@@ -32,6 +31,7 @@ generate_symbols! {
     Let = "let",
     Loop = "loop",
     Null = "null",
+    Match = "match",
     Parent = "parent",
     Pub = "pub",
     Return = "return",
@@ -40,11 +40,13 @@ generate_symbols! {
     Trait = "trait",
     True = "true",
     Try = "try",
+    Type = "type",
     Use = "use",
     While = "while",
 
     SelfBig = "Self",
     SelfSmall = "self",
+    Empty = "",
 }
 
 index_type! {

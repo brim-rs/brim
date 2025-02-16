@@ -9,8 +9,10 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Comptime, Else, If, Return, Try,
-    expr::{BinOpAssociativity, BinOpKind, ConditionBranch, Expr, ExprKind, IfExpr, UnaryOp},
+    Comptime, Else, If, Match, Return, Try,
+    expr::{
+        BinOpAssociativity, BinOpKind, ConditionBranch, Expr, ExprKind, IfExpr, MatchArm, UnaryOp,
+    },
     item::Ident,
     token::{BinOpToken, Delimiter, Lit, LitKind, Orientation, TokenKind},
 };
@@ -276,6 +278,39 @@ impl Parser {
 
                     debug!("Parsed comptime expression");
                     Ok(self.new_expr(self.current().span, ExprKind::Comptime(Box::new(expr))))
+                } else if self.eat_keyword(ptok!(Match)) {
+                    let span = self.prev().span;
+                    let expr = self.parse_expr()?;
+
+                    self.expect_obrace()?;
+
+                    let mut arms: Vec<MatchArm> = Vec::new();
+
+                    while !self.is_brace(Orientation::Close) {
+                        if self.eat_keyword(ptok!(Else)) {
+                            let block = self.parse_block(true)?;
+                            let expr = self.new_expr(block.span, ExprKind::Block(block));
+                            arms.push(MatchArm::Else(expr));
+                            self.eat_possible(TokenKind::Comma);
+                            break;
+                        }
+
+                        let pattern = self.parse_expr()?;
+                        self.expect(TokenKind::FatArrow)?;
+
+                        let block = self.parse_block(true)?;
+                        let expr = self.new_expr(block.span, ExprKind::Block(block));
+
+                        arms.push(MatchArm::Case(pattern, expr));
+                        self.eat_possible(TokenKind::Comma);
+                    }
+
+                    self.expect_cbrace()?;
+
+                    Ok(self.new_expr(
+                        span.to(self.prev().span),
+                        ExprKind::Match(Box::new(expr), arms),
+                    ))
                 } else {
                     let span = self.current().span;
                     let ident = self.parse_ident()?;

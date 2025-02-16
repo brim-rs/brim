@@ -253,6 +253,20 @@ impl AstWalker for NameResolver {
                     self.visit_expr(field);
                 }
             }
+            ExprKind::Match(expr, arms) => {
+                self.visit_expr(expr);
+                for arm in arms {
+                    match arm {
+                        brim_ast::expr::MatchArm::Case(pat, block) => {
+                            self.visit_expr(pat);
+                            self.visit_expr(block);
+                        }
+                        brim_ast::expr::MatchArm::Else(block) => {
+                            self.visit_expr(block);
+                        }
+                    }
+                }
+            }
         }
     }
 }
