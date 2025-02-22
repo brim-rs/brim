@@ -19,7 +19,7 @@ use brim_hir::{
     type_checker::TypeChecker,
 };
 use brim_middle::{
-    GlobalSymbolId, ModuleId,
+    Location, ModuleId,
     args::RunArgs,
     lints::Lints,
     modules::{ModuleMap, SymbolCollector},
@@ -77,7 +77,6 @@ impl CompilerContext {
         }
     }
 
-    /// Resolve and analyze the project form the main barrel
     pub fn analyze(&mut self, mut map: ModuleMap) -> Result<HirModuleMap> {
         let map = &mut map;
 
@@ -90,79 +89,7 @@ impl CompilerContext {
 
         for module in map.modules.clone() {
             let file_id = module.barrel.file_id;
-
-            for item in module.barrel.items {
-                if let ItemKind::Use(u) = item.kind {
-                    let module_id = ModuleId::from_usize(file_id);
-                    debug!(
-                        "Resolving import (id: {}) from module (id: {})",
-                        item.id.as_usize(),
-                        module_id.as_usize()
-                    );
-
-                    let resolved_module = map
-                        .module_by_import(GlobalSymbolId {
-                            mod_id: module_id,
-                            item_id: item.id,
-                        })
-                        .unwrap();
-
-                    let resolved_id = ModuleId::from_usize(resolved_module.barrel.file_id);
-
-                    let import_symbols: Vec<GlobalSymbolId> = match &u.imports {
-                        ImportsKind::All | ImportsKind::Default(_) => {
-                            map.find_symbols_in_module(Some(resolved_id))
-                                .iter()
-                                .map(|symbol| GlobalSymbolId {
-                                    mod_id: resolved_id,
-                                    item_id: symbol.item_id,
-                                })
-                                .collect()
-                        }
-                        ImportsKind::List(list) => {
-                            list.iter()
-                                .filter_map(|import| {
-                                    let mod_path = get_file(resolved_id.as_usize())
-                                        .unwrap()
-                                        .name()
-                                        .display()
-                                        .to_string();
-
-                                    println!("Importing symbol: {} {}", import, resolved_id.as_usize());
-                                    match map.find_symbol_by_name(&import.to_string(), Some(resolved_id)) {
-                                        Some(symbol) => {
-                                            if symbol.vis.kind == VisibilityKind::Private {
-                                                self.emit(SymbolPrivate {
-                                                    imported: (import.span, file_id),
-                                                    defined: (symbol.span(), resolved_id.as_usize()),
-                                                    name: import.to_string(),
-                                                    module: mod_path,
-                                                    note: "mark this item as public by adding `pub` at the beginning",
-                                                });
-                                            }
-
-                                            Some(GlobalSymbolId {
-                                                mod_id: resolved_id,
-                                                item_id: symbol.item_id,
-                                            })
-                                        }
-                                        None => {
-                                            self.emit(SymbolNotFound {
-                                                span: (import.span, file_id),
-                                                name: import.to_string(),
-                                                module: mod_path,
-                                            });
-                                            None
-                                        }
-                                    }
-                                })
-                                .collect()
-                        }
-                    };
-
-                    map.update_modules_imports(module_id, import_symbols);
-                }
-            }
+            let file = get_file(file_id)?;
         }
 
         let mut name_resolver = NameResolver::new(map.clone(), self.lints);

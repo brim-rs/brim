@@ -1,5 +1,5 @@
 use crate::{
-    GlobalSymbol, GlobalSymbolId, GlobalSymbolKind, ModuleId, barrel::Barrel, walker::AstWalker,
+    GlobalSymbol, GlobalSymbolKind, Location, ModuleId, barrel::Barrel, walker::AstWalker,
 };
 use brim_ast::item::{Item, ItemKind};
 use std::{collections::HashMap, path::PathBuf};
@@ -8,14 +8,14 @@ use std::{collections::HashMap, path::PathBuf};
 pub struct Module {
     pub path: PathBuf,
     pub barrel: Barrel,
-    pub imports: Vec<GlobalSymbolId>,
+    pub imports: Vec<Location>,
 }
 
 #[derive(Debug, Clone)]
 pub struct ModuleMap {
     pub modules: Vec<Module>,
-    pub symbols: HashMap<GlobalSymbolId, GlobalSymbol>,
-    pub imports: HashMap<GlobalSymbolId, PathBuf>,
+    pub symbols: HashMap<Location, GlobalSymbol>,
+    pub imports: HashMap<Location, PathBuf>,
 }
 
 impl ModuleMap {
@@ -42,17 +42,17 @@ impl ModuleMap {
         });
     }
 
-    pub fn add_import(&mut self, symbol_id: GlobalSymbolId, path: PathBuf) {
+    pub fn add_import(&mut self, symbol_id: Location, path: PathBuf) {
         self.imports.insert(symbol_id, path);
     }
 
-    pub fn module_by_import(&self, symbol_id: GlobalSymbolId) -> Option<&Module> {
+    pub fn module_by_import(&self, symbol_id: Location) -> Option<&Module> {
         self.imports
             .get(&symbol_id)
             .and_then(|path| self.modules.iter().find(|module| module.path == *path))
     }
 
-    pub fn update_modules_imports(&mut self, mod_id: ModuleId, imports: Vec<GlobalSymbolId>) {
+    pub fn update_modules_imports(&mut self, mod_id: ModuleId, imports: Vec<Location>) {
         for module in &mut self.modules {
             if ModuleId::from_usize(module.barrel.file_id) == mod_id {
                 module.imports = imports;
@@ -171,7 +171,7 @@ impl<'a> SymbolCollector<'a> {
 
 impl<'a> AstWalker for SymbolCollector<'a> {
     fn visit_item(&mut self, item: &mut Item) {
-        let id = GlobalSymbolId {
+        let id = Location {
             mod_id: ModuleId::from_usize(self.file_id),
             item_id: item.id,
         };

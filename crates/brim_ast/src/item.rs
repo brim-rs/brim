@@ -5,7 +5,10 @@ use crate::{
     ty::{Const, Ty},
 };
 use brim_span::{span::Span, symbols::Symbol};
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    path::PathBuf,
+};
 
 #[derive(Clone, Debug)]
 pub struct Item {
@@ -130,6 +133,17 @@ pub struct Use {
     pub span: Span,
     pub path: Vec<PathItemKind>,
     pub imports: ImportsKind,
+    pub resolved: Option<PathBuf>,
+}
+
+impl Use {
+    pub fn is_dep(&self) -> bool {
+        matches!(self.path[0], PathItemKind::Module(_))
+    }
+
+    pub fn first(&self) -> &PathItemKind {
+        &self.path[0]
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -137,6 +151,15 @@ pub enum PathItemKind {
     Parent,
     Module(Ident),
     Current,
+}
+
+impl PathItemKind {
+    pub fn ident(&self) -> Ident {
+        match self {
+            PathItemKind::Module(ident) => ident.clone(),
+            _ => unreachable!("shouldn't be called"),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

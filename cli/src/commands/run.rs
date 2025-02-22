@@ -9,12 +9,13 @@ use crate::{
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim::{
-    CompiledProject, CompiledProjects, ModuleId, Shell,
+    CompiledModule, CompiledModules, ModuleId, Shell,
     args::RunArgs,
     compiler::CompilerContext,
     discover::ModuleDiscover,
     files::get_path,
     lints::Lints,
+    resolver::ImportResolver,
     session::Session,
     temp_diag::TemporaryDiagnosticContext,
     toml::{Config, ProjectType},
@@ -63,14 +64,14 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
     let order = resolver.resolve_project()?;
     let configs = resolver.get_configs(&order);
 
-    let mut compiled_projects: CompiledProjects = HashMap::new();
+    let mut compiled_projects: CompiledModules = CompiledModules::new();
 
     for config in configs {
         let sess = &mut Session::new(config.cwd.clone(), config.clone(), c_choice);
         let ctx = &mut CompilerContext::new(args.clone(), lints);
         let hir = compile_project(sess, ctx, c_choice, args.clone(), compiled_projects.clone())?;
 
-        compiled_projects.insert(config.project.name.clone(), CompiledProject { config, hir });
+        compiled_projects.map.insert(config.project.name.clone(), CompiledModule { config, hir });
     }
 
     // let code = comp.run_codegen(hir);
@@ -132,7 +133,7 @@ pub fn compile_project(
     comp: &mut CompilerContext,
     c_choice: ColorChoice,
     args: RunArgs,
-    compiled: CompiledProjects,
+    compiled: CompiledModules,
 ) -> Result<HirModuleMap> {
     let build_dir = sess.build_dir().clone();
     let project_type = sess.project_type();
@@ -157,18 +158,20 @@ pub fn compile_project(
 
     let resolver_temp = &mut TemporaryDiagnosticContext::new();
 
-    let mut resolver = ModuleDiscover::new(resolver_temp, sess, compiled);
+    let mut discover = ModuleDiscover::new(resolver_temp, sess);
 
-    resolver
+    discover
         .map
         .insert_or_update(get_path(entry_file)?, barrel.clone());
     let mut visited = HashSet::new();
-    let module_map = resolver.create_module_map(&mut barrel, &mut visited)?;
+    let module_map = discover.create_module_map(&mut barrel, &mut visited)?;
+    let mut resolver = ImportResolver::new(resolver_temp, sess, compiled, module_map);
+    let map = resolver.resolve()?;
 
     comp.extend_temp(resolver_temp.clone());
     bail_on_errors(comp.emitted.len())?;
 
-    let hir = comp.analyze(module_map)?;
+    let hir = comp.analyze(map)?;
 
     if sess.config.is_bin() {
         let main_mod = hir.get_module(ModuleId::from_usize(entry_file)).unwrap();

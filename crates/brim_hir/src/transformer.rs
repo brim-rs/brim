@@ -22,7 +22,7 @@ use brim_ast::{
 };
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{
-    GlobalSymbolId, ModuleId,
+    Location, ModuleId,
     modules::{Module, ModuleMap},
     temp_diag::TemporaryDiagnosticContext,
 };
@@ -346,19 +346,19 @@ impl Transformer {
                     let module_id = ModuleId::from_usize(module.mod_id.as_usize());
                     let module = self
                         .module_map
-                        .module_by_import(GlobalSymbolId {
+                        .module_by_import(Location {
                             mod_id: module_id,
                             item_id: item.old_sym_id.item_id,
                         })
                         .unwrap();
                     let resolved_id = ModuleId::from_usize(module.barrel.file_id);
 
-                    let import_symbols: Vec<GlobalSymbolId> = match &u.imports {
+                    let import_symbols: Vec<Location> = match &u.imports {
                         HirImportsKind::All | HirImportsKind::Default(_) => self
                             .module_map
                             .find_symbols_in_module(Some(resolved_id))
                             .iter()
-                            .map(|symbol| GlobalSymbolId {
+                            .map(|symbol| Location {
                                 mod_id: resolved_id,
                                 item_id: symbol.item_id,
                             })
@@ -369,7 +369,7 @@ impl Transformer {
                                 self.module_map
                                     .find_symbol_by_name(&import.to_string(), Some(resolved_id))
                             })
-                            .map(|symbol| GlobalSymbolId {
+                            .map(|symbol| Location {
                                 mod_id: resolved_id,
                                 item_id: symbol.item_id,
                             })
@@ -501,7 +501,7 @@ impl Transformer {
                     resolved_path: self
                         .module_map
                         .imports
-                        .get(&GlobalSymbolId {
+                        .get(&Location {
                             item_id: item.id,
                             mod_id: self.current_mod_id,
                         })
@@ -536,7 +536,7 @@ impl Transformer {
 
         let item = HirItem {
             id: self.hir_id(),
-            old_sym_id: GlobalSymbolId {
+            old_sym_id: Location {
                 item_id: item.id,
                 mod_id: self.current_mod_id,
             },

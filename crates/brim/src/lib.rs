@@ -1,6 +1,7 @@
 extern crate core;
 
 pub mod discover;
+pub mod resolver;
 pub mod session;
 
 pub use brim_ast::*;
@@ -19,8 +20,22 @@ pub use brim_span::*;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
-pub struct CompiledProject {
+pub struct CompiledModule {
     pub config: Config,
     pub hir: HirModuleMap,
 }
-pub type CompiledProjects = HashMap<String, CompiledProject>;
+
+#[derive(Debug, Clone)]
+pub struct CompiledModules {
+    pub map: HashMap<String, CompiledModule>,
+    pub symbols: SymbolTable,
+}
+
+impl CompiledModules {
+    pub fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+            symbols: SymbolTable::new(),
+        }
+    }
+}

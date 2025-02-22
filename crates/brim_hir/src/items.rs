@@ -6,7 +6,7 @@ use brim_ast::{
     item::{Ident, Visibility},
     token::Lit,
 };
-use brim_middle::{GlobalSymbolId, ModuleId};
+use brim_middle::{Location, ModuleId};
 use brim_span::span::Span;
 use std::{fmt::Display, path::PathBuf};
 
@@ -14,7 +14,7 @@ use std::{fmt::Display, path::PathBuf};
 pub struct HirItem {
     pub id: HirId,
     /// Only kept for the convenience of the transformation phase.
-    pub old_sym_id: GlobalSymbolId,
+    pub old_sym_id: Location,
     pub span: Span,
     pub ident: Ident,
     pub kind: HirItemKind,

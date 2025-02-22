@@ -24,14 +24,14 @@ index_type! {
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 /// A symbol identifier.
-pub struct GlobalSymbolId {
+pub struct Location {
     pub mod_id: ModuleId,
     pub item_id: NodeId,
 }
 
 #[derive(Debug, Clone)]
 pub struct GlobalSymbol {
-    pub id: GlobalSymbolId,
+    pub id: Location,
     pub name: Ident,
     pub kind: GlobalSymbolKind,
     pub item_id: NodeId,
@@ -43,7 +43,7 @@ impl GlobalSymbol {
         name: Ident,
         kind: GlobalSymbolKind,
         id: NodeId,
-        gid: GlobalSymbolId,
+        gid: Location,
         vis: Visibility,
     ) -> Self {
         Self {
@@ -77,4 +77,13 @@ pub struct ExperimentalFeatureNotEnabled {
     pub feature: String,
     #[note]
     pub note: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct SymbolTable {}
+
+impl SymbolTable {
+    pub fn new() -> Self {
+        Self {}
+    }
 }

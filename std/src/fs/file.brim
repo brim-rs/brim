@@ -1,11 +1,13 @@
 use windows from self::parent::os::windows;
 
-type Handle = match @os() {
-    "windows" => windows::Handle,
-    "linux" => i32,
-    "macos" => i32
-    _ => i32
-};
+type Handle = i32;
+
+//match @os() {
+//    "windows" => windows::Handle,
+//    "linux" => i32,
+//    "macos" => i32
+//    _ => i32
+//};
 
 pub struct File {
     handle: Handle
