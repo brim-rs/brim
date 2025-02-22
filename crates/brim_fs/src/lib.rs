@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use std::path::{MAIN_SEPARATOR, PathBuf};
+use std::path::PathBuf;
 
 pub mod loader;
 pub mod walk_dir;

@@ -1,12 +1,11 @@
 use crate::errors::ConfigError;
 use anyhow::{Context, Result, ensure};
-use brim_fs::walk_dir::walk_for_file;
+use brim_fs::{canonicalize_path, walk_dir::walk_for_file};
 use brim_middle::{experimental::Experimental, lints::LintsConfig};
 use clap::ArgMatches;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, fs::read_to_string, path::PathBuf};
 use tracing::debug;
-use brim_fs::canonicalize_path;
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct BrimConfig {
@@ -194,7 +193,7 @@ impl Config {
             branch: None,
         };
 
-        let mut dependencies = dependencies;
+        let dependencies = dependencies;
         // dependencies.insert("std".to_string(), std_dep);
         // dependencies.insert("core".to_string(), core_dep);
         let cwd = canonicalize_path(cwd)?;

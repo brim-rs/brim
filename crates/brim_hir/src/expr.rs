@@ -12,7 +12,6 @@ use brim_ast::{
 use brim_span::span::Span;
 use indexmap::IndexMap;
 use std::collections::HashMap;
-use brim_ast::expr::Expr;
 
 #[derive(Clone, Debug)]
 pub struct HirExpr {

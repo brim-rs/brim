@@ -1,32 +1,13 @@
 use crate::{CompiledProjects, session::Session};
 use anyhow::Result;
-use brim_ast::item::{Ident, ImportsKind, ItemKind, PathItemKind, Use};
-use brim_config::toml::{Config, Dependency};
+use brim_ast::item::ItemKind;
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
-use brim_fs::{
-    canonicalize_path,
-    loader::{BrimFileLoader, FileLoader},
-    normalize_path,
-};
-use brim_hir::transformer::HirModuleMap;
-use brim_middle::{
-    GlobalSymbolId, ModuleId,
-    barrel::Barrel,
-    experimental::Experimental,
-    modules::{Module, ModuleMap},
-    temp_diag::TemporaryDiagnosticContext,
-};
+use brim_fs::loader::BrimFileLoader;
+use brim_middle::{barrel::Barrel, modules::ModuleMap, temp_diag::TemporaryDiagnosticContext};
 use brim_parser::parser::Parser;
-use brim_span::{
-    files::{add_file, get_path},
-    span::Span,
-};
-use std::{
-    collections::{HashMap, HashSet},
-    fs::canonicalize,
-    path::{Path, PathBuf},
-};
+use brim_span::{files::get_path, span::Span};
+use std::{collections::HashSet, path::PathBuf};
 
 #[derive(Debug)]
 pub struct ModuleDiscover<'a> {

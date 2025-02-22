@@ -1,15 +1,13 @@
 use brim_ast::{
-    expr::{Expr, ExprKind},
+    expr::{Expr, ExprKind, MatchArm},
     item::{
         Block, FnDecl, FnReturnType, FnSignature, GenericArgs, Generics, Ident, Item, ItemKind,
-        Struct, Use,
+        Struct, TypeAlias, Use,
     },
     stmts::{Let, Stmt, StmtKind},
     ty::Ty,
 };
 use indexmap::IndexMap;
-use brim_ast::expr::MatchArm;
-use brim_ast::item::TypeAlias;
 
 pub trait AstWalker {
     // Visit methods - customize behavior for each node type

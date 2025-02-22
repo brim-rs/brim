@@ -1,8 +1,8 @@
 use anyhow::Result;
-use brim::toml::{Config, Dependency};
+use brim::toml::Config;
 use std::{
     collections::{HashMap, HashSet, VecDeque},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 pub struct ProjectResolver {
@@ -67,9 +67,13 @@ impl ProjectResolver {
     pub fn get_all_configs(&self) -> &HashMap<String, Config> {
         &self.loaded_configs
     }
-    
+
     pub fn get_configs(&self, order: &[String]) -> Vec<Config> {
-        order.iter().filter_map(|name| self.loaded_configs.get(name)).cloned().collect()
+        order
+            .iter()
+            .filter_map(|name| self.loaded_configs.get(name))
+            .cloned()
+            .collect()
     }
 }
 

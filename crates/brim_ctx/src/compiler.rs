@@ -13,7 +13,6 @@ use brim_diagnostics::{
 };
 use brim_hir::{
     Codegen,
-    builtin::expand_builtins,
     inference::infer_types,
     items::HirFn,
     transformer::{HirModuleMap, transform_module},

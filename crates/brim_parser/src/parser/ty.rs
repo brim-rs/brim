@@ -5,7 +5,7 @@ use crate::{
 use brim_ast::{
     Const, Type,
     expr::{Expr, ExprKind},
-    item::{Block, Ident, Item, ItemKind, TypeAlias},
+    item::{Block, Ident, ItemKind, TypeAlias},
     stmts::{Stmt, StmtKind},
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
     ty::{Const, PrimitiveType, Ty, TyKind},

@@ -12,7 +12,6 @@ use brim::{
     CompiledProject, CompiledProjects, ModuleId, Shell,
     args::RunArgs,
     compiler::CompilerContext,
-    create_file_parent_dirs,
     discover::ModuleDiscover,
     files::get_path,
     lints::Lints,
@@ -27,9 +26,7 @@ use clap::Command;
 use std::{
     collections::{HashMap, HashSet},
     env::current_dir,
-    process,
 };
-use tracing::debug;
 
 pub fn run_cmd() -> Command {
     Command::new("run")
