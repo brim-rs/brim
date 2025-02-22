@@ -5,6 +5,8 @@ use brim_middle::{experimental::Experimental, lints::LintsConfig};
 use clap::ArgMatches;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, fs::read_to_string, path::PathBuf};
+use tracing::debug;
+use brim_fs::canonicalize_path;
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct BrimConfig {
@@ -100,6 +102,7 @@ pub struct Config {
     pub build: ParsedBuildConfig,
     pub lints: LintsConfig,
     pub experimental: Experimental,
+    pub cwd: PathBuf,
 }
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
@@ -112,8 +115,11 @@ pub struct ParsedBuildConfig {
 
 impl Config {
     pub fn get(cwd: &PathBuf, args: Option<&ArgMatches>) -> Result<Self> {
-        let path =
-            walk_for_file(cwd.clone(), "brim.toml").ok_or(ConfigError::ConfigFileNotFound)?;
+        let mut path = walk_for_file(cwd.clone(), "brim.toml").ok_or_else(|| {
+            debug!("config file not found in {:?}", cwd);
+
+            ConfigError::ConfigFileNotFound
+        })?;
         let content = read_to_string(&path).context("Failed to read brim.toml")?;
 
         let config: BrimConfig = toml::from_str(&content).context("Failed to parse brim.toml")?;
@@ -123,10 +129,12 @@ impl Config {
             return Err(ConfigError::InvalidProjectType(format!("{:?}", project_type)).into());
         }
 
-        Ok(Self::parse(config, args)?)
+        path.pop();
+
+        Ok(Self::parse(config, args, path)?)
     }
 
-    pub fn parse(config: BrimConfig, args: Option<&ArgMatches>) -> Result<Self> {
+    pub fn parse(config: BrimConfig, args: Option<&ArgMatches>, cwd: PathBuf) -> Result<Self> {
         let project = config.project;
         let tasks = config.tasks;
         let dependencies = config.dependencies.unwrap_or_default();
@@ -187,8 +195,9 @@ impl Config {
         };
 
         let mut dependencies = dependencies;
-        dependencies.insert("std".to_string(), std_dep);
-        dependencies.insert("core".to_string(), core_dep);
+        // dependencies.insert("std".to_string(), std_dep);
+        // dependencies.insert("core".to_string(), core_dep);
+        let cwd = canonicalize_path(cwd)?;
 
         Ok(Self {
             project,
@@ -197,6 +206,7 @@ impl Config {
             dependencies,
             lints,
             experimental,
+            cwd,
         })
     }
 

@@ -1,17 +1,20 @@
 use crate::{
     HirId,
     comptime::errors::ComptimeExprExpectedTy,
-    expr::{HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfExpr, HirStructConstructor},
+    expr::{
+        HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfExpr, HirMatchArm,
+        HirStructConstructor,
+    },
     items::{
         HirField, HirFn, HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind,
         HirGenericParam, HirGenerics, HirImportsKind, HirItem, HirItemKind, HirParam, HirStruct,
-        HirUse,
+        HirTypeAlias, HirUse,
     },
     stmts::{HirStmt, HirStmtKind},
     ty::{HirTy, HirTyKind},
 };
 use brim_ast::{
-    expr::{BinOpKind, Expr, ExprKind},
+    expr::{BinOpKind, Expr, ExprKind, MatchArm},
     item::{Block, FnReturnType, GenericArgs, GenericKind, Generics, ImportsKind, Item, ItemKind},
     stmts::{Stmt, StmtKind},
     token::{AssignOpToken, Lit, LitKind},
@@ -25,9 +28,6 @@ use brim_middle::{
 };
 use brim_span::{span::Span, symbols::Symbol};
 use std::{collections::HashMap, path::PathBuf, vec};
-use brim_ast::expr::MatchArm;
-use crate::expr::HirMatchArm;
-use crate::items::HirTypeAlias;
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -354,7 +354,7 @@ impl Transformer {
                     let resolved_id = ModuleId::from_usize(module.barrel.file_id);
 
                     let import_symbols: Vec<GlobalSymbolId> = match &u.imports {
-                        HirImportsKind::All => self
+                        HirImportsKind::All | HirImportsKind::Default(_) => self
                             .module_map
                             .find_symbols_in_module(Some(resolved_id))
                             .iter()
@@ -424,6 +424,7 @@ impl Transformer {
             .items
             .iter()
             .map(|item| self.transform_item(item.clone()))
+            .filter_map(|item| item)
             .collect();
 
         HirModule {
@@ -434,7 +435,7 @@ impl Transformer {
         }
     }
 
-    pub fn transform_item(&mut self, item: Item) -> HirItem {
+    pub fn transform_item(&mut self, item: Item) -> Option<HirItem> {
         let hir_item_kind = match item.kind.clone() {
             ItemKind::Fn(f_decl) => {
                 let body = if let Some(body) = f_decl.body {
@@ -491,6 +492,7 @@ impl Transformer {
                 let imports = match u.imports {
                     ImportsKind::List(list) => HirImportsKind::List(list),
                     ImportsKind::All => HirImportsKind::All,
+                    ImportsKind::Default(ident) => HirImportsKind::Default(ident),
                 };
 
                 HirItemKind::Use(HirUse {
@@ -529,6 +531,7 @@ impl Transformer {
                 ty: self.transform_ty(type_alias.ty.clone()).kind,
                 generics: self.transform_generics(type_alias.generics),
             }),
+            ItemKind::Module(_) => return None,
         };
 
         let item = HirItem {
@@ -547,7 +550,7 @@ impl Transformer {
         self.map
             .insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
 
-        item
+        Some(item)
     }
 
     pub fn transform_generics(&mut self, generics: Generics) -> HirGenerics {
@@ -741,9 +744,9 @@ impl Transformer {
                     let arms = arms
                         .iter()
                         .map(|arm| match arm {
-                            MatchArm::Else(block) => HirMatchArm::Else(
-                                self.transform_expr(block.clone()).0,
-                            ),
+                            MatchArm::Else(block) => {
+                                HirMatchArm::Else(self.transform_expr(block.clone()).0)
+                            }
                             MatchArm::Case(pat, block) => HirMatchArm::Case(
                                 self.transform_expr(pat.clone()).0,
                                 self.transform_expr(block.clone()).0,
@@ -751,10 +754,7 @@ impl Transformer {
                         })
                         .collect();
 
-                    HirExprKind::Match(
-                        Box::new(self.transform_expr(*expr).0),
-                        arms,
-                    )
+                    HirExprKind::Match(Box::new(self.transform_expr(*expr).0), arms)
                 }
             },
             ty: HirTyKind::Placeholder,

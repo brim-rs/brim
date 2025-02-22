@@ -111,7 +111,7 @@ impl CompilerContext {
                     let resolved_id = ModuleId::from_usize(resolved_module.barrel.file_id);
 
                     let import_symbols: Vec<GlobalSymbolId> = match &u.imports {
-                        ImportsKind::All => {
+                        ImportsKind::All | ImportsKind::Default(_) => {
                             map.find_symbols_in_module(Some(resolved_id))
                                 .iter()
                                 .map(|symbol| GlobalSymbolId {

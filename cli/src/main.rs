@@ -15,6 +15,7 @@ use std::{env, process::exit};
 
 pub mod cli;
 mod commands;
+mod graph;
 mod panic;
 pub mod plural;
 mod tracing;
@@ -51,16 +52,7 @@ fn main() -> Result<()> {
             let config = Config::get(&dir, Some(&cmd.1))?;
             let run_args = RunArgs::from_args(&cmd.1);
 
-            let lints = Box::new(Lints::configure(&config.lints));
-            let lints: &'static Lints = Box::leak(lints);
-            let mut comp = CompilerContext::new(run_args.clone(), lints);
-            let mut sess = Session::new(dir, config, color_choice);
-
-            if args.get_flag("time") {
-                sess.measure_time = true;
-            }
-
-            exec_command(&mut sess, &mut comp, run_args, run_command)
+            exec_command(run_args, run_command, shell, config)
         }
         "init" => init_command(shell, &cmd.1),
         _ => {
@@ -79,15 +71,15 @@ fn main() -> Result<()> {
 }
 
 pub fn exec_command<'a>(
-    sess: &'a mut Session,
-    comp: &'a mut CompilerContext,
     args: RunArgs,
-    func: impl FnOnce(&mut Session, &'a mut CompilerContext, ColorChoice, RunArgs) -> Result<()>,
+    func: impl FnOnce(ColorChoice, RunArgs, Config) -> Result<()>,
+    shell: &mut Shell,
+    config: Config,
 ) -> Result<()> {
-    match func(sess, comp, sess.color_choice, args) {
+    match func(shell.output.color, args, config) {
         Ok(_) => Ok(()),
         Err(err) => {
-            sess.shell().error(err)?;
+            shell.error(err)?;
             exit(1);
         }
     }

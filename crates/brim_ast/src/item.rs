@@ -90,6 +90,14 @@ pub enum ItemKind {
     Struct(Struct),
     /// Type alias eg. `type Foo = i32;`
     TypeAlias(TypeAlias),
+    /// Module declaration eg. `mod windows;`
+    Module(ModuleDecl),
+}
+
+#[derive(Clone, Debug)]
+pub struct ModuleDecl {
+    pub span: Span,
+    pub idents: Vec<Ident>,
 }
 
 #[derive(Clone, Debug)]
@@ -137,6 +145,8 @@ pub enum ImportsKind {
     List(Vec<Ident>),
     /// `use * from "test";`
     All,
+    /// `use windows from std::os::windows;`
+    Default(Ident),
 }
 
 #[derive(Clone, Debug)]

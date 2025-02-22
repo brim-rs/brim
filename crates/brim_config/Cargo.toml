@@ -13,3 +13,4 @@ clap = { workspace = true }
 thiserror = { workspace = true }
 brim-middle = { workspace = true }
 dirs = { workspace = true }
+tracing = { workspace = true }

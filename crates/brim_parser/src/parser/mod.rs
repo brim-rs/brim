@@ -69,6 +69,7 @@ pub enum PTokenKind {
     Loop,
     Null,
     Match,
+    Mod,
     Parent,
     Pub,
     Return,

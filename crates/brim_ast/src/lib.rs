@@ -32,6 +32,7 @@ generate_symbols! {
     Loop = "loop",
     Null = "null",
     Match = "match",
+    Mod = "mod",
     Parent = "parent",
     Pub = "pub",
     Return = "return",

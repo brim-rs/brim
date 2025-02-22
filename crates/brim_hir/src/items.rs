@@ -90,10 +90,12 @@ pub struct HirUse {
 
 #[derive(Clone, Debug)]
 pub enum HirImportsKind {
-    /// `use { foo, bar } from "test";`
+    /// `use { foo, bar } from self::test;`
     List(Vec<Ident>),
-    /// `use * from "test";`
+    /// `use * from self::test;`
     All,
+    /// `use windows from std::os::windows;`
+    Default(Ident),
 }
 
 #[derive(Clone, Debug)]

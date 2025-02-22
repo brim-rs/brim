@@ -72,6 +72,7 @@ pub trait AstWalker {
             ItemKind::Use(use_stmt) => self.visit_use(use_stmt),
             ItemKind::Struct(str) => self.visit_struct(str),
             ItemKind::TypeAlias(type_alias) => self.visit_type_alias(type_alias),
+            ItemKind::Module(_) => {}
         }
     }
 

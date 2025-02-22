@@ -2,3 +2,6 @@
 name = "std"
 version = "0.1.0"
 type = "lib"
+
+[dependencies]
+core = { path = "../core" }

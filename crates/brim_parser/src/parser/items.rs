@@ -10,10 +10,10 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Const, Fn, From, Parent, SelfSmall, Struct, Type, Use,
+    Const, Fn, From, Mod, Parent, SelfSmall, Struct, Type, Use,
     item::{
         Block, Field, FnDecl, FnReturnType, FnSignature, FunctionContext, Generics, Ident,
-        ImportsKind, Item, ItemKind, Param, PathItemKind, Struct, Use,
+        ImportsKind, Item, ItemKind, ModuleDecl, Param, PathItemKind, Struct, Use,
     },
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
     ty,
@@ -40,6 +40,8 @@ impl Parser {
             self.parse_struct(span)?
         } else if self.current().is_keyword(Type) {
             self.parse_type_alias()?
+        } else if self.current().is_keyword(brim_ast::Mod) {
+            self.parse_mod_decl()?
         } else {
             box_diag!(UnknownItem {
                 span: (span, self.file),
@@ -55,6 +57,30 @@ impl Parser {
             kind,
             ident,
         }))
+    }
+
+    pub fn parse_mod_decl(&mut self) -> PResult<(Ident, ItemKind)> {
+        let mut idents = vec![];
+
+        self.eat_keyword(ptok!(Mod));
+
+        while self.is_ident() {
+            let ident = self.parse_ident()?;
+            idents.push(ident);
+
+            if !self.eat(TokenKind::DoubleColon) {
+                break;
+            }
+        }
+
+        debug!("Parsed module declaration: {:?}", idents);
+        Ok((
+            Ident::dummy(),
+            ItemKind::Module(ModuleDecl {
+                span: idents[0].span.to(self.prev().span),
+                idents,
+            }),
+        ))
     }
 
     pub fn parse_struct(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {
@@ -122,6 +148,9 @@ impl Parser {
 
             self.expect_cbrace()?;
             ImportsKind::List(imports)
+        } else if self.is_ident() {
+            let ident = self.parse_ident()?;
+            ImportsKind::Default(ident)
         } else {
             box_diag!(UseStatementBraces {
                 span: (span.to(self.current().span), self.file),
