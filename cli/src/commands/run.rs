@@ -64,14 +64,16 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
     let order = resolver.resolve_project()?;
     let configs = resolver.get_configs(&order);
 
-    let mut compiled_projects: CompiledModules = CompiledModules::new();
+    let mut compiled_projects = &mut CompiledModules::new();
 
     for config in configs {
         let sess = &mut Session::new(config.cwd.clone(), config.clone(), c_choice);
         let ctx = &mut CompilerContext::new(args.clone(), lints);
-        let hir = compile_project(sess, ctx, c_choice, args.clone(), compiled_projects.clone())?;
+        let hir = compile_project(sess, ctx, c_choice, args.clone(), compiled_projects)?;
 
-        compiled_projects.map.insert(config.project.name.clone(), CompiledModule { config, hir });
+        compiled_projects
+            .map
+            .insert(config.project.name.clone(), CompiledModule { config, hir });
     }
 
     // let code = comp.run_codegen(hir);
@@ -133,7 +135,7 @@ pub fn compile_project(
     comp: &mut CompilerContext,
     c_choice: ColorChoice,
     args: RunArgs,
-    compiled: CompiledModules,
+    compiled: &mut CompiledModules,
 ) -> Result<HirModuleMap> {
     let build_dir = sess.build_dir().clone();
     let project_type = sess.project_type();
@@ -160,18 +162,20 @@ pub fn compile_project(
 
     let mut discover = ModuleDiscover::new(resolver_temp, sess);
 
+    let id = barrel.file_id.clone();
     discover
         .map
         .insert_or_update(get_path(entry_file)?, barrel.clone());
     let mut visited = HashSet::new();
-    let module_map = discover.create_module_map(&mut barrel, &mut visited)?;
-    let mut resolver = ImportResolver::new(resolver_temp, sess, compiled, module_map);
+
+    let module_map = discover.create_module_map(&mut barrel, id, &mut visited)?;
+    let mut resolver = ImportResolver::new(resolver_temp, sess, compiled.clone(), module_map);
     let map = resolver.resolve()?;
 
     comp.extend_temp(resolver_temp.clone());
     bail_on_errors(comp.emitted.len())?;
 
-    let hir = comp.analyze(map)?;
+    let hir = comp.analyze(map, compiled)?;
 
     if sess.config.is_bin() {
         let main_mod = hir.get_module(ModuleId::from_usize(entry_file)).unwrap();

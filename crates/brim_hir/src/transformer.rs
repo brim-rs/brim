@@ -342,76 +342,76 @@ impl Transformer {
         for module in self.map.modules.clone() {
             // TODO: this monstrosity needs to be refactored
             for item in module.items {
-                if let HirItemKind::Use(u) = &item.kind {
-                    let module_id = ModuleId::from_usize(module.mod_id.as_usize());
-                    let module = self
-                        .module_map
-                        .module_by_import(Location {
-                            mod_id: module_id,
-                            item_id: item.old_sym_id.item_id,
-                        })
-                        .unwrap();
-                    let resolved_id = ModuleId::from_usize(module.barrel.file_id);
-
-                    let import_symbols: Vec<Location> = match &u.imports {
-                        HirImportsKind::All | HirImportsKind::Default(_) => self
-                            .module_map
-                            .find_symbols_in_module(Some(resolved_id))
-                            .iter()
-                            .map(|symbol| Location {
-                                mod_id: resolved_id,
-                                item_id: symbol.item_id,
-                            })
-                            .collect(),
-                        HirImportsKind::List(list) => list
-                            .iter()
-                            .flat_map(|import| {
-                                self.module_map
-                                    .find_symbol_by_name(&import.to_string(), Some(resolved_id))
-                            })
-                            .map(|symbol| Location {
-                                mod_id: resolved_id,
-                                item_id: symbol.item_id,
-                            })
-                            .collect(),
-                    };
-
-                    let mut ids = vec![];
-                    for symbol in import_symbols {
-                        let mut hir_id = self.map.hir_items.iter().find_map(|(id, item)| {
-                            if let StoredHirItem::Item(item) = item {
-                                if item.old_sym_id == symbol {
-                                    Some(*id)
-                                } else {
-                                    None
-                                }
-                            } else {
-                                None
-                            }
-                        });
-
-                        // If we couldn't find the symbol in the global items, then we look into the module
-                        if let None = hir_id {
-                            let module = self.map.get_module(symbol.mod_id).unwrap();
-
-                            for item in &module.items {
-                                if item.old_sym_id == symbol {
-                                    hir_id = Some(item.id);
-                                    break;
-                                }
-                            }
-                        }
-
-                        if let Some(id) = hir_id {
-                            ids.push(LocId {
-                                id,
-                                module: symbol.mod_id,
-                            });
-                        }
-                    }
-
-                    self.map.update_modules_imports(module_id, ids);
-                }
+                // if let HirItemKind::Use(u) = &item.kind {
+                //     let module_id = ModuleId::from_usize(module.mod_id.as_usize());
+                //     let module = self
+                //         .module_map
+                //         .module_by_import(Location {
+                //             mod_id: module_id,
+                //             item_id: item.old_sym_id.item_id,
+                //         })
+                //         .unwrap();
+                //     let resolved_id = ModuleId::from_usize(module.barrel.file_id);
+                //
+                //     let import_symbols: Vec<Location> = match &u.imports {
+                //         HirImportsKind::All | HirImportsKind::Default(_) => self
+                //             .module_map
+                //             .find_symbols_in_module(Some(resolved_id))
+                //             .iter()
+                //             .map(|symbol| Location {
+                //                 mod_id: resolved_id,
+                //                 item_id: symbol.item_id,
+                //             })
+                //             .collect(),
+                //         HirImportsKind::List(list) => list
+                //             .iter()
+                //             .flat_map(|import| {
+                //                 self.module_map
+                //                     .find_symbol_by_name(&import.to_string(), Some(resolved_id))
+                //             })
+                //             .map(|symbol| Location {
+                //                 mod_id: resolved_id,
+                //                 item_id: symbol.item_id,
+                //             })
+                //             .collect(),
+                //     };
+                //
+                //     let mut ids = vec![];
+                //     for symbol in import_symbols {
+                //         let mut hir_id = self.map.hir_items.iter().find_map(|(id, item)| {
+                //             if let StoredHirItem::Item(item) = item {
+                //                 if item.old_sym_id == symbol {
+                //                     Some(*id)
+                //                 } else {
+                //                     None
+                //                 }
+                //             } else {
+                //                 None
+                //             }
+                //         });
+                //
+                //         // If we couldn't find the symbol in the global items, then we look into the module
+                //         if let None = hir_id {
+                //             let module = self.map.get_module(symbol.mod_id).unwrap();
+                //
+                //             for item in &module.items {
+                //                 if item.old_sym_id == symbol {
+                //                     hir_id = Some(item.id);
+                //                     break;
+                //                 }
+                //             }
+                //         }
+                //
+                //         if let Some(id) = hir_id {
+                //             ids.push(LocId {
+                //                 id,
+                //                 module: symbol.mod_id,
+                //             });
+                //         }
+                //     }
+                //
+                //     self.map.update_modules_imports(module_id, ids);
+                // }
             }
         }
 
@@ -498,15 +498,7 @@ impl Transformer {
                 HirItemKind::Use(HirUse {
                     span: u.span,
                     imports,
-                    resolved_path: self
-                        .module_map
-                        .imports
-                        .get(&Location {
-                            item_id: item.id,
-                            mod_id: self.current_mod_id,
-                        })
-                        .unwrap()
-                        .clone(),
+                    resolved_path: u.resolved.expect("path should be already resolved "),
                 })
             }
             ItemKind::Struct(struc) => HirItemKind::Struct(HirStruct {

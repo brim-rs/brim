@@ -37,9 +37,10 @@ impl<'a> ImportResolver<'a> {
         for module in self.map.modules.iter_mut() {
             for item in module.barrel.items.iter_mut() {
                 if let ItemKind::Use(use_stmt) = &mut item.kind {
-                    let path = if use_stmt.path[0] == PathItemKind::Current {
+                    let mut path = if use_stmt.path[0] == PathItemKind::Current {
                         let mut path = self.sess.config.cwd.clone();
                         path.push(self.sess.config.main_dir());
+
                         path
                     } else {
                         let dep_name = use_stmt.path[0].ident().to_string();
@@ -47,16 +48,16 @@ impl<'a> ImportResolver<'a> {
                         let mut path = project.config.cwd.clone();
                         path.push(project.config.main_dir());
 
-                        let file_path = ImportResolver::build_path(use_stmt.path[1..].to_vec());
-                        path.push(file_path);
-
                         path
                     };
+
+                    let file_path = ImportResolver::build_path(use_stmt.path[1..].to_vec());
+                    path.push(file_path);
+
                     let path = path.with_extension("brim");
                     debug!("Resolving import: {:?}", path);
 
                     use_stmt.resolved = Some(path.clone());
-                    println!("Adding import: {:?}", path);
                 }
             }
         }

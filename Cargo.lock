@@ -225,6 +225,7 @@ dependencies = [
  "anyhow",
  "brim-ast",
  "brim-codegen",
+ "brim-config",
  "brim-diag-macro",
  "brim-diagnostics",
  "brim-hir",
@@ -296,17 +297,16 @@ dependencies = [
 name = "brim-middle"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "brim-ast",
  "brim-diag-macro",
  "brim-diagnostics",
  "brim-index",
  "brim-span",
  "clap",
- "convert_case",
  "indexmap",
  "lazy_static",
  "serde",
+ "tracing",
 ]
 
 [[package]]

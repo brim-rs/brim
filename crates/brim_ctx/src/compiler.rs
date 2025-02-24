@@ -1,4 +1,5 @@
 use crate::{
+    CompiledModules,
     diag_ctx::DiagnosticContext,
     errors::{MainFunctionConstant, MainFunctionParams, SymbolNotFound, SymbolPrivate},
     name::NameResolver,
@@ -19,10 +20,10 @@ use brim_hir::{
     type_checker::TypeChecker,
 };
 use brim_middle::{
-    Location, ModuleId,
+    Location, ModuleId, SymbolTable,
     args::RunArgs,
     lints::Lints,
-    modules::{ModuleMap, SymbolCollector},
+    modules::{ModuleMap, SymbolCollector, UseCollector},
     temp_diag::TemporaryDiagnosticContext,
 };
 use brim_span::files::{SimpleFiles, files, get_file};
@@ -77,22 +78,24 @@ impl CompilerContext {
         }
     }
 
-    pub fn analyze(&mut self, mut map: ModuleMap) -> Result<HirModuleMap> {
+    pub fn analyze(
+        &mut self,
+        mut map: ModuleMap,
+        compiled: &mut CompiledModules,
+    ) -> Result<HirModuleMap> {
         let map = &mut map;
 
         let mut validator = AstValidator::new();
         validator.validate(map.clone())?;
         self.extend_temp(validator.ctx);
 
-        let mut collector = SymbolCollector::new(map);
-        collector.collect();
+        let mut collector = SymbolCollector::new(&mut compiled.symbols);
+        collector.collect(map);
 
-        for module in map.modules.clone() {
-            let file_id = module.barrel.file_id;
-            let file = get_file(file_id)?;
-        }
+        let mut use_collector = UseCollector::new(&mut compiled.symbols);
+        use_collector.collect(map);
 
-        let mut name_resolver = NameResolver::new(map.clone(), self.lints);
+        let mut name_resolver = NameResolver::new(map.clone(), self.lints, compiled);
         name_resolver.resolve_names();
         self.extend_temp(name_resolver.ctx);
 

@@ -387,3 +387,10 @@ pub fn get_path(file_id: usize) -> Result<PathBuf, Error> {
         .expect("Failed to lock global files")
         .name(file_id)
 }
+
+pub fn get_id_by_name(name: &PathBuf) -> Result<usize, Error> {
+    GLOBAL_FILES
+        .lock()
+        .expect("Failed to lock global files")
+        .get_index_by_name(name)
+}

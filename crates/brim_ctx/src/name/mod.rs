@@ -1,9 +1,12 @@
 mod errors;
 pub mod scopes;
 
-use crate::name::{
-    errors::{AccessOutsideComptime, UndeclaredFunction, UndeclaredStruct, UndeclaredVariable},
-    scopes::Scope,
+use crate::{
+    CompiledModule, CompiledModules,
+    name::{
+        errors::{AccessOutsideComptime, UndeclaredFunction, UndeclaredStruct, UndeclaredVariable},
+        scopes::Scope,
+    },
 };
 use brim_ast::{
     expr::{Expr, ExprKind},
@@ -21,17 +24,18 @@ use scopes::{ScopeManager, VariableInfo};
 use tracing::debug;
 
 #[derive(Debug)]
-pub struct NameResolver {
+pub struct NameResolver<'a> {
     pub ctx: TemporaryDiagnosticContext,
     pub map: ModuleMap,
     pub scopes: ScopeManager,
     pub file: usize,
     pub lints: &'static Lints,
     pub inside_comptime: bool,
+    pub compiled: &'a mut CompiledModules,
 }
 
-impl NameResolver {
-    pub fn new(map: ModuleMap, lints: &'static Lints) -> Self {
+impl<'a> NameResolver<'a> {
+    pub fn new(map: ModuleMap, lints: &'static Lints, compiled: &'a mut CompiledModules) -> Self {
         Self {
             ctx: TemporaryDiagnosticContext::new(),
             map,
@@ -39,6 +43,7 @@ impl NameResolver {
             file: 0,
             lints,
             inside_comptime: false,
+            compiled,
         }
     }
 
@@ -86,7 +91,7 @@ impl NameResolver {
     }
 }
 
-impl AstWalker for NameResolver {
+impl<'a> AstWalker for NameResolver<'a> {
     fn visit_let(&mut self, let_stmt: &mut Let) {
         let name = let_stmt.ident.to_string();
 
@@ -200,9 +205,8 @@ impl AstWalker for NameResolver {
             ExprKind::Block(block) => self.visit_block(block),
             ExprKind::Call(func, args) => {
                 let name = func.as_ident().unwrap().to_string();
-                let mod_id = ModuleId::from_usize(self.file);
 
-                let func_sym = self.map.resolve_symbol(&name, mod_id);
+                let func_sym = self.compiled.symbols.resolve(&name, self.file);
 
                 if let None = func_sym {
                     self.ctx.emit(Box::new(UndeclaredFunction {
@@ -238,9 +242,7 @@ impl AstWalker for NameResolver {
             }
             ExprKind::StructConstructor(ident, _, fields) => {
                 let name = ident.to_string();
-                let mod_id = ModuleId::from_usize(self.file);
-
-                let func_sym = self.map.resolve_symbol(&name, mod_id);
+                let func_sym = self.compiled.symbols.resolve(&name, self.file);
 
                 if let None = func_sym {
                     self.ctx.emit(Box::new(UndeclaredStruct {
