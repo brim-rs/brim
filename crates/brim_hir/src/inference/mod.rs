@@ -14,7 +14,7 @@ use crate::{
         HirItemKind,
     },
     stmts::{HirStmt, HirStmtKind},
-    transformer::{HirModule, HirModuleMap, StoredHirItem},
+    transformer::{HirModule, HirModuleMap, HirSymbolKind, StoredHirItem},
     ty::HirTyKind,
 };
 use brim_ast::{
@@ -333,14 +333,17 @@ impl<'a> TypeInference<'a> {
                 let func_ident = ident.as_ident().unwrap().to_string();
                 let func = match self
                     .hir
-                    .resolve_symbol(&func_ident, self.current_mod)
-                    .cloned()
+                    .symbols
+                    .resolve(&func_ident, self.current_mod.as_usize())
                 {
                     Some(f) => f,
                     None => panic!("handle this better"),
                 };
 
-                let fn_def = func.as_fn();
+                let fn_def = match func.kind {
+                    HirSymbolKind::Fn(f) => f,
+                    _ => panic!("not a func"),
+                };
                 let func_params = fn_def.sig.params.params.clone();
                 let mut generic_types: IndexMap<String, HirTyKind> = IndexMap::new();
 
@@ -367,7 +370,7 @@ impl<'a> TypeInference<'a> {
 
                                 params.push(HirCallParam {
                                     span: fn_param.span,
-                                    name: func.ident,
+                                    name: func.name,
                                     ty: final_ty,
                                     from_generic: Some(generic_param),
                                 });
@@ -375,7 +378,7 @@ impl<'a> TypeInference<'a> {
                             HirGenericKind::Const { .. } => {
                                 params.push(HirCallParam {
                                     span: fn_param.span,
-                                    name: func.ident,
+                                    name: func.name,
                                     ty: arg.ty.clone(),
                                     from_generic: Some(generic_param),
                                 });
@@ -384,7 +387,7 @@ impl<'a> TypeInference<'a> {
                     } else {
                         params.push(HirCallParam {
                             span: fn_param.span,
-                            name: func.ident,
+                            name: func.name,
                             ty: fn_param.ty.kind.clone(),
                             from_generic: None,
                         });
@@ -414,11 +417,14 @@ impl<'a> TypeInference<'a> {
 
                 let str = self
                     .hir
-                    .resolve_symbol(&ident.to_string(), self.current_mod)
-                    .cloned()
+                    .symbols
+                    .resolve(&ident.to_string(), self.current_mod.as_usize())
                     .unwrap();
 
-                let str = str.as_struct();
+                let str = match &str.kind {
+                    HirSymbolKind::Struct(s) => s,
+                    _ => panic!("not a struct"),
+                };
                 let mut generic_types: IndexMap<String, HirTyKind> = IndexMap::new();
 
                 for (ident, expr) in fields.iter_mut() {

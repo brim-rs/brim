@@ -34,23 +34,17 @@ pub struct Location {
     pub item_id: NodeId,
 }
 
-#[derive(Clone)]
-pub struct GlobalSymbol {
+#[derive(Clone, Debug)]
+pub struct GlobalSymbol<Kind = GlobalSymbolKind> {
     pub id: Location,
     pub name: Ident,
-    pub kind: GlobalSymbolKind,
+    pub kind: Kind,
     pub item_id: NodeId,
     pub vis: Visibility,
 }
 
-impl GlobalSymbol {
-    pub fn new(
-        name: Ident,
-        kind: GlobalSymbolKind,
-        id: NodeId,
-        gid: Location,
-        vis: Visibility,
-    ) -> Self {
+impl<Kind> GlobalSymbol<Kind> {
+    pub fn new(name: Ident, kind: Kind, id: NodeId, gid: Location, vis: Visibility) -> Self {
         Self {
             name,
             kind,
@@ -58,26 +52,6 @@ impl GlobalSymbol {
             id: gid,
             vis,
         }
-    }
-
-    pub fn span(&self) -> Span {
-        match self.kind {
-            GlobalSymbolKind::Fn(ref decl) => decl.sig.span,
-            GlobalSymbolKind::Struct(ref decl) => decl.span,
-            GlobalSymbolKind::Namespace(_) => todo!(),
-        }
-    }
-
-    pub fn with_mod_id(&mut self, mod_id: ModuleId) -> Self {
-        self.id.mod_id = mod_id;
-        self.clone()
-    }
-}
-
-#[cfg(debug_assertions)]
-impl Debug for GlobalSymbol {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} (mod {:?})", self.name, self.id.mod_id)
     }
 }
 
@@ -99,11 +73,17 @@ pub struct ExperimentalFeatureNotEnabled {
 }
 
 #[derive(Clone)]
-pub struct SymbolTable {
-    pub symbols: HashMap<usize, Vec<GlobalSymbol>>,
+pub struct SymbolTable<Kind = GlobalSymbolKind>
+where
+    GlobalSymbol<Kind>: Debug,
+{
+    pub symbols: HashMap<usize, Vec<GlobalSymbol<Kind>>>,
 }
 
-impl SymbolTable {
+impl<Kind: Clone + Debug> SymbolTable<Kind>
+where
+    HashMap<Ident, GlobalSymbol<Kind>>: FromIterator<(Ident, GlobalSymbol<Kind>)>,
+{
     /// Creates a new empty SymbolTable.
     pub fn new() -> Self {
         Self {
@@ -112,7 +92,7 @@ impl SymbolTable {
     }
 
     /// Adds a global symbol to the table for a specific file.
-    pub fn add_symbol(&mut self, file_id: usize, symbol: GlobalSymbol) {
+    pub fn add_symbol(&mut self, file_id: usize, symbol: GlobalSymbol<Kind>) {
         debug!("Adding symbol: {}", symbol.name);
 
         self.symbols
@@ -122,7 +102,7 @@ impl SymbolTable {
     }
 
     /// Finds a symbol by its identifier in a specific file.
-    pub fn get_by_ident(&self, ident: &Ident, file_id: usize) -> Option<&GlobalSymbol> {
+    pub fn get_by_ident(&self, ident: &Ident, file_id: usize) -> Option<&GlobalSymbol<Kind>> {
         self.symbols.get(&file_id).and_then(|symbols| {
             symbols
                 .iter()
@@ -131,7 +111,7 @@ impl SymbolTable {
     }
 
     /// Returns all symbols belonging to a specific module.
-    pub fn by_module(&self, mod_id: ModuleId) -> Vec<GlobalSymbol> {
+    pub fn by_module(&self, mod_id: ModuleId) -> Vec<GlobalSymbol<Kind>> {
         self.symbols
             .values()
             .flatten()
@@ -141,14 +121,14 @@ impl SymbolTable {
     }
 
     /// Creates a mapping from identifiers to symbols for a specific module.
-    pub fn create_map(&self, mod_id: ModuleId) -> HashMap<Ident, GlobalSymbol> {
+    pub fn create_map(&self, mod_id: ModuleId) -> HashMap<Ident, GlobalSymbol<Kind>> {
         self.by_module(mod_id)
             .into_iter()
             .map(|symbol| (symbol.name.clone(), symbol))
             .collect()
     }
 
-    pub fn resolve(&self, ident: &String, mod_id: usize) -> Option<GlobalSymbol> {
+    pub fn resolve(&self, ident: &String, mod_id: usize) -> Option<GlobalSymbol<Kind>> {
         self.symbols
             .get(&mod_id)
             .and_then(|symbols| {
@@ -160,8 +140,7 @@ impl SymbolTable {
     }
 }
 
-#[cfg(debug_assertions)]
-impl Debug for SymbolTable {
+impl<Kind: Debug> Debug for SymbolTable<Kind> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_map().entries(self.symbols.iter()).finish()
     }

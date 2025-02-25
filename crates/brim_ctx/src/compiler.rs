@@ -99,7 +99,7 @@ impl CompilerContext {
         name_resolver.resolve_names();
         self.extend_temp(name_resolver.ctx);
 
-        let (hir, hir_temp) = &mut transform_module(name_resolver.map);
+        let (hir, hir_temp) = &mut transform_module(name_resolver.map, &mut compiled.symbols);
         self.extend_temp(hir_temp.clone());
         let ti = infer_types(hir);
         self.extend_temp(ti.temp.clone());

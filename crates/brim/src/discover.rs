@@ -39,26 +39,22 @@ impl<'a> ModuleDiscover<'a> {
         self.file = barrel.file_id;
         let mut module_paths = Vec::new();
 
-        // Get the current file path
         let current_path = get_path(self.file)?;
         debug!("Resolving module declarations in file: {:?}", current_path);
 
-        // Add file to map first before marking as visited
         self.map
             .insert_or_update(current_path.clone(), barrel.clone());
 
-        // Only skip if this file has already been processed
         if visited.contains(&current_path) {
             return Ok(self.map.clone());
         }
 
-        // Mark AFTER collecting all module declarations, but BEFORE processing them
         visited.insert(current_path.clone());
 
         for item in &barrel.items {
             if let ItemKind::Module(mod_decl) = &item.kind {
-                let mut path = current_path.clone(); // Use the already retrieved path
-                path.pop(); // Go up one directory level
+                let mut path = current_path.clone();
+                path.pop();
 
                 for ident in &mod_decl.idents {
                     path.push(ident.name.to_string());
@@ -73,7 +69,6 @@ impl<'a> ModuleDiscover<'a> {
             }
         }
 
-        // Now process all collected module paths
         for (span, original_name, path) in module_paths {
             if !path.exists() {
                 self.ctx.emit_impl(ModuleNotFound {
@@ -91,7 +86,6 @@ impl<'a> ModuleDiscover<'a> {
             let new_barrel = parser.parse_barrel()?;
             self.ctx.extend(parser.dcx.diags);
 
-            // Recursively process the new module
             self.create_module_map(&new_barrel, new_barrel.file_id, visited)?;
         }
         Ok(self.map.clone())

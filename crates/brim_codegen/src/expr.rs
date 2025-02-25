@@ -47,9 +47,12 @@ impl CppCodegen {
                     let fn_name = func.as_ident().unwrap().to_string();
                     let func_mod_id = self
                         .hir
-                        .resolve_symbol(&fn_name, self.current_mod)
+                        .symbols
+                        .resolve(&fn_name, self.current_mod.as_usize())
                         .unwrap()
+                        .id
                         .mod_id;
+
                     let args = args
                         .iter()
                         .map(|arg| self.generate_expr(arg.clone()))

@@ -15,18 +15,21 @@ use crate::{
 };
 use brim_ast::{
     expr::{BinOpKind, Expr, ExprKind, MatchArm},
-    item::{Block, FnReturnType, GenericArgs, GenericKind, Generics, ImportsKind, Item, ItemKind},
+    item::{
+        Block, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, Ident, ImportsKind, Item,
+        ItemKind, Struct,
+    },
     stmts::{Stmt, StmtKind},
     token::{AssignOpToken, Lit, LitKind},
     ty::{PrimitiveType, TyKind},
 };
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{
-    Location, ModuleId,
+    GlobalSymbol, GlobalSymbolKind, Location, ModuleId, SymbolTable,
     modules::{Module, ModuleMap},
     temp_diag::TemporaryDiagnosticContext,
 };
-use brim_span::{span::Span, symbols::Symbol};
+use brim_span::{files::get_id_by_name, span::Span, symbols::Symbol};
 use std::{collections::HashMap, path::PathBuf, vec};
 
 #[derive(Clone, Debug)]
@@ -35,9 +38,19 @@ pub struct LocId {
     pub module: ModuleId,
 }
 
-pub fn transform_module(map: ModuleMap) -> (HirModuleMap, TemporaryDiagnosticContext) {
+pub fn transform_module(
+    map: ModuleMap,
+    syms: &mut SymbolTable,
+) -> (HirModuleMap, TemporaryDiagnosticContext) {
     let mut transformer = Transformer::new(map);
-    (transformer.transform_modules(), transformer.ctx)
+    (transformer.transform_modules(syms), transformer.ctx)
+}
+
+#[derive(Debug, Clone)]
+pub enum HirSymbolKind {
+    Fn(HirFn),
+    Struct(HirStruct),
+    Namespace(HashMap<Ident, GlobalSymbol<HirSymbolKind>>),
 }
 
 #[derive(Debug, Clone)]
@@ -45,6 +58,7 @@ pub struct HirModuleMap {
     pub modules: Vec<HirModule>,
     pub hir_items: HashMap<HirId, StoredHirItem>,
     pub expanded_by_builtins: HashMap<HirId, String>,
+    pub symbols: SymbolTable<HirSymbolKind>,
 }
 
 impl HirModuleMap {
@@ -54,6 +68,7 @@ impl HirModuleMap {
             modules: Vec::new(),
             hir_items: HashMap::new(),
             expanded_by_builtins: HashMap::new(),
+            symbols: SymbolTable::<HirSymbolKind>::new(),
         }
     }
 
@@ -250,29 +265,8 @@ impl HirModuleMap {
             .collect()
     }
 
-    pub fn get_imported_symbols(&self, module: &HirModule) -> Vec<&HirItem> {
-        module
-            .imports
-            .iter()
-            .flat_map(|id| self.get_item_safe(id.id))
-            .collect()
-    }
-
     pub fn get_module_by_id(&self, id: ModuleId) -> Option<&HirModule> {
         self.modules.iter().find(|module| module.mod_id == id)
-    }
-
-    /// Looks for the symbol by name first in the module and then in imported modules
-    pub fn resolve_symbol(&self, name: &str, mod_id: ModuleId) -> Option<&HirItem> {
-        let module_symbols = self.find_symbols_in_module(Some(mod_id));
-        let module = self.get_module_by_id(mod_id).unwrap();
-        let imported_symbols = self.get_imported_symbols(module);
-
-        module_symbols
-            .iter()
-            .chain(imported_symbols.iter())
-            .find(|symbol| symbol.ident.to_string() == name)
-            .copied()
     }
 }
 
@@ -332,90 +326,41 @@ impl Transformer {
         }
     }
 
-    pub fn transform_modules(&mut self) -> HirModuleMap {
+    pub fn transform_modules(&mut self, symbols: &mut SymbolTable) -> HirModuleMap {
         for module in self.module_map.modules.clone() {
             self.current_mod_id = ModuleId::from_usize(module.barrel.file_id);
             let module = self.transform_module(module);
             self.map.new_module(module);
         }
 
-        for module in self.map.modules.clone() {
-            // TODO: this monstrosity needs to be refactored
-            for item in module.items {
-                // if let HirItemKind::Use(u) = &item.kind {
-                //     let module_id = ModuleId::from_usize(module.mod_id.as_usize());
-                //     let module = self
-                //         .module_map
-                //         .module_by_import(Location {
-                //             mod_id: module_id,
-                //             item_id: item.old_sym_id.item_id,
-                //         })
-                //         .unwrap();
-                //     let resolved_id = ModuleId::from_usize(module.barrel.file_id);
-                //
-                //     let import_symbols: Vec<Location> = match &u.imports {
-                //         HirImportsKind::All | HirImportsKind::Default(_) => self
-                //             .module_map
-                //             .find_symbols_in_module(Some(resolved_id))
-                //             .iter()
-                //             .map(|symbol| Location {
-                //                 mod_id: resolved_id,
-                //                 item_id: symbol.item_id,
-                //             })
-                //             .collect(),
-                //         HirImportsKind::List(list) => list
-                //             .iter()
-                //             .flat_map(|import| {
-                //                 self.module_map
-                //                     .find_symbol_by_name(&import.to_string(), Some(resolved_id))
-                //             })
-                //             .map(|symbol| Location {
-                //                 mod_id: resolved_id,
-                //                 item_id: symbol.item_id,
-                //             })
-                //             .collect(),
-                //     };
-                //
-                //     let mut ids = vec![];
-                //     for symbol in import_symbols {
-                //         let mut hir_id = self.map.hir_items.iter().find_map(|(id, item)| {
-                //             if let StoredHirItem::Item(item) = item {
-                //                 if item.old_sym_id == symbol {
-                //                     Some(*id)
-                //                 } else {
-                //                     None
-                //                 }
-                //             } else {
-                //                 None
-                //             }
-                //         });
-                //
-                //         // If we couldn't find the symbol in the global items, then we look into the module
-                //         if let None = hir_id {
-                //             let module = self.map.get_module(symbol.mod_id).unwrap();
-                //
-                //             for item in &module.items {
-                //                 if item.old_sym_id == symbol {
-                //                     hir_id = Some(item.id);
-                //                     break;
-                //                 }
-                //             }
-                //         }
-                //
-                //         if let Some(id) = hir_id {
-                //             ids.push(LocId {
-                //                 id,
-                //                 module: symbol.mod_id,
-                //             });
-                //         }
-                //     }
-                //
-                //     self.map.update_modules_imports(module_id, ids);
-                // }
+        for (module, symbols) in symbols.symbols.clone() {
+            for sym in symbols {
+                let sym = self.transform_global_symbol(sym);
+                self.map.symbols.add_symbol(module, sym);
             }
         }
 
         self.map.clone()
+    }
+
+    pub fn transform_global_symbol(&mut self, symbol: GlobalSymbol) -> GlobalSymbol<HirSymbolKind> {
+        GlobalSymbol {
+            id: symbol.id,
+            name: symbol.name,
+            kind: match symbol.kind {
+                GlobalSymbolKind::Struct(str) => HirSymbolKind::Struct(self.transform_struct(str)),
+                GlobalSymbolKind::Fn(f) => HirSymbolKind::Fn(self.transform_fn(f)),
+                GlobalSymbolKind::Namespace(x) => {
+                    let mut namespace = HashMap::new();
+                    for (ident, sym) in x {
+                        namespace.insert(ident, self.transform_global_symbol(sym));
+                    }
+                    HirSymbolKind::Namespace(namespace)
+                }
+            },
+            item_id: symbol.item_id,
+            vis: symbol.vis,
+        }
     }
 
     pub fn transform_module(&mut self, module: Module) -> HirModule {
@@ -437,57 +382,7 @@ impl Transformer {
 
     pub fn transform_item(&mut self, item: Item) -> Option<HirItem> {
         let hir_item_kind = match item.kind.clone() {
-            ItemKind::Fn(f_decl) => {
-                let body = if let Some(body) = f_decl.body {
-                    let hir = HirExpr {
-                        kind: HirExprKind::Block(self.transform_block(body.clone())),
-                        span: body.span,
-                        ty: HirTyKind::Placeholder,
-                        id: self.hir_id(),
-                    };
-
-                    self.map.insert_hir_expr(hir.id, hir.clone());
-                    Some(hir.id)
-                } else {
-                    None
-                };
-
-                let params = f_decl
-                    .sig
-                    .params
-                    .iter()
-                    .map(|param| HirParam {
-                        id: HirId::from_u32(param.id.as_u32()),
-                        span: param.span,
-                        name: param.name,
-                        ty: self.transform_ty(param.ty.clone()),
-                    })
-                    .collect::<Vec<_>>();
-
-                HirItemKind::Fn(HirFn {
-                    sig: HirFnSig {
-                        constant: f_decl.sig.constant.as_bool(),
-                        name: f_decl.sig.name,
-                        return_type: if let FnReturnType::Ty(ty) = f_decl.sig.return_type {
-                            self.transform_ty(ty).kind
-                        } else {
-                            HirTyKind::Primitive(PrimitiveType::Void)
-                        },
-                        params: HirFnParams {
-                            span: if params.is_empty() {
-                                Span::DUMMY
-                            } else {
-                                params[0].span.to(params[params.len() - 1].span)
-                            },
-                            params,
-                        },
-                        generics: self.transform_generics(f_decl.generics),
-                        span: f_decl.sig.span,
-                    },
-                    resolved_type: HirTyKind::Placeholder,
-                    body,
-                })
-            }
+            ItemKind::Fn(f_decl) => HirItemKind::Fn(self.transform_fn(f_decl)),
             ItemKind::Use(u) => {
                 let imports = match u.imports {
                     ImportsKind::List(list) => HirImportsKind::List(list),
@@ -501,22 +396,7 @@ impl Transformer {
                     resolved_path: u.resolved.expect("path should be already resolved "),
                 })
             }
-            ItemKind::Struct(struc) => HirItemKind::Struct(HirStruct {
-                ident: struc.ident,
-                fields: struc
-                    .fields
-                    .iter()
-                    .map(|field| HirField {
-                        id: self.hir_id(),
-                        span: field.span,
-                        ident: field.ident,
-                        ty: self.transform_ty(field.ty.clone()).kind,
-                        vis: field.vis.clone(),
-                    })
-                    .collect(),
-                generics: self.transform_generics(struc.generics),
-                span: struc.span,
-            }),
+            ItemKind::Struct(struc) => HirItemKind::Struct(self.transform_struct(struc)),
             ItemKind::TypeAlias(type_alias) => HirItemKind::TypeAlias(HirTypeAlias {
                 span: type_alias.span,
                 ident: type_alias.ident,
@@ -543,6 +423,77 @@ impl Transformer {
             .insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
 
         Some(item)
+    }
+
+    pub fn transform_fn(&mut self, f_decl: FnDecl) -> HirFn {
+        let body = if let Some(body) = f_decl.body {
+            let hir = HirExpr {
+                kind: HirExprKind::Block(self.transform_block(body.clone())),
+                span: body.span,
+                ty: HirTyKind::Placeholder,
+                id: self.hir_id(),
+            };
+
+            self.map.insert_hir_expr(hir.id, hir.clone());
+            Some(hir.id)
+        } else {
+            None
+        };
+
+        let params = f_decl
+            .sig
+            .params
+            .iter()
+            .map(|param| HirParam {
+                id: HirId::from_u32(param.id.as_u32()),
+                span: param.span,
+                name: param.name,
+                ty: self.transform_ty(param.ty.clone()),
+            })
+            .collect::<Vec<_>>();
+
+        HirFn {
+            sig: HirFnSig {
+                constant: f_decl.sig.constant.as_bool(),
+                name: f_decl.sig.name,
+                return_type: if let FnReturnType::Ty(ty) = f_decl.sig.return_type {
+                    self.transform_ty(ty).kind
+                } else {
+                    HirTyKind::Primitive(PrimitiveType::Void)
+                },
+                params: HirFnParams {
+                    span: if params.is_empty() {
+                        Span::DUMMY
+                    } else {
+                        params[0].span.to(params[params.len() - 1].span)
+                    },
+                    params,
+                },
+                generics: self.transform_generics(f_decl.generics),
+                span: f_decl.sig.span,
+            },
+            resolved_type: HirTyKind::Placeholder,
+            body,
+        }
+    }
+
+    pub fn transform_struct(&mut self, struc: Struct) -> HirStruct {
+        HirStruct {
+            ident: struc.ident,
+            fields: struc
+                .fields
+                .iter()
+                .map(|field| HirField {
+                    id: self.hir_id(),
+                    span: field.span,
+                    ident: field.ident,
+                    ty: self.transform_ty(field.ty.clone()).kind,
+                    vis: field.vis.clone(),
+                })
+                .collect(),
+            generics: self.transform_generics(struc.generics),
+            span: struc.span,
+        }
     }
 
     pub fn transform_generics(&mut self, generics: Generics) -> HirGenerics {
