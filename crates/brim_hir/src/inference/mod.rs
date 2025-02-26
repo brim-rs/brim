@@ -23,7 +23,7 @@ use brim_ast::{
     ty::PrimitiveType,
 };
 use brim_diagnostics::diagnostic::ToDiagnostic;
-use brim_middle::{ModuleId, temp_diag::TemporaryDiagnosticContext};
+use brim_middle::{GlobalSymbol, ModuleId, temp_diag::TemporaryDiagnosticContext};
 use indexmap::IndexMap;
 
 #[derive(Debug)]
@@ -123,6 +123,39 @@ impl<'a> TypeInference<'a> {
                 }
 
                 self.scope_manager.pop_scope(); // Reset scope after function
+            }
+            HirItemKind::Struct(str) => {
+                for field in str.fields.iter_mut() {
+                    let ty = if let Some(name) = field.ty.as_ident()
+                        && let None = str.generics.is_generic(&field.ty)
+                    {
+                        let sym = self
+                            .hir
+                            .symbols
+                            .resolve(&name.to_string(), self.current_mod.as_usize())
+                            .expect(format!("{} not found", name).as_str());
+
+                        if let HirSymbolKind::Ty(ty) = sym.kind {
+                            if ty.can_be_directly_used() {
+                                ty
+                            } else {
+                                field.ty.clone()
+                            }
+                        } else {
+                            field.ty.clone()
+                        }
+                    } else {
+                        field.ty.clone()
+                    };
+
+                    field.ty = ty;
+                }
+
+                for (module, syms) in self.hir.symbols.symbols.iter_mut() {
+                    for sym in syms {}
+                }
+
+                println!("{:?}", self.hir.symbols.symbols);
             }
             _ => {}
         }
@@ -460,9 +493,10 @@ impl<'a> TypeInference<'a> {
                             }
                         }
                     } else {
+                        println!("{}: {:?}", ident, str_field.ty);
                         hir_struct
                             .field_types
-                            .insert(ident.clone(), expr.ty.clone());
+                            .insert(ident.clone(), str_field.ty.clone());
                     }
                 }
 

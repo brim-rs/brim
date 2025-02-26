@@ -93,7 +93,6 @@ impl<'a> AstWalker for SymbolCollector<'a> {
                     GlobalSymbol::new(
                         item.ident,
                         GlobalSymbolKind::Fn(f.clone()),
-                        item.id,
                         id,
                         item.vis.clone(),
                     ),
@@ -105,7 +104,17 @@ impl<'a> AstWalker for SymbolCollector<'a> {
                     GlobalSymbol::new(
                         item.ident,
                         GlobalSymbolKind::Struct(s.clone()),
-                        item.id,
+                        id,
+                        item.vis.clone(),
+                    ),
+                );
+            }
+            ItemKind::TypeAlias(t) => {
+                self.table.add_symbol(
+                    self.file_id,
+                    GlobalSymbol::new(
+                        item.ident,
+                        GlobalSymbolKind::Ty(t.ty.clone()),
                         id,
                         item.vis.clone(),
                     ),
@@ -166,7 +175,6 @@ impl<'a> AstWalker for UseCollector<'a> {
                         symbols.push(GlobalSymbol::new(
                             ident.clone(),
                             GlobalSymbolKind::Namespace(map),
-                            NodeId::dummy(),
                             Location {
                                 mod_id,
                                 item_id: NodeId::dummy(),
@@ -176,7 +184,7 @@ impl<'a> AstWalker for UseCollector<'a> {
                     }
                 }
 
-                for mut symbol in symbols {
+                for symbol in symbols {
                     self.table.add_symbol(self.file_id, symbol.clone());
                 }
             }

@@ -51,6 +51,7 @@ pub enum HirSymbolKind {
     Fn(HirFn),
     Struct(HirStruct),
     Namespace(HashMap<Ident, GlobalSymbol<HirSymbolKind>>),
+    Ty(HirTyKind),
 }
 
 #[derive(Debug, Clone)]
@@ -234,7 +235,7 @@ impl HirModuleMap {
             .iter()
             .filter_map(|(_, item)| {
                 if let StoredHirItem::Item(item) = item {
-                    if module_id.map_or(true, |mid| item.old_sym_id.mod_id == mid) {
+                    if module_id.map_or(true, |mid| item.mod_id == mid) {
                         Some(item)
                     } else {
                         None
@@ -252,7 +253,7 @@ impl HirModuleMap {
             .filter_map(|(_, item)| {
                 if let StoredHirItem::Item(item) = item {
                     if item.ident.to_string() == name
-                        && module_id.map_or(true, |mid| item.old_sym_id.mod_id == mid)
+                        && module_id.map_or(true, |mid| item.mod_id == mid)
                     {
                         Some(item)
                     } else {
@@ -357,8 +358,8 @@ impl Transformer {
                     }
                     HirSymbolKind::Namespace(namespace)
                 }
+                GlobalSymbolKind::Ty(ty) => HirSymbolKind::Ty(self.transform_ty(ty).kind),
             },
-            item_id: symbol.item_id,
             vis: symbol.vis,
         }
     }
@@ -408,10 +409,6 @@ impl Transformer {
 
         let item = HirItem {
             id: self.hir_id(),
-            old_sym_id: Location {
-                item_id: item.id,
-                mod_id: self.current_mod_id,
-            },
             span: item.span,
             ident: item.ident,
             kind: hir_item_kind,

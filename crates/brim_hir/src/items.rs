@@ -13,8 +13,6 @@ use std::{fmt::Display, path::PathBuf};
 #[derive(Clone, Debug)]
 pub struct HirItem {
     pub id: HirId,
-    /// Only kept for the convenience of the transformation phase.
-    pub old_sym_id: Location,
     pub span: Span,
     pub ident: Ident,
     pub kind: HirItemKind,

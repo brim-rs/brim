@@ -177,4 +177,22 @@ impl HirTyKind {
             _ => unimplemented!(),
         }
     }
+
+    pub fn as_ident(&self) -> Option<&Ident> {
+        match self {
+            HirTyKind::Ident { ident, .. } => Some(ident),
+            _ => None,
+        }
+    }
+
+    /// Basically if type from tape declaration can be directly used as an inferred type
+    pub fn can_be_directly_used(&self) -> bool {
+        match self {
+            HirTyKind::Primitive(_)
+            | HirTyKind::Array(_, _)
+            | HirTyKind::Ptr(_, _)
+            | HirTyKind::Ref(_, _) => true,
+            _ => false,
+        }
+    }
 }
