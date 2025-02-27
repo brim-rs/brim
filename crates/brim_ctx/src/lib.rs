@@ -1,9 +1,9 @@
 #![feature(let_chains)]
 
+use brim_config::toml::Config;
 use brim_hir::transformer::HirModuleMap;
 use brim_middle::SymbolTable;
 use std::collections::HashMap;
-use brim_config::toml::Config;
 
 pub mod compiler;
 pub mod diag_ctx;

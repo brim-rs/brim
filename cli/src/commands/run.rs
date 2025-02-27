@@ -24,10 +24,7 @@ use brim::{
 use brim_ctx::errors::NoMainFunction;
 use brim_parser::parser::Parser;
 use clap::Command;
-use std::{
-    collections::{HashMap, HashSet},
-    env::current_dir,
-};
+use std::{collections::HashSet, env::current_dir};
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -64,7 +61,7 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
     let order = resolver.resolve_project()?;
     let configs = resolver.get_configs(&order);
 
-    let mut compiled_projects = &mut CompiledModules::new();
+    let compiled_projects = &mut CompiledModules::new();
 
     for config in configs {
         let sess = &mut Session::new(config.cwd.clone(), config.clone(), c_choice);

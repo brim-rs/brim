@@ -7,7 +7,7 @@ use brim_ast::{
     item::{ImportsKind, Item, ItemKind},
 };
 use brim_span::files::get_id_by_name;
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
 pub struct Module {

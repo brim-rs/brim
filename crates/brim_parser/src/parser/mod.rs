@@ -18,7 +18,6 @@ use brim_span::{
     span::Span,
     symbols::{GLOBAL_INTERNER, Symbol},
 };
-use std::sync::atomic::{AtomicUsize, Ordering};
 use tracing::debug;
 
 mod cursor;

@@ -4,7 +4,7 @@ use brim_ast::{
     item::{Ident, Visibility},
     token::Lit,
 };
-use brim_middle::{Location, ModuleId};
+use brim_middle::ModuleId;
 use brim_span::span::Span;
 use std::{fmt::Display, path::PathBuf};
 

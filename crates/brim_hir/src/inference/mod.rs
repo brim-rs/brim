@@ -16,9 +16,14 @@ use crate::{
     transformer::{HirModule, HirModuleMap, HirSymbolKind, StoredHirItem},
     ty::HirTyKind,
 };
-use brim_ast::{expr::{BinOpKind, UnaryOp}, token::{Lit, LitKind}, ty::PrimitiveType, ItemId};
+use brim_ast::{
+    ItemId,
+    expr::{BinOpKind, UnaryOp},
+    token::{Lit, LitKind},
+    ty::PrimitiveType,
+};
 use brim_diagnostics::diagnostic::ToDiagnostic;
-use brim_middle::{GlobalSymbol, ModuleId, temp_diag::TemporaryDiagnosticContext};
+use brim_middle::{ModuleId, temp_diag::TemporaryDiagnosticContext};
 use indexmap::IndexMap;
 
 #[derive(Debug)]

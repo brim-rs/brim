@@ -25,11 +25,11 @@ use brim_ast::{
 };
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{
-    GlobalSymbol, GlobalSymbolKind, Location, ModuleId, SymbolTable,
+    GlobalSymbol, GlobalSymbolKind, ModuleId, SymbolTable,
     modules::{Module, ModuleMap},
     temp_diag::TemporaryDiagnosticContext,
 };
-use brim_span::{files::get_id_by_name, span::Span, symbols::Symbol};
+use brim_span::{span::Span, symbols::Symbol};
 use std::{collections::HashMap, path::PathBuf, vec};
 
 #[derive(Clone, Debug)]

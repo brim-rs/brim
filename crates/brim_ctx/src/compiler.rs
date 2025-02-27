@@ -1,12 +1,11 @@
 use crate::{
     CompiledModules,
     diag_ctx::DiagnosticContext,
-    errors::{MainFunctionConstant, MainFunctionParams, SymbolNotFound, SymbolPrivate},
+    errors::{MainFunctionConstant, MainFunctionParams},
     name::NameResolver,
     validator::AstValidator,
 };
 use anyhow::Result;
-use brim_ast::item::{ImportsKind, ItemKind, VisibilityKind};
 use brim_codegen::codegen::CppCodegen;
 use brim_diagnostics::{
     ErrorEmitted,
@@ -20,14 +19,12 @@ use brim_hir::{
     type_checker::TypeChecker,
 };
 use brim_middle::{
-    Location, ModuleId, SymbolTable,
     args::RunArgs,
     lints::Lints,
     modules::{ModuleMap, SymbolCollector, UseCollector},
     temp_diag::TemporaryDiagnosticContext,
 };
-use brim_span::files::{SimpleFiles, files, get_file};
-use tracing::debug;
+use brim_span::files::{SimpleFiles, files};
 
 #[derive(Debug, Clone)]
 pub struct CompilerContext {

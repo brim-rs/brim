@@ -1,7 +1,6 @@
 #![feature(let_chains)]
 
 use crate::{expr::HirExpr, items::HirItem, stmts::HirStmt, transformer::HirModule, ty::HirTyKind};
-use brim_index::index_type;
 
 pub mod builtin;
 pub mod comptime;

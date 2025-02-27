@@ -2,7 +2,7 @@ use crate::{CompiledModules, session::Session};
 use anyhow::Result;
 use brim_ast::item::{ItemKind, PathItemKind};
 use brim_fs::loader::BrimFileLoader;
-use brim_middle::{Location, ModuleId, modules::ModuleMap, temp_diag::TemporaryDiagnosticContext};
+use brim_middle::{modules::ModuleMap, temp_diag::TemporaryDiagnosticContext};
 use std::path::PathBuf;
 use tracing::debug;
 

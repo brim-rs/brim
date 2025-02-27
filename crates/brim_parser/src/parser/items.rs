@@ -172,7 +172,7 @@ impl Parser {
                 span: span.to(self.current().span),
                 imports: kind,
                 path,
-                resolved: None
+                resolved: None,
             }),
         ))
     }

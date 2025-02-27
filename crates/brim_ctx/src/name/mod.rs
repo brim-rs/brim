@@ -2,7 +2,7 @@ mod errors;
 pub mod scopes;
 
 use crate::{
-    CompiledModule, CompiledModules,
+    CompiledModules,
     name::{
         errors::{AccessOutsideComptime, UndeclaredFunction, UndeclaredStruct, UndeclaredVariable},
         scopes::Scope,
@@ -15,7 +15,7 @@ use brim_ast::{
 };
 use brim_diagnostics::diag_opt;
 use brim_middle::{
-    ModuleId, builtins::BUILTIN_FUNCTIONS, lints::Lints, modules::ModuleMap,
+    builtins::BUILTIN_FUNCTIONS, lints::Lints, modules::ModuleMap,
     temp_diag::TemporaryDiagnosticContext, walker::AstWalker,
 };
 use brim_span::span::Span;

@@ -6,7 +6,11 @@ use crate::{
     transformer::{HirModule, HirModuleMap, StoredHirItem},
     ty::HirTyKind,
 };
-use brim_ast::{token::{Lit, LitKind}, ty::PrimitiveType, ItemId};
+use brim_ast::{
+    ItemId,
+    token::{Lit, LitKind},
+    ty::PrimitiveType,
+};
 use brim_span::symbols::Symbol;
 
 #[derive(Debug, Clone)]

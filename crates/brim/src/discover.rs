@@ -1,4 +1,4 @@
-use crate::{CompiledModules, session::Session};
+use crate::session::Session;
 use anyhow::Result;
 use brim_ast::item::ItemKind;
 use brim_diag_macro::Diagnostic;
@@ -8,7 +8,7 @@ use brim_middle::{barrel::Barrel, modules::ModuleMap, temp_diag::TemporaryDiagno
 use brim_parser::parser::Parser;
 use brim_span::{files::get_path, span::Span};
 use std::{collections::HashSet, path::PathBuf};
-use tracing::{debug, field::debug};
+use tracing::debug;
 
 #[derive(Debug)]
 pub struct ModuleDiscover<'a> {

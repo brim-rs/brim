@@ -1,17 +1,14 @@
 use brim_ast::{
     ItemId,
     item::{FnDecl, Ident, Struct, Visibility},
-    ty::{Ty, TyKind},
+    ty::Ty,
 };
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
 use brim_index::index_type;
 use brim_span::span::Span;
-use std::{
-    collections::HashMap,
-    fmt::{Debug, Display},
-};
-use tracing::{debug, trace};
+use std::{collections::HashMap, fmt::Debug};
+use tracing::debug;
 
 pub mod args;
 pub mod barrel;
