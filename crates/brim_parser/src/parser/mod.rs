@@ -4,7 +4,7 @@ use crate::{
 };
 use anyhow::Result;
 use brim_ast::{
-    NodeId, Pub, SYMBOL_STRINGS,
+    ItemId, Pub, SYMBOL_STRINGS,
     item::Visibility,
     token::{Delimiter, Orientation, Token, TokenKind},
 };
@@ -18,6 +18,7 @@ use brim_span::{
     span::Span,
     symbols::{GLOBAL_INTERNER, Symbol},
 };
+use std::sync::atomic::{AtomicUsize, Ordering};
 use tracing::debug;
 
 mod cursor;
@@ -98,15 +99,15 @@ macro_rules! ptok {
 
 #[macro_export]
 macro_rules! debug_ident {
-    ($( $x:expr ),*) => {
-        {
-            $(
-               #[cfg(debug_assertions)]
-                println!("{}", $x.as_ident().unwrap().name);
-            )*
+            ($( $x:expr ),*) => {
+                {
+                    $(
+                       #[cfg(debug_assertions)]
+                        println!("{}", $x.as_ident().unwrap().name);
+                    )*
+                }
+            }
         }
-    }
-}
 
 impl Parser {
     pub fn new(file: usize, experimental: Experimental) -> Self {
@@ -124,9 +125,8 @@ impl Parser {
         }
     }
 
-    pub fn new_id(&mut self) -> NodeId {
-        self.last_id += 1;
-        NodeId::from_u32(self.last_id)
+    pub fn new_id(&mut self) -> ItemId {
+        ItemId::new()
     }
 
     pub fn parse_barrel(&mut self) -> Result<Barrel> {

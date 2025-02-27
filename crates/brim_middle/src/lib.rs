@@ -1,5 +1,5 @@
 use brim_ast::{
-    NodeId,
+    ItemId,
     item::{FnDecl, Ident, Struct, Visibility},
     ty::{Ty, TyKind},
 };
@@ -30,11 +30,11 @@ index_type! {
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct Location {
     pub mod_id: ModuleId,
-    pub item_id: NodeId,
+    pub item_id: ItemId,
 }
 
 impl Location {
-    pub fn new(mod_id: ModuleId, item_id: NodeId) -> Self {
+    pub fn new(mod_id: ModuleId, item_id: ItemId) -> Self {
         Self { mod_id, item_id }
     }
 }

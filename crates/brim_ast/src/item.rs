@@ -1,5 +1,5 @@
 use crate::{
-    Break, Empty, NodeId, While,
+    Break, Empty, ItemId, While,
     expr::Expr,
     stmts::Stmt,
     ty::{Const, Ty},
@@ -12,7 +12,7 @@ use std::{
 
 #[derive(Clone, Debug)]
 pub struct Item {
-    pub id: NodeId,
+    pub id: ItemId,
     pub span: Span,
     pub vis: Visibility,
     pub ident: Ident,
@@ -121,7 +121,7 @@ pub struct Struct {
 
 #[derive(Clone, Debug)]
 pub struct Field {
-    pub id: NodeId,
+    pub id: ItemId,
     pub span: Span,
     pub ident: Ident,
     pub ty: Ty,
@@ -206,7 +206,7 @@ impl FunctionContext {
 
 #[derive(Clone, Debug)]
 pub struct Block {
-    pub id: NodeId,
+    pub id: ItemId,
     pub span: Span,
     pub stmts: Vec<Stmt>,
 }
@@ -225,13 +225,13 @@ pub struct GenericArgs {
 
 #[derive(Clone, Debug)]
 pub struct GenericArg {
-    pub id: NodeId,
+    pub id: ItemId,
     pub ty: Ty,
 }
 
 #[derive(Clone, Debug)]
 pub struct GenericParam {
-    pub id: NodeId,
+    pub id: ItemId,
     pub ident: Ident,
     pub kind: GenericKind,
 }
@@ -255,7 +255,7 @@ pub struct FnSignature {
 #[derive(Clone, Debug)]
 pub struct Param {
     pub ty: Ty,
-    pub id: NodeId,
+    pub id: ItemId,
     pub span: Span,
     pub name: Ident,
 }

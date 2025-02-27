@@ -1,10 +1,10 @@
 use crate::{
-    HirId,
     items::{HirCallParam, HirGenericArgs},
     stmts::HirStmt,
     ty::HirTyKind,
 };
 use brim_ast::{
+    ItemId,
     expr::{BinOpKind, UnaryOp},
     item::Ident,
     token::Lit,
@@ -15,7 +15,7 @@ use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct HirExpr {
-    pub id: HirId,
+    pub id: ItemId,
     pub kind: HirExprKind,
     pub span: Span,
     pub ty: HirTyKind,
@@ -82,7 +82,7 @@ pub enum HirMatchArm {
 
 #[derive(Clone, Debug)]
 pub struct HirStructConstructor {
-    pub id: HirId,
+    pub id: ItemId,
     pub name: Ident,
     pub generics: HirGenericArgs,
     pub fields: IndexMap<Ident, HirExpr>,
@@ -100,7 +100,7 @@ pub struct HirIfExpr {
 
 #[derive(Clone, Debug)]
 pub struct HirBlock {
-    pub id: HirId,
+    pub id: ItemId,
     pub span: Span,
     pub stmts: Vec<HirStmt>,
 }
@@ -113,7 +113,7 @@ pub struct HirConditionBranch {
 
 #[derive(Clone, Debug)]
 pub struct HirConstExpr {
-    pub id: HirId,
+    pub id: ItemId,
     pub span: Span,
-    pub body: HirId,
+    pub body: ItemId,
 }

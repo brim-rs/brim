@@ -1,15 +1,12 @@
 use crate::{
-    Codegen, HirId,
+    Codegen,
     expr::{HirExpr, HirExprKind},
     items::{HirItem, HirItemKind},
     stmts::{HirStmt, HirStmtKind},
     transformer::{HirModule, HirModuleMap, StoredHirItem},
     ty::HirTyKind,
 };
-use brim_ast::{
-    token::{Lit, LitKind},
-    ty::PrimitiveType,
-};
+use brim_ast::{token::{Lit, LitKind}, ty::PrimitiveType, ItemId};
 use brim_span::symbols::Symbol;
 
 #[derive(Debug, Clone)]
@@ -68,7 +65,7 @@ macro_rules! builtin_function {
 builtin_function! {
     fn os() {
         HirExpr {
-            id: HirId::dummy(),
+            id: ItemId::dummy(),
             ty: HirTyKind::Primitive(PrimitiveType::Str),
             kind: HirExprKind::Literal(Lit::new(LitKind::Str, Symbol::new(&if cfg!(target_os = "linux") {
                 "linux"
@@ -139,7 +136,7 @@ impl<'a> BuiltInExpander<'a> {
             .insert(item.id, StoredHirItem::Item(item.clone()));
     }
 
-    fn expand_body(&mut self, body_id: HirId) {
+    fn expand_body(&mut self, body_id: ItemId) {
         let mut expr = self.hir.get_expr_mut(body_id).clone();
 
         self.expand_expr(&mut expr);

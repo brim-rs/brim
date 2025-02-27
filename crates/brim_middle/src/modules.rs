@@ -3,7 +3,7 @@ use crate::{
     walker::AstWalker,
 };
 use brim_ast::{
-    NodeId,
+    ItemId,
     item::{ImportsKind, Item, ItemKind},
 };
 use brim_span::files::get_id_by_name;
@@ -177,7 +177,7 @@ impl<'a> AstWalker for UseCollector<'a> {
                             GlobalSymbolKind::Namespace(map),
                             Location {
                                 mod_id,
-                                item_id: NodeId::dummy(),
+                                item_id: ItemId::dummy(),
                             },
                             item.vis.clone(),
                         ))

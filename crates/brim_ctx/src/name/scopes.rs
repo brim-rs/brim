@@ -1,4 +1,4 @@
-use brim_ast::{NodeId, item::Param};
+use brim_ast::{ItemId, item::Param};
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::{
     OptionalDiag, box_diag,
@@ -27,7 +27,7 @@ pub struct Scope {
 
 #[derive(Debug, Clone)]
 pub struct VariableInfo {
-    pub id: NodeId,
+    pub id: ItemId,
     pub is_const: bool,
     pub span: Span,
 }

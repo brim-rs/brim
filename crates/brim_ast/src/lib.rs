@@ -52,5 +52,5 @@ generate_symbols! {
 
 index_type! {
     /// A unique identifier for a node in the AST.
-    pub struct NodeId {}
+    pub struct ItemId {}
 }

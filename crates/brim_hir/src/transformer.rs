@@ -1,5 +1,4 @@
 use crate::{
-    HirId,
     comptime::errors::ComptimeExprExpectedTy,
     expr::{
         HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfExpr, HirMatchArm,
@@ -14,6 +13,7 @@ use crate::{
     ty::{HirTy, HirTyKind},
 };
 use brim_ast::{
+    ItemId,
     expr::{BinOpKind, Expr, ExprKind, MatchArm},
     item::{
         Block, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, Ident, ImportsKind, Item,
@@ -21,7 +21,7 @@ use brim_ast::{
     },
     stmts::{Stmt, StmtKind},
     token::{AssignOpToken, Lit, LitKind},
-    ty::{PrimitiveType, TyKind},
+    ty::{PrimitiveType, Ty, TyKind},
 };
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{
@@ -34,7 +34,7 @@ use std::{collections::HashMap, path::PathBuf, vec};
 
 #[derive(Clone, Debug)]
 pub struct LocId {
-    pub id: HirId,
+    pub id: ItemId,
     pub module: ModuleId,
 }
 
@@ -57,8 +57,8 @@ pub enum HirSymbolKind {
 #[derive(Debug, Clone)]
 pub struct HirModuleMap {
     pub modules: Vec<HirModule>,
-    pub hir_items: HashMap<HirId, StoredHirItem>,
-    pub expanded_by_builtins: HashMap<HirId, String>,
+    pub hir_items: HashMap<ItemId, StoredHirItem>,
+    pub expanded_by_builtins: HashMap<ItemId, String>,
     pub symbols: SymbolTable<HirSymbolKind>,
 }
 
@@ -74,17 +74,17 @@ impl HirModuleMap {
     }
 
     /// Insert a HIR item with a given ID
-    pub fn insert_hir_item(&mut self, id: HirId, item: StoredHirItem) {
+    pub fn insert_hir_item(&mut self, id: ItemId, item: StoredHirItem) {
         self.hir_items.insert(id, item);
     }
 
     /// Convenience method to insert a HIR expression
-    pub fn insert_hir_expr(&mut self, id: HirId, expr: HirExpr) {
+    pub fn insert_hir_expr(&mut self, id: ItemId, expr: HirExpr) {
         self.hir_items.insert(id, StoredHirItem::Expr(expr));
     }
 
     /// Convenience method to insert a HIR statement
-    pub fn insert_hir_stmt(&mut self, id: HirId, stmt: HirStmt) {
+    pub fn insert_hir_stmt(&mut self, id: ItemId, stmt: HirStmt) {
         self.hir_items.insert(id, StoredHirItem::Stmt(stmt));
     }
 
@@ -94,17 +94,17 @@ impl HirModuleMap {
     }
 
     /// Retrieve an immutable reference to a HIR item by ID
-    pub fn get(&self, id: HirId) -> Option<&StoredHirItem> {
+    pub fn get(&self, id: ItemId) -> Option<&StoredHirItem> {
         self.hir_items.get(&id)
     }
 
     /// Retrieve a mutable reference to a HIR item by ID
-    pub fn get_mut(&mut self, id: HirId) -> Option<&mut StoredHirItem> {
+    pub fn get_mut(&mut self, id: ItemId) -> Option<&mut StoredHirItem> {
         self.hir_items.get_mut(&id)
     }
 
     /// Immutable getter for HIR items with panic on incorrect type
-    pub fn get_item(&self, id: HirId) -> &HirItem {
+    pub fn get_item(&self, id: ItemId) -> &HirItem {
         match self.get(id) {
             Some(StoredHirItem::Item(item)) => item,
             _ => panic!("Expected item for ID {:?}", id),
@@ -112,7 +112,7 @@ impl HirModuleMap {
     }
 
     /// Mutable getter for HIR items
-    pub fn get_item_mut(&mut self, id: HirId) -> &mut HirItem {
+    pub fn get_item_mut(&mut self, id: ItemId) -> &mut HirItem {
         match self.get_mut(id) {
             Some(StoredHirItem::Item(item)) => item,
             _ => panic!("Expected item for ID {:?}", id),
@@ -120,7 +120,7 @@ impl HirModuleMap {
     }
 
     /// Safe immutable getter for HIR items
-    pub fn get_item_safe(&self, id: HirId) -> Option<&HirItem> {
+    pub fn get_item_safe(&self, id: ItemId) -> Option<&HirItem> {
         match self.get(id) {
             Some(StoredHirItem::Item(item)) => Some(item),
             _ => None,
@@ -128,7 +128,7 @@ impl HirModuleMap {
     }
 
     /// Safe mutable getter for HIR items
-    pub fn get_item_safe_mut(&mut self, id: HirId) -> Option<&mut HirItem> {
+    pub fn get_item_safe_mut(&mut self, id: ItemId) -> Option<&mut HirItem> {
         match self.get_mut(id) {
             Some(StoredHirItem::Item(item)) => Some(item),
             _ => None,
@@ -136,7 +136,7 @@ impl HirModuleMap {
     }
 
     /// Immutable getter for HIR expressions with panic on incorrect type
-    pub fn get_expr(&self, id: HirId) -> &HirExpr {
+    pub fn get_expr(&self, id: ItemId) -> &HirExpr {
         match self.get(id) {
             Some(StoredHirItem::Expr(expr)) => expr,
             _ => panic!("Expected expr for ID {:?}", id),
@@ -144,7 +144,7 @@ impl HirModuleMap {
     }
 
     /// Mutable getter for HIR expressions
-    pub fn get_expr_mut(&mut self, id: HirId) -> &mut HirExpr {
+    pub fn get_expr_mut(&mut self, id: ItemId) -> &mut HirExpr {
         match self.get_mut(id) {
             Some(StoredHirItem::Expr(expr)) => expr,
             _ => panic!("Expected expr for ID {:?}", id),
@@ -152,7 +152,7 @@ impl HirModuleMap {
     }
 
     /// Safe immutable getter for HIR expressions
-    pub fn get_expr_safe(&self, id: HirId) -> Option<&HirExpr> {
+    pub fn get_expr_safe(&self, id: ItemId) -> Option<&HirExpr> {
         match self.get(id) {
             Some(StoredHirItem::Expr(expr)) => Some(expr),
             _ => None,
@@ -160,7 +160,7 @@ impl HirModuleMap {
     }
 
     /// Safe mutable getter for HIR expressions
-    pub fn get_expr_safe_mut(&mut self, id: HirId) -> Option<&mut HirExpr> {
+    pub fn get_expr_safe_mut(&mut self, id: ItemId) -> Option<&mut HirExpr> {
         match self.get_mut(id) {
             Some(StoredHirItem::Expr(expr)) => Some(expr),
             _ => None,
@@ -168,7 +168,7 @@ impl HirModuleMap {
     }
 
     /// Immutable getter for HIR statements with panic on incorrect type
-    pub fn get_stmt(&self, id: HirId) -> &HirStmt {
+    pub fn get_stmt(&self, id: ItemId) -> &HirStmt {
         match self.get(id) {
             Some(StoredHirItem::Stmt(stmt)) => stmt,
             _ => panic!("Expected stmt for ID {:?}", id),
@@ -176,7 +176,7 @@ impl HirModuleMap {
     }
 
     /// Mutable getter for HIR statements
-    pub fn get_stmt_mut(&mut self, id: HirId) -> &mut HirStmt {
+    pub fn get_stmt_mut(&mut self, id: ItemId) -> &mut HirStmt {
         match self.get_mut(id) {
             Some(StoredHirItem::Stmt(stmt)) => stmt,
             _ => panic!("Expected stmt for ID {:?}", id),
@@ -184,7 +184,7 @@ impl HirModuleMap {
     }
 
     /// Safe immutable getter for HIR statements
-    pub fn get_stmt_safe(&self, id: HirId) -> Option<&HirStmt> {
+    pub fn get_stmt_safe(&self, id: ItemId) -> Option<&HirStmt> {
         match self.get(id) {
             Some(StoredHirItem::Stmt(stmt)) => Some(stmt),
             _ => None,
@@ -192,7 +192,7 @@ impl HirModuleMap {
     }
 
     /// Safe mutable getter for HIR statements
-    pub fn get_stmt_safe_mut(&mut self, id: HirId) -> Option<&mut HirStmt> {
+    pub fn get_stmt_safe_mut(&mut self, id: ItemId) -> Option<&mut HirStmt> {
         match self.get_mut(id) {
             Some(StoredHirItem::Stmt(stmt)) => Some(stmt),
             _ => None,
@@ -394,7 +394,7 @@ impl Transformer {
                 HirItemKind::Use(HirUse {
                     span: u.span,
                     imports,
-                    resolved_path: u.resolved.expect("path should be already resolved "),
+                    resolved_path: u.resolved.expect("path should be already resolved"),
                 })
             }
             ItemKind::Struct(struc) => HirItemKind::Struct(self.transform_struct(struc)),
@@ -408,7 +408,7 @@ impl Transformer {
         };
 
         let item = HirItem {
-            id: self.hir_id(),
+            id: item.id,
             span: item.span,
             ident: item.ident,
             kind: hir_item_kind,
@@ -428,7 +428,7 @@ impl Transformer {
                 kind: HirExprKind::Block(self.transform_block(body.clone())),
                 span: body.span,
                 ty: HirTyKind::Placeholder,
-                id: self.hir_id(),
+                id: body.id,
             };
 
             self.map.insert_hir_expr(hir.id, hir.clone());
@@ -442,7 +442,7 @@ impl Transformer {
             .params
             .iter()
             .map(|param| HirParam {
-                id: HirId::from_u32(param.id.as_u32()),
+                id: ItemId::from_u32(param.id.as_u32()),
                 span: param.span,
                 name: param.name,
                 ty: self.transform_ty(param.ty.clone()),
@@ -481,7 +481,7 @@ impl Transformer {
                 .fields
                 .iter()
                 .map(|field| HirField {
-                    id: self.hir_id(),
+                    id: field.id,
                     span: field.span,
                     ident: field.ident,
                     ty: self.transform_ty(field.ty.clone()).kind,
@@ -499,7 +499,7 @@ impl Transformer {
                 .params
                 .iter()
                 .map(|param| HirGenericParam {
-                    id: self.hir_id(),
+                    id: param.id,
                     name: param.ident,
                     kind: self.hir_generic_kind(param.kind.clone()),
                 })
@@ -516,7 +516,7 @@ impl Transformer {
             .collect();
 
         HirBlock {
-            id: self.hir_id(),
+            id: block.id,
             span: block.span,
             stmts,
         }
@@ -524,7 +524,7 @@ impl Transformer {
 
     pub fn transform_stmt(&mut self, stmt: Stmt) -> HirStmt {
         HirStmt {
-            id: self.hir_id(),
+            id: stmt.id,
             span: stmt.span,
             kind: match stmt.kind {
                 StmtKind::Expr(expr) => HirStmtKind::Expr(self.transform_expr(expr).0),
@@ -549,9 +549,9 @@ impl Transformer {
         }
     }
 
-    pub fn transform_expr(&mut self, expr: Expr) -> (HirExpr, HirId) {
+    pub fn transform_expr(&mut self, expr: Expr) -> (HirExpr, ItemId) {
         let expr = HirExpr {
-            id: self.hir_id(),
+            id: expr.id,
             span: expr.span,
             kind: match expr.kind {
                 ExprKind::Binary(lhs, op, rhs) => HirExprKind::Binary(
@@ -609,7 +609,7 @@ impl Transformer {
                     HirExprKind::Assign(
                         Box::new(self.transform_expr(*lhs.clone()).0),
                         Box::new(HirExpr {
-                            id: self.hir_id(),
+                            id: ItemId::new(),
                             span: expr.span,
                             kind: HirExprKind::Binary(
                                 Box::new(self.transform_expr(*lhs).0),
@@ -668,7 +668,7 @@ impl Transformer {
                 ),
                 ExprKind::StructConstructor(ident, generics, fields) => {
                     HirExprKind::StructConstructor(HirStructConstructor {
-                        id: self.hir_id(),
+                        id: expr.id,
                         name: ident,
                         generics: self.transform_generic_arguments(generics),
                         fields: fields
@@ -710,7 +710,7 @@ impl Transformer {
                 .params
                 .iter()
                 .map(|param| HirGenericArg {
-                    id: self.hir_id(),
+                    id: param.id,
                     ty: self.transform_ty(param.ty.clone()).kind,
                 })
                 .collect(),
@@ -718,9 +718,9 @@ impl Transformer {
         }
     }
 
-    pub fn transform_ty(&mut self, ty: brim_ast::ty::Ty) -> HirTy {
+    pub fn transform_ty(&mut self, ty: Ty) -> HirTy {
         HirTy {
-            id: self.hir_id(),
+            id: ty.id,
             span: ty.span,
             kind: match ty.kind {
                 TyKind::Ptr(ty, cnst) => {
@@ -758,11 +758,5 @@ impl Transformer {
     pub fn ret_with_error(&mut self, err: impl ToDiagnostic + 'static) -> HirTyKind {
         self.ctx.emit(Box::new(err));
         HirTyKind::err()
-    }
-
-    pub fn hir_id(&mut self) -> HirId {
-        self.last_id += 1;
-
-        HirId::from_usize(self.last_id)
     }
 }

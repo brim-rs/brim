@@ -1,5 +1,6 @@
-use crate::{HirId, items::HirGenericArgs};
+use crate::items::HirGenericArgs;
 use brim_ast::{
+    ItemId,
     item::Ident,
     token::LitKind,
     ty::{Const, PrimitiveType},
@@ -10,7 +11,7 @@ use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone)]
 pub struct HirTy {
-    pub id: HirId,
+    pub id: ItemId,
     pub kind: HirTyKind,
     pub span: Span,
 }

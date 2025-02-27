@@ -1,10 +1,10 @@
-use crate::{HirId, expr::HirExpr, ty::HirTyKind};
-use brim_ast::item::Ident;
+use crate::{expr::HirExpr, ty::HirTyKind};
+use brim_ast::{ItemId, item::Ident};
 use brim_span::span::Span;
 
 #[derive(Clone, Debug)]
 pub struct HirStmt {
-    pub id: HirId,
+    pub id: ItemId,
     pub kind: HirStmtKind,
     pub span: Span,
 }

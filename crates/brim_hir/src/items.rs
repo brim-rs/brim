@@ -1,8 +1,6 @@
-use crate::{
-    HirId,
-    ty::{HirTy, HirTyKind},
-};
+use crate::ty::{HirTy, HirTyKind};
 use brim_ast::{
+    ItemId,
     item::{Ident, Visibility},
     token::Lit,
 };
@@ -12,7 +10,7 @@ use std::{fmt::Display, path::PathBuf};
 
 #[derive(Clone, Debug)]
 pub struct HirItem {
-    pub id: HirId,
+    pub id: ItemId,
     pub span: Span,
     pub ident: Ident,
     pub kind: HirItemKind,
@@ -72,7 +70,7 @@ impl HirStruct {
 
 #[derive(Clone, Debug)]
 pub struct HirField {
-    pub id: HirId,
+    pub id: ItemId,
     pub span: Span,
     pub ident: Ident,
     pub ty: HirTyKind,
@@ -100,7 +98,7 @@ pub enum HirImportsKind {
 pub struct HirFn {
     pub sig: HirFnSig,
     /// ID of the function body block
-    pub body: Option<HirId>,
+    pub body: Option<ItemId>,
     /// Return type specified by the user or the default return type. Different from the signature return type.
     pub resolved_type: HirTyKind,
 }
@@ -181,7 +179,7 @@ impl HirGenericArgs {
 
 #[derive(Clone, Debug)]
 pub struct HirGenericArg {
-    pub id: HirId,
+    pub id: ItemId,
     pub ty: HirTyKind,
 }
 
@@ -193,7 +191,7 @@ impl PartialEq for HirGenericArg {
 
 #[derive(Clone, Debug)]
 pub struct HirParam {
-    pub id: HirId,
+    pub id: ItemId,
     pub span: Span,
     pub name: Ident,
     pub ty: HirTy,
@@ -209,7 +207,7 @@ pub struct HirCallParam {
 
 #[derive(Clone, Debug)]
 pub struct HirGenericParam {
-    pub id: HirId,
+    pub id: ItemId,
     pub name: Ident,
     pub kind: HirGenericKind,
 }

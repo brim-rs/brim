@@ -2,7 +2,6 @@ mod errors;
 pub mod scope;
 
 use crate::{
-    HirId,
     builtin::expand_builtins,
     expr::{HirExpr, HirExprKind},
     inference::{
@@ -17,11 +16,7 @@ use crate::{
     transformer::{HirModule, HirModuleMap, HirSymbolKind, StoredHirItem},
     ty::HirTyKind,
 };
-use brim_ast::{
-    expr::{BinOpKind, UnaryOp},
-    token::{Lit, LitKind},
-    ty::PrimitiveType,
-};
+use brim_ast::{expr::{BinOpKind, UnaryOp}, token::{Lit, LitKind}, ty::PrimitiveType, ItemId};
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{GlobalSymbol, ModuleId, temp_diag::TemporaryDiagnosticContext};
 use indexmap::IndexMap;
@@ -165,7 +160,7 @@ impl<'a> TypeInference<'a> {
             .insert(item.id, StoredHirItem::Item(item.clone()));
     }
 
-    fn infer_body(&mut self, body_id: HirId) {
+    fn infer_body(&mut self, body_id: ItemId) {
         let mut expr = self.hir.get_expr_mut(body_id).clone();
 
         self.infer_expr(&mut expr);

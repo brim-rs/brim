@@ -1,5 +1,5 @@
 use crate::{
-    NodeId,
+    ItemId,
     expr::Expr,
     item::{GenericArgs, Ident},
 };
@@ -9,7 +9,7 @@ use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub struct Ty {
-    pub id: NodeId,
+    pub id: ItemId,
     pub kind: TyKind,
     pub span: Span,
 }
