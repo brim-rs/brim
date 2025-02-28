@@ -18,9 +18,9 @@ pub struct HirTy {
 
 #[derive(Debug, Clone)]
 pub enum HirTyKind {
-    /// Reference type eg. `&T` (brim) -> `T&` (C++) or `const &T` (brim) -> `const T&` (C++)
+    /// Reference type eg. `&T` (brim) -> `T&` (C++) or `&const T` (brim) -> `const T&` (C++)
     Ref(Box<HirTyKind>, Const),
-    /// Pointer type eg. `*T` (brim) -> `T*` (C++) or `const *T` (brim) -> `const T*` (C++)
+    /// Pointer type eg. `*T` (brim) -> `T*` (C++) or `*const T` (brim) -> `const T*` (C++)
     Ptr(Box<HirTyKind>, Const),
     /// Const type eg. `const T` (brim) -> `const T` (C++)
     Const(Box<HirTyKind>),
