@@ -48,8 +48,8 @@ pub enum HirTyKind {
 impl Display for HirTyKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            HirTyKind::Ref(ty, _) => write!(f, "&{}", ty),
-            HirTyKind::Ptr(ty, _) => write!(f, "*{}", ty),
+            HirTyKind::Ref(ty, cnst) => write!(f, "&{} {}", ty, cnst),
+            HirTyKind::Ptr(ty, cnst) => write!(f, "*{} {}", cnst, ty),
             HirTyKind::Const(ty) => write!(f, "const {}", ty),
             HirTyKind::Array(ty, len) => write!(f, "[{}; {:?}]", ty, len),
             HirTyKind::Vec(ty) => write!(f, "{}[]", ty),

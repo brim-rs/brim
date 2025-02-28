@@ -45,14 +45,6 @@ pub struct ExpectedToken {
 }
 
 #[derive(Diagnostic)]
-#[error("`const` should be placed before reference of pointer.")]
-pub struct ConstAfter {
-    #[error("move `const` before {before}")]
-    pub span: (Span, usize),
-    pub before: &'static str,
-}
-
-#[derive(Diagnostic)]
 #[error("couldn't find parameter list for function.")]
 pub struct MissingParamList {
     #[error]

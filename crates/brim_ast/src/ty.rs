@@ -29,6 +29,15 @@ pub enum Const {
     No,
 }
 
+impl Display for Const {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Const::Yes => write!(f, "const"),
+            Const::No => Ok(()),
+        }
+    }
+}
+
 impl Const {
     pub fn from_bool(b: bool) -> Self {
         if b { Const::Yes } else { Const::No }
