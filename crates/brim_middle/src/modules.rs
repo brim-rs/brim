@@ -88,37 +88,16 @@ impl<'a> AstWalker for SymbolCollector<'a> {
 
         match &item.kind {
             ItemKind::Fn(f) => {
-                self.table.add_symbol(
-                    self.file_id,
-                    GlobalSymbol::new(
-                        item.ident,
-                        GlobalSymbolKind::Fn(f.clone()),
-                        id,
-                        item.vis.clone(),
-                    ),
-                );
+                self.table
+                    .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
             ItemKind::Struct(s) => {
-                self.table.add_symbol(
-                    self.file_id,
-                    GlobalSymbol::new(
-                        item.ident,
-                        GlobalSymbolKind::Struct(s.clone()),
-                        id,
-                        item.vis.clone(),
-                    ),
-                );
+                self.table
+                    .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
             ItemKind::TypeAlias(t) => {
-                self.table.add_symbol(
-                    self.file_id,
-                    GlobalSymbol::new(
-                        item.ident,
-                        GlobalSymbolKind::Ty(t.ty.clone()),
-                        id,
-                        item.vis.clone(),
-                    ),
-                );
+                self.table
+                    .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
             _ => {}
         }
@@ -172,15 +151,10 @@ impl<'a> AstWalker for UseCollector<'a> {
                     ImportsKind::Default(ident) => {
                         let map = self.table.create_map(mod_id);
 
-                        symbols.push(GlobalSymbol::new(
-                            ident.clone(),
-                            GlobalSymbolKind::Namespace(map),
-                            Location {
-                                mod_id,
-                                item_id: ItemId::dummy(),
-                            },
-                            item.vis.clone(),
-                        ))
+                        symbols.push(GlobalSymbol::new(ident.clone(), Location {
+                            mod_id,
+                            item_id: ItemId::dummy(),
+                        }))
                     }
                 }
 

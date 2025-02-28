@@ -36,28 +36,15 @@ impl Location {
     }
 }
 
-#[derive(Clone)]
-pub struct GlobalSymbol<Kind = GlobalSymbolKind> {
+#[derive(Clone, Debug)]
+pub struct GlobalSymbol {
     pub id: Location,
     pub name: Ident,
-    pub kind: Kind,
-    pub vis: Visibility,
 }
 
-impl<Kind: Clone + Debug> Debug for GlobalSymbol<Kind> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} (mod {:?})", self.name, self.id.mod_id)
-    }
-}
-
-impl<Kind> GlobalSymbol<Kind> {
-    pub fn new(name: Ident, kind: Kind, location: Location, vis: Visibility) -> Self {
-        Self {
-            name,
-            kind,
-            id: location,
-            vis,
-        }
+impl GlobalSymbol {
+    pub fn new(name: Ident, location: Location) -> Self {
+        Self { name, id: location }
     }
 }
 
@@ -79,34 +66,19 @@ pub struct ExperimentalFeatureNotEnabled {
     pub note: String,
 }
 
-#[derive(Clone)]
-pub struct SymbolTable<Kind = GlobalSymbolKind>
-where
-    Kind: Clone + Debug,
-{
-    pub symbols: HashMap<usize, Vec<GlobalSymbol<Kind>>>,
+#[derive(Clone, Debug)]
+pub struct SymbolTable {
+    pub symbols: HashMap<usize, Vec<GlobalSymbol>>,
 }
 
-impl<Kind: Clone + Debug> Default for SymbolTable<Kind>
-where
-    HashMap<Ident, GlobalSymbol<Kind>>: FromIterator<(Ident, GlobalSymbol<Kind>)>,
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<Kind: Clone + Debug> SymbolTable<Kind>
-where
-    HashMap<Ident, GlobalSymbol<Kind>>: FromIterator<(Ident, GlobalSymbol<Kind>)>,
-{
+impl SymbolTable {
     pub fn new() -> Self {
         Self {
             symbols: HashMap::new(),
         }
     }
 
-    pub fn add_symbol(&mut self, file_id: usize, symbol: GlobalSymbol<Kind>) {
+    pub fn add_symbol(&mut self, file_id: usize, symbol: GlobalSymbol) {
         debug!("Adding symbol: {}", symbol.name);
 
         self.symbols
@@ -115,7 +87,7 @@ where
             .push(symbol);
     }
 
-    pub fn get_by_ident(&self, ident: &Ident, file_id: usize) -> Option<&GlobalSymbol<Kind>> {
+    pub fn get_by_ident(&self, ident: &Ident, file_id: usize) -> Option<&GlobalSymbol> {
         self.symbols.get(&file_id).and_then(|symbols| {
             symbols
                 .iter()
@@ -123,7 +95,7 @@ where
         })
     }
 
-    pub fn by_module(&self, mod_id: ModuleId) -> Vec<GlobalSymbol<Kind>> {
+    pub fn by_module(&self, mod_id: ModuleId) -> Vec<GlobalSymbol> {
         self.symbols
             .values()
             .flatten()
@@ -132,14 +104,14 @@ where
             .collect()
     }
 
-    pub fn create_map(&self, mod_id: ModuleId) -> HashMap<Ident, GlobalSymbol<Kind>> {
+    pub fn create_map(&self, mod_id: ModuleId) -> HashMap<Ident, GlobalSymbol> {
         self.by_module(mod_id)
             .into_iter()
             .map(|symbol| (symbol.name.clone(), symbol))
             .collect()
     }
 
-    pub fn resolve(&self, ident: &String, mod_id: usize) -> Option<GlobalSymbol<Kind>> {
+    pub fn resolve(&self, ident: &String, mod_id: usize) -> Option<GlobalSymbol> {
         self.symbols
             .get(&mod_id)
             .and_then(|symbols| {
@@ -150,13 +122,7 @@ where
             .cloned()
     }
 
-    pub fn iter_symbols(&self) -> impl Iterator<Item = &GlobalSymbol<Kind>> {
+    pub fn iter_symbols(&self) -> impl Iterator<Item = &GlobalSymbol> {
         self.symbols.values().flatten()
-    }
-}
-
-impl<Kind: Clone + Debug> Debug for SymbolTable<Kind> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_map().entries(self.symbols.iter()).finish()
     }
 }

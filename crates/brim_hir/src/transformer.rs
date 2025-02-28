@@ -47,19 +47,11 @@ pub fn transform_module(
 }
 
 #[derive(Debug, Clone)]
-pub enum HirSymbolKind {
-    Fn(HirFn),
-    Struct(HirStruct),
-    Namespace(HashMap<Ident, GlobalSymbol<HirSymbolKind>>),
-    Ty(HirTyKind),
-}
-
-#[derive(Debug, Clone)]
 pub struct HirModuleMap {
     pub modules: Vec<HirModule>,
     pub hir_items: HashMap<ItemId, StoredHirItem>,
     pub expanded_by_builtins: HashMap<ItemId, String>,
-    pub symbols: SymbolTable<HirSymbolKind>,
+    pub symbols: SymbolTable,
 }
 
 impl HirModuleMap {
@@ -69,7 +61,7 @@ impl HirModuleMap {
             modules: Vec::new(),
             hir_items: HashMap::new(),
             expanded_by_builtins: HashMap::new(),
-            symbols: SymbolTable::<HirSymbolKind>::new(),
+            symbols: SymbolTable::new(),
         }
     }
 
@@ -344,23 +336,22 @@ impl Transformer {
         self.map.clone()
     }
 
-    pub fn transform_global_symbol(&mut self, symbol: GlobalSymbol) -> GlobalSymbol<HirSymbolKind> {
+    pub fn transform_global_symbol(&mut self, symbol: GlobalSymbol) -> GlobalSymbol {
         GlobalSymbol {
             id: symbol.id,
             name: symbol.name,
-            kind: match symbol.kind {
-                GlobalSymbolKind::Struct(str) => HirSymbolKind::Struct(self.transform_struct(str)),
-                GlobalSymbolKind::Fn(f) => HirSymbolKind::Fn(self.transform_fn(f)),
-                GlobalSymbolKind::Namespace(x) => {
-                    let mut namespace = HashMap::new();
-                    for (ident, sym) in x {
-                        namespace.insert(ident, self.transform_global_symbol(sym));
-                    }
-                    HirSymbolKind::Namespace(namespace)
-                }
-                GlobalSymbolKind::Ty(ty) => HirSymbolKind::Ty(self.transform_ty(ty).kind),
-            },
-            vis: symbol.vis,
+            // kind: match symbol.kind {
+            //     GlobalSymbolKind::Struct(str) => HirSymbolKind::Struct(self.transform_struct(str)),
+            //     GlobalSymbolKind::Fn(f) => HirSymbolKind::Fn(self.transform_fn(f)),
+            //     GlobalSymbolKind::Namespace(x) => {
+            //         let mut namespace = HashMap::new();
+            //         for (ident, sym) in x {
+            //             namespace.insert(ident, self.transform_global_symbol(sym));
+            //         }
+            //         HirSymbolKind::Namespace(namespace)
+            //     }
+            //     GlobalSymbolKind::Ty(ty) => HirSymbolKind::Ty(self.transform_ty(ty).kind),
+            // },
         }
     }
 
