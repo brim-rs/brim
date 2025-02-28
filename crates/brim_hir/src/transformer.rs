@@ -55,7 +55,6 @@ pub struct HirModuleMap {
 }
 
 impl HirModuleMap {
-    /// Create a new, empty HirModuleMap
     pub fn new() -> Self {
         Self {
             modules: Vec::new(),
@@ -65,69 +64,26 @@ impl HirModuleMap {
         }
     }
 
-    /// Insert a HIR item with a given ID
     pub fn insert_hir_item(&mut self, id: ItemId, item: StoredHirItem) {
         self.hir_items.insert(id, item);
     }
 
-    /// Convenience method to insert a HIR expression
     pub fn insert_hir_expr(&mut self, id: ItemId, expr: HirExpr) {
         self.hir_items.insert(id, StoredHirItem::Expr(expr));
     }
 
-    /// Convenience method to insert a HIR statement
-    pub fn insert_hir_stmt(&mut self, id: ItemId, stmt: HirStmt) {
-        self.hir_items.insert(id, StoredHirItem::Stmt(stmt));
-    }
-
-    /// Add a new module to the map
     pub fn new_module(&mut self, module: HirModule) {
         self.modules.push(module);
     }
 
-    /// Retrieve an immutable reference to a HIR item by ID
     pub fn get(&self, id: ItemId) -> Option<&StoredHirItem> {
         self.hir_items.get(&id)
     }
 
-    /// Retrieve a mutable reference to a HIR item by ID
     pub fn get_mut(&mut self, id: ItemId) -> Option<&mut StoredHirItem> {
         self.hir_items.get_mut(&id)
     }
 
-    /// Immutable getter for HIR items with panic on incorrect type
-    pub fn get_item(&self, id: ItemId) -> &HirItem {
-        match self.get(id) {
-            Some(StoredHirItem::Item(item)) => item,
-            _ => panic!("Expected item for ID {:?}", id),
-        }
-    }
-
-    /// Mutable getter for HIR items
-    pub fn get_item_mut(&mut self, id: ItemId) -> &mut HirItem {
-        match self.get_mut(id) {
-            Some(StoredHirItem::Item(item)) => item,
-            _ => panic!("Expected item for ID {:?}", id),
-        }
-    }
-
-    /// Safe immutable getter for HIR items
-    pub fn get_item_safe(&self, id: ItemId) -> Option<&HirItem> {
-        match self.get(id) {
-            Some(StoredHirItem::Item(item)) => Some(item),
-            _ => None,
-        }
-    }
-
-    /// Safe mutable getter for HIR items
-    pub fn get_item_safe_mut(&mut self, id: ItemId) -> Option<&mut HirItem> {
-        match self.get_mut(id) {
-            Some(StoredHirItem::Item(item)) => Some(item),
-            _ => None,
-        }
-    }
-
-    /// Immutable getter for HIR expressions with panic on incorrect type
     pub fn get_expr(&self, id: ItemId) -> &HirExpr {
         match self.get(id) {
             Some(StoredHirItem::Expr(expr)) => expr,
@@ -135,7 +91,6 @@ impl HirModuleMap {
         }
     }
 
-    /// Mutable getter for HIR expressions
     pub fn get_expr_mut(&mut self, id: ItemId) -> &mut HirExpr {
         match self.get_mut(id) {
             Some(StoredHirItem::Expr(expr)) => expr,
@@ -143,119 +98,8 @@ impl HirModuleMap {
         }
     }
 
-    /// Safe immutable getter for HIR expressions
-    pub fn get_expr_safe(&self, id: ItemId) -> Option<&HirExpr> {
-        match self.get(id) {
-            Some(StoredHirItem::Expr(expr)) => Some(expr),
-            _ => None,
-        }
-    }
-
-    /// Safe mutable getter for HIR expressions
-    pub fn get_expr_safe_mut(&mut self, id: ItemId) -> Option<&mut HirExpr> {
-        match self.get_mut(id) {
-            Some(StoredHirItem::Expr(expr)) => Some(expr),
-            _ => None,
-        }
-    }
-
-    /// Immutable getter for HIR statements with panic on incorrect type
-    pub fn get_stmt(&self, id: ItemId) -> &HirStmt {
-        match self.get(id) {
-            Some(StoredHirItem::Stmt(stmt)) => stmt,
-            _ => panic!("Expected stmt for ID {:?}", id),
-        }
-    }
-
-    /// Mutable getter for HIR statements
-    pub fn get_stmt_mut(&mut self, id: ItemId) -> &mut HirStmt {
-        match self.get_mut(id) {
-            Some(StoredHirItem::Stmt(stmt)) => stmt,
-            _ => panic!("Expected stmt for ID {:?}", id),
-        }
-    }
-
-    /// Safe immutable getter for HIR statements
-    pub fn get_stmt_safe(&self, id: ItemId) -> Option<&HirStmt> {
-        match self.get(id) {
-            Some(StoredHirItem::Stmt(stmt)) => Some(stmt),
-            _ => None,
-        }
-    }
-
-    /// Safe mutable getter for HIR statements
-    pub fn get_stmt_safe_mut(&mut self, id: ItemId) -> Option<&mut HirStmt> {
-        match self.get_mut(id) {
-            Some(StoredHirItem::Stmt(stmt)) => Some(stmt),
-            _ => None,
-        }
-    }
-
-    /// Return the number of items in the map
-    pub fn len(&self) -> usize {
-        self.hir_items.len()
-    }
-
-    /// Check if the map is empty
-    pub fn is_empty(&self) -> bool {
-        self.hir_items.is_empty()
-    }
-
-    /// Clear all items from the map
-    pub fn clear(&mut self) {
-        self.hir_items.clear();
-        self.modules.clear();
-    }
-
-    /// Get module by ID
     pub fn get_module(&self, id: ModuleId) -> Option<&HirModule> {
         self.modules.iter().find(|module| module.mod_id == id)
-    }
-
-    pub fn update_modules_imports(&mut self, mod_id: ModuleId, imports: Vec<LocId>) {
-        for module in &mut self.modules {
-            if module.mod_id == mod_id {
-                module.imports = imports;
-                return;
-            }
-        }
-    }
-
-    // TODO: again refactor
-    pub fn find_symbols_in_module(&self, module_id: Option<ModuleId>) -> Vec<&HirItem> {
-        self.hir_items
-            .iter()
-            .filter_map(|(_, item)| {
-                if let StoredHirItem::Item(item) = item {
-                    if module_id.map_or(true, |mid| item.mod_id == mid) {
-                        Some(item)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    pub fn find_symbol_by_name(&self, name: &str, module_id: Option<ModuleId>) -> Vec<&HirItem> {
-        self.hir_items
-            .iter()
-            .filter_map(|(_, item)| {
-                if let StoredHirItem::Item(item) = item {
-                    if item.ident.to_string() == name
-                        && module_id.map_or(true, |mid| item.mod_id == mid)
-                    {
-                        Some(item)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect()
     }
 
     pub fn get_module_by_id(&self, id: ModuleId) -> Option<&HirModule> {
