@@ -6,6 +6,8 @@
   "pages": [
     "---Introduction---",
     "index",
+    "---Common---",
+    "common/types",
     "---Lexical structure---",
     "lexical/keywords",
     "lexical/identifiers",

@@ -1,5 +1,5 @@
 use crate::{
-    parser::{PResult, PToken, PTokenKind, Parser, errors::ConstAfter},
+    parser::{PResult, PToken, PTokenKind, Parser},
     ptok,
 };
 use brim_ast::{
@@ -16,9 +16,9 @@ impl Parser {
         let span = self.current().span;
 
         let kind = if self.eat(TokenKind::BinOp(BinOpToken::And)) {
-            self.parse_ref(false)?
+            self.parse_ref()?
         } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
-            self.parse_ptr(false)?
+            self.parse_ptr()?
         } else if self.current().is_keyword(Const) {
             self.parse_const()?
         } else if self
@@ -47,39 +47,38 @@ impl Parser {
     }
 
     pub fn parse_const(&mut self) -> PResult<TyKind> {
-        self.eat_keyword(ptok!(Const));
-
         if self.eat(TokenKind::BinOp(BinOpToken::And)) {
-            Ok(self.parse_ref(true)?)
+            Ok(self.parse_ref()?)
         } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
-            Ok(self.parse_ptr(true)?)
+            Ok(self.parse_ptr()?)
         } else {
+            self.eat_keyword(ptok!(Const));
+
             Ok(TyKind::Const(Box::new(self.parse_type()?)))
         }
     }
 
-    pub fn parse_ref(&mut self, constant: bool) -> PResult<TyKind> {
+    pub fn is_const(&mut self) -> bool {
         if self.current().is_keyword(Const) {
-            self.emit(ConstAfter {
-                span: (self.prev().span, self.file),
-                before: "reference",
-            });
+            self.eat_keyword(ptok!(Const));
+            true
+        } else {
+            false
         }
-
-        let ty = self.parse_type()?;
-        Ok(TyKind::Ref(Box::new(ty), Const::from_bool(constant)))
     }
 
-    pub fn parse_ptr(&mut self, constant: bool) -> PResult<TyKind> {
-        if self.current().is_keyword(Const) {
-            self.emit(ConstAfter {
-                span: (self.prev().span, self.file),
-                before: "pointer",
-            });
-        }
+    pub fn parse_ref(&mut self) -> PResult<TyKind> {
+        let is_const = self.is_const();
 
         let ty = self.parse_type()?;
-        Ok(TyKind::Ptr(Box::new(ty), Const::from_bool(constant)))
+        Ok(TyKind::Ref(Box::new(ty), Const::from_bool(is_const)))
+    }
+
+    pub fn parse_ptr(&mut self) -> PResult<TyKind> {
+        let is_const = self.is_const();
+
+        let ty = self.parse_type()?;
+        Ok(TyKind::Ptr(Box::new(ty), Const::from_bool(is_const)))
     }
 
     pub fn parse_array(&mut self) -> PResult<TyKind> {

@@ -1,0 +1,50 @@
+---
+title: Types
+icon: Type
+---
+
+### Primitive Types
+
+| Category            | Type    | Description                                        |
+|---------------------|---------|----------------------------------------------------|
+| Integers (Signed)   | `i8`    | 8-bit signed integer                               |
+|                     | `i16`   | 16-bit signed integer                              |
+|                     | `i32`   | 32-bit signed integer                              |
+|                     | `i64`   | 64-bit signed integer                              |
+|                     | `isize` | Platform-dependent signed integer (pointer size)   |
+| Integers (Unsigned) | `u8`    | 8-bit unsigned integer                             |
+|                     | `u16`   | 16-bit unsigned integer                            |
+|                     | `u32`   | 32-bit unsigned integer                            |
+|                     | `u64`   | 64-bit unsigned integer                            |
+|                     | `usize` | Platform-dependent unsigned integer (pointer size) |
+| Floating Point      | `f32`   | 32-bit floating-point number                       |
+|                     | `f64`   | 64-bit floating-point number                       |
+| Other               | `bool`  | Boolean (`true` or `false`)                        |
+|                     | `char`  | Unicode character                                  |
+|                     | `void`  | Represents no value                                |
+
+### Compound Types
+
+#### Arrays
+
+Fixed-size collections of same-type values:
+`Vec` is a dynamic array that can change its size. It's a part of the standard library.
+
+```brim
+let numbers: i32[5] = [1, 2, 3, 4, 5]
+```
+
+> Arrays are useful when you know the size of the collection at compile time and know that it won't change.
+
+- Accessing elements in an array is done using the `[]` operator.
+
+```brim
+let array: int[5] = [1, 2, 3, 4, 5]
+let first = array[0]
+```
+
+⚠️ **Array safety**:
+
+- Bounds checking is enforced at runtime
+- Out-of-bounds access triggers a panic
+- Size must be known at compile time

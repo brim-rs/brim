@@ -2,7 +2,7 @@ use { File } from std::fs::file;
 
 struct Vec2<T> {
     x: T,
-    y: T
+    y: *const i32
 }
 
 pub fn main() {
