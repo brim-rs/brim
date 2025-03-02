@@ -2,7 +2,6 @@ mod errors;
 pub mod scopes;
 
 use crate::{
-    CompiledModules,
     name::{
         errors::{AccessOutsideComptime, UndeclaredFunction, UndeclaredStruct, UndeclaredVariable},
         scopes::Scope,
@@ -22,6 +21,7 @@ use brim_span::span::Span;
 use convert_case::{Case, Casing};
 use scopes::{ScopeManager, VariableInfo};
 use tracing::debug;
+use brim_hir::CompiledModules;
 
 #[derive(Debug)]
 pub struct NameResolver<'a> {

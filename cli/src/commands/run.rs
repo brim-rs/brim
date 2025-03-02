@@ -70,7 +70,11 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
 
         compiled_projects
             .map
-            .insert(config.project.name.clone(), CompiledModule { config, hir });
+            .insert(config.project.name.clone(), CompiledModule {
+                config,
+                hir: hir.clone(),
+            });
+        compiled_projects.items.extend(hir.items);
     }
 
     // let code = comp.run_codegen(hir);

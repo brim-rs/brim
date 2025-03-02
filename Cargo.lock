@@ -274,6 +274,7 @@ name = "brim-hir"
 version = "0.1.0"
 dependencies = [
  "brim-ast",
+ "brim-config",
  "brim-diag-macro",
  "brim-diagnostics",
  "brim-index",

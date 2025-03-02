@@ -2,6 +2,7 @@ mod errors;
 pub mod scope;
 
 use crate::{
+    CompiledModules,
     builtin::expand_builtins,
     expr::{HirExpr, HirExprKind},
     inference::{
@@ -13,7 +14,7 @@ use crate::{
         HirItemKind,
     },
     stmts::{HirStmt, HirStmtKind},
-    transformer::{HirModule, HirModuleMap, HirSymbolKind, StoredHirItem},
+    transformer::{HirModule, HirModuleMap, StoredHirItem},
     ty::HirTyKind,
 };
 use brim_ast::{
@@ -33,6 +34,7 @@ pub struct TypeInference<'a> {
     pub scope_manager: TypeScopeManager,
     pub current_mod: ModuleId,
     pub temp: TemporaryDiagnosticContext,
+    pub compiled: &'a mut CompiledModules,
 }
 
 #[derive(Debug, Clone)]
@@ -57,7 +59,10 @@ impl InferCtx {
     }
 }
 
-pub fn infer_types(hir: &mut HirModuleMap) -> TypeInference {
+pub fn infer_types<'a>(
+    hir: &'a mut HirModuleMap,
+    compiled: &'a mut CompiledModules,
+) -> TypeInference<'a> {
     expand_builtins(hir);
 
     let mut ti = TypeInference {
@@ -66,6 +71,7 @@ pub fn infer_types(hir: &mut HirModuleMap) -> TypeInference {
         scope_manager: TypeScopeManager::new(),
         current_mod: ModuleId::from_usize(0),
         temp: TemporaryDiagnosticContext::new(),
+        compiled,
     };
     ti.infer();
 
@@ -130,14 +136,13 @@ impl<'a> TypeInference<'a> {
                         && let None = str.generics.is_generic(&field.ty)
                     {
                         let sym = self
-                            .hir
-                            .symbols
-                            .resolve(&name.to_string(), self.current_mod.as_usize())
+                            .compiled
+                            .resolve_symbol(&name.to_string(), self.current_mod.as_usize())
                             .expect(format!("{} not found", name).as_str());
 
-                        if let HirSymbolKind::Ty(ty) = sym.kind {
-                            if ty.can_be_directly_used() {
-                                ty
+                        if let HirItemKind::TypeAlias(ty) = &sym.kind {
+                            if ty.ty.can_be_directly_used() {
+                                ty.ty.clone()
                             } else {
                                 field.ty.clone()
                             }
@@ -150,12 +155,6 @@ impl<'a> TypeInference<'a> {
 
                     field.ty = ty;
                 }
-
-                for (module, syms) in self.hir.symbols.symbols.iter_mut() {
-                    for sym in syms {}
-                }
-
-                println!("{:?}", self.hir.symbols.symbols);
             }
             _ => {}
         }
@@ -365,16 +364,16 @@ impl<'a> TypeInference<'a> {
             HirExprKind::Call(ident, args, params) => {
                 let func_ident = ident.as_ident().unwrap().to_string();
                 let func = match self
-                    .hir
-                    .symbols
-                    .resolve(&func_ident, self.current_mod.as_usize())
+                    .compiled
+                    .resolve_symbol(&func_ident, self.current_mod.as_usize())
+                    .cloned()
                 {
                     Some(f) => f,
                     None => panic!("handle this better"),
                 };
 
-                let fn_def = match func.kind {
-                    HirSymbolKind::Fn(f) => f,
+                let fn_def = match &func.kind {
+                    HirItemKind::Fn(f) => f,
                     _ => panic!("not a func"),
                 };
                 let func_params = fn_def.sig.params.params.clone();
@@ -403,7 +402,7 @@ impl<'a> TypeInference<'a> {
 
                                 params.push(HirCallParam {
                                     span: fn_param.span,
-                                    name: func.name,
+                                    name: func.ident,
                                     ty: final_ty,
                                     from_generic: Some(generic_param),
                                 });
@@ -411,7 +410,7 @@ impl<'a> TypeInference<'a> {
                             HirGenericKind::Const { .. } => {
                                 params.push(HirCallParam {
                                     span: fn_param.span,
-                                    name: func.name,
+                                    name: func.ident,
                                     ty: arg.ty.clone(),
                                     from_generic: Some(generic_param),
                                 });
@@ -420,7 +419,7 @@ impl<'a> TypeInference<'a> {
                     } else {
                         params.push(HirCallParam {
                             span: fn_param.span,
-                            name: func.name,
+                            name: func.ident,
                             ty: fn_param.ty.kind.clone(),
                             from_generic: None,
                         });
@@ -449,15 +448,16 @@ impl<'a> TypeInference<'a> {
                 let ident = &hir_struct.name;
 
                 let str = self
-                    .hir
-                    .symbols
-                    .resolve(&ident.to_string(), self.current_mod.as_usize())
-                    .unwrap();
+                    .compiled
+                    .resolve_symbol(&ident.to_string(), self.current_mod.as_usize())
+                    .unwrap()
+                    .clone();
 
                 let str = match &str.kind {
-                    HirSymbolKind::Struct(s) => s,
+                    HirItemKind::Struct(s) => s,
                     _ => panic!("not a struct"),
                 };
+
                 let mut generic_types: IndexMap<String, HirTyKind> = IndexMap::new();
 
                 for (ident, expr) in fields.iter_mut() {

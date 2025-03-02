@@ -1,4 +1,5 @@
 use crate::{
+    CompiledModule, CompiledModules,
     comptime::errors::ComptimeExprExpectedTy,
     expr::{
         HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfExpr, HirMatchArm,
@@ -40,10 +41,13 @@ pub struct LocId {
 
 pub fn transform_module(
     map: ModuleMap,
-    syms: &mut SymbolTable,
+    compiled_modules: &mut CompiledModules,
 ) -> (HirModuleMap, TemporaryDiagnosticContext) {
     let mut transformer = Transformer::new(map);
-    (transformer.transform_modules(syms), transformer.ctx)
+    (
+        transformer.transform_modules(compiled_modules),
+        transformer.ctx,
+    )
 }
 
 #[derive(Debug, Clone)]
@@ -52,6 +56,7 @@ pub struct HirModuleMap {
     pub hir_items: HashMap<ItemId, StoredHirItem>,
     pub expanded_by_builtins: HashMap<ItemId, String>,
     pub symbols: SymbolTable,
+    pub items: HashMap<ItemId, HirItem>,
 }
 
 impl HirModuleMap {
@@ -61,6 +66,7 @@ impl HirModuleMap {
             hir_items: HashMap::new(),
             expanded_by_builtins: HashMap::new(),
             symbols: SymbolTable::new(),
+            items: HashMap::new(),
         }
     }
 
@@ -107,7 +113,6 @@ impl HirModuleMap {
     }
 }
 
-// Implement Default trait for convenience
 impl Default for HirModuleMap {
     fn default() -> Self {
         Self::new()
@@ -163,16 +168,15 @@ impl Transformer {
         }
     }
 
-    pub fn transform_modules(&mut self, symbols: &mut SymbolTable) -> HirModuleMap {
+    pub fn transform_modules(&mut self, compiled: &mut CompiledModules) -> HirModuleMap {
         for module in self.module_map.modules.clone() {
             self.current_mod_id = ModuleId::from_usize(module.barrel.file_id);
-            let module = self.transform_module(module);
+            let module = self.transform_module(module, compiled);
             self.map.new_module(module);
         }
 
-        for (module, symbols) in symbols.symbols.clone() {
+        for (module, symbols) in compiled.symbols.symbols.clone() {
             for sym in symbols {
-                let sym = self.transform_global_symbol(sym);
                 self.map.symbols.add_symbol(module, sym);
             }
         }
@@ -180,31 +184,16 @@ impl Transformer {
         self.map.clone()
     }
 
-    pub fn transform_global_symbol(&mut self, symbol: GlobalSymbol) -> GlobalSymbol {
-        GlobalSymbol {
-            id: symbol.id,
-            name: symbol.name,
-            // kind: match symbol.kind {
-            //     GlobalSymbolKind::Struct(str) => HirSymbolKind::Struct(self.transform_struct(str)),
-            //     GlobalSymbolKind::Fn(f) => HirSymbolKind::Fn(self.transform_fn(f)),
-            //     GlobalSymbolKind::Namespace(x) => {
-            //         let mut namespace = HashMap::new();
-            //         for (ident, sym) in x {
-            //             namespace.insert(ident, self.transform_global_symbol(sym));
-            //         }
-            //         HirSymbolKind::Namespace(namespace)
-            //     }
-            //     GlobalSymbolKind::Ty(ty) => HirSymbolKind::Ty(self.transform_ty(ty).kind),
-            // },
-        }
-    }
-
-    pub fn transform_module(&mut self, module: Module) -> HirModule {
+    pub fn transform_module(
+        &mut self,
+        module: Module,
+        compiled: &mut CompiledModules,
+    ) -> HirModule {
         let items: Vec<HirItem> = module
             .barrel
             .items
             .iter()
-            .map(|item| self.transform_item(item.clone()))
+            .map(|item| self.transform_item(item.clone(), compiled))
             .filter_map(|item| item)
             .collect();
 
@@ -216,7 +205,11 @@ impl Transformer {
         }
     }
 
-    pub fn transform_item(&mut self, item: Item) -> Option<HirItem> {
+    pub fn transform_item(
+        &mut self,
+        item: Item,
+        compiled: &mut CompiledModules,
+    ) -> Option<HirItem> {
         let hir_item_kind = match item.kind.clone() {
             ItemKind::Fn(f_decl) => HirItemKind::Fn(self.transform_fn(f_decl)),
             ItemKind::Use(u) => {
@@ -253,6 +246,7 @@ impl Transformer {
 
         self.map
             .insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
+        compiled.insert_item(item.clone());
 
         Some(item)
     }

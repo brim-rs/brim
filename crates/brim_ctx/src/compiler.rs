@@ -1,5 +1,4 @@
 use crate::{
-    CompiledModules,
     diag_ctx::DiagnosticContext,
     errors::{MainFunctionConstant, MainFunctionParams},
     name::NameResolver,
@@ -12,7 +11,7 @@ use brim_diagnostics::{
     diagnostic::{Diagnostic, ToDiagnostic},
 };
 use brim_hir::{
-    Codegen,
+    Codegen, CompiledModules,
     inference::infer_types,
     items::HirFn,
     transformer::{HirModuleMap, transform_module},
@@ -96,9 +95,9 @@ impl CompilerContext {
         name_resolver.resolve_names();
         self.extend_temp(name_resolver.ctx);
 
-        let (hir, hir_temp) = &mut transform_module(name_resolver.map, &mut compiled.symbols);
+        let (hir, hir_temp) = &mut transform_module(name_resolver.map, compiled);
         self.extend_temp(hir_temp.clone());
-        let ti = infer_types(hir);
+        let ti = infer_types(hir, compiled);
         self.extend_temp(ti.temp.clone());
 
         if ti.temp.diags.is_empty() {
