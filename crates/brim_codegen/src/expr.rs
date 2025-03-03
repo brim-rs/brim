@@ -132,7 +132,7 @@ impl CppCodegen {
                         let fields = fields
                             .iter()
                             .map(|(field, expr)| {
-                                format!("{}: {}", field.name, self.generate_expr(expr.clone()))
+                                format!(".{} = {}", field.name, self.generate_expr(expr.clone()))
                             })
                             .collect::<Vec<String>>()
                             .join(", ");
