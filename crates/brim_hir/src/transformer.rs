@@ -108,6 +108,18 @@ impl HirModuleMap {
         self.modules.iter().find(|module| module.mod_id == id)
     }
 
+    pub fn get_fn(&self, id: ModuleId, name: &str) -> Option<&HirFn> {
+        self.get_module(id).and_then(|module| {
+            module.items.iter().find_map(|item| match self.get(*item) {
+                Some(StoredHirItem::Item(HirItem {
+                    kind: HirItemKind::Fn(f),
+                    ..
+                })) if f.sig.name.to_string() == name.to_string() => Some(f),
+                _ => None,
+            })
+        })
+    }
+
     pub fn get_module_by_id(&self, id: ModuleId) -> Option<&HirModule> {
         self.modules.iter().find(|module| module.mod_id == id)
     }
@@ -130,22 +142,10 @@ pub enum StoredHirItem {
 pub struct HirModule {
     /// In hir we no longer use file ids, we use module ids.
     pub mod_id: ModuleId,
-    pub items: Vec<HirItem>,
+    pub items: Vec<ItemId>,
     // Not sure if this will be needed
     pub path: PathBuf,
     pub imports: Vec<LocId>,
-}
-
-impl HirModule {
-    pub fn get_fn(&self, name: &str) -> Option<&HirFn> {
-        self.items
-            .iter()
-            .filter_map(|item| match &item.kind {
-                HirItemKind::Fn(f) if f.sig.name.to_string() == name => Some(f),
-                _ => None,
-            })
-            .next()
-    }
 }
 
 #[derive(Debug)]
@@ -189,7 +189,7 @@ impl Transformer {
         module: Module,
         compiled: &mut CompiledModules,
     ) -> HirModule {
-        let items: Vec<HirItem> = module
+        let items: Vec<ItemId> = module
             .barrel
             .items
             .iter()
@@ -205,11 +205,7 @@ impl Transformer {
         }
     }
 
-    pub fn transform_item(
-        &mut self,
-        item: Item,
-        compiled: &mut CompiledModules,
-    ) -> Option<HirItem> {
+    pub fn transform_item(&mut self, item: Item, compiled: &mut CompiledModules) -> Option<ItemId> {
         let hir_item_kind = match item.kind.clone() {
             ItemKind::Fn(f_decl) => HirItemKind::Fn(self.transform_fn(f_decl)),
             ItemKind::Use(u) => {
@@ -248,7 +244,7 @@ impl Transformer {
             .insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
         compiled.insert_item(item.clone());
 
-        Some(item)
+        Some(item.id)
     }
 
     pub fn transform_fn(&mut self, f_decl: FnDecl) -> HirFn {

@@ -1,5 +1,5 @@
 use crate::{
-    Codegen,
+    Codegen, CompiledModules,
     expr::{HirExpr, HirExprKind},
     items::{HirItem, HirItemKind},
     stmts::{HirStmt, HirStmtKind},
@@ -21,50 +21,50 @@ pub struct BuiltInFunction {
 
 #[macro_export]
 macro_rules! builtin_function {
-    (fn $name:ident($($arg:ident),* $(, ...$rest:ident)?) {$($body:tt)*}) => {
-        #[allow(unused_mut, unused_variables)]
-        pub fn $name() -> BuiltInFunction {
-            fn inner(args: &mut Vec<HirExpr>) -> HirExpr {
-                let mut iter = args.iter_mut();
-                $(let mut $arg = iter.next().unwrap();)*
-                $(let $rest = iter.collect::<Vec<_>>();)?
+        (fn $name:ident($($arg:ident),* $(, ...$rest:ident)?) {$($body:tt)*}) => {
+            #[allow(unused_mut, unused_variables)]
+            pub fn $name() -> BuiltInFunction {
+                fn inner(args: &mut Vec<HirExpr>) -> HirExpr {
+                    let mut iter = args.iter_mut();
+                    $(let mut $arg = iter.next().unwrap();)*
+                    $(let $rest = iter.collect::<Vec<_>>();)?
 
-                $($body)*
+                    $($body)*
+                }
+
+                BuiltInFunction {
+                    func: inner,
+                    codegen: None,
+                }
             }
+        };
+        (fn $name:ident($($arg:ident),* $(, ...$rest:ident)?) {$($body:tt)*}
+            codegen($cg_ctx:ident) {$($cg_body:tt)*}) => {
+            #[allow(unused_mut, unused_variables)]
+            pub fn $name() -> BuiltInFunction {
+                fn inner(args: &mut Vec<HirExpr>) -> HirExpr {
+                    let mut iter = args.iter_mut();
+                    $(let mut $arg = iter.next().unwrap();)*
+                    $(let $rest = iter.collect::<Vec<_>>();)?
 
-            BuiltInFunction {
-                func: inner,
-                codegen: None,
+                    $($body)*
+                }
+
+                fn codegen_inner($cg_ctx: &mut dyn Codegen, args: &mut Vec<HirExpr>) -> String {
+                    let mut iter = args.iter_mut();
+                    $(let mut $arg = iter.next().unwrap();)*
+                    $(let $rest = iter.collect::<Vec<_>>();)?
+
+                    $($cg_body)*
+                }
+
+                BuiltInFunction {
+                    func: inner,
+                    codegen: Some(codegen_inner),
+                }
             }
-        }
-    };
-    (fn $name:ident($($arg:ident),* $(, ...$rest:ident)?) {$($body:tt)*}
-        codegen($cg_ctx:ident) {$($cg_body:tt)*}) => {
-        #[allow(unused_mut, unused_variables)]
-        pub fn $name() -> BuiltInFunction {
-            fn inner(args: &mut Vec<HirExpr>) -> HirExpr {
-                let mut iter = args.iter_mut();
-                $(let mut $arg = iter.next().unwrap();)*
-                $(let $rest = iter.collect::<Vec<_>>();)?
-
-                $($body)*
-            }
-
-            fn codegen_inner($cg_ctx: &mut dyn Codegen, args: &mut Vec<HirExpr>) -> String {
-                let mut iter = args.iter_mut();
-                $(let mut $arg = iter.next().unwrap();)*
-                $(let $rest = iter.collect::<Vec<_>>();)?
-
-                $($cg_body)*
-            }
-
-            BuiltInFunction {
-                func: inner,
-                codegen: Some(codegen_inner),
-            }
-        }
-    };
-}
+        };
+    }
 
 builtin_function! {
     fn os() {
@@ -92,8 +92,8 @@ pub fn get_builtin_function(name: &str) -> Option<BuiltInFunction> {
     }
 }
 
-pub fn expand_builtins(hir: &mut HirModuleMap) {
-    let mut expander = BuiltInExpander { hir };
+pub fn expand_builtins(hir: &mut HirModuleMap, compiled: &mut CompiledModules) {
+    let mut expander = BuiltInExpander { hir, compiled };
 
     expander.expand();
 }
@@ -101,6 +101,7 @@ pub fn expand_builtins(hir: &mut HirModuleMap) {
 #[derive(Debug)]
 pub struct BuiltInExpander<'a> {
     pub hir: &'a mut HirModuleMap,
+    pub compiled: &'a mut CompiledModules,
 }
 
 impl<'a> BuiltInExpander<'a> {
@@ -120,13 +121,16 @@ impl<'a> BuiltInExpander<'a> {
     }
 
     pub fn expand_module(&mut self, module: &mut HirModule) {
-        for item in &mut module.items {
+        let items = module.items.clone();
+        for item in items {
+            let item = self.compiled.get_item(item).clone();
+
             self.expand_item(item);
         }
     }
 
-    fn expand_item(&mut self, item: &mut HirItem) {
-        match &mut item.kind {
+    fn expand_item(&mut self, item: HirItem) {
+        match item.kind.clone() {
             HirItemKind::Fn(f) => {
                 if let Some(body_id) = f.body {
                     self.expand_body(body_id);

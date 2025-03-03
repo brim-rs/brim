@@ -1,6 +1,6 @@
 use crate::CodeBuilder;
 use brim_hir::{
-    Codegen,
+    Codegen, CompiledModules,
     expr::HirExpr,
     items::HirItem,
     stmts::HirStmt,
@@ -15,10 +15,11 @@ pub struct CppCodegen {
     pub code: CodeBuilder,
     pub hir: HirModuleMap,
     pub current_mod: ModuleId,
+    pub compiled: CompiledModules,
 }
 
 impl CppCodegen {
-    pub fn new(hir: HirModuleMap) -> Self {
+    pub fn new(hir: HirModuleMap, compiled: CompiledModules) -> Self {
         let mut code = CodeBuilder::new(4);
 
         for import in &["string", "vector", "cstdint", "expected", "array"] {
@@ -29,6 +30,7 @@ impl CppCodegen {
             code,
             hir,
             current_mod: ModuleId::from_usize(0),
+            compiled,
         }
     }
 
@@ -107,6 +109,8 @@ impl Codegen for CppCodegen {
         self.code.increase_indent();
 
         for item in module.items {
+            let item = self.compiled.get_item(item).clone();
+
             self.generate_item(item);
         }
 

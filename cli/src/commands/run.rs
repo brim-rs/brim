@@ -180,7 +180,7 @@ pub fn compile_project(
 
     if sess.config.is_bin() {
         let main_mod = hir.get_module(ModuleId::from_usize(entry_file)).unwrap();
-        let main_fn = main_mod.get_fn("main");
+        let main_fn = hir.get_fn(ModuleId::from_usize(entry_file), "main");
 
         if let Some(func) = main_fn {
             comp.validate_main_function(func, entry_file);

@@ -101,7 +101,7 @@ impl CompilerContext {
         self.extend_temp(ti.temp.clone());
 
         if ti.temp.diags.is_empty() {
-            let mut type_analyzer = TypeChecker::new(hir.clone());
+            let mut type_analyzer = TypeChecker::new(hir.clone(), compiled.clone());
             type_analyzer.check();
             self.extend_temp(type_analyzer.ctx);
 
@@ -111,8 +111,8 @@ impl CompilerContext {
         }
     }
 
-    pub fn run_codegen(&mut self, hir: HirModuleMap) -> String {
-        let mut codegen = CppCodegen::new(hir.clone());
+    pub fn run_codegen(&mut self, hir: HirModuleMap, compiled: CompiledModules) -> String {
+        let mut codegen = CppCodegen::new(hir.clone(), compiled);
         codegen.generate();
 
         let code = codegen.code.build();

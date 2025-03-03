@@ -63,7 +63,7 @@ pub fn infer_types<'a>(
     hir: &'a mut HirModuleMap,
     compiled: &'a mut CompiledModules,
 ) -> TypeInference<'a> {
-    expand_builtins(hir);
+    expand_builtins(hir, compiled);
 
     let mut ti = TypeInference {
         hir,
@@ -97,13 +97,14 @@ impl<'a> TypeInference<'a> {
 
     pub fn infer_module(&mut self, module: &mut HirModule) {
         for item in &mut module.items {
-            self.infer_item(item);
+            self.infer_item(item.clone());
         }
     }
 
-    fn infer_item(&mut self, item: &mut HirItem) {
-        match &mut item.kind {
-            HirItemKind::Fn(f) => {
+    fn infer_item(&mut self, item: ItemId) {
+        let mut item = self.compiled.items.get(&item).unwrap().clone();
+        match item.kind {
+            HirItemKind::Fn(ref f) => {
                 self.scope_manager.push_scope();
 
                 self.ctx.clear_generics();
@@ -130,7 +131,7 @@ impl<'a> TypeInference<'a> {
 
                 self.scope_manager.pop_scope(); // Reset scope after function
             }
-            HirItemKind::Struct(str) => {
+            HirItemKind::Struct(ref mut str) => {
                 for field in str.fields.iter_mut() {
                     let ty = if let Some(name) = field.ty.as_ident()
                         && let None = str.generics.is_generic(&field.ty)
@@ -162,6 +163,7 @@ impl<'a> TypeInference<'a> {
         self.hir
             .hir_items
             .insert(item.id, StoredHirItem::Item(item.clone()));
+        self.compiled.items.insert(item.id, item);
     }
 
     fn infer_body(&mut self, body_id: ItemId) {
@@ -493,7 +495,6 @@ impl<'a> TypeInference<'a> {
                             }
                         }
                     } else {
-                        println!("{}: {:?}", ident, str_field.ty);
                         hir_struct
                             .field_types
                             .insert(ident.clone(), str_field.ty.clone());

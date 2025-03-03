@@ -3,6 +3,7 @@ mod expr;
 mod functions;
 
 use crate::{
+    CompiledModules,
     inference::scope::TypeScopeManager,
     items::{HirFn, HirItemKind},
     transformer::{HirModule, HirModuleMap},
@@ -16,16 +17,18 @@ pub struct TypeChecker {
     pub mod_id: usize,
     pub scope_manager: TypeScopeManager,
     pub current_fn: Option<HirFn>,
+    pub compiled: CompiledModules,
 }
 
 impl TypeChecker {
-    pub fn new(hir: HirModuleMap) -> Self {
+    pub fn new(hir: HirModuleMap, compiled: CompiledModules) -> Self {
         Self {
             ctx: TemporaryDiagnosticContext::new(),
             hir,
             mod_id: 0,
             scope_manager: TypeScopeManager::new(),
             current_fn: None,
+            compiled,
         }
     }
 
@@ -38,6 +41,7 @@ impl TypeChecker {
 
     pub fn check_module(&mut self, module: HirModule) {
         for item in module.items {
+            let item = self.compiled.get_item(item).clone();
             match item.kind {
                 HirItemKind::Fn(func) => self.check_fn(func),
                 _ => {}

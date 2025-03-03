@@ -2,11 +2,11 @@ use { File } from std::fs::file;
 
 struct Vec2<T> {
     x: T,
-    y: *const i32
+    y: i32
 }
 
 pub fn main() {
     let v = Vec2 { x: 6.5, y: 2.6 };
     let os = @os();
-    let file = File { handle: "123" };
+    let file = File { handle: 23 };
 };

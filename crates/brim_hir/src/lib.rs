@@ -8,9 +8,9 @@ use crate::{
     ty::HirTyKind,
 };
 use brim_ast::ItemId;
+use brim_config::toml::Config;
 use brim_middle::SymbolTable;
 use std::collections::HashMap;
-use brim_config::toml::Config;
 
 pub mod builtin;
 pub mod comptime;
@@ -68,5 +68,9 @@ impl CompiledModules {
         } else {
             None
         }
+    }
+
+    pub fn get_item(&self, item_id: ItemId) -> &HirItem {
+        self.items.get(&item_id).unwrap()
     }
 }
