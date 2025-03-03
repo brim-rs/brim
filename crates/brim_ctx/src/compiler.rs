@@ -111,18 +111,6 @@ impl CompilerContext {
         }
     }
 
-    pub fn run_codegen(&mut self, hir: HirModuleMap, compiled: CompiledModules) -> String {
-        let mut codegen = CppCodegen::new(hir.clone(), compiled);
-        codegen.generate();
-
-        let code = codegen.code.build();
-        if self.args.codegen_debug {
-            println!("{}", code.clone());
-        }
-
-        code
-    }
-
     /// More to be added
     pub fn validate_main_function(&mut self, func: &HirFn, main: usize) {
         if func.sig.params.params.len() != 0 {

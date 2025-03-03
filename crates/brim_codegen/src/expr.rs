@@ -12,10 +12,10 @@ impl CppCodegen {
     pub fn generate_expr(&mut self, expr: HirExpr) -> String {
         let mut apply_paren = false;
 
-        let code = if let Some(fn_name) = self.hir.expanded_by_builtins.get(&expr.id) {
+        let code = if let Some(fn_name) = self.hir().expanded_by_builtins.get(&expr.id) {
             let func = get_builtin_function(fn_name).unwrap();
 
-            self.hir.expanded_by_builtins.remove(&expr.id);
+            self.hir_mut().expanded_by_builtins.remove(&expr.id);
 
             if let Some(codegen) = func.codegen {
                 (codegen)(self, &mut vec![expr.clone()])
@@ -46,7 +46,7 @@ impl CppCodegen {
                     apply_paren = true;
                     let fn_name = func.as_ident().unwrap().to_string();
                     let func_mod_id = self
-                        .hir
+                        .hir()
                         .symbols
                         .resolve(&fn_name, self.current_mod.as_usize())
                         .unwrap()

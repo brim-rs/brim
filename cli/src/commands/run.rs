@@ -9,7 +9,7 @@ use crate::{
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim::{
-    CompiledModule, CompiledModules, ModuleId, Shell,
+    Codegen, CompiledModule, CompiledModules, ModuleId, Shell,
     args::RunArgs,
     compiler::CompilerContext,
     discover::ModuleDiscover,
@@ -21,6 +21,7 @@ use brim::{
     toml::{Config, ProjectType},
     transformer::HirModuleMap,
 };
+use brim_codegen::codegen::CppCodegen;
 use brim_ctx::errors::NoMainFunction;
 use brim_parser::parser::Parser;
 use clap::Command;
@@ -74,7 +75,14 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
                 config,
                 hir: hir.clone(),
             });
-        compiled_projects.items.extend(hir.items);
+        compiled_projects.items.extend(hir.items.clone());
+    }
+    let mut cg = CppCodegen::new(main_sess.main_file()?);
+    cg.generate(compiled_projects);
+    let code = cg.code.build();
+
+    if args.codegen_debug {
+        println!("{}", code);
     }
 
     // let code = comp.run_codegen(hir);
@@ -146,6 +154,7 @@ pub fn compile_project(
     let opt_level = sess.config.build.level.clone();
 
     let main_file = sess.main_file()?;
+    println!("main_file: {:?}", main_file);
 
     shell.status(
         "Compiling",

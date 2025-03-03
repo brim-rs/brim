@@ -1,8 +1,11 @@
 use crate::codegen::CppCodegen;
-use brim_hir::items::{HirItem, HirItemKind};
+use brim_hir::{
+    CompiledModules,
+    items::{HirItem, HirItemKind},
+};
 
 impl CppCodegen {
-    pub fn generate_item(&mut self, item: HirItem) {
+    pub fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules) {
         match item.kind {
             HirItemKind::Fn(decl) => {
                 let ret = self.generate_ty(decl.sig.return_type);
@@ -25,7 +28,7 @@ impl CppCodegen {
 
                 let block_name = format!("{} {}({})", ret, decl.sig.name.to_string(), params);
 
-                let body_expr = self.hir.get_expr(decl.body.unwrap());
+                let body_expr = self.hir().get_expr(decl.body.unwrap()).clone();
                 let body_code = self.generate_expr(body_expr.clone());
 
                 self.code.add_block(&block_name, |code| {

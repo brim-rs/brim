@@ -23,11 +23,11 @@ pub mod ty;
 pub mod type_checker;
 
 pub trait Codegen {
-    fn generate(&mut self);
+    fn generate(&mut self, compiled: &CompiledModules);
 
-    fn generate_module(&mut self, module: HirModule);
+    fn generate_module(&mut self, module: HirModule, compiled: &CompiledModules);
 
-    fn generate_item(&mut self, item: HirItem);
+    fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules);
 
     fn generate_expr(&mut self, expr: HirExpr) -> String;
 

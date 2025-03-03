@@ -17,4 +17,4 @@ brim-parser = { workspace = true }
 brim-cpp-compiler = { workspace = true }
 brim-ctx = { workspace = true }
 toml_edit = { workspace = true }
-petgraph = "0.7.1"
+brim-codegen = { workspace = true }
