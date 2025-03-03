@@ -110,7 +110,7 @@ impl Display for UnaryOp {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum BinOpKind {
     /// `<`
     Lt,

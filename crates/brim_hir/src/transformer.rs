@@ -93,7 +93,11 @@ impl HirModuleMap {
     pub fn get_expr(&self, id: ItemId) -> &HirExpr {
         match self.get(id) {
             Some(StoredHirItem::Expr(expr)) => expr,
-            _ => panic!("Expected expr for ID {:?}", id),
+            _ => panic!(
+                "Expected expr for ID {:?}, but found {:?}",
+                id,
+                self.get(id)
+            ),
         }
     }
 

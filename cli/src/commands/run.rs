@@ -12,6 +12,7 @@ use brim::{
     Codegen, CompiledModule, CompiledModules, ModuleId, Shell,
     args::RunArgs,
     compiler::CompilerContext,
+    create_file_parent_dirs,
     discover::ModuleDiscover,
     files::get_path,
     lints::Lints,
@@ -26,6 +27,7 @@ use brim_ctx::errors::NoMainFunction;
 use brim_parser::parser::Parser;
 use clap::Command;
 use std::{collections::HashSet, env::current_dir};
+use tracing::debug;
 
 pub fn run_cmd() -> Command {
     Command::new("run")
@@ -79,27 +81,30 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
     }
     let mut cg = CppCodegen::new(main_sess.main_file()?);
     cg.generate(compiled_projects);
-    let code = cg.code.build();
 
-    if args.codegen_debug {
-        println!("{}", code);
+    for (module, code) in cg.generated {
+        if args.codegen_debug {
+            println!("{}", code);
+        }
+
+        let file = main_sess
+            .build_dir()
+            .join("codegen")
+            .join(format!("module{}.cpp", module.as_usize()));
+        debug!("Writing codegen to file: {:?}", file);
+        create_file_parent_dirs(&file)?;
+
+        if args.no_write && !file.exists() {
+            bail!(
+                "Found `no-write` flag but file doesn't exist. Try to run without `no-write` flag first"
+            );
+        }
+
+        if !args.no_write {
+            std::fs::write(&file, code)?;
+        }
     }
 
-    // let code = comp.run_codegen(hir);
-    // let file = build_dir.join("codegen").join("main.cpp");
-    //
-    // create_file_parent_dirs(&file)?;
-    //
-    // if !args.no_write && !file.exists() {
-    //     bail!(
-    //         "Found `no-write` flag but file doesn't exist. Try to run without `no-write` flag first"
-    //     );
-    // }
-    //
-    // if !args.no_write {
-    //     std::fs::write(&file, code)?;
-    // }
-    //
     // let build_process =
     //     &mut CppBuild::new(Some(CompilerKind::Clang), project_type, build_dir, lib_type)?;
     // build_process.set_opt_level(opt_level).disable_warnings();
@@ -146,15 +151,9 @@ pub fn compile_project(
     args: RunArgs,
     compiled: &mut CompiledModules,
 ) -> Result<HirModuleMap> {
-    let build_dir = sess.build_dir().clone();
-    let project_type = sess.project_type();
-    let lib_type = sess.lib_type();
     let project_name = sess.config.project.name.clone();
     let shell = &mut Shell::new(c_choice);
     let opt_level = sess.config.build.level.clone();
-
-    let main_file = sess.main_file()?;
-    println!("main_file: {:?}", main_file);
 
     shell.status(
         "Compiling",

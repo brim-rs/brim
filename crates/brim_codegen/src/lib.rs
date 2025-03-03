@@ -22,26 +22,22 @@ impl CodeBuilder {
         }
     }
 
-    /// Increases the current indentation level
     pub fn increase_indent(&mut self) {
         self.indent += self.indent_size;
     }
 
-    /// Decreases the current indentation level
     pub fn decrease_indent(&mut self) {
         if self.indent >= self.indent_size {
             self.indent -= self.indent_size;
         }
     }
 
-    /// Appends a line with the current indentation
     pub fn add_line(&mut self, line: &str) {
         self.code.push_str(&" ".repeat(self.indent));
         self.code.push_str(line);
         self.code.push('\n');
     }
 
-    /// Adds a block with braces and adjusts indentation
     pub fn add_block<F>(&mut self, header: &str, body: F)
     where
         F: FnOnce(&mut CodeBuilder),
@@ -54,8 +50,11 @@ impl CodeBuilder {
         self.add_line("}");
     }
 
-    /// Converts the generated code to a string
-    pub fn build(self) -> String {
-        self.code
+    pub fn build(&self) -> &String {
+        &self.code
+    }
+
+    pub fn reset(&mut self) {
+        self.code.clear();
     }
 }
