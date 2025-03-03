@@ -27,7 +27,7 @@ brim-codegen = { path = "crates/brim_codegen", version = "0.1.0" }
 brim-middle = { path = "crates/brim_middle", version = "0.1.0" }
 
 # Other dependencies
-anyhow = "1.0.95"
+anyhow = "1.0.97"
 colored = "2.2.0"
 log = "0.4.22"
 thiserror = "2.0.9"
