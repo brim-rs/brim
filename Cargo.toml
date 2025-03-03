@@ -29,7 +29,7 @@ brim-middle = { path = "crates/brim_middle", version = "0.1.0" }
 # Other dependencies
 anyhow = "1.0.95"
 colored = "2.2.0"
-log = "0.4.22"
+log = "0.4.26"
 thiserror = "2.0.9"
 backtrace = "0.3.74"
 clap = { version = "4.5.23", features = ["derive"] }
