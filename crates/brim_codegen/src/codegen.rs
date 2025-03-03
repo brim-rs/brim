@@ -17,7 +17,7 @@ pub struct CppCodegen {
     pub hir: Option<HirModuleMap>,
     pub main_file: usize,
     pub modules: Vec<usize>,
-    pub generated: HashMap<ModuleId, String>,
+    pub imports: Vec<String>,
 }
 
 impl CppCodegen {
@@ -30,7 +30,10 @@ impl CppCodegen {
             hir: None,
             main_file,
             modules: vec![],
-            generated: HashMap::new(),
+            imports: ["string", "vector", "cstdint", "expected", "array"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
         }
     }
 
@@ -45,7 +48,7 @@ impl CppCodegen {
     pub fn add_standard_module(&mut self) {
         self.code.add_line("");
 
-        for std_module in &["string", "vector", "cstdint", "expected", "array"] {
+        for std_module in &self.imports {
             self.code.add_line(&format!("import <{}>;", std_module));
         }
         self.code.add_line("");
@@ -86,12 +89,7 @@ impl Codegen for CppCodegen {
             for module in &project.hir.modules {
                 self.current_mod = module.mod_id;
                 self.hir = Some(project.hir.clone());
-                self.add_standard_module();
                 self.generate_module(module.clone(), compiled);
-
-                let code = self.code.build().to_string();
-                self.generated.insert(module.mod_id, code);
-                self.code.reset();
             }
         }
     }
@@ -104,8 +102,14 @@ impl Codegen for CppCodegen {
         self.code
             .add_line(&format!("export module module{};", mod_id.as_u32()));
         self.code.add_line("");
+        self.add_standard_module();
+        self.code.add_line("");
 
         for dep_id in &self.modules {
+            if *dep_id == mod_id.as_usize() {
+                continue;
+            }
+
             self.code.add_line(&format!("import module{};", dep_id));
         }
         self.code.add_line("");

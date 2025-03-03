@@ -23,10 +23,11 @@ use brim::{
     transformer::HirModuleMap,
 };
 use brim_codegen::codegen::CppCodegen;
+use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
 use brim_ctx::errors::NoMainFunction;
 use brim_parser::parser::Parser;
 use clap::Command;
-use std::{collections::HashSet, env::current_dir};
+use std::{collections::HashSet, env::current_dir, process};
 use tracing::debug;
 
 pub fn run_cmd() -> Command {
@@ -82,52 +83,64 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
     let mut cg = CppCodegen::new(main_sess.main_file()?);
     cg.generate(compiled_projects);
 
-    for (module, code) in cg.generated {
-        if args.codegen_debug {
-            println!("{}", code);
-        }
-
-        let file = main_sess
-            .build_dir()
-            .join("codegen")
-            .join(format!("module{}.cpp", module.as_usize()));
-        debug!("Writing codegen to file: {:?}", file);
-        create_file_parent_dirs(&file)?;
-
-        if args.no_write && !file.exists() {
-            bail!(
-                "Found `no-write` flag but file doesn't exist. Try to run without `no-write` flag first"
-            );
-        }
-
-        if !args.no_write {
-            std::fs::write(&file, code)?;
-        }
+    let mut sources = vec![];
+    let code = cg.code.build();
+    if args.codegen_debug {
+        println!("{}", code);
     }
 
-    // let build_process =
-    //     &mut CppBuild::new(Some(CompilerKind::Clang), project_type, build_dir, lib_type)?;
-    // build_process.set_opt_level(opt_level).disable_warnings();
-    // build_process.add_source(file);
-    //
-    // let exe_path = build_process.compile(project_name, shell)?;
-    //
-    // let args: Vec<String> = args.exec_args;
-    //
-    // let mut command = process::Command::new(&exe_path);
-    // command.args(&args);
-    //
-    // shell.status(
-    //     "Running",
-    //     format!(
-    //         "`{}{}{}`",
-    //         &exe_path.to_string_lossy(),
-    //         if args.is_empty() { "" } else { " " },
-    //         &args.join(" ")
-    //     ),
-    // )?;
-    //
-    // command.status()?;
+    let file = main_sess.build_dir().join("codegen").join("main.cpp");
+    debug!("Writing codegen to file: {:?}", file);
+    create_file_parent_dirs(&file)?;
+
+    if args.no_write && !file.exists() {
+        bail!(
+            "Found `no-write` flag but file doesn't exist. Try to run without `no-write` flag first"
+        );
+    }
+
+    if !args.no_write {
+        std::fs::write(&file, code)?;
+    }
+
+    sources.push(file);
+
+    let project_name = main_sess.config.project.name.clone();
+    let project_type = main_sess.config.project.r#type.clone();
+    let build_dir = main_sess.build_dir();
+    let opt_level = main_sess.config.build.level.clone();
+    let file = main_sess.main_file()?;
+    let lib_type = main_sess.config.build.lib_type.clone();
+
+    let build_process = &mut CppBuild::new(
+        Some(CompilerKind::Clang),
+        project_type,
+        build_dir,
+        lib_type,
+        cg.imports,
+    )?;
+    build_process.set_opt_level(opt_level).disable_warnings();
+    build_process.add_sources(sources);
+
+    let mut shell = &mut Shell::new(c_choice);
+    let exe_path = build_process.compile(project_name, shell)?;
+
+    let args: Vec<String> = args.exec_args;
+
+    let mut command = process::Command::new(&exe_path);
+    command.args(&args);
+
+    shell.status(
+        "Running",
+        format!(
+            "`{}{}{}`",
+            &exe_path.to_string_lossy(),
+            if args.is_empty() { "" } else { " " },
+            &args.join(" ")
+        ),
+    )?;
+
+    command.status()?;
 
     Ok(())
 }

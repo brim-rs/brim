@@ -32,6 +32,7 @@ pub struct CppBuild {
     opt_level: OptLevel,
     defines: HashSet<Arc<OsStr>>,
     lib_type: LibType,
+    precompile: Vec<Arc<OsStr>>,
 }
 
 impl CppBuild {
@@ -40,6 +41,7 @@ impl CppBuild {
         project_type: ProjectType,
         build_dir: impl AsRef<Path>,
         lib_type: LibType,
+        precompile: Vec<impl AsRef<OsStr>>,
     ) -> Result<Self> {
         let build_dir = build_dir.as_ref();
         ensure!(
@@ -65,6 +67,10 @@ impl CppBuild {
             opt_level: OptLevel::Debug,
             defines: HashSet::new(),
             lib_type,
+            precompile: precompile
+                .into_iter()
+                .map(|s| Arc::from(s.as_ref()))
+                .collect(),
         })
     }
 
@@ -72,13 +78,11 @@ impl CppBuild {
         self.compiler.kind()
     }
 
-    /// Adds a source file to the build
     pub fn add_source<P: AsRef<OsStr>>(&mut self, path: P) -> &mut Self {
         self.source_files.insert(Arc::from(path.as_ref()));
         self
     }
 
-    /// Adds multiple source files to the build
     pub fn add_sources<I, P>(&mut self, paths: I) -> &mut Self
     where
         I: IntoIterator<Item = P>,
@@ -90,43 +94,36 @@ impl CppBuild {
         self
     }
 
-    /// Adds an include directory
     pub fn add_include<P: AsRef<Path>>(&mut self, dir: P) -> &mut Self {
         self.include_dirs.insert(Arc::from(dir.as_ref()));
         self
     }
 
-    /// Adds a library directory
     pub fn add_library_dir<P: AsRef<Path>>(&mut self, dir: P) -> &mut Self {
         self.library_dirs.insert(Arc::from(dir.as_ref()));
         self
     }
 
-    /// Adds a library to link against
     pub fn add_library<S: AsRef<OsStr>>(&mut self, lib: S) -> &mut Self {
         self.libraries.insert(Arc::from(lib.as_ref()));
         self
     }
 
-    /// Adds a compiler flag
     pub fn add_flag<S: AsRef<OsStr>>(&mut self, flag: S) -> &mut Self {
         self.flags.push(Arc::from(flag.as_ref()));
         self
     }
 
-    /// Sets the optimization level
     pub fn set_opt_level(&mut self, level: OptLevel) -> &mut Self {
         self.opt_level = level;
         self
     }
 
-    /// Adds a preprocessor definition
     pub fn define<S: AsRef<OsStr>>(&mut self, define: S) -> &mut Self {
         self.defines.insert(Arc::from(define.as_ref()));
         self
     }
 
-    /// Compiles the project with the current configuration
     pub fn compile(&self, output_name: impl AsRef<OsStr>, shell: &mut Shell) -> Result<PathBuf> {
         ensure!(!self.source_files.is_empty(), "No source files specified");
 
@@ -160,7 +157,6 @@ impl CppBuild {
         Ok(output_path)
     }
 
-    /// Configures the compiler command with all build settings
     fn configure_command(&self, command: &mut Command, output_name: &OsStr) -> Result<()> {
         for file in &self.source_files {
             command.arg(file);
@@ -206,7 +202,6 @@ impl CppBuild {
         self.add_cpp_standard_flag(command)?;
         self.configure_output(command, output_name)?;
 
-        // Add custom flags last to allow overrides
         for flag in &self.flags {
             command.arg(flag);
         }
