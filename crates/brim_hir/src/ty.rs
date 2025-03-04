@@ -97,7 +97,7 @@ impl PartialEq for HirTyKind {
                     generics: gen2,
                     is_generic: is_generic2,
                 },
-            ) => id1 == id2 && gen1 == gen2 && is_generic1 == is_generic2,
+            ) => id1.to_string() == id2.to_string() && gen1 == gen2 && is_generic1 == is_generic2,
             (HirTyKind::Err(diag1), HirTyKind::Err(diag2)) => diag1 == diag2,
             (HirTyKind::Placeholder, HirTyKind::Placeholder) => true,
             _ => false,
