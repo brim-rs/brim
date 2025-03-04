@@ -49,18 +49,13 @@ impl CppCodegen {
         self.code.add_line("");
 
         for std_module in &self.imports {
-            self.code.add_line(&format!("import <{}>;", std_module));
+            self.code.add_line(&format!("#include <{}>;", std_module));
         }
         self.code.add_line("");
     }
 
     pub fn add_main(&mut self) {
         self.code.add_line("// main.cpp");
-        self.code.add_line("import std;");
-
-        // Import the main module
-        self.code
-            .add_line(&format!("import module{};", self.main_file));
 
         self.code.add_line("");
         self.code.add_line("int main() {");
@@ -84,6 +79,7 @@ impl CppCodegen {
 impl Codegen for CppCodegen {
     fn generate(&mut self, compiled: &CompiledModules) {
         self.populate(compiled);
+        self.add_standard_module();
 
         for (_, project) in compiled.map.iter() {
             for module in &project.hir.modules {
@@ -92,31 +88,20 @@ impl Codegen for CppCodegen {
                 self.generate_module(module.clone(), compiled);
             }
         }
+
+        self.add_main();
     }
 
     fn generate_module(&mut self, module: HirModule, compiled: &CompiledModules) {
         let mod_id = module.mod_id;
 
         self.code
-            .add_line(&format!("\n\n// =========== module{}.cpp", mod_id.as_u32()));
-        self.code
-            .add_line(&format!("export module module{};", mod_id.as_u32()));
-        self.code.add_line("");
-        self.add_standard_module();
-        self.code.add_line("");
-
-        for dep_id in &self.modules {
-            if *dep_id == mod_id.as_usize() {
-                continue;
-            }
-
-            self.code.add_line(&format!("import module{};", dep_id));
-        }
+            .add_line(&format!("\n\n// =========== module{}", mod_id.as_u32()));
         self.code.add_line("");
 
         // Export module namespace
         self.code
-            .add_line(&format!("export namespace module{} {{", mod_id.as_u32()));
+            .add_line(&format!("namespace module{} {{", mod_id.as_u32()));
         self.code.increase_indent();
 
         for item in module.items {
