@@ -10,9 +10,7 @@ use brim_hir::{
 use std::fmt::Write;
 
 impl CppCodegen {
-    /// Generates C++ code for a given HIR expression
     pub fn generate_expr(&mut self, expr: HirExpr) -> String {
-        // Check if this expression is expanded by a builtin function
         if let Some(fn_name) = self.hir().expanded_by_builtins.get(&expr.id).cloned() {
             let func = get_builtin_function(&fn_name).unwrap();
             self.hir_mut().expanded_by_builtins.remove(&expr.id);

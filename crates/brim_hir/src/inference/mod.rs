@@ -133,7 +133,17 @@ impl<'a> TypeInference<'a> {
             }
             HirItemKind::Struct(ref mut str) => {
                 for field in str.fields.iter_mut() {
-                    let ty = if let Some(name) = field.ty.as_ident()
+                    if let Some(generic) = str.generics.is_generic(&field.ty) {
+                        let (ident, generics) = field.ty.clone().as_ident().unwrap();
+
+                        field.ty = HirTyKind::Ident {
+                            ident,
+                            generics,
+                            is_generic: true,
+                        }
+                    }
+
+                    let ty = if let Some((name, gens)) = field.ty.as_ident()
                         && let None = str.generics.is_generic(&field.ty)
                     {
                         let sym = self

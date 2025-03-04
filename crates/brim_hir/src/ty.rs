@@ -179,9 +179,13 @@ impl HirTyKind {
         }
     }
 
-    pub fn as_ident(&self) -> Option<&Ident> {
+    pub fn as_ident(&self) -> Option<(Ident, HirGenericArgs)> {
         match self {
-            HirTyKind::Ident { ident, .. } => Some(ident),
+            HirTyKind::Ident {
+                ident,
+                generics,
+                is_generic,
+            } => Some((ident.clone(), generics.clone())),
             _ => None,
         }
     }

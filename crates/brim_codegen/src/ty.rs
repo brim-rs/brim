@@ -25,25 +25,37 @@ impl CppCodegen {
             }
 
             HirTyKind::Ident {
-                ident, generics, ..
+                ident,
+                generics,
+                is_generic,
             } => {
-                format!(
-                    "{}{}",
-                    ident,
-                    if generics.params.is_empty() {
-                        "".to_string()
-                    } else {
-                        format!(
-                            "<{}>",
-                            generics
-                                .params
-                                .iter()
-                                .map(|p| self.generate_ty(p.ty.clone()))
-                                .collect::<Vec<_>>()
-                                .join(", ")
-                        )
-                    }
-                )
+                let generics = if generics.params.is_empty() {
+                    "".to_string()
+                } else {
+                    format!(
+                        "<{}>",
+                        generics
+                            .params
+                            .iter()
+                            .map(|p| self.generate_ty(p.ty.clone()))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )
+                };
+
+                if is_generic {
+                    format!("{}{}", ident.name, generics)
+                } else {
+                    let symbol = self
+                        .hir()
+                        .symbols
+                        .resolve(&ident.to_string(), self.current_mod.as_usize())
+                        .unwrap();
+
+                    let mod_id = symbol.id.mod_id;
+
+                    format!("module{}::{}{}", mod_id.as_usize(), ident.name, generics)
+                }
             }
 
             HirTyKind::Vec(ty) => {
