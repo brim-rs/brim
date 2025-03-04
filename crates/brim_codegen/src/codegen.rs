@@ -2,13 +2,17 @@ use crate::CodeBuilder;
 use brim_hir::{
     Codegen, CompiledModules,
     expr::HirExpr,
-    items::HirItem,
+    items::{HirItem, HirItemKind},
     stmts::HirStmt,
     transformer::{HirModule, HirModuleMap},
     ty::HirTyKind,
 };
 use brim_middle::ModuleId;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    path::PathBuf,
+};
+use tracing::debug;
 
 #[derive(Debug)]
 pub struct CppCodegen {
@@ -18,6 +22,127 @@ pub struct CppCodegen {
     pub main_file: usize,
     pub modules: Vec<usize>,
     pub imports: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct ModuleDependencyResolver {
+    module_dependencies: HashMap<ModuleId, HashSet<ModuleId>>,
+    module_imports: HashMap<ModuleId, Vec<PathBuf>>,
+    processed_modules: HashSet<ModuleId>,
+    hirs: HashMap<ModuleId, HirModuleMap>,
+}
+
+impl ModuleDependencyResolver {
+    fn new(compiled: &CompiledModules) -> Self {
+        let mut resolver = Self {
+            module_dependencies: HashMap::new(),
+            module_imports: HashMap::new(),
+            processed_modules: HashSet::new(),
+            hirs: HashMap::new(),
+        };
+
+        resolver.build_dependency_graph(compiled);
+
+        resolver
+    }
+
+    fn build_dependency_graph(&mut self, compiled: &CompiledModules) {
+        for (_, project) in compiled.map.iter() {
+            for module in &project.hir.modules {
+                let module_id = module.mod_id;
+                let mut dependencies = HashSet::new();
+                let mut module_imports = Vec::new();
+
+                for item_id in &module.items {
+                    let item = compiled.get_item(*item_id).clone();
+
+                    if let HirItemKind::Use(use_stmt) = &item.kind {
+                        module_imports.push(use_stmt.resolved_path.clone());
+
+                        if let Some(imported_mod_id) =
+                            self.find_module_id_for_path(compiled, &use_stmt.resolved_path)
+                        {
+                            dependencies.insert(imported_mod_id);
+                        }
+                    }
+                }
+
+                self.module_dependencies.insert(module_id, dependencies);
+                self.module_imports.insert(module_id, module_imports);
+                self.hirs.insert(module_id, project.hir.clone());
+            }
+        }
+    }
+
+    fn find_module_id_for_path(
+        &self,
+        compiled: &CompiledModules,
+        path: &PathBuf,
+    ) -> Option<ModuleId> {
+        for (_, project) in compiled.map.iter() {
+            for module in &project.hir.modules {
+                if module.path == *path {
+                    return Some(module.mod_id);
+                }
+            }
+        }
+        None
+    }
+
+    fn determine_generation_order(&mut self) -> Vec<ModuleId> {
+        let mut generation_order = Vec::new();
+        let mut remaining_modules: HashSet<ModuleId> =
+            self.module_dependencies.keys().cloned().collect();
+
+        while !remaining_modules.is_empty() {
+            let modules_ready_for_generation: Vec<ModuleId> = remaining_modules
+                .iter()
+                .filter(|&module_id| {
+                    let deps = self
+                        .module_dependencies
+                        .get(module_id)
+                        .cloned()
+                        .unwrap_or(HashSet::new());
+
+                    deps.is_empty() || deps.iter().all(|dep| self.processed_modules.contains(dep))
+                })
+                .cloned()
+                .collect();
+
+            if modules_ready_for_generation.is_empty() {
+                panic!(
+                    "Circular module dependencies detected: {:?}",
+                    remaining_modules
+                        .iter()
+                        .map(|&mod_id| format!("Module {}", mod_id.as_u32()))
+                        .collect::<Vec<_>>()
+                );
+            }
+
+            for module_id in modules_ready_for_generation {
+                generation_order.push(module_id);
+                self.processed_modules.insert(module_id);
+                remaining_modules.remove(&module_id);
+
+                for deps in self.module_dependencies.values_mut() {
+                    deps.remove(&module_id);
+                }
+            }
+        }
+
+        generation_order
+    }
+
+    fn print_module_dependencies(&self) {
+        debug!("Module Dependencies:");
+        for (module_id, dependencies) in &self.module_dependencies {
+            debug!(
+                "Module {}: Depends on {:?}",
+                module_id.as_u32(),
+                dependencies.iter().map(|d| d.as_u32()).collect::<Vec<_>>()
+            );
+        }
+    }
 }
 
 impl CppCodegen {
@@ -78,15 +203,26 @@ impl CppCodegen {
 
 impl Codegen for CppCodegen {
     fn generate(&mut self, compiled: &CompiledModules) {
+        let mut resolver = ModuleDependencyResolver::new(compiled);
+
+        resolver.print_module_dependencies();
+
+        let generation_order = resolver.determine_generation_order();
+
         self.populate(compiled);
         self.add_standard_module();
 
-        for (_, project) in compiled.map.iter() {
-            for module in &project.hir.modules {
-                self.current_mod = module.mod_id;
-                self.hir = Some(project.hir.clone());
-                self.generate_module(module.clone(), compiled);
-            }
+        for module_id in generation_order {
+            let module = compiled
+                .map
+                .values()
+                .flat_map(|project| &project.hir.modules)
+                .find(|m| m.mod_id == module_id)
+                .expect("Module not found");
+
+            self.current_mod = module.mod_id;
+            self.hir = Some(resolver.hirs.get(&module_id).unwrap().clone());
+            self.generate_module(module.clone(), compiled);
         }
 
         self.add_main();
@@ -99,14 +235,12 @@ impl Codegen for CppCodegen {
             .add_line(&format!("\n\n// =========== module{}", mod_id.as_u32()));
         self.code.add_line("");
 
-        // Export module namespace
         self.code
             .add_line(&format!("namespace module{} {{", mod_id.as_u32()));
         self.code.increase_indent();
 
         for item in module.items {
             let item = compiled.get_item(item).clone();
-            // Call the trait method, not self
             Codegen::generate_item(self, item, compiled);
         }
 

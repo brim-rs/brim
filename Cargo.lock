@@ -184,6 +184,7 @@ dependencies = [
  "brim-ast",
  "brim-hir",
  "brim-middle",
+ "tracing",
 ]
 
 [[package]]
