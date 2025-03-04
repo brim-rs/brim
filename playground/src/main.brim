@@ -6,7 +6,7 @@ struct Vec2<T> {
 }
 
 pub fn main() {
-    let v = Vec2 { x: 6.5, y: 2.6 };
+    let v = Vec2 { .x = 6.5, .y = 2.6 };
     let os = @os();
-    let file = File { handle: 23 };
+    let file = File { .handle = 23 };
 };

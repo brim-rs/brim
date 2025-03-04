@@ -341,8 +341,9 @@ impl Parser {
                         let generics = self.parse_argument_generics()?;
 
                         while !self.is_brace(Orientation::Close) {
+                            self.expect(TokenKind::Dot)?;
                             let ident = self.parse_ident()?;
-                            self.expect(TokenKind::Colon)?;
+                            self.expect(TokenKind::Eq)?;
                             let field = self.parse_expr()?;
 
                             fields.insert(ident, field);
