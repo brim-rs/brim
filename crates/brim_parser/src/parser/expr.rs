@@ -300,7 +300,6 @@ impl Parser {
 
         self.expect_fat_arrow()?;
         let arm_expr = self.parse_expr_or_block()?;
-        println!("{:?}", arm_expr);
 
         self.eat_possible(TokenKind::Comma);
 

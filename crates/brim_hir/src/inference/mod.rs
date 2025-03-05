@@ -3,7 +3,6 @@ pub mod scope;
 
 use crate::{
     CompiledModules,
-    builtin::expand_builtins,
     expr::{HirExpr, HirExprKind},
     inference::{
         errors::{CannotApplyBinary, CannotApplyUnary, CannotCompare},
@@ -63,8 +62,6 @@ pub fn infer_types<'a>(
     hir: &'a mut HirModuleMap,
     compiled: &'a mut CompiledModules,
 ) -> TypeInference<'a> {
-    expand_builtins(hir, compiled);
-
     let mut ti = TypeInference {
         hir,
         ctx: InferCtx::new(),

@@ -6,7 +6,7 @@ use crate::{
         errors::NoValueReturned,
         eval_scopes::{EvalScopeManager, VariableInfo},
     },
-    expr::{HirBlock, HirExpr, HirExprKind},
+    expr::{HirBlock, HirExpr, HirExprKind, HirMatchArm},
     stmts::HirStmtKind,
     transformer::Transformer,
     ty::HirTy,
@@ -107,7 +107,32 @@ impl Evaluator {
         let lit = match &expr.kind {
             HirExprKind::Literal(lit) => ComptimeReturnValue::Lit(lit.clone()),
             HirExprKind::Block(block) => self.eval_block(block),
-            _ => todo!(),
+            HirExprKind::Match(expr, arms) => {
+                let ret = self.eval_expr(*expr.clone());
+
+                let mut found_match = false;
+                let mut lit: Option<ComptimeReturnValue> = None;
+                for arm in arms {
+                    match arm {
+                        HirMatchArm::Case(pat, expr) => {
+                            let pat = self.eval_expr(pat.clone());
+
+                            if pat.as_lit() == ret.as_lit() {
+                                found_match = true;
+                                lit = Some(self.eval_expr(expr.clone()));
+                            }
+                        }
+                        HirMatchArm::Else(expr) => {
+                            if !found_match {
+                                lit = Some(self.eval_expr(expr.clone()));
+                            }
+                        }
+                    }
+                }
+
+                lit.expect("No match arm found")
+            }
+            _ => unimplemented!("Comptime evaluation for {:?}", expr),
         };
 
         self.last_val = Some(lit.clone());

@@ -188,7 +188,7 @@ impl Token {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Lit {
     pub kind: LitKind,
     pub symbol: Symbol,
@@ -208,6 +208,12 @@ pub enum LitKind {
     /// Only used by the comptime evaluator
     None,
     Err(ErrorEmitted),
+}
+
+impl PartialEq for Lit {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind && self.symbol.to_string() == other.symbol.to_string()
+    }
 }
 
 impl Lit {

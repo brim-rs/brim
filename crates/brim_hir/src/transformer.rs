@@ -1,5 +1,6 @@
 use crate::{
     CompiledModule, CompiledModules,
+    builtin::get_builtin_function,
     comptime::{ComptimeReturnValue, errors::ComptimeExprExpectedTy},
     errors::ComptimeExpectedType,
     expr::{
@@ -394,7 +395,9 @@ impl Transformer {
         }
     }
 
-    pub fn transform_expr(&mut self, expr: Expr) -> (HirExpr, ItemId) {
+    pub fn transform_expr(&mut self, mut expr: Expr) -> (HirExpr, ItemId) {
+        let mut fn_name: Option<String> = None;
+
         let expr = HirExpr {
             id: expr.id,
             span: expr.span,
@@ -505,12 +508,24 @@ impl Transformer {
                         .map(|item| self.transform_expr(item.clone()).0)
                         .collect(),
                 ),
-                ExprKind::Builtin(ident, args) => HirExprKind::Builtin(
-                    ident,
-                    args.iter()
-                        .map(|arg| self.transform_expr(arg.clone()).0)
-                        .collect(),
-                ),
+                ExprKind::Builtin(name, args) => {
+                    let func = get_builtin_function(&name.to_string());
+                    let mut new_args: &mut Vec<HirExpr> = &mut Vec::new();
+
+                    for arg in args {
+                        new_args.push(self.transform_expr(arg.clone()).0);
+                    }
+
+                    if let Some(func) = func {
+                        let x = (func.func)(new_args);
+
+                        fn_name = Some(name.to_string());
+
+                        x.kind
+                    } else {
+                        todo!()
+                    }
+                }
                 ExprKind::StructConstructor(ident, generics, fields) => {
                     HirExprKind::StructConstructor(HirStructConstructor {
                         id: expr.id,
@@ -546,7 +561,9 @@ impl Transformer {
             ty: HirTyKind::Placeholder,
         };
         self.map.insert_hir_expr(expr.id, expr.clone());
-
+        if let Some(fn_name) = fn_name {
+            self.map.expanded_by_builtins.insert(expr.id, fn_name);
+        }
         (expr.clone(), expr.id)
     }
 
