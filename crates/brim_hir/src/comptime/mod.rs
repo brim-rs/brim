@@ -31,7 +31,7 @@ impl ComptimeReturnValue {
             _ => unreachable!(),
         }
     }
-    
+
     pub fn as_ty(&self) -> &HirTy {
         match self {
             ComptimeReturnValue::Ty(ty) => ty,
@@ -44,7 +44,7 @@ impl Transformer {
     pub fn transform_comptime_expr(&mut self, expr: Expr) -> ComptimeReturnValue {
         let (expr, _) = self.transform_expr(expr);
 
-        Evaluator::new(self.current_mod_id).eval_block(expr.as_block())
+        Evaluator::new(self.current_mod_id).eval_expr(expr)
     }
 }
 
@@ -106,6 +106,7 @@ impl Evaluator {
     pub fn eval_expr(&mut self, expr: HirExpr) -> ComptimeReturnValue {
         let lit = match &expr.kind {
             HirExprKind::Literal(lit) => ComptimeReturnValue::Lit(lit.clone()),
+            HirExprKind::Block(block) => self.eval_block(block),
             _ => todo!(),
         };
 

@@ -61,6 +61,8 @@ pub enum ExprKind {
     StructConstructor(Ident, GenericArgs, IndexMap<Ident, Expr>),
     /// `match x { ... }`
     Match(Box<Expr>, Vec<MatchArm>),
+    /// `windows::io::File`
+    Path(Vec<Ident>),
 }
 
 #[derive(Clone, Debug)]

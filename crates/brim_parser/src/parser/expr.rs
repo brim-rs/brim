@@ -2,8 +2,9 @@ use crate::{
     parser::{
         PResult, PToken, PTokenKind, Parser,
         errors::{
-            ElseBranchExpr, ElseIfAfterElse, InvalidLiteralSuffix, UnexpectedLiteralSuffix,
-            UnexpectedToken,
+            ElseBranchExpr, ElseIfAfterElse, EmptyMatchExpressionError, InvalidLiteralSuffix,
+            InvalidMatchPatternError, MissingFatArrowError, MultipleElseArmsError,
+            UnexpectedLiteralSuffix, UnexpectedToken, UnexpectedTokenInMatch,
         },
     },
     ptok,
@@ -212,6 +213,116 @@ impl Parser {
         Ok(())
     }
 
+    fn expect_fat_arrow(&mut self) -> PResult<()> {
+        if !self.eat(TokenKind::FatArrow) {
+            box_diag!(MissingFatArrowError {
+                found: self.current().kind,
+                span: (self.current().span, self.file),
+            });
+        }
+
+        Ok(())
+    }
+
+    fn parse_match_expression(&mut self) -> PResult<Expr> {
+        let match_keyword_span = self.prev().span;
+
+        if !self.eat_keyword(ptok!(Match)) {
+            box_diag!(UnexpectedTokenInMatch {
+                found: self.current().kind,
+                span: (self.current().span, self.file),
+            });
+        }
+
+        let start_span = self.prev().span;
+        let subject_expr = self.parse_expr()?;
+
+        if !self.is_brace(Orientation::Open) {
+            self.dcx.emit_impl(UnexpectedTokenInMatch {
+                found: self.current().kind,
+                span: (self.current().span, self.file),
+            });
+        } else {
+            self.advance();
+        }
+
+        let mut match_arms = Vec::new();
+        let mut has_else_arm = false;
+
+        while !self.is_brace(Orientation::Close) {
+            if self.eat_keyword(ptok!(Else)) {
+                if has_else_arm {
+                    box_diag!(MultipleElseArmsError {
+                        span: (self.prev().span, self.file),
+                    });
+                }
+
+                self.expect_fat_arrow()?;
+                let else_arm = self.parse_else_arm()?;
+                match_arms.push(else_arm);
+                has_else_arm = true;
+                break;
+            }
+
+            let arm = self.parse_match_arm()?;
+            match_arms.push(arm);
+
+            self.eat_possible(TokenKind::Comma);
+
+            if has_else_arm {
+                break;
+            }
+        }
+
+        if !self.is_brace(Orientation::Close) {
+            self.dcx.emit_impl(UnexpectedTokenInMatch {
+                found: self.current().kind,
+                span: (self.current().span, self.file),
+            });
+        } else {
+            self.advance();
+        }
+
+        if match_arms.is_empty() {
+            box_diag!(EmptyMatchExpressionError {
+                span: (start_span, self.file),
+            });
+        }
+
+        Ok(self.new_expr(
+            start_span.to(self.prev().span),
+            ExprKind::Match(Box::new(subject_expr), match_arms),
+        ))
+    }
+
+    fn parse_match_arm(&mut self) -> PResult<MatchArm> {
+        let pattern = self.parse_expr()?;
+
+        self.expect_fat_arrow()?;
+        let arm_expr = self.parse_expr_or_block()?;
+        println!("{:?}", arm_expr);
+
+        self.eat_possible(TokenKind::Comma);
+
+        Ok(MatchArm::Case(pattern, arm_expr))
+    }
+
+    fn parse_else_arm(&mut self) -> PResult<MatchArm> {
+        let else_expr = self.parse_expr_or_block()?;
+
+        Ok(MatchArm::Else(else_expr))
+    }
+
+    fn parse_expr_or_block(&mut self) -> PResult<Expr> {
+        if self.is_brace(Orientation::Open) {
+            self.advance();
+            let block = self.parse_block(true)?;
+            Ok(self.new_expr(block.span, ExprKind::Block(block)))
+        } else {
+            self.parse_expr()
+        }
+    }
+
     pub fn parse_primary_expr(&mut self) -> PResult<Expr> {
         match self.current().kind {
             TokenKind::Literal(lit) => {
@@ -278,46 +389,8 @@ impl Parser {
 
                     debug!("Parsed comptime expression");
                     Ok(self.new_expr(self.current().span, ExprKind::Comptime(Box::new(expr))))
-                } else if self.eat_keyword(ptok!(Match)) {
-                    let span = self.prev().span;
-                    let expr = self.parse_expr()?;
-
-                    self.expect_obrace()?;
-
-                    let mut arms: Vec<MatchArm> = Vec::new();
-
-                    while !self.is_brace(Orientation::Close) {
-                        if self.eat_keyword(ptok!(Else)) {
-                            let block = self.parse_block(true)?;
-                            let expr = self.new_expr(block.span, ExprKind::Block(block));
-                            arms.push(MatchArm::Else(expr));
-                            self.eat_possible(TokenKind::Comma);
-                            break;
-                        }
-
-                        let pattern = self.parse_expr()?;
-                        self.expect(TokenKind::FatArrow)?;
-
-                        self.eat_possible(TokenKind::Delimiter(
-                            Delimiter::Paren,
-                            Orientation::Open,
-                        ));
-                        let block = self.parse_block(false)?;
-                        let expr = self.new_expr(block.span, ExprKind::Block(block));
-                        self.eat_possible(TokenKind::Delimiter(
-                            Delimiter::Paren,
-                            Orientation::Close,
-                        ));
-                        arms.push(MatchArm::Case(pattern, expr));
-                        self.eat_possible(TokenKind::Comma);
-                    }
-
-                    self.expect_cbrace()?;
-
-                    Ok(self.new_expr(
-                        span.to(self.prev().span),
-                        ExprKind::Match(Box::new(expr), arms),
-                    ))
+                } else if self.is_keyword(ptok!(Match)) {
+                    self.parse_match_expression()
                 } else {
                     let span = self.current().span;
                     let ident = self.parse_ident()?;
@@ -367,8 +440,27 @@ impl Parser {
                             ExprKind::StructConstructor(ident, generics, fields),
                         ))
                     } else {
-                        debug!("Parsed variable expression: {}", ident);
-                        Ok(self.new_expr(ident.span, ExprKind::Var(ident)))
+                        if self.eat(TokenKind::DoubleColon) {
+                            let mut path = vec![ident];
+
+                            loop {
+                                if let TokenKind::Ident(ident) = self.current().kind {
+                                    path.push(self.parse_ident()?);
+                                } else {
+                                    break;
+                                }
+
+                                if !self.eat(TokenKind::DoubleColon) {
+                                    break;
+                                }
+                            }
+
+                            debug!("Parsed path expression");
+                            Ok(self.new_expr(span, ExprKind::Path(path)))
+                        } else {
+                            debug!("Parsed variable expression: {}", ident);
+                            Ok(self.new_expr(span, ExprKind::Var(ident)))
+                        }
                     }
                 }
             }

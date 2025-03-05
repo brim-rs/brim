@@ -541,6 +541,7 @@ impl Transformer {
 
                     HirExprKind::Match(Box::new(self.transform_expr(*expr).0), arms)
                 }
+                ExprKind::Path(idents) => HirExprKind::Path(idents),
             },
             ty: HirTyKind::Placeholder,
         };

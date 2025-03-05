@@ -1,18 +1,20 @@
 mod errors;
 pub mod scopes;
 
-use crate::{
-    name::{
-        errors::{AccessOutsideComptime, UndeclaredFunction, UndeclaredStruct, UndeclaredVariable},
-        scopes::Scope,
+use crate::name::{
+    errors::{
+        AccessOutsideComptime, InvalidPathAccess, UndeclaredFunction, UndeclaredStruct,
+        UndeclaredVariable,
     },
+    scopes::Scope,
 };
 use brim_ast::{
-    expr::{Expr, ExprKind},
+    expr::{Expr, ExprKind, MatchArm},
     item::{Block, FnDecl},
     stmts::Let,
 };
 use brim_diagnostics::diag_opt;
+use brim_hir::CompiledModules;
 use brim_middle::{
     builtins::BUILTIN_FUNCTIONS, lints::Lints, modules::ModuleMap,
     temp_diag::TemporaryDiagnosticContext, walker::AstWalker,
@@ -21,7 +23,6 @@ use brim_span::span::Span;
 use convert_case::{Case, Casing};
 use scopes::{ScopeManager, VariableInfo};
 use tracing::debug;
-use brim_hir::CompiledModules;
 
 #[derive(Debug)]
 pub struct NameResolver<'a> {
@@ -259,14 +260,30 @@ impl<'a> AstWalker for NameResolver<'a> {
                 self.visit_expr(expr);
                 for arm in arms {
                     match arm {
-                        brim_ast::expr::MatchArm::Case(pat, block) => {
+                        MatchArm::Case(pat, block) => {
                             self.visit_expr(pat);
                             self.visit_expr(block);
                         }
-                        brim_ast::expr::MatchArm::Else(block) => {
+                        MatchArm::Else(block) => {
                             self.visit_expr(block);
                         }
                     }
+                }
+            }
+            ExprKind::Path(idents) => {
+                let item = self
+                    .compiled
+                    .symbols
+                    .resolve(&idents[0].to_string(), self.file);
+
+                if let Some(item) = item {
+                    let item = self.compiled.get_item(item.id.item_id);
+                    println!("{:?}", item);
+                } else {
+                    self.ctx.emit(Box::new(InvalidPathAccess {
+                        span: (idents[0].span, self.file),
+                        name: idents[0].to_string(),
+                    }));
                 }
             }
         }

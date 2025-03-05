@@ -145,6 +145,7 @@ pub trait AstWalker {
                     }
                 }
             }
+            ExprKind::Path(_) => {}
         }
     }
 

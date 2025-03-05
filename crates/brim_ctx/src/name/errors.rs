@@ -35,3 +35,11 @@ pub struct UndeclaredStruct {
     pub span: (Span, usize),
     pub name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("invalid path access. no struct or module named `{name}`")]
+pub struct InvalidPathAccess {
+    #[error("no struct or module named `{name}`")]
+    pub span: (Span, usize),
+    pub name: String,
+}

@@ -29,10 +29,10 @@ impl HirExpr {
         }
     }
 
-    pub fn as_block(&self) -> &HirBlock {
+    pub fn as_block(&self) -> Option<HirBlock> {
         match &self.kind {
-            HirExprKind::Block(block) => block,
-            _ => panic!("Expected block expression"),
+            HirExprKind::Block(block) => Some(block.clone()),
+            _ => None,
         }
     }
 }
@@ -70,6 +70,8 @@ pub enum HirExprKind {
     StructConstructor(HirStructConstructor),
     /// Match expressions.
     Match(Box<HirExpr>, Vec<HirMatchArm>),
+    /// Path to a module or item.
+    Path(Vec<Ident>),
 }
 
 #[derive(Clone, Debug)]

@@ -148,3 +148,40 @@ pub struct UnknownItem {
     #[error]
     pub span: (Span, usize),
 }
+
+#[derive(Diagnostic)]
+#[error("unexpected token in match expression. found `{found}`.")]
+pub struct UnexpectedTokenInMatch {
+    pub found: TokenKind,
+    #[error]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("multiple else arms are not allowed in match expression.")]
+pub struct MultipleElseArmsError {
+    #[error]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("match expression must have at least one arm.")]
+pub struct EmptyMatchExpressionError {
+    #[error]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("expected fat arrow `=>` in match arm, found `{found}`.")]
+pub struct MissingFatArrowError {
+    pub found: TokenKind,
+    #[error]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("invalid pattern in match arm.")]
+pub struct InvalidMatchPatternError {
+    #[error]
+    pub span: (Span, usize),
+}

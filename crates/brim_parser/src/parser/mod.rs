@@ -231,6 +231,10 @@ impl Parser {
         is
     }
 
+    pub fn is_keyword(&mut self, p: PToken) -> bool {
+        self.valid_keyword(p)
+    }
+
     pub fn eat(&mut self, p: TokenKind) -> bool {
         let is = self.current().kind == p;
 
