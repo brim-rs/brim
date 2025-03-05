@@ -5,7 +5,7 @@ use crate::{
 use brim_ast::{
     Const, Type,
     expr::{Expr, ExprKind},
-    item::{Block, Ident, ItemKind, TypeAlias},
+    item::{Block, Ident, ItemKind, TypeAlias, TypeAliasValue},
     stmts::{Stmt, StmtKind},
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
     ty::{Const, PrimitiveType, Ty, TyKind},
@@ -118,7 +118,11 @@ impl Parser {
         let generics = self.parse_generics()?;
         self.expect(TokenKind::Eq)?;
 
-        let ty = self.parse_type()?;
+        let ty = if self.can_begin_comptime() {
+            TypeAliasValue::Const(self.parse_expr()?)
+        } else {
+            TypeAliasValue::Ty(self.parse_type()?)
+        };
 
         Ok((
             ident,

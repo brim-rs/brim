@@ -9,6 +9,7 @@ use crate::{
     expr::{HirBlock, HirExpr, HirExprKind},
     stmts::HirStmtKind,
     transformer::Transformer,
+    ty::HirTy,
 };
 use brim_ast::{
     Empty,
@@ -17,8 +18,30 @@ use brim_ast::{
 };
 use brim_middle::{ModuleId, temp_diag::TemporaryDiagnosticContext};
 
+#[derive(Debug, Clone)]
+pub enum ComptimeReturnValue {
+    Lit(Lit),
+    Ty(HirTy),
+}
+
+impl ComptimeReturnValue {
+    pub fn as_lit(&self) -> &Lit {
+        match self {
+            ComptimeReturnValue::Lit(lit) => lit,
+            _ => unreachable!(),
+        }
+    }
+    
+    pub fn as_ty(&self) -> &HirTy {
+        match self {
+            ComptimeReturnValue::Ty(ty) => ty,
+            _ => unreachable!(),
+        }
+    }
+}
+
 impl Transformer {
-    pub fn transform_comptime_expr(&mut self, expr: Expr) -> Lit {
+    pub fn transform_comptime_expr(&mut self, expr: Expr) -> ComptimeReturnValue {
         let (expr, _) = self.transform_expr(expr);
 
         Evaluator::new(self.current_mod_id).eval_block(expr.as_block())
@@ -29,7 +52,7 @@ impl Transformer {
 #[derive(Debug)]
 pub struct Evaluator {
     pub scopes: EvalScopeManager,
-    pub last_val: Option<Lit>,
+    pub last_val: Option<ComptimeReturnValue>,
     pub mod_id: usize,
     pub temp: TemporaryDiagnosticContext,
 }
@@ -46,7 +69,7 @@ impl Evaluator {
 }
 
 impl Evaluator {
-    pub fn eval_block(&mut self, block: &HirBlock) -> Lit {
+    pub fn eval_block(&mut self, block: &HirBlock) -> ComptimeReturnValue {
         self.scopes.push_scope(self.mod_id);
         for stmt in block.stmts.clone() {
             match stmt.kind {
@@ -54,35 +77,35 @@ impl Evaluator {
                     self.eval_expr(expr);
                 }
                 HirStmtKind::Let { value, ident, .. } => {
-                    let lit = if let Some(val) = value {
+                    let val = if let Some(val) = value {
                         self.eval_expr(val)
                     } else {
-                        Lit::new(LitKind::None, Empty, None)
+                        ComptimeReturnValue::Lit(Lit::new(LitKind::None, Empty, None))
                     };
                     self.scopes
                         .declare_variable(ident.name.to_string(), VariableInfo {
                             span: ident.span,
-                            val: lit,
+                            val,
                         });
                 }
             };
         }
         self.scopes.pop_scope();
 
-        if let Some(val) = self.last_val {
+        if let Some(val) = self.last_val.clone() {
             val
         } else {
             let err = self.temp.emit_impl(NoValueReturned {
                 span: (block.span, self.mod_id),
             });
 
-            Lit::new(LitKind::Err(err), Empty, None)
+            ComptimeReturnValue::Lit(Lit::new(LitKind::Err(err), Empty, None))
         }
     }
 
-    pub fn eval_expr(&mut self, expr: HirExpr) -> Lit {
+    pub fn eval_expr(&mut self, expr: HirExpr) -> ComptimeReturnValue {
         let lit = match &expr.kind {
-            HirExprKind::Literal(lit) => lit.clone(),
+            HirExprKind::Literal(lit) => ComptimeReturnValue::Lit(lit.clone()),
             _ => todo!(),
         };
 

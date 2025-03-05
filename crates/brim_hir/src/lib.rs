@@ -14,6 +14,7 @@ use std::collections::HashMap;
 
 pub mod builtin;
 pub mod comptime;
+mod errors;
 pub mod expr;
 pub mod inference;
 pub mod items;

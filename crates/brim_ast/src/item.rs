@@ -107,8 +107,14 @@ pub struct ModuleDecl {
 pub struct TypeAlias {
     pub span: Span,
     pub ident: Ident,
-    pub ty: Ty,
+    pub ty: TypeAliasValue,
     pub generics: Generics,
+}
+
+#[derive(Clone, Debug)]
+pub enum TypeAliasValue {
+    Ty(Ty),
+    Const(Expr),
 }
 
 #[derive(Clone, Debug)]

@@ -1,6 +1,7 @@
 use crate::{
     CompiledModule, CompiledModules,
-    comptime::errors::ComptimeExprExpectedTy,
+    comptime::{ComptimeReturnValue, errors::ComptimeExprExpectedTy},
+    errors::ComptimeExpectedType,
     expr::{
         HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfExpr, HirMatchArm,
         HirStructConstructor,
@@ -18,7 +19,7 @@ use brim_ast::{
     expr::{BinOpKind, Expr, ExprKind, MatchArm},
     item::{
         Block, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, Ident, ImportsKind, Item,
-        ItemKind, Struct,
+        ItemKind, Struct, TypeAliasValue,
     },
     stmts::{Stmt, StmtKind},
     token::{AssignOpToken, Lit, LitKind},
@@ -229,7 +230,22 @@ impl Transformer {
             ItemKind::TypeAlias(type_alias) => HirItemKind::TypeAlias(HirTypeAlias {
                 span: type_alias.span,
                 ident: type_alias.ident,
-                ty: self.transform_ty(type_alias.ty.clone()).kind,
+                ty: if let TypeAliasValue::Ty(ty) = type_alias.ty {
+                    self.transform_ty(ty).kind
+                } else if let TypeAliasValue::Const(expr) = type_alias.ty {
+                    match self.transform_comptime_expr(expr.clone()) {
+                        ComptimeReturnValue::Ty(ty) => ty.kind,
+                        _ => {
+                            self.ctx.emit_impl(ComptimeExpectedType {
+                                span: (expr.span, self.current_mod_id.as_usize()),
+                            });
+
+                            HirTyKind::Primitive(PrimitiveType::Void)
+                        }
+                    }
+                } else {
+                    unreachable!()
+                },
                 generics: self.transform_generics(type_alias.generics),
             }),
             ItemKind::Module(_) => return None,
@@ -373,7 +389,7 @@ impl Transformer {
             },
             GenericKind::NonType { ty, default } => HirGenericKind::Const {
                 ty: self.transform_ty(ty),
-                default: default.map(|expr| self.transform_comptime_expr(expr)),
+                default: default.map(|expr| self.transform_comptime_expr(expr).as_lit().clone()),
             },
         }
     }
@@ -481,7 +497,7 @@ impl Transformer {
                         .collect(),
                 }),
                 ExprKind::Comptime(expr) => {
-                    HirExprKind::Literal(self.transform_comptime_expr(*expr))
+                    HirExprKind::Literal(self.transform_comptime_expr(*expr).as_lit().clone())
                 }
                 ExprKind::Array(items) => HirExprKind::Array(
                     items
@@ -556,7 +572,7 @@ impl Transformer {
                     HirTyKind::Ptr(Box::new(self.transform_ty(*ty).kind), cnst)
                 }
                 TyKind::Array(ty, expr) => {
-                    let len = self.transform_comptime_expr(expr.clone());
+                    let len = self.transform_comptime_expr(expr.clone()).as_lit().clone();
 
                     if LitKind::Integer != len.kind {
                         self.ret_with_error(ComptimeExprExpectedTy {

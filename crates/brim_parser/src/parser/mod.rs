@@ -4,7 +4,7 @@ use crate::{
 };
 use anyhow::Result;
 use brim_ast::{
-    ItemId, Pub, SYMBOL_STRINGS,
+    ItemId, Match, Pub, SYMBOL_STRINGS,
     item::Visibility,
     token::{Delimiter, Orientation, Token, TokenKind},
 };
@@ -343,5 +343,10 @@ impl Parser {
         } else {
             false
         }
+    }
+
+    /// automatically detects if the keyword can be a part of comptime. e.g. match in a type aliast
+    pub fn can_begin_comptime(&self) -> bool {
+        self.current().is_keyword(Match)
     }
 }

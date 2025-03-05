@@ -298,9 +298,16 @@ impl Parser {
                         let pattern = self.parse_expr()?;
                         self.expect(TokenKind::FatArrow)?;
 
-                        let block = self.parse_block(true)?;
+                        self.eat_possible(TokenKind::Delimiter(
+                            Delimiter::Paren,
+                            Orientation::Open,
+                        ));
+                        let block = self.parse_block(false)?;
                         let expr = self.new_expr(block.span, ExprKind::Block(block));
-
+                        self.eat_possible(TokenKind::Delimiter(
+                            Delimiter::Paren,
+                            Orientation::Close,
+                        ));
                         arms.push(MatchArm::Case(pattern, expr));
                         self.eat_possible(TokenKind::Comma);
                     }

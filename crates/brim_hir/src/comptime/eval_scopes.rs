@@ -1,3 +1,4 @@
+use crate::comptime::ComptimeReturnValue;
 use brim_ast::token::Lit;
 use brim_diagnostics::OptionalDiag;
 use brim_span::span::Span;
@@ -13,7 +14,7 @@ pub struct EvalScope {
 #[derive(Debug, Clone)]
 pub struct VariableInfo {
     pub span: Span,
-    pub val: Lit,
+    pub val: ComptimeReturnValue,
 }
 
 impl<'a> EvalScope {
