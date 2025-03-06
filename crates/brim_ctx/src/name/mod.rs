@@ -10,7 +10,7 @@ use crate::name::{
 };
 use brim_ast::{
     expr::{Expr, ExprKind, MatchArm},
-    item::{Block, FnDecl},
+    item::{Block, FnDecl, TypeAlias, TypeAliasValue},
     stmts::Let,
 };
 use brim_diagnostics::diag_opt;
@@ -110,6 +110,15 @@ impl<'a> AstWalker for NameResolver<'a> {
 
         if let Some(expr) = &mut let_stmt.value {
             self.walk_expr(expr);
+        }
+    }
+
+    fn visit_type_alias(&mut self, ta: &mut TypeAlias) {
+        match &mut ta.ty {
+            TypeAliasValue::Const(expr) => {
+                self.walk_expr(expr);
+            }
+            _ => {}
         }
     }
 
@@ -230,7 +239,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                     self.visit_expr(item);
                 }
             }
-            ExprKind::Builtin(ident, _) => {
+            ExprKind::Builtin(ident, args) => {
                 let name = ident.to_string();
                 let func = BUILTIN_FUNCTIONS.get(&name);
 
@@ -239,6 +248,10 @@ impl<'a> AstWalker for NameResolver<'a> {
                         span: (ident.span, self.file),
                         name,
                     }));
+                }
+
+                for arg in args {
+                    self.visit_expr(arg);
                 }
             }
             ExprKind::StructConstructor(ident, _, fields) => {
@@ -275,10 +288,10 @@ impl<'a> AstWalker for NameResolver<'a> {
                     .compiled
                     .symbols
                     .resolve(&idents[0].to_string(), self.file);
+                println!("{:?}", item);
 
                 if let Some(item) = item {
                     let item = self.compiled.get_item(item.id.item_id);
-                    println!("{:?}", item);
                 } else {
                     self.ctx.emit(Box::new(InvalidPathAccess {
                         span: (idents[0].span, self.file),

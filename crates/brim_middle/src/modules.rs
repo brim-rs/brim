@@ -1,7 +1,4 @@
-use crate::{
-    GlobalSymbol, GlobalSymbolKind, Location, ModuleId, SymbolTable, barrel::Barrel,
-    walker::AstWalker,
-};
+use crate::{GlobalSymbol, Location, ModuleId, SymbolTable, barrel::Barrel, walker::AstWalker};
 use brim_ast::{
     ItemId,
     item::{ImportsKind, Item, ItemKind},
@@ -153,7 +150,7 @@ impl<'a> AstWalker for UseCollector<'a> {
 
                         symbols.push(GlobalSymbol::new(ident.clone(), Location {
                             mod_id,
-                            item_id: ItemId::dummy(),
+                            item_id: ItemId::new(),
                         }))
                     }
                 }

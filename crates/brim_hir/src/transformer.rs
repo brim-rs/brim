@@ -28,7 +28,7 @@ use brim_ast::{
 };
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{
-    GlobalSymbol, GlobalSymbolKind, ModuleId, SymbolTable,
+    ModuleId, SymbolTable,
     modules::{Module, ModuleMap},
     temp_diag::TemporaryDiagnosticContext,
 };

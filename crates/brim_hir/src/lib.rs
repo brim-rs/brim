@@ -72,6 +72,9 @@ impl CompiledModules {
     }
 
     pub fn get_item(&self, item_id: ItemId) -> &HirItem {
-        self.items.get(&item_id).unwrap()
+        self.items.get(&item_id).expect(&format!(
+            "tried to query an item with id: {:?}, but it doesn't exist",
+            item_id
+        ))
     }
 }

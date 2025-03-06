@@ -48,14 +48,6 @@ impl GlobalSymbol {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum GlobalSymbolKind {
-    Fn(FnDecl),
-    Struct(Struct),
-    Namespace(HashMap<Ident, GlobalSymbol>),
-    Ty(Ty),
-}
-
 #[derive(Diagnostic)]
 #[error("experimental feature `{feature}` is not enabled on this build")]
 pub struct ExperimentalFeatureNotEnabled {
