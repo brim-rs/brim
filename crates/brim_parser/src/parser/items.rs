@@ -359,6 +359,18 @@ impl Parser {
         Ok(ident)
     }
 
+    pub fn parse_ident_without_err(&mut self) -> PResult<Option<Ident>> {
+        let ident = match self.current().as_ident() {
+            Some(ident) if ident.is_reserved() => return Ok(None),
+            None => return Ok(None),
+            Some(ident) => ident,
+        };
+
+        self.advance();
+
+        Ok(Some(ident))
+    }
+
     pub fn expected_identifier_err(&self) -> PResult<Ident> {
         let span = self.current().span;
 

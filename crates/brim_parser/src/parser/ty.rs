@@ -46,6 +46,40 @@ impl Parser {
         })
     }
 
+    pub fn parse_ty_without_ident(&mut self) -> PResult<Option<Ty>> {
+        let span = self.current().span;
+        let kind = if self.eat(TokenKind::BinOp(BinOpToken::And)) {
+            Some(self.parse_ref()?)
+        } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
+            Some(self.parse_ptr()?)
+        } else if self.current().is_keyword(Const) {
+            Some(self.parse_const()?)
+        } else if self
+            .current()
+            .is_delimiter(Delimiter::Bracket, Orientation::Open)
+        {
+            Some(self.parse_array()?)
+        } else {
+            let ident = self.parse_ident_without_err()?;
+
+            if let Some(ident) = ident {
+                if let Some(primitive) = self.is_primitive(ident)? {
+                    Some(TyKind::Primitive(primitive))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        };
+
+        Ok(kind.map(|kind| Ty {
+            span,
+            kind,
+            id: self.new_id(),
+        }))
+    }
+
     pub fn parse_const(&mut self) -> PResult<TyKind> {
         if self.eat(TokenKind::BinOp(BinOpToken::And)) {
             Ok(self.parse_ref()?)

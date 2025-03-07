@@ -69,7 +69,7 @@ macro_rules! builtin_function {
 builtin_function! {
     fn os() {
         HirExpr {
-            id: ItemId::dummy(),
+            id: ItemId::new(),
             ty: HirTyKind::Primitive(PrimitiveType::Str),
             kind: HirExprKind::Literal(Lit::new(LitKind::Str, Symbol::new(&if cfg!(target_os = "linux") {
                 "linux"

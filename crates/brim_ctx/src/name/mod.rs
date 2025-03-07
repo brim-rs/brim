@@ -298,6 +298,9 @@ impl<'a> AstWalker for NameResolver<'a> {
                     }));
                 }
             }
+            ExprKind::Type(ty) => {
+                self.visit_ty(ty);
+            }
         }
     }
 }

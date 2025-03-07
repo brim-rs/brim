@@ -353,4 +353,20 @@ impl Parser {
     pub fn can_begin_comptime(&self) -> bool {
         self.current().is_keyword(Match)
     }
+
+    pub fn save_pos(&self) -> usize {
+        self.token_cursor.current
+    }
+
+    pub fn restore_pos(&mut self, pos: usize) {
+        self.token_cursor.current = pos;
+        self.current_token = self
+            .tokens
+            .get(self.token_cursor.current)
+            .unwrap_or(&self.tokens[self.tokens.len() - 1])
+            .clone();
+        if self.token_cursor.current > 0 {
+            self.previous_token = self.tokens[self.token_cursor.current - 1].clone();
+        }
+    }
 }

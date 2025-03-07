@@ -54,11 +54,15 @@ Location: {}
                     new_text = "at <unknown>".dimmed().to_string();
                 }
 
+                let line_number = symbol.lineno().unwrap_or(0);
+                let column_number = symbol.colno().unwrap_or(0);
                 if let Some(filename) = symbol.filename() {
                     new_text = format!(
-                        "{}: ({})",
+                        "{}: ({}:{}:{})",
                         new_text,
-                        shorten_path(filename.to_str().unwrap()).unwrap()
+                        shorten_path(filename.to_str().unwrap()).unwrap(),
+                        line_number,
+                        column_number
                     )
                     .cyan()
                     .to_string();

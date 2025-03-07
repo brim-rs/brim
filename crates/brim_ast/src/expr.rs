@@ -2,6 +2,7 @@ use crate::{
     ItemId,
     item::{Block, GenericArgs, Ident},
     token::{AssignOpToken, Lit},
+    ty::Ty,
 };
 use brim_span::span::Span;
 use indexmap::IndexMap;
@@ -63,6 +64,8 @@ pub enum ExprKind {
     Match(Box<Expr>, Vec<MatchArm>),
     /// `windows::io::File`
     Path(Vec<Ident>),
+    /// `i32`. Type as an value.
+    Type(Box<Ty>),
 }
 
 #[derive(Clone, Debug)]

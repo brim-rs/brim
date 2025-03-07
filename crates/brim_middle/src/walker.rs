@@ -146,6 +146,9 @@ pub trait AstWalker {
                 }
             }
             ExprKind::Path(_) => {}
+            ExprKind::Type(ty) => {
+                self.visit_ty(ty);
+            }
         }
     }
 

@@ -17,7 +17,7 @@ impl Span {
         let start = start.into();
         let end = end.into();
 
-        assert!(end >= start);
+        assert!(end >= start, "end ({}) must be greater than or equal to start ({})", end, start);
 
         Span { start, end }
     }

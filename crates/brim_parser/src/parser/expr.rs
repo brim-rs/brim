@@ -10,12 +10,13 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Comptime, Else, If, Match, Return, Try,
+    Comptime, Const, Else, If, Match, Return, Try,
     expr::{
         BinOpAssociativity, BinOpKind, ConditionBranch, Expr, ExprKind, IfExpr, MatchArm, UnaryOp,
     },
     item::Ident,
     token::{BinOpToken, Delimiter, Lit, LitKind, Orientation, TokenKind},
+    ty::{Ty, TyKind},
 };
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
@@ -339,6 +340,12 @@ impl Parser {
                 Ok(self.new_expr(expr.span, ExprKind::Paren(Box::new(expr))))
             }
             TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
+                let span_start = self.current().span;
+
+                if let Some(ty) = self.try_parse_as_array_type(span_start)? {
+                    return Ok(self.new_expr(ty.span, ExprKind::Type(Box::new(ty))));
+                }
+
                 self.advance();
                 let mut elements = Vec::new();
                 while !self.is_paren(Orientation::Close) {
@@ -351,6 +358,18 @@ impl Parser {
 
                 debug!("Parsed array expression");
                 Ok(self.new_expr(self.current().span, ExprKind::Array(elements)))
+            }
+            TokenKind::BinOp(BinOpToken::And) | TokenKind::BinOp(BinOpToken::Star) => {
+                let span_start = self.current().span;
+
+                if let Some(ty) = self.parse_ty_without_ident()? {
+                    return Ok(self.new_expr(ty.span, ExprKind::Type(Box::new(ty))));
+                }
+
+                box_diag!(UnexpectedToken {
+                    found: self.current().kind,
+                    span: (self.current().span, self.file),
+                })
             }
             TokenKind::At => {
                 let span = self.current().span;
@@ -377,7 +396,7 @@ impl Parser {
 
                     debug!("Parsed return expression");
                     Ok(self.new_expr(
-                        self.current().span.to(expr.span),
+                        self.prev().span.to(expr.span),
                         ExprKind::Return(Box::new(expr)),
                     ))
                 } else if self.eat_keyword(ptok!(If)) {
@@ -390,6 +409,16 @@ impl Parser {
                     Ok(self.new_expr(self.current().span, ExprKind::Comptime(Box::new(expr))))
                 } else if self.is_keyword(ptok!(Match)) {
                     self.parse_match_expression()
+                } else if self.current().is_keyword(Const) {
+                    let span_start = self.current().span;
+                    if let Some(ty) = self.parse_ty_without_ident()? {
+                        Ok(self.new_expr(ty.span, ExprKind::Type(Box::new(ty))))
+                    } else {
+                        box_diag!(UnexpectedToken {
+                            found: self.current().kind,
+                            span: (self.current().span, self.file),
+                        })
+                    }
                 } else {
                     let span = self.current().span;
                     let ident = self.parse_ident()?;
@@ -439,6 +468,25 @@ impl Parser {
                             ExprKind::StructConstructor(ident, generics, fields),
                         ))
                     } else {
+                        if let Some(primitive) = self.is_primitive(ident.clone())? {
+                            let ty = Ty {
+                                span,
+                                kind: TyKind::Primitive(primitive),
+                                id: self.new_id(),
+                            };
+                            return Ok(self.new_expr(span, ExprKind::Type(Box::new(ty))));
+                        }
+
+                        let generics = self.parse_argument_generics()?;
+                        if !generics.params.is_empty() {
+                            let ty = Ty {
+                                span,
+                                kind: TyKind::Ident { ident, generics },
+                                id: self.new_id(),
+                            };
+                            return Ok(self.new_expr(span, ExprKind::Type(Box::new(ty))));
+                        }
+
                         if self.eat(TokenKind::DoubleColon) {
                             let mut path = vec![ident];
 
@@ -470,6 +518,29 @@ impl Parser {
                 })
             }
         }
+    }
+
+    fn try_parse_as_array_type(&mut self, span_start: Span) -> PResult<Option<Ty>> {
+        let pos = self.save_pos();
+
+        self.advance();
+
+        if let Ok(len_expr) = self.parse_expr() {
+            if self.eat(TokenKind::Semicolon) {
+                if let Ok(elem_ty) = self.parse_type() {
+                    if self.eat(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close)) {
+                        return Ok(Some(Ty {
+                            span: span_start.to(self.prev().span),
+                            kind: TyKind::Array(Box::new(elem_ty), len_expr),
+                            id: self.new_id(),
+                        }));
+                    }
+                }
+            }
+        }
+
+        self.restore_pos(pos);
+        Ok(None)
     }
 
     pub fn parse_if(&mut self) -> PResult<Expr> {
