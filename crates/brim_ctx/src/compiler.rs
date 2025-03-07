@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     diag_ctx::DiagnosticContext,
     errors::{MainFunctionConstant, MainFunctionParams},
@@ -5,6 +7,7 @@ use crate::{
     validator::AstValidator,
 };
 use anyhow::Result;
+use brim_ast::ItemId;
 use brim_codegen::codegen::CppCodegen;
 use brim_diagnostics::{
     ErrorEmitted,
@@ -13,17 +16,21 @@ use brim_diagnostics::{
 use brim_hir::{
     Codegen, CompiledModules,
     inference::infer_types,
-    items::HirFn,
+    items::{HirFn, HirItem, HirItemKind},
     transformer::{HirModuleMap, transform_module},
     type_checker::TypeChecker,
 };
 use brim_middle::{
+    ModuleId,
     args::RunArgs,
     lints::Lints,
     modules::{ModuleMap, SymbolCollector, UseCollector},
     temp_diag::TemporaryDiagnosticContext,
 };
-use brim_span::files::{SimpleFiles, files};
+use brim_span::{
+    files::{SimpleFiles, files},
+    span::Span,
+};
 
 #[derive(Debug, Clone)]
 pub struct CompilerContext {
@@ -34,7 +41,7 @@ pub struct CompilerContext {
 }
 
 impl CompilerContext {
-    pub fn new(args: RunArgs, lints: &'static Lints) -> Self {
+    pub fn new(args: RunArgs, lints: &'static Lints, compiled: &mut CompiledModules) -> Self {
         Self {
             dcx: DiagnosticContext::new(),
             emitted: vec![],
@@ -90,6 +97,20 @@ impl CompilerContext {
 
         let mut use_collector = UseCollector::new(&mut compiled.symbols);
         use_collector.collect(map);
+
+        for (ident, symbols) in &use_collector.namespaces {
+            compiled.items.insert(
+                ident.clone(),
+                HirItem {
+                    id: ItemId::new(),
+                    span: Span::DUMMY,
+                    ident: ident.clone(),
+                    kind: HirItemKind::Namespace(symbols.clone()),
+                    is_public: true,
+                    mod_id: ModuleId::new(),
+                },
+            );
+        }
 
         let mut name_resolver = NameResolver::new(map.clone(), self.lints, compiled);
         name_resolver.resolve_names();

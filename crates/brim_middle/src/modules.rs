@@ -1,10 +1,10 @@
 use crate::{GlobalSymbol, Location, ModuleId, SymbolTable, barrel::Barrel, walker::AstWalker};
 use brim_ast::{
     ItemId,
-    item::{ImportsKind, Item, ItemKind},
+    item::{Ident, ImportsKind, Item, ItemKind},
 };
 use brim_span::files::get_id_by_name;
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct Module {
@@ -106,11 +106,16 @@ impl<'a> AstWalker for SymbolCollector<'a> {
 pub struct UseCollector<'a> {
     pub table: &'a mut SymbolTable,
     pub file_id: usize,
+    pub namespaces: HashMap<Ident, HashMap<Ident, GlobalSymbol>>,
 }
 
 impl<'a> UseCollector<'a> {
     pub fn new(table: &'a mut SymbolTable) -> Self {
-        Self { table, file_id: 0 }
+        Self {
+            table,
+            file_id: 0,
+            namespaces: HashMap::new(),
+        }
     }
 
     pub fn collect(&mut self, map: &mut ModuleMap) {
@@ -148,10 +153,14 @@ impl<'a> AstWalker for UseCollector<'a> {
                     ImportsKind::Default(ident) => {
                         let map = self.table.create_map(mod_id);
 
-                        symbols.push(GlobalSymbol::new(ident.clone(), Location {
-                            mod_id,
-                            item_id: ItemId::new(),
-                        }))
+                        self.namespaces.insert(ident.clone(), map);
+                        symbols.push(GlobalSymbol::new(
+                            ident.clone(),
+                            Location {
+                                mod_id,
+                                item_id: ItemId::new(),
+                            },
+                        ))
                     }
                 }
 

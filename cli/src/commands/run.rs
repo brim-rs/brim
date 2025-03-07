@@ -72,12 +72,13 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
         let ctx = &mut CompilerContext::new(args.clone(), lints);
         let hir = compile_project(sess, ctx, c_choice, args.clone(), compiled_projects)?;
 
-        compiled_projects
-            .map
-            .insert(config.project.name.clone(), CompiledModule {
+        compiled_projects.map.insert(
+            config.project.name.clone(),
+            CompiledModule {
                 config,
                 hir: hir.clone(),
-            });
+            },
+        );
         compiled_projects.items.extend(hir.items.clone());
     }
     let mut cg = CppCodegen::new(main_sess.main_file()?);

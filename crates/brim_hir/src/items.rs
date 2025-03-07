@@ -4,9 +4,9 @@ use brim_ast::{
     item::{Ident, Visibility},
     token::Lit,
 };
-use brim_middle::ModuleId;
+use brim_middle::{GlobalSymbol, ModuleId};
 use brim_span::span::Span;
-use std::{fmt::Display, path::PathBuf};
+use std::{collections::HashMap, fmt::Display, path::PathBuf};
 
 #[derive(Clone, Debug)]
 pub struct HirItem {
@@ -44,6 +44,8 @@ pub enum HirItemKind {
     Struct(HirStruct),
     /// Type alias
     TypeAlias(HirTypeAlias),
+    /// Namespace. Created from a default import.
+    Namespace(HashMap<Ident, GlobalSymbol>),
 }
 
 #[derive(Clone, Debug)]
