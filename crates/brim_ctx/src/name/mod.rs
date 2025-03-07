@@ -288,7 +288,6 @@ impl<'a> AstWalker for NameResolver<'a> {
                     .compiled
                     .symbols
                     .resolve(&idents[0].to_string(), self.file);
-                println!("{:?}", item);
 
                 if let Some(item) = item {
                     let item = self.compiled.get_item(item.id.item_id);

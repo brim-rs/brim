@@ -41,7 +41,7 @@ pub struct CompilerContext {
 }
 
 impl CompilerContext {
-    pub fn new(args: RunArgs, lints: &'static Lints, compiled: &mut CompiledModules) -> Self {
+    pub fn new(args: RunArgs, lints: &'static Lints) -> Self {
         Self {
             dcx: DiagnosticContext::new(),
             emitted: vec![],
@@ -98,18 +98,15 @@ impl CompilerContext {
         let mut use_collector = UseCollector::new(&mut compiled.symbols);
         use_collector.collect(map);
 
-        for (ident, symbols) in &use_collector.namespaces {
-            compiled.items.insert(
-                ident.clone(),
-                HirItem {
-                    id: ItemId::new(),
-                    span: Span::DUMMY,
-                    ident: ident.clone(),
-                    kind: HirItemKind::Namespace(symbols.clone()),
-                    is_public: true,
-                    mod_id: ModuleId::new(),
-                },
-            );
+        for ((ident, id), symbols) in &use_collector.namespaces {
+            compiled.items.insert(id.clone(), HirItem {
+                id: ItemId::new(),
+                span: Span::DUMMY,
+                ident: ident.clone(),
+                kind: HirItemKind::Namespace(symbols.clone()),
+                is_public: true,
+                mod_id: ModuleId::new(),
+            });
         }
 
         let mut name_resolver = NameResolver::new(map.clone(), self.lints, compiled);

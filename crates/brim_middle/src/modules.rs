@@ -106,7 +106,7 @@ impl<'a> AstWalker for SymbolCollector<'a> {
 pub struct UseCollector<'a> {
     pub table: &'a mut SymbolTable,
     pub file_id: usize,
-    pub namespaces: HashMap<Ident, HashMap<Ident, GlobalSymbol>>,
+    pub namespaces: HashMap<(Ident, ItemId), HashMap<Ident, GlobalSymbol>>,
 }
 
 impl<'a> UseCollector<'a> {
@@ -153,14 +153,12 @@ impl<'a> AstWalker for UseCollector<'a> {
                     ImportsKind::Default(ident) => {
                         let map = self.table.create_map(mod_id);
 
-                        self.namespaces.insert(ident.clone(), map);
-                        symbols.push(GlobalSymbol::new(
-                            ident.clone(),
-                            Location {
-                                mod_id,
-                                item_id: ItemId::new(),
-                            },
-                        ))
+                        let id = ItemId::new();
+                        self.namespaces.insert((ident.clone(), id), map);
+                        symbols.push(GlobalSymbol::new(ident.clone(), Location {
+                            mod_id,
+                            item_id: id,
+                        }))
                     }
                 }
 
