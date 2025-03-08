@@ -11,7 +11,7 @@ clap = { workspace = true, features = ["derive"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 anstream = { workspace = true }
-colored = "2.2.0"
+colored = "3.0.0"
 backtrace = "0.3.74"
 brim-parser = { workspace = true }
 brim-cpp-compiler = { workspace = true }
