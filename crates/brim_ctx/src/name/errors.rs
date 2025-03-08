@@ -43,3 +43,12 @@ pub struct InvalidPathAccess {
     pub span: (Span, usize),
     pub name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("namespace `{name}` doesn't have a symbol named `{symbol}`")]
+pub struct NamespaceMissingSymbol {
+    #[error("namespace `{name}` doesn't have a symbol named `{symbol}`")]
+    pub span: (Span, usize),
+    pub name: String,
+    pub symbol: String,
+}

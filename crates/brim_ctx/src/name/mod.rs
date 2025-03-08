@@ -3,8 +3,8 @@ pub mod scopes;
 
 use crate::name::{
     errors::{
-        AccessOutsideComptime, InvalidPathAccess, UndeclaredFunction, UndeclaredStruct,
-        UndeclaredVariable,
+        AccessOutsideComptime, InvalidPathAccess, NamespaceMissingSymbol, UndeclaredFunction,
+        UndeclaredStruct, UndeclaredVariable,
     },
     scopes::Scope,
 };
@@ -14,7 +14,7 @@ use brim_ast::{
     stmts::Let,
 };
 use brim_diagnostics::diag_opt;
-use brim_hir::CompiledModules;
+use brim_hir::{CompiledModules, items::HirItemKind};
 use brim_middle::{
     builtins::BUILTIN_FUNCTIONS, lints::Lints, modules::ModuleMap,
     temp_diag::TemporaryDiagnosticContext, walker::AstWalker,
@@ -291,11 +291,30 @@ impl<'a> AstWalker for NameResolver<'a> {
 
                 if let Some(item) = item {
                     let item = self.compiled.get_item(item.id.item_id);
+
+                    match &item.kind {
+                        HirItemKind::Namespace(symbols) => {
+                            println!("{:?} {}", symbols, idents[1]);
+                            if let None = symbols.get(&idents[1].to_string()) {
+                                self.ctx.emit_impl(NamespaceMissingSymbol {
+                                    span: (idents[1].span, self.file),
+                                    name: idents[0].to_string(),
+                                    symbol: idents[1].to_string(),
+                                });
+                            }
+                        }
+                        _ => {
+                            self.ctx.emit_impl(InvalidPathAccess {
+                                span: (idents[0].span, self.file),
+                                name: idents[0].to_string(),
+                            });
+                        }
+                    }
                 } else {
-                    self.ctx.emit(Box::new(InvalidPathAccess {
+                    self.ctx.emit_impl(InvalidPathAccess {
                         span: (idents[0].span, self.file),
                         name: idents[0].to_string(),
-                    }));
+                    });
                 }
             }
             ExprKind::Type(ty) => {

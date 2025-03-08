@@ -45,7 +45,7 @@ pub enum HirItemKind {
     /// Type alias
     TypeAlias(HirTypeAlias),
     /// Namespace. Created from a default import.
-    Namespace(HashMap<Ident, GlobalSymbol>),
+    Namespace(HashMap<String, GlobalSymbol>),
 }
 
 #[derive(Clone, Debug)]

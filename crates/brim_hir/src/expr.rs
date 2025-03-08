@@ -71,7 +71,7 @@ pub enum HirExprKind {
     /// Match expressions.
     Match(Box<HirExpr>, Vec<HirMatchArm>),
     /// Path to a module or item.
-    Path(Vec<Ident>),
+    Path(ItemId),
     /// Type as a value
     Type(HirTyKind),
 }

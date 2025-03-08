@@ -45,9 +45,9 @@ pub fn transform_module(
     map: ModuleMap,
     compiled_modules: &mut CompiledModules,
 ) -> (HirModuleMap, TemporaryDiagnosticContext) {
-    let mut transformer = Transformer::new(map);
+    let mut transformer = Transformer::new(map,compiled_modules);
     (
-        transformer.transform_modules(compiled_modules),
+        transformer.transform_modules(),
         transformer.ctx,
     )
 }
@@ -155,33 +155,35 @@ pub struct HirModule {
 }
 
 #[derive(Debug)]
-pub struct Transformer {
+pub struct Transformer<'a> {
     pub map: HirModuleMap,
     pub last_id: usize,
     pub module_map: ModuleMap,
     pub current_mod_id: ModuleId,
     pub ctx: TemporaryDiagnosticContext,
+    pub compiled: &'a mut CompiledModules
 }
 
-impl Transformer {
-    pub fn new(module_map: ModuleMap) -> Self {
+impl<'a> Transformer<'a> {
+    pub fn new(module_map: ModuleMap, compiled: &'a mut CompiledModules) -> Self {
         Self {
             map: HirModuleMap::new(),
             last_id: 0,
             module_map,
             current_mod_id: ModuleId::from_usize(0),
             ctx: TemporaryDiagnosticContext::new(),
+            compiled
         }
     }
 
-    pub fn transform_modules(&mut self, compiled: &mut CompiledModules) -> HirModuleMap {
+    pub fn transform_modules(&mut self) -> HirModuleMap {
         for module in self.module_map.modules.clone() {
             self.current_mod_id = ModuleId::from_usize(module.barrel.file_id);
-            let module = self.transform_module(module, compiled);
+            let module = self.transform_module(module);
             self.map.new_module(module);
         }
 
-        for (module, symbols) in compiled.symbols.symbols.clone() {
+        for (module, symbols) in self.compiled.symbols.symbols.clone() {
             for sym in symbols {
                 self.map.symbols.add_symbol(module, sym);
             }
@@ -193,13 +195,12 @@ impl Transformer {
     pub fn transform_module(
         &mut self,
         module: Module,
-        compiled: &mut CompiledModules,
     ) -> HirModule {
         let items: Vec<ItemId> = module
             .barrel
             .items
             .iter()
-            .map(|item| self.transform_item(item.clone(), compiled))
+            .map(|item| self.transform_item(item.clone()))
             .filter_map(|item| item)
             .collect();
 
@@ -211,7 +212,7 @@ impl Transformer {
         }
     }
 
-    pub fn transform_item(&mut self, item: Item, compiled: &mut CompiledModules) -> Option<ItemId> {
+    pub fn transform_item(&mut self, item: Item) -> Option<ItemId> {
         let hir_item_kind = match item.kind.clone() {
             ItemKind::Fn(f_decl) => HirItemKind::Fn(self.transform_fn(f_decl)),
             ItemKind::Use(u) => {
@@ -235,7 +236,7 @@ impl Transformer {
                     self.transform_ty(ty).kind
                 } else if let TypeAliasValue::Const(expr) = type_alias.ty {
                     match self.transform_comptime_expr(expr.clone()) {
-                        ComptimeReturnValue::Ty(ty) => ty.kind,
+                        ComptimeReturnValue::Ty(ty) => ty,
                         _ => {
                             self.ctx.emit_impl(ComptimeExpectedType {
                                 span: (expr.span, self.current_mod_id.as_usize()),
@@ -263,7 +264,7 @@ impl Transformer {
 
         self.map
             .insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
-        compiled.insert_item(item.clone());
+        self.compiled.insert_item(item.clone());
 
         Some(item.id)
     }
@@ -556,7 +557,9 @@ impl Transformer {
 
                     HirExprKind::Match(Box::new(self.transform_expr(*expr).0), arms)
                 }
-                ExprKind::Path(idents) => HirExprKind::Path(idents),
+                ExprKind::Path(idents) => {
+                    HirExprKind::Path(ItemId::new())
+                },
                 ExprKind::Type(ty) => HirExprKind::Type(self.transform_ty(*ty).kind),
             },
             ty: HirTyKind::Placeholder,

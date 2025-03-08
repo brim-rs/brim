@@ -106,7 +106,7 @@ impl<'a> AstWalker for SymbolCollector<'a> {
 pub struct UseCollector<'a> {
     pub table: &'a mut SymbolTable,
     pub file_id: usize,
-    pub namespaces: HashMap<(Ident, ItemId), HashMap<Ident, GlobalSymbol>>,
+    pub namespaces: HashMap<(Ident, ItemId), HashMap<String, GlobalSymbol>>,
 }
 
 impl<'a> UseCollector<'a> {

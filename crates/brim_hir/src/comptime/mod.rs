@@ -9,7 +9,7 @@ use crate::{
     expr::{HirBlock, HirExpr, HirExprKind, HirMatchArm},
     stmts::HirStmtKind,
     transformer::Transformer,
-    ty::HirTy,
+    ty::{HirTy, HirTyKind},
 };
 use brim_ast::{
     Empty,
@@ -21,7 +21,7 @@ use brim_middle::{ModuleId, temp_diag::TemporaryDiagnosticContext};
 #[derive(Debug, Clone)]
 pub enum ComptimeReturnValue {
     Lit(Lit),
-    Ty(HirTy),
+    Ty(HirTyKind),
 }
 
 impl ComptimeReturnValue {
@@ -32,7 +32,7 @@ impl ComptimeReturnValue {
         }
     }
 
-    pub fn as_ty(&self) -> &HirTy {
+    pub fn as_ty(&self) -> &HirTyKind {
         match self {
             ComptimeReturnValue::Ty(ty) => ty,
             _ => unreachable!(),
@@ -40,7 +40,7 @@ impl ComptimeReturnValue {
     }
 }
 
-impl Transformer {
+impl<'a> Transformer<'a> {
     pub fn transform_comptime_expr(&mut self, expr: Expr) -> ComptimeReturnValue {
         let (expr, _) = self.transform_expr(expr);
 
@@ -132,6 +132,22 @@ impl Evaluator {
 
                 lit.expect("No match arm found")
             }
+            HirExprKind::Type(ty) => ComptimeReturnValue::Ty(ty.clone()),
+            // HirExprKind::Path(path) => {
+            // let item = self
+            //     .compiled
+            //     .symbols
+            //     .resolve(&idents[0].to_string(), self.file);
+            //
+            // if let Some(item) = item {
+            //     let item = self.compiled.get_item(item.id.item_id);
+            // } else {
+            //     self.ctx.emit(Box::new(InvalidPathAccess {
+            //         span: (idents[0].span, self.file),
+            //         name: idents[0].to_string(),
+            //     }));
+            // }
+            // }
             _ => unimplemented!("Comptime evaluation for {:?}", expr),
         };
 

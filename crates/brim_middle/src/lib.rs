@@ -96,10 +96,10 @@ impl SymbolTable {
             .collect()
     }
 
-    pub fn create_map(&self, mod_id: ModuleId) -> HashMap<Ident, GlobalSymbol> {
+    pub fn create_map(&self, mod_id: ModuleId) -> HashMap<String, GlobalSymbol> {
         self.by_module(mod_id)
             .into_iter()
-            .map(|symbol| (symbol.name.clone(), symbol))
+            .map(|symbol| (symbol.name.clone().to_string(), symbol))
             .collect()
     }
 
