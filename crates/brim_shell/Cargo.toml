@@ -9,4 +9,4 @@ anstream = { workspace = true }
 anyhow = { workspace = true }
 url = { workspace = true }
 gethostname = { workspace = true }
-terminal_size = "0.4.1"
+terminal_size = { workspace = true }
