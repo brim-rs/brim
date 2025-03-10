@@ -82,7 +82,7 @@ impl CppCodegen {
 
     fn transform_primitive(&self, prim: PrimitiveType) -> String {
         match prim {
-            PrimitiveType::Void => "void".to_string(),
+            PrimitiveType::Void | PrimitiveType::Erased => "void".to_string(),
             PrimitiveType::I8 => "std::int8_t".to_string(),
             PrimitiveType::I16 => "std::int16_t".to_string(),
             PrimitiveType::I32 => "std::int32_t".to_string(),

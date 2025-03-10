@@ -1,1 +1,1 @@
-pub type Handle = *void;
+pub type Handle = *erased;

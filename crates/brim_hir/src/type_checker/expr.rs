@@ -48,7 +48,6 @@ impl TypeChecker {
             HirExprKind::Return(expr) => {
                 let func = self.current_fn();
                 let ret_ty = &func.sig.return_type;
-                println!("{:?} {:?}", ret_ty, expr.ty);
 
                 if ret_ty != &expr.ty {
                     self.ctx.emit_impl(FunctionReturnTypeMismatch {

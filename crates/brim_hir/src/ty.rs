@@ -48,27 +48,28 @@ pub enum HirTyKind {
 impl Display for HirTyKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            HirTyKind::Ref(ty, cnst) => write!(f, "&{} {}", ty, cnst),
-            HirTyKind::Ptr(ty, cnst) => write!(f, "*{} {}", cnst, ty),
+            HirTyKind::Ref(ty, cnst) => {
+                let const_str = if *cnst == Const::Yes { "const " } else { "" };
+                write!(f, "&{}{}", const_str, ty)
+            }
+            HirTyKind::Ptr(ty, cnst) => {
+                let const_str = if *cnst == Const::Yes { "const " } else { "" };
+                write!(f, "*{}{}", const_str, ty)
+            }
             HirTyKind::Const(ty) => write!(f, "const {}", ty),
-            HirTyKind::Array(ty, len) => write!(f, "[{}; {:?}]", ty, len),
+            HirTyKind::Array(ty, len) => write!(f, "[{}; {}]", ty, len),
             HirTyKind::Vec(ty) => write!(f, "{}[]", ty),
             HirTyKind::Primitive(p) => write!(f, "{}", p),
             HirTyKind::Ident {
                 ident, generics, ..
             } => {
-                write!(
-                    f,
-                    "{}{}",
-                    ident,
-                    if generics.params.len() > 0 {
-                        generics.to_string()
-                    } else {
-                        "".to_string()
-                    }
-                )
+                if generics.params.is_empty() {
+                    write!(f, "{}", ident)
+                } else {
+                    write!(f, "{}{}", ident, generics)
+                }
             }
-            HirTyKind::Err(_) => write!(f, ""),
+            HirTyKind::Err(_) => write!(f, "<error>"),
             HirTyKind::Placeholder => write!(f, "_"),
         }
     }
