@@ -86,8 +86,6 @@ pub enum PrimitiveType {
     Char,
     Str,
     Void,
-
-    Erased,
 }
 
 impl PrimitiveType {
@@ -170,8 +168,6 @@ impl Display for PrimitiveType {
             Char => "char",
             Str => "str",
             Void => "void",
-
-            Erased => "erased",
         };
 
         write!(f, "{}", s)
