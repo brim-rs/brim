@@ -97,10 +97,28 @@ impl<'a> TypeInference<'a> {
         }
     }
 
+    fn resolve_type_alias(&self, ty: &HirTyKind) -> HirTyKind {
+        if let Some((name, _)) = ty.as_ident() {
+            if let Some(sym) = self
+                .compiled
+                .resolve_symbol(&name.to_string(), self.current_mod.as_usize())
+            {
+                if let HirItemKind::TypeAlias(ty_alias) = &sym.kind {
+                    let resolved_ty = ty_alias.ty.resolved().as_ty();
+
+                    if resolved_ty.can_be_directly_used() {
+                        return resolved_ty.clone();
+                    }
+                }
+            }
+        }
+        ty.clone()
+    }
+
     fn infer_item(&mut self, item: ItemId) {
         let mut item = self.compiled.items.get(&item).unwrap().clone();
         match item.kind {
-            HirItemKind::Fn(ref f) => {
+            HirItemKind::Fn(ref mut f) => {
                 self.scope_manager.push_scope();
 
                 self.ctx.clear_generics();
@@ -108,7 +126,13 @@ impl<'a> TypeInference<'a> {
                     self.ctx.push_generic(generic.clone());
                 }
 
-                for param in &f.sig.params.params {
+                f.sig.return_type = self.resolve_type_alias(&f.sig.return_type);
+
+                f.resolved_type = self.resolve_type_alias(&f.resolved_type);
+
+                for param in &mut f.sig.params.params {
+                    param.ty.kind = self.resolve_type_alias(&param.ty.kind);
+
                     let param_type = param.ty.kind.clone();
                     let type_info = TypeInfo {
                         ty: param_type,
@@ -125,7 +149,7 @@ impl<'a> TypeInference<'a> {
                     self.infer_body(body_id);
                 }
 
-                self.scope_manager.pop_scope(); // Reset scope after function
+                self.scope_manager.pop_scope();
             }
             HirItemKind::Struct(ref mut str) => {
                 for field in str.fields.iter_mut() {
@@ -139,30 +163,7 @@ impl<'a> TypeInference<'a> {
                         }
                     }
 
-                    let ty = if let Some((name, gens)) = field.ty.as_ident()
-                        && let None = str.generics.is_generic(&field.ty)
-                    {
-                        let sym = self
-                            .compiled
-                            .resolve_symbol(&name.to_string(), self.current_mod.as_usize())
-                            .expect(format!("{} not found", name).as_str());
-
-                        if let HirItemKind::TypeAlias(ty) = &sym.kind {
-                            let ty = ty.ty.resolved().as_ty();
-
-                            if ty.can_be_directly_used() {
-                                ty.clone()
-                            } else {
-                                field.ty.clone()
-                            }
-                        } else {
-                            field.ty.clone()
-                        }
-                    } else {
-                        field.ty.clone()
-                    };
-
-                    field.ty = ty;
+                    field.ty = self.resolve_type_alias(&field.ty);
                 }
             }
             _ => {}

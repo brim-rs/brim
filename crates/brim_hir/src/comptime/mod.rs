@@ -324,7 +324,15 @@ impl<'a> Evaluator<'a> {
             HirExprKind::Path(id) => {
                 let item = self.compiled.get_item(id.clone());
 
-                todo!("{:#?}", item)
+                if let HirItemKind::TypeAlias(alias) = &item.kind {
+                    if let ComptimeValue::Resolved(val) = &alias.ty {
+                        val.clone()
+                    } else {
+                        unreachable!()
+                    }
+                } else {
+                    todo!("Resolve path to item")
+                }
             }
             _ => unimplemented!("Comptime evaluation for {:?}", expr),
         };
