@@ -9,8 +9,7 @@ use crate::{
         scope::{TypeInfo, TypeScopeManager},
     },
     items::{
-        HirCallParam, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam, HirItem,
-        HirItemKind,
+        HirCallParam, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam, HirItemKind,
     },
     stmts::{HirStmt, HirStmtKind},
     transformer::{HirModule, HirModuleMap, StoredHirItem},
@@ -150,9 +149,9 @@ impl<'a> TypeInference<'a> {
 
                         if let HirItemKind::TypeAlias(ty) = &sym.kind {
                             let ty = ty.ty.resolved().as_ty();
-                            
+
                             if ty.can_be_directly_used() {
-                               ty.clone()
+                                ty.clone()
                             } else {
                                 field.ty.clone()
                             }

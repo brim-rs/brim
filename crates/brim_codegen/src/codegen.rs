@@ -9,7 +9,7 @@ use brim_hir::{
 };
 use brim_middle::ModuleId;
 use std::{
-    collections::{HashMap, HashSet, VecDeque},
+    collections::{HashMap, HashSet},
     path::PathBuf,
 };
 use tracing::debug;
@@ -147,7 +147,7 @@ impl ModuleDependencyResolver {
 
 impl CppCodegen {
     pub fn new(main_file: usize) -> Self {
-        let mut code = CodeBuilder::new(4);
+        let code = CodeBuilder::new(4);
 
         Self {
             code,

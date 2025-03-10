@@ -1,4 +1,7 @@
-use crate::{expr::ComptimeValue, ty::{HirTy, HirTyKind}};
+use crate::{
+    expr::ComptimeValue,
+    ty::{HirTy, HirTyKind},
+};
 use brim_ast::{
     ItemId,
     item::{Ident, Visibility},

@@ -1,5 +1,4 @@
 use crate::comptime::ComptimeReturnValue;
-use brim_ast::token::Lit;
 use brim_diagnostics::OptionalDiag;
 use brim_span::span::Span;
 use std::collections::HashMap;

@@ -6,7 +6,7 @@ use crate::{
 };
 use brim_ast::{
     ItemId,
-    expr::{BinOpKind, Expr, UnaryOp},
+    expr::{BinOpKind, UnaryOp},
     item::Ident,
     token::Lit,
 };

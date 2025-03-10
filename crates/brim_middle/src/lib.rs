@@ -1,8 +1,4 @@
-use brim_ast::{
-    ItemId,
-    item::{FnDecl, Ident, Struct, Visibility},
-    ty::Ty,
-};
+use brim_ast::{ItemId, item::Ident};
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
 use brim_index::index_type;

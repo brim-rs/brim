@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{
     diag_ctx::DiagnosticContext,
     errors::{MainFunctionConstant, MainFunctionParams},
@@ -7,14 +5,12 @@ use crate::{
     validator::AstValidator,
 };
 use anyhow::Result;
-use brim_ast::ItemId;
-use brim_codegen::codegen::CppCodegen;
 use brim_diagnostics::{
     ErrorEmitted,
     diagnostic::{Diagnostic, ToDiagnostic},
 };
 use brim_hir::{
-    Codegen, CompiledModules,
+    CompiledModules,
     comptime::transform_comptime,
     inference::infer_types,
     items::{HirFn, HirItem, HirItemKind},

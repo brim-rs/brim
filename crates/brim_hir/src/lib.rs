@@ -10,7 +10,6 @@ use crate::{
 use brim_ast::ItemId;
 use brim_config::toml::Config;
 use brim_middle::SymbolTable;
-use expr::ComptimeValue;
 use std::collections::HashMap;
 
 pub mod builtin;
@@ -95,22 +94,3 @@ impl CompiledModules {
             .clone()
     }
 }
-
-use crate::{
-    expr::{HirBlock, HirExprKind, HirMatchArm, HirStructConstructor},
-    items::{
-        HirFn, HirFnSig, HirGenericArgs, HirGenerics, HirItemKind, HirStruct, HirTypeAlias, HirUse,
-    },
-    stmts::HirStmtKind,
-    ty::HirTy,
-};
-use brim_ast::{
-    expr::{Expr, ExprKind, MatchArm},
-    item::{
-        Block, FnDecl, FnReturnType, FnSignature, GenericArgs, Generics, Ident, Item, ItemKind,
-        Struct, TypeAlias, Use,
-    },
-    stmts::{Let, Stmt, StmtKind},
-    ty::Ty,
-};
-use indexmap::IndexMap;

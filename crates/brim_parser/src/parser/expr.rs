@@ -3,8 +3,8 @@ use crate::{
         PResult, PToken, PTokenKind, Parser,
         errors::{
             ElseBranchExpr, ElseIfAfterElse, EmptyMatchExpressionError, InvalidLiteralSuffix,
-            InvalidMatchPatternError, MissingFatArrowError, MultipleElseArmsError,
-            UnexpectedLiteralSuffix, UnexpectedToken, UnexpectedTokenInMatch,
+            MissingFatArrowError, MultipleElseArmsError, UnexpectedLiteralSuffix, UnexpectedToken,
+            UnexpectedTokenInMatch,
         },
     },
     ptok,

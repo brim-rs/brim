@@ -1,11 +1,8 @@
 use anyhow::Result;
 use colored::Colorize;
-use std::{
-    path::PathBuf,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::path::PathBuf;
 use sysinfo::System;
-use terminal_size::{Height, Width, terminal_size};
+use terminal_size::{Width, terminal_size};
 
 const SYSTEM_PATH_PATTERNS: &[&str] = &[
     "/std/",

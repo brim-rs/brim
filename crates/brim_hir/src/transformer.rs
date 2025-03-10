@@ -1,8 +1,7 @@
 use crate::{
-    CompiledModule, CompiledModules,
+    CompiledModules,
     builtin::get_builtin_function,
     comptime::{ComptimeReturnValue, errors::ComptimeExprExpectedTy},
-    errors::ComptimeExpectedType,
     expr::{
         ComptimeValue, HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfExpr, HirMatchArm,
         HirStructConstructor,
@@ -19,7 +18,7 @@ use brim_ast::{
     ItemId,
     expr::{BinOpKind, Expr, ExprKind, MatchArm},
     item::{
-        Block, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, Ident, ImportsKind, Item,
+        Block, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, ImportsKind, Item,
         ItemKind, Struct, TypeAliasValue,
     },
     stmts::{Stmt, StmtKind},
@@ -381,7 +380,7 @@ impl<'a> Transformer<'a> {
         }
     }
 
-    pub fn transform_expr(&mut self, mut expr: Expr) -> (HirExpr, ItemId) {
+    pub fn transform_expr(&mut self, expr: Expr) -> (HirExpr, ItemId) {
         let mut fn_name: Option<String> = None;
 
         let expr = HirExpr {
@@ -497,7 +496,7 @@ impl<'a> Transformer<'a> {
                 ),
                 ExprKind::Builtin(name, args) => {
                     let func = get_builtin_function(&name.to_string());
-                    let mut new_args: &mut Vec<HirExpr> = &mut Vec::new();
+                    let new_args: &mut Vec<HirExpr> = &mut Vec::new();
 
                     for arg in args {
                         new_args.push(self.transform_expr(arg.clone()).0);

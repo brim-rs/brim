@@ -121,7 +121,7 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
     build_process.set_opt_level(opt_level).disable_warnings();
     build_process.add_sources(sources);
 
-    let mut shell = &mut Shell::new(c_choice);
+    let shell = &mut Shell::new(c_choice);
     let exe_path = build_process.compile(project_name, shell)?;
 
     let args: Vec<String> = args.exec_args;
