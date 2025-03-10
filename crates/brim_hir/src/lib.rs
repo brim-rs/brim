@@ -10,6 +10,7 @@ use crate::{
 use brim_ast::ItemId;
 use brim_config::toml::Config;
 use brim_middle::SymbolTable;
+use expr::ComptimeValue;
 use std::collections::HashMap;
 
 pub mod builtin;
@@ -48,6 +49,7 @@ pub struct CompiledModules {
     pub map: HashMap<String, CompiledModule>,
     pub symbols: SymbolTable,
     pub items: HashMap<ItemId, HirItem>,
+    pub assigned_paths: HashMap<ItemId, ItemId>,
 }
 
 impl CompiledModules {
@@ -56,6 +58,7 @@ impl CompiledModules {
             map: HashMap::new(),
             symbols: SymbolTable::new(),
             items: HashMap::new(),
+            assigned_paths: HashMap::new(),
         }
     }
 
@@ -77,4 +80,37 @@ impl CompiledModules {
             item_id
         ))
     }
+
+    pub fn assign_path(&mut self, item_id: ItemId, path: ItemId) {
+        self.assigned_paths.insert(item_id, path);
+    }
+
+    pub fn get_assigned_path(&self, item_id: ItemId) -> ItemId {
+        self.assigned_paths
+            .get(&item_id)
+            .expect(&format!(
+                "an assigned path with id: {:?} doesn't exist",
+                item_id
+            ))
+            .clone()
+    }
 }
+
+use crate::{
+    expr::{HirBlock, HirExprKind, HirMatchArm, HirStructConstructor},
+    items::{
+        HirFn, HirFnSig, HirGenericArgs, HirGenerics, HirItemKind, HirStruct, HirTypeAlias, HirUse,
+    },
+    stmts::HirStmtKind,
+    ty::HirTy,
+};
+use brim_ast::{
+    expr::{Expr, ExprKind, MatchArm},
+    item::{
+        Block, FnDecl, FnReturnType, FnSignature, GenericArgs, Generics, Ident, Item, ItemKind,
+        Struct, TypeAlias, Use,
+    },
+    stmts::{Let, Stmt, StmtKind},
+    ty::Ty,
+};
+use indexmap::IndexMap;

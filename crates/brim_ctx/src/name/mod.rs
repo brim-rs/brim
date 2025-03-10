@@ -294,8 +294,10 @@ impl<'a> AstWalker for NameResolver<'a> {
 
                     match &item.kind {
                         HirItemKind::Namespace(symbols) => {
-                            println!("{:?} {}", symbols, idents[1]);
-                            if let None = symbols.get(&idents[1].to_string()) {
+                            if let Some(sym) = symbols.get(&idents[1].to_string()) {
+                                println!("{}", sym.name);
+                                self.compiled.assign_path(expr.id, sym.id.item_id);
+                            } else {
                                 self.ctx.emit_impl(NamespaceMissingSymbol {
                                     span: (idents[1].span, self.file),
                                     name: idents[0].to_string(),

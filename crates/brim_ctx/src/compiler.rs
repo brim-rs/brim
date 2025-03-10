@@ -15,6 +15,7 @@ use brim_diagnostics::{
 };
 use brim_hir::{
     Codegen, CompiledModules,
+    comptime::transform_comptime,
     inference::infer_types,
     items::{HirFn, HirItem, HirItemKind},
     transformer::{HirModuleMap, transform_module},
@@ -100,7 +101,7 @@ impl CompilerContext {
 
         for ((ident, id), symbols) in &use_collector.namespaces {
             compiled.items.insert(id.clone(), HirItem {
-                id: ItemId::new(),
+                id: id.clone(),
                 span: Span::DUMMY,
                 ident: ident.clone(),
                 kind: HirItemKind::Namespace(symbols.clone()),
@@ -115,6 +116,10 @@ impl CompilerContext {
 
         let (hir, hir_temp) = &mut transform_module(name_resolver.map, compiled);
         self.extend_temp(hir_temp.clone());
+
+        let comp_transformer = transform_comptime(hir, compiled);
+        self.extend_temp(comp_transformer.temp.clone());
+
         let ti = infer_types(hir, compiled);
         self.extend_temp(ti.temp.clone());
 

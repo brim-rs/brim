@@ -4,7 +4,7 @@ use crate::{
     comptime::{ComptimeReturnValue, errors::ComptimeExprExpectedTy},
     errors::ComptimeExpectedType,
     expr::{
-        HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfExpr, HirMatchArm,
+        ComptimeValue, HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfExpr, HirMatchArm,
         HirStructConstructor,
     },
     items::{
@@ -45,11 +45,8 @@ pub fn transform_module(
     map: ModuleMap,
     compiled_modules: &mut CompiledModules,
 ) -> (HirModuleMap, TemporaryDiagnosticContext) {
-    let mut transformer = Transformer::new(map,compiled_modules);
-    (
-        transformer.transform_modules(),
-        transformer.ctx,
-    )
+    let mut transformer = Transformer::new(map, compiled_modules);
+    (transformer.transform_modules(), transformer.ctx)
 }
 
 #[derive(Debug, Clone)]
@@ -161,7 +158,7 @@ pub struct Transformer<'a> {
     pub module_map: ModuleMap,
     pub current_mod_id: ModuleId,
     pub ctx: TemporaryDiagnosticContext,
-    pub compiled: &'a mut CompiledModules
+    pub compiled: &'a mut CompiledModules,
 }
 
 impl<'a> Transformer<'a> {
@@ -172,7 +169,7 @@ impl<'a> Transformer<'a> {
             module_map,
             current_mod_id: ModuleId::from_usize(0),
             ctx: TemporaryDiagnosticContext::new(),
-            compiled
+            compiled,
         }
     }
 
@@ -192,10 +189,7 @@ impl<'a> Transformer<'a> {
         self.map.clone()
     }
 
-    pub fn transform_module(
-        &mut self,
-        module: Module,
-    ) -> HirModule {
+    pub fn transform_module(&mut self, module: Module) -> HirModule {
         let items: Vec<ItemId> = module
             .barrel
             .items
@@ -233,18 +227,9 @@ impl<'a> Transformer<'a> {
                 span: type_alias.span,
                 ident: type_alias.ident,
                 ty: if let TypeAliasValue::Ty(ty) = type_alias.ty {
-                    self.transform_ty(ty).kind
+                    ComptimeValue::Resolved(ComptimeReturnValue::Ty(self.transform_ty(ty).kind))
                 } else if let TypeAliasValue::Const(expr) = type_alias.ty {
-                    match self.transform_comptime_expr(expr.clone()) {
-                        ComptimeReturnValue::Ty(ty) => ty,
-                        _ => {
-                            self.ctx.emit_impl(ComptimeExpectedType {
-                                span: (expr.span, self.current_mod_id.as_usize()),
-                            });
-
-                            HirTyKind::Primitive(PrimitiveType::Void)
-                        }
-                    }
+                    ComptimeValue::Expr(Box::new(self.transform_expr(expr).0))
                 } else {
                     unreachable!()
                 },
@@ -500,9 +485,10 @@ impl<'a> Transformer<'a> {
                         })
                         .collect(),
                 }),
-                ExprKind::Comptime(expr) => {
-                    HirExprKind::Literal(self.transform_comptime_expr(*expr).as_lit().clone())
-                }
+                // HirExprKind::Literal(self.transform_comptime_expr(*expr).as_lit().clone())
+                ExprKind::Comptime(expr) => HirExprKind::Comptime(ComptimeValue::Expr(Box::new(
+                    self.transform_expr(*expr).0,
+                ))),
                 ExprKind::Array(items) => HirExprKind::Array(
                     items
                         .iter()
@@ -557,9 +543,11 @@ impl<'a> Transformer<'a> {
 
                     HirExprKind::Match(Box::new(self.transform_expr(*expr).0), arms)
                 }
-                ExprKind::Path(idents) => {
-                    HirExprKind::Path(ItemId::new())
-                },
+                ExprKind::Path(_) => {
+                    let id = self.compiled.get_assigned_path(expr.id);
+
+                    HirExprKind::Path(id)
+                }
                 ExprKind::Type(ty) => HirExprKind::Type(self.transform_ty(*ty).kind),
             },
             ty: HirTyKind::Placeholder,

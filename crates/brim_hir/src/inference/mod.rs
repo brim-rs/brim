@@ -149,8 +149,10 @@ impl<'a> TypeInference<'a> {
                             .expect(format!("{} not found", name).as_str());
 
                         if let HirItemKind::TypeAlias(ty) = &sym.kind {
-                            if ty.ty.can_be_directly_used() {
-                                ty.ty.clone()
+                            let ty = ty.ty.resolved().as_ty();
+                            
+                            if ty.can_be_directly_used() {
+                               ty.clone()
                             } else {
                                 field.ty.clone()
                             }

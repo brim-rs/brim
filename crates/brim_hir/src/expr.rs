@@ -1,11 +1,12 @@
 use crate::{
+    comptime::ComptimeReturnValue,
     items::{HirCallParam, HirGenericArgs},
     stmts::HirStmt,
     ty::HirTyKind,
 };
 use brim_ast::{
     ItemId,
-    expr::{BinOpKind, UnaryOp},
+    expr::{BinOpKind, Expr, UnaryOp},
     item::Ident,
     token::Lit,
 };
@@ -74,6 +75,24 @@ pub enum HirExprKind {
     Path(ItemId),
     /// Type as a value
     Type(HirTyKind),
+    /// Comptime block to be evaluated at compile time.
+    Comptime(ComptimeValue),
+}
+
+#[derive(Clone, Debug)]
+/// it can be either resolved value or a expr to be evaluated
+pub enum ComptimeValue {
+    Resolved(ComptimeReturnValue),
+    Expr(Box<HirExpr>),
+}
+
+impl ComptimeValue {
+    pub fn resolved(&self) -> &ComptimeReturnValue {
+        match self {
+            ComptimeValue::Resolved(val) => val,
+            _ => panic!("Expected resolved value"),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

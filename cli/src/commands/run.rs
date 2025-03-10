@@ -78,7 +78,6 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
                 config,
                 hir: hir.clone(),
             });
-        compiled_projects.items.extend(hir.items.clone());
     }
     let mut cg = CppCodegen::new(main_sess.main_file()?);
     cg.generate(compiled_projects);

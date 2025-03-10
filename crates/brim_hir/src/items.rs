@@ -1,4 +1,4 @@
-use crate::ty::{HirTy, HirTyKind};
+use crate::{expr::ComptimeValue, ty::{HirTy, HirTyKind}};
 use brim_ast::{
     ItemId,
     item::{Ident, Visibility},
@@ -52,7 +52,7 @@ pub enum HirItemKind {
 pub struct HirTypeAlias {
     pub span: Span,
     pub ident: Ident,
-    pub ty: HirTyKind,
+    pub ty: ComptimeValue,
     pub generics: HirGenerics,
 }
 
