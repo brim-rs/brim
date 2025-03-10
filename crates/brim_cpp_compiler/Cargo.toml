@@ -11,6 +11,6 @@ brim-config = { workspace = true }
 which = "7.0.1"
 tokio = { version = "1.42.0", features = ["rt", "rt-multi-thread", "macros"] }
 tracing = { workspace = true }
-tempfile = "3.14.0"
+tempfile = "3.18.0"
 thiserror = { workspace = true }
 brim-shell = { workspace = true }
