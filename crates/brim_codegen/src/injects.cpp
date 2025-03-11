@@ -143,9 +143,7 @@ class SafeAny {
     struct VoidType {};
 
    public:
-    SafeAny()
-        : value(),
-          type_info(TypeInfo::create<VoidType>()) {}
+    SafeAny() : value(), type_info(TypeInfo::create<VoidType>()) {}
 
     template <typename T, typename = std::enable_if_t<
                               !std::is_same_v<std::decay_t<T>, SafeAny>>>
@@ -154,12 +152,10 @@ class SafeAny {
           type_info(TypeInfo::create<std::decay_t<T>>()) {}
 
     SafeAny(const SafeAny& other)
-        : value(other.value),
-          type_info(other.type_info) {}
+        : value(other.value), type_info(other.type_info) {}
 
     SafeAny(SafeAny&& other) noexcept
-        : value(std::move(other.value)),
-          type_info(other.type_info) {}
+        : value(std::move(other.value)), type_info(other.type_info) {}
 
     template <typename T, typename = std::enable_if_t<
                               !std::is_same_v<std::decay_t<T>, SafeAny>>>
@@ -303,49 +299,6 @@ class SafeAny {
             std::swap(value, other.value);
             std::swap(type_info, other.type_info);
         }
-    }
-
-    template <typename Tag, typename Value>
-    static SafeAny with_tag(Value&& value) {
-        struct TaggedValue {
-            std::decay_t<Value> data;
-            using tag_type = Tag;
-
-            TaggedValue(Value&& v) : data(std::forward<Value>(v)) {}
-        };
-
-        return SafeAny(TaggedValue(std::forward<Value>(value)));
-    }
-
-    template <typename Tag>
-    bool has_tag() const {
-        return is<TaggedValue<Tag, std::any>>();
-    }
-
-    template <typename Tag>
-    auto& get_tagged() {
-        using TaggedType = TaggedValue<Tag, std::any>;
-
-        if (!has_tag<Tag>()) {
-            PANIC_F("SafeAny does not contain a value with tag {}",
-                    demangle(typeid(Tag).name()));
-        }
-
-        return cast<TaggedType>().data;
-    }
-
-    template <typename Tag, typename T>
-    struct TaggedValue {
-        T data;
-        using tag_type = Tag;
-
-        TaggedValue(T&& v) : data(std::forward<T>(v)) {}
-    };
-
-    void debug_print(std::ostream& os = std::cerr) const {
-        os << "SafeAny [" << (has_value() ? "has value" : "empty") << "]"
-           << std::endl;
-        os << "  Type: " << get_full_type_description() << std::endl;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const SafeAny& any) {
