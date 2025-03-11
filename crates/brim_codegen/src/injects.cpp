@@ -142,109 +142,45 @@ class SafeAny {
 
     struct VoidType {};
 
-    struct HistoryEntry {
-        std::string operation;
-        std::string from_type;
-        std::string to_type;
-        std::string timestamp;
-
-        HistoryEntry(std::string op, std::string from, std::string to)
-            : operation(std::move(op)),
-              from_type(std::move(from)),
-              to_type(std::move(to)) {
-            timestamp = "now";
-        }
-    };
-
-    std::vector<HistoryEntry> history;
-    bool track_history;
-
    public:
     SafeAny()
         : value(),
-          type_info(TypeInfo::create<VoidType>()),
-          track_history(false) {}
-
-    void set_history_tracking(bool enable) { track_history = enable; }
-
-    const std::vector<HistoryEntry>& get_history() const { return history; }
-
-    void add_history(const std::string& operation, const std::string& from_type,
-                     const std::string& to_type) {
-        if (track_history) {
-            history.emplace_back(operation, from_type, to_type);
-        }
-    }
+          type_info(TypeInfo::create<VoidType>()) {}
 
     template <typename T, typename = std::enable_if_t<
                               !std::is_same_v<std::decay_t<T>, SafeAny>>>
     SafeAny(T&& val)
         : value(std::forward<T>(val)),
-          type_info(TypeInfo::create<std::decay_t<T>>()),
-          track_history(false) {
-        add_history("construct", "none", type_info.full_description());
-    }
+          type_info(TypeInfo::create<std::decay_t<T>>()) {}
 
     SafeAny(const SafeAny& other)
         : value(other.value),
-          type_info(other.type_info),
-          track_history(other.track_history) {
-        if (track_history) {
-            history = other.history;
-            add_history("copy", type_info.full_description(),
-                        type_info.full_description());
-        }
-    }
+          type_info(other.type_info) {}
 
     SafeAny(SafeAny&& other) noexcept
         : value(std::move(other.value)),
-          type_info(other.type_info),
-          track_history(other.track_history) {
-        if (track_history) {
-            history = std::move(other.history);
-            add_history("move", type_info.full_description(),
-                        type_info.full_description());
-        }
-    }
+          type_info(other.type_info) {}
 
     template <typename T, typename = std::enable_if_t<
                               !std::is_same_v<std::decay_t<T>, SafeAny>>>
     SafeAny& operator=(T&& val) {
-        std::string old_type = type_info.full_description();
-
         value = std::forward<T>(val);
         type_info = TypeInfo::create<std::decay_t<T>>();
-
-        add_history("assign", old_type, type_info.full_description());
         return *this;
     }
 
     SafeAny& operator=(const SafeAny& other) {
         if (this != &other) {
-            std::string old_type = type_info.full_description();
-
             value = other.value;
             type_info = other.type_info;
-
-            if (track_history) {
-                add_history("copy_assign", old_type,
-                            type_info.full_description());
-            }
         }
         return *this;
     }
 
     SafeAny& operator=(SafeAny&& other) noexcept {
         if (this != &other) {
-            std::string old_type = type_info.full_description();
-
             value = std::move(other.value);
             type_info = other.type_info;
-
-            if (track_history) {
-                add_history("move_assign", old_type,
-                            type_info.full_description());
-            }
         }
         return *this;
     }
@@ -254,18 +190,12 @@ class SafeAny {
         SafeAny result;
         result.value = std::any(std::forward<U>(val));
         result.type_info = TypeInfo::create<T>();
-        result.add_history("with_type", "none",
-                           result.type_info.full_description());
         return result;
     }
 
     void reset() {
-        std::string old_type = type_info.full_description();
-
         value.reset();
         type_info = TypeInfo::create<VoidType>();
-
-        add_history("reset", old_type, type_info.full_description());
     }
 
     bool has_value() const { return value.has_value(); }
@@ -370,15 +300,8 @@ class SafeAny {
 
     void swap(SafeAny& other) noexcept {
         if (this != &other) {
-            std::string this_type = type_info.full_description();
-            std::string other_type = other.type_info.full_description();
-
             std::swap(value, other.value);
             std::swap(type_info, other.type_info);
-
-            add_history("swap", this_type, type_info.full_description());
-            other.add_history("swap", other_type,
-                              other.type_info.full_description());
         }
     }
 
@@ -423,17 +346,6 @@ class SafeAny {
         os << "SafeAny [" << (has_value() ? "has value" : "empty") << "]"
            << std::endl;
         os << "  Type: " << get_full_type_description() << std::endl;
-
-        if (track_history && !history.empty()) {
-            os << "  History (" << history.size()
-               << " operations):" << std::endl;
-            for (size_t i = 0; i < history.size(); ++i) {
-                const auto& entry = history[i];
-                os << "    " << i << ": " << entry.operation << " ["
-                   << entry.from_type << " -> " << entry.to_type << "]" << " @ "
-                   << entry.timestamp << std::endl;
-            }
-        }
     }
 
     friend std::ostream& operator<<(std::ostream& os, const SafeAny& any) {
