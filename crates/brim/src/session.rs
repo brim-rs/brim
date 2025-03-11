@@ -91,7 +91,7 @@ impl Session {
         if self.measure_time {
             let elapsed = start.elapsed();
             self.shell()
-                .status("Took", format!("{:?} {}", elapsed, msg.into()))?;
+                .status("Took", format!("{:.2?} {}", elapsed, msg.into()))?;
         }
 
         Ok(())

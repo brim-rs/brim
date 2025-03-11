@@ -54,92 +54,96 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
     let main_sess = &mut Session::new(current_dir()?, config.clone(), c_choice);
     let lints = Box::new(Lints::configure(&config.lints));
     let lints = Box::leak(lints);
-    let main_ctx = &mut CompilerContext::new(args.clone(), lints);
+    main_sess.measure_time = args.time;
 
     main_sess.assert_type(
         ProjectType::Bin,
         "Can only use `run` command on binary projects",
     )?;
 
-    let mut resolver = ProjectResolver::new(".");
-    let order = resolver.resolve_project()?;
-    let configs = resolver.get_configs(&order);
+    main_sess.measure_time(|main_sess| {
+        let mut resolver = ProjectResolver::new(".");
+        let order = resolver.resolve_project()?;
+        let configs = resolver.get_configs(&order);
 
-    let compiled_projects = &mut CompiledModules::new();
+        let compiled_projects = &mut CompiledModules::new();
 
-    for config in configs {
-        let sess = &mut Session::new(config.cwd.clone(), config.clone(), c_choice);
-        let ctx = &mut CompilerContext::new(args.clone(), lints);
-        let hir = compile_project(sess, ctx, c_choice, args.clone(), compiled_projects)?;
+        for config in configs {
+            let sess = &mut Session::new(config.cwd.clone(), config.clone(), c_choice);
+            let ctx = &mut CompilerContext::new(args.clone(), lints);
+            let hir = compile_project(sess, ctx, c_choice, args.clone(), compiled_projects)?;
 
-        compiled_projects
-            .map
-            .insert(config.project.name.clone(), CompiledModule {
-                config,
-                hir: hir.clone(),
-            });
-    }
-    let mut cg = CppCodegen::new(main_sess.main_file()?);
-    cg.generate(compiled_projects);
+            compiled_projects
+                .map
+                .insert(config.project.name.clone(), CompiledModule {
+                    config,
+                    hir: hir.clone(),
+                });
+        }
+        let mut cg = CppCodegen::new(main_sess.main_file()?);
+        cg.generate(compiled_projects);
 
-    let mut sources = vec![];
-    let code = cg.code.build();
-    if args.codegen_debug {
-        println!("{}", code);
-    }
+        let mut sources = vec![];
+        let code = cg.code.build();
+        if args.codegen_debug {
+            println!("{}", code);
+        }
 
-    let file = main_sess.build_dir().join("codegen").join("main.cpp");
-    debug!("Writing codegen to file: {:?}", file);
-    create_file_parent_dirs(&file)?;
+        let file = main_sess.build_dir().join("codegen").join("main.cpp");
+        debug!("Writing codegen to file: {:?}", file);
+        create_file_parent_dirs(&file)?;
 
-    if args.no_write && !file.exists() {
-        bail!(
+        if args.no_write && !file.exists() {
+            bail!(
             "Found `no-write` flag but file doesn't exist. Try to run without `no-write` flag first"
         );
-    }
+        }
 
-    if !args.no_write {
-        std::fs::write(&file, code)?;
-    }
+        if !args.no_write {
+            std::fs::write(&file, code)?;
+        }
 
-    sources.push(file);
+        sources.push(file);
 
-    let project_name = main_sess.config.project.name.clone();
-    let project_type = main_sess.config.project.r#type.clone();
-    let build_dir = main_sess.build_dir();
-    let opt_level = main_sess.config.build.level.clone();
-    let file = main_sess.main_file()?;
-    let lib_type = main_sess.config.build.lib_type.clone();
+        let project_name = main_sess.config.project.name.clone();
+        let project_type = main_sess.config.project.r#type.clone();
+        let build_dir = main_sess.build_dir();
+        let opt_level = main_sess.config.build.level.clone();
+        let file = main_sess.main_file()?;
+        let lib_type = main_sess.config.build.lib_type.clone();
 
-    let build_process = &mut CppBuild::new(
-        Some(CompilerKind::Clang),
-        project_type,
-        build_dir,
-        lib_type,
-        cg.imports,
-    )?;
-    build_process.set_opt_level(opt_level).disable_warnings();
-    build_process.add_sources(sources);
+        let build_process = &mut CppBuild::new(
+            Some(CompilerKind::Clang),
+            project_type,
+            build_dir,
+            lib_type,
+            cg.imports,
+        )?;
+        build_process.set_opt_level(opt_level).disable_warnings();
+        build_process.add_sources(sources);
 
-    let shell = &mut Shell::new(c_choice);
-    let exe_path = build_process.compile(project_name, shell)?;
+        let shell = &mut Shell::new(c_choice);
+        let exe_path = build_process.compile(project_name, shell)?;
 
-    let args: Vec<String> = args.exec_args;
+        let args: Vec<String> = args.exec_args;
 
-    let mut command = process::Command::new(&exe_path);
-    command.args(&args);
+        let mut command = process::Command::new(&exe_path);
+        command.args(&args);
 
-    shell.status(
-        "Running",
-        format!(
-            "`{}{}{}`",
-            &exe_path.to_string_lossy(),
-            if args.is_empty() { "" } else { " " },
-            &args.join(" ")
-        ),
-    )?;
+        shell.status(
+            "Running",
+            format!(
+                "`{}{}{}`",
+                &exe_path.to_string_lossy(),
+                if args.is_empty() { "" } else { " " },
+                &args.join(" ")
+            ),
+        )?;
 
-    command.status()?;
+        command.status()?;
+
+        Ok(())
+    }, "execute project")?;
 
     Ok(())
 }
