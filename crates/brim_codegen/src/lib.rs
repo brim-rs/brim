@@ -34,6 +34,10 @@ impl CodeBuilder {
 
     pub fn add_line(&mut self, line: &str) {
         self.code.push_str(&" ".repeat(self.indent));
+        self.add_line_no_indent(line);
+    }
+
+    pub fn add_line_no_indent(&mut self, line: &str) {
         self.code.push_str(line);
         self.code.push('\n');
     }

@@ -32,7 +32,7 @@ impl CppCodegen {
                 let body_code = self.generate_expr(body_expr.clone());
 
                 self.code.add_block(&block_name, |code| {
-                    code.add_line(&body_code);
+                    code.add_line_no_indent(&body_code);
                 });
             }
             HirItemKind::Struct(s) => {

@@ -28,7 +28,8 @@ impl CppCodegen {
             HirExprKind::Block(block) => {
                 let mut code = String::new();
                 for stmt in block.stmts {
-                    code.push_str(&self.generate_stmt(stmt));
+                    let tabs = "  ".repeat(self.code.indent);
+                    code.push_str(&format!("{}{}\n", tabs, self.generate_stmt(stmt)));
                 }
                 code
             }
