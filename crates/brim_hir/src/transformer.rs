@@ -507,7 +507,13 @@ impl<'a> Transformer<'a> {
 
                         fn_name = Some(name.to_string());
 
-                        x.kind
+                        if let Ok(expr) = x {
+                            expr.kind
+                        } else {
+                            self.ctx.emit(x.unwrap_err());
+
+                            HirExprKind::dummy()
+                        }
                     } else {
                         todo!()
                     }

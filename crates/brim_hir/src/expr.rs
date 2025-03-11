@@ -79,6 +79,12 @@ pub enum HirExprKind {
     Comptime(ComptimeValue),
 }
 
+impl HirExprKind {
+    pub fn dummy() -> Self {
+        HirExprKind::Var(Ident::dummy())
+    }
+}
+
 #[derive(Clone, Debug)]
 /// it can be either resolved value or a expr to be evaluated
 pub enum ComptimeValue {

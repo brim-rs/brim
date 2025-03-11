@@ -8,11 +8,14 @@ use brim_ast::{
     token::{Lit, LitKind},
     ty::PrimitiveType,
 };
+use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_span::symbols::Symbol;
+
+pub type BuiltinResult<T> = Result<T, Box<dyn ToDiagnostic>>;
 
 #[derive(Debug, Clone)]
 pub struct BuiltInFunction {
-    pub func: fn(&mut Vec<HirExpr>) -> HirExpr,
+    pub func: fn(&mut Vec<HirExpr>) -> BuiltinResult<HirExpr>,
     pub codegen: Option<fn(&mut dyn Codegen, &mut Vec<HirExpr>) -> String>,
 }
 
@@ -21,7 +24,7 @@ macro_rules! builtin_function {
         (fn $name:ident($($arg:ident),* $(, ...$rest:ident)?) {$($body:tt)*}) => {
             #[allow(unused_mut, unused_variables)]
             pub fn $name() -> BuiltInFunction {
-                fn inner(args: &mut Vec<HirExpr>) -> HirExpr {
+                fn inner(args: &mut Vec<HirExpr>) -> BuiltinResult<HirExpr> {
                     let mut iter = args.iter_mut();
                     $(let mut $arg = iter.next().unwrap();)*
                     $(let $rest = iter.collect::<Vec<_>>();)?
@@ -39,7 +42,7 @@ macro_rules! builtin_function {
             codegen($cg_ctx:ident) {$($cg_body:tt)*}) => {
             #[allow(unused_mut, unused_variables)]
             pub fn $name() -> BuiltInFunction {
-                fn inner(args: &mut Vec<HirExpr>) -> HirExpr {
+                fn inner(args: &mut Vec<HirExpr>) -> BuiltinResult<HirExpr> {
                     let mut iter = args.iter_mut();
                     $(let mut $arg = iter.next().unwrap();)*
                     $(let $rest = iter.collect::<Vec<_>>();)?
@@ -65,7 +68,7 @@ macro_rules! builtin_function {
 
 builtin_function! {
     fn os() {
-        HirExpr {
+        Ok(HirExpr {
             id: ItemId::new(),
             ty: HirTyKind::Primitive(PrimitiveType::Str),
             kind: HirExprKind::Literal(Lit::new(LitKind::Str, Symbol::new(&if cfg!(target_os = "linux") {
@@ -78,13 +81,20 @@ builtin_function! {
                 panic!("Unsupported operating system")
             }), None)),
             span: Default::default(),
-        }
+        })
     }
 }
+
+// builtin_function! {
+//     fn cast(a, b) {
+
+//     }
+// }
 
 pub fn get_builtin_function(name: &str) -> Option<BuiltInFunction> {
     match name {
         "os" => Some(os()),
+        // "cast" => Some(cast()),
         _ => None,
     }
 }
