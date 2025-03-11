@@ -155,7 +155,7 @@ impl CppCodegen {
             hir: None,
             main_file,
             modules: vec![],
-            imports: ["string", "vector", "cstdint", "expected", "array"]
+            imports: ["string", "vector", "cstdint", "expected", "array", "any"]
                 .iter()
                 .map(|s| s.to_string())
                 .collect(),

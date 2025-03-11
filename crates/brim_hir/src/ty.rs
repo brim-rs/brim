@@ -78,6 +78,8 @@ impl Display for HirTyKind {
 impl PartialEq for HirTyKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
+            (HirTyKind::Primitive(PrimitiveType::Any), _) => true,
+            (_, HirTyKind::Primitive(PrimitiveType::Any)) => true,
             (HirTyKind::Ref(ty1, c1), HirTyKind::Ref(ty2, c2)) => ty1 == ty2 && c1 == c2,
             (HirTyKind::Ptr(ty1, c1), HirTyKind::Ptr(ty2, c2)) => ty1 == ty2 && c1 == c2,
             (HirTyKind::Const(ty1), HirTyKind::Const(ty2)) => ty1 == ty2,
@@ -87,7 +89,6 @@ impl PartialEq for HirTyKind {
             (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1 == ty2,
             (HirTyKind::Primitive(p1), HirTyKind::Primitive(p2)) => p1 == p2,
             (
-                // TODO: compare modules
                 HirTyKind::Ident {
                     ident: id1,
                     generics: gen1,
@@ -105,6 +106,8 @@ impl PartialEq for HirTyKind {
         }
     }
 }
+
+impl Eq for HirTyKind {}
 
 impl HirTyKind {
     pub fn is_numeric(&self) -> bool {

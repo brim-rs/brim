@@ -86,6 +86,9 @@ pub enum PrimitiveType {
     Char,
     Str,
     Void,
+
+    /// Any type `any` (brim) -> `std::any` (C++)
+    Any,
 }
 
 impl PrimitiveType {
@@ -107,6 +110,8 @@ impl PrimitiveType {
             "bool" => Some(PrimitiveType::Bool),
             "char" => Some(PrimitiveType::Char),
             "str" => Some(PrimitiveType::Str),
+
+            "any" => Some(PrimitiveType::Any),
             _ => None,
         }
     }
@@ -168,6 +173,8 @@ impl Display for PrimitiveType {
             Char => "char",
             Str => "str",
             Void => "void",
+
+            Any => "any",
         };
 
         write!(f, "{}", s)
