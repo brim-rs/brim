@@ -35,7 +35,7 @@ impl TypeChecker {
                 let ident = func.as_ident().unwrap().to_string();
 
                 for (arg_expr, arg_ty) in args.iter().zip(call_params) {
-                    if arg_expr.ty != arg_ty.ty {
+                    if arg_ty.ty != arg_expr.ty {
                         self.ctx.emit_impl(FunctionParameterTypeMismatch {
                             span: (arg_expr.span, self.mod_id),
                             name: ident.clone(),
@@ -66,7 +66,7 @@ impl TypeChecker {
                 for (ident, field) in fields {
                     let field_ty = hir_struct.field_types.get(&ident).unwrap().clone();
 
-                    if field.ty != field_ty {
+                    if field_ty != field.ty {
                         self.ctx.emit_impl(FieldMismatch {
                             span: (field.span, self.mod_id),
                             field: ident.to_string(),

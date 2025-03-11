@@ -240,6 +240,10 @@ impl<'a> TypeInference<'a> {
     }
 
     fn infer_expr(&mut self, expr: &mut HirExpr) {
+        if expr.ty != HirTyKind::Placeholder {
+            return;
+        }
+
         let kind = match &mut expr.kind {
             HirExprKind::Unary(op, operand) => {
                 self.infer_expr(operand);
@@ -589,6 +593,7 @@ impl<'a> TypeInference<'a> {
 
                 &HirTyKind::Placeholder
             }
+            HirExprKind::Type(ty) => &self.resolve_type_alias(&ty),
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
         expr.ty = kind.clone();
@@ -596,6 +601,8 @@ impl<'a> TypeInference<'a> {
         self.hir
             .hir_items
             .insert(expr.id, StoredHirItem::Expr(expr.clone()));
+
+        self.hir.update_builtins(expr.clone());
     }
 
     /// Replace generic types with inferred types.

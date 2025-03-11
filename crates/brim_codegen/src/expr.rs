@@ -14,9 +14,10 @@ impl CppCodegen {
         if let Some(fn_name) = self.hir().expanded_by_builtins.get(&expr.id).cloned() {
             let func = get_builtin_function(&fn_name).unwrap();
             self.hir_mut().expanded_by_builtins.remove(&expr.id);
+            let params = &mut self.hir().builtin_args.get(&expr.id).unwrap().clone();
 
             if let Some(codegen) = func.codegen {
-                return (codegen)(self, &mut vec![expr.clone()]);
+                return (codegen)(self, params);
             }
         }
 
@@ -63,6 +64,7 @@ impl CppCodegen {
             HirExprKind::If(if_stmt) => self.generate_if_expr(if_stmt),
             HirExprKind::Array(exprs) => self.generate_array_expr(exprs),
             HirExprKind::StructConstructor(str) => self.generate_struct_constructor(str),
+            HirExprKind::Type(ty) => self.generate_ty(ty),
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         }
     }

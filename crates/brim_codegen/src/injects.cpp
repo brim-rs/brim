@@ -12,6 +12,7 @@ inline void panic_impl(const std::string& message,
 
 #define PANIC(message) panic_impl(message, std::source_location::current())
 
+
 template <typename... Args>
 inline void panic_format_impl(const std::string& format,
                               const std::source_location& location,

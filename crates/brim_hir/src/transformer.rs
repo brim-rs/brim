@@ -55,6 +55,7 @@ pub struct HirModuleMap {
     pub expanded_by_builtins: HashMap<ItemId, String>,
     pub symbols: SymbolTable,
     pub items: HashMap<ItemId, HirItem>,
+    pub builtin_args: HashMap<ItemId, Vec<HirExpr>>,
 }
 
 impl HirModuleMap {
@@ -65,6 +66,7 @@ impl HirModuleMap {
             expanded_by_builtins: HashMap::new(),
             symbols: SymbolTable::new(),
             items: HashMap::new(),
+            builtin_args: HashMap::new(),
         }
     }
 
@@ -124,6 +126,17 @@ impl HirModuleMap {
 
     pub fn get_module_by_id(&self, id: ModuleId) -> Option<&HirModule> {
         self.modules.iter().find(|module| module.mod_id == id)
+    }
+
+    /// looks for an expr in a self.builtin_args and updates if found
+    pub fn update_builtins(&mut self, expr: HirExpr) {
+        for (id, args) in self.builtin_args.iter_mut() {
+            for arg in args.iter_mut() {
+                if arg.id == expr.id {
+                    *arg = expr.clone();
+                }
+            }
+        }
     }
 }
 
@@ -382,7 +395,9 @@ impl<'a> Transformer<'a> {
 
     pub fn transform_expr(&mut self, expr: Expr) -> (HirExpr, ItemId) {
         let mut fn_name: Option<String> = None;
+        let mut builtin_params: Vec<HirExpr> = Vec::new();
 
+        let mut ty = HirTyKind::Placeholder;
         let expr = HirExpr {
             id: expr.id,
             span: expr.span,
@@ -503,12 +518,14 @@ impl<'a> Transformer<'a> {
                     }
 
                     if let Some(func) = func {
-                        let x = (func.func)(new_args);
+                        let x = (func.func)(self.current_mod_id.as_usize(), new_args);
 
                         fn_name = Some(name.to_string());
 
-                        if let Ok(expr) = x {
-                            expr.kind
+                        if let Ok(val) = x {
+                            ty = val.ty;
+                            builtin_params = new_args.clone();
+                            val.kind
                         } else {
                             self.ctx.emit(x.unwrap_err());
 
@@ -555,11 +572,12 @@ impl<'a> Transformer<'a> {
                 }
                 ExprKind::Type(ty) => HirExprKind::Type(self.transform_ty(*ty).kind),
             },
-            ty: HirTyKind::Placeholder,
+            ty,
         };
         self.map.insert_hir_expr(expr.id, expr.clone());
         if let Some(fn_name) = fn_name {
             self.map.expanded_by_builtins.insert(expr.id, fn_name);
+            self.map.builtin_args.insert(expr.id, builtin_params);
         }
         (expr.clone(), expr.id)
     }

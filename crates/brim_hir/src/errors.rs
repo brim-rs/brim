@@ -8,3 +8,10 @@ pub struct ComptimeExpectedType {
     #[error]
     pub span: (Span, usize),
 }
+
+#[derive(Diagnostic)]
+#[error("builtin `cast` expected a type expression as the second argument")]
+pub struct BuiltinCastExpectedType {
+    #[error]
+    pub span: (Span, usize),
+}

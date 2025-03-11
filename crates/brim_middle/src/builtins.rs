@@ -14,6 +14,10 @@ lazy_static! {
             description: "Returns the operating system",
             expected_args: 0,
         });
+        m.insert("cast".to_string(), FunctionData {
+            description: "Casts an any type to another type",
+            expected_args: 2,
+        });
         m
     };
 }
