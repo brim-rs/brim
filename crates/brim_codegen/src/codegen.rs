@@ -155,10 +155,28 @@ impl CppCodegen {
             hir: None,
             main_file,
             modules: vec![],
-            imports: ["string", "vector", "cstdint", "expected", "array", "any"]
-                .iter()
-                .map(|s| s.to_string())
-                .collect(),
+            imports: [
+                "string",
+                "vector",
+                "cstdint",
+                "expected",
+                "array",
+                "any",
+                "source_location",
+                "cstdlib",
+                "sstream",
+                "iostream",
+                "optional",
+                "memory",
+                "typeinfo",
+                "typeindex",
+                "functional",
+                "cassert",
+                "cstring",
+            ]
+            .iter()
+            .map(|s| s.to_string())
+            .collect(),
         }
     }
 
@@ -199,6 +217,10 @@ impl CppCodegen {
             }
         }
     }
+
+    pub fn add_injects(&mut self) {
+        self.code.add_line(include_str!("./injects.cpp"));
+    }
 }
 
 impl Codegen for CppCodegen {
@@ -211,6 +233,7 @@ impl Codegen for CppCodegen {
 
         self.populate(compiled);
         self.add_standard_module();
+        self.add_injects();
 
         for module_id in generation_order {
             let module = compiled
