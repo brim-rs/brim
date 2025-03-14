@@ -3,7 +3,10 @@ use crate::{
     ty::HirTyKind,
     type_checker::{
         TypeChecker,
-        errors::{FieldMismatch, FunctionParameterTypeMismatch, FunctionReturnTypeMismatch},
+        errors::{
+            AssignMismatch, FieldMismatch, FunctionParameterTypeMismatch,
+            FunctionReturnTypeMismatch,
+        },
     },
 };
 use brim_span::span::Span;
@@ -76,11 +79,23 @@ impl TypeChecker {
                     }
                 }
             }
+            HirExprKind::Assign(lhs, rhs) => {
+                if lhs.ty != rhs.ty {
+                    self.ctx.emit_impl(AssignMismatch {
+                        span: (lhs.span.to(rhs.span), self.mod_id),
+                        expected: lhs.ty.clone(),
+                        found: rhs.ty.clone(),
+                    });
+                }
+
+                self.check_expr(*lhs);
+                self.check_expr(*rhs);
+            }
             _ => {}
         }
     }
 
-    fn mismatch(&mut self, span: Span, expected: HirTyKind, found: HirTyKind, name: String) {
+    fn param_mismatch(&mut self, span: Span, expected: HirTyKind, found: HirTyKind, name: String) {
         self.ctx.emit_impl(FunctionParameterTypeMismatch {
             span: (span, self.mod_id),
             name,

@@ -42,3 +42,12 @@ pub struct FieldMismatch {
     pub expected: HirTyKind,
     pub found: HirTyKind,
 }
+
+#[derive(Diagnostic)]
+#[error("cannot assign a value of type `{found}` to a variable of type `{expected}`")]
+pub struct AssignMismatch {
+    #[error]
+    pub span: (Span, usize),
+    pub expected: HirTyKind,
+    pub found: HirTyKind,
+}

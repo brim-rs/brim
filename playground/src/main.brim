@@ -3,5 +3,5 @@ pub fn main() {
     let x = @cast(val, i32);
     
     let y = 5;
-    y = 10;
+    y = "dwa";
 };
