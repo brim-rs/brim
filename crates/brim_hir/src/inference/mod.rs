@@ -594,6 +594,12 @@ impl<'a> TypeInference<'a> {
                 &HirTyKind::Placeholder
             }
             HirExprKind::Type(ty) => &self.resolve_type_alias(&ty),
+            HirExprKind::Assign(lhs, rhs) => {
+                self.infer_expr(lhs);
+                self.infer_expr(rhs);
+
+                &HirTyKind::void()
+            }
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
         expr.ty = kind.clone();

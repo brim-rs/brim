@@ -622,7 +622,7 @@ impl<'a> Transformer<'a> {
                 }
                 TyKind::Primitive(primitive) => HirTyKind::Primitive(primitive),
                 TyKind::Vec(ty) => HirTyKind::Vec(Box::new(self.transform_ty(*ty).kind)),
-                TyKind::Const(ty) => HirTyKind::Const(Box::new(self.transform_ty(*ty).kind)),
+                TyKind::Mut(ty) => HirTyKind::Const(Box::new(self.transform_ty(*ty).kind)),
                 TyKind::Ident { ident, generics } => HirTyKind::Ident {
                     ident,
                     generics: self.transform_generic_arguments(generics),

@@ -65,6 +65,11 @@ impl CppCodegen {
             HirExprKind::Array(exprs) => self.generate_array_expr(exprs),
             HirExprKind::StructConstructor(str) => self.generate_struct_constructor(str),
             HirExprKind::Type(ty) => self.generate_ty(ty),
+            HirExprKind::Assign(lhs, rhs) => {
+                let lhs_code = self.generate_expr(*lhs);
+                let rhs_code = self.generate_expr(*rhs);
+                format!("{} = {};", lhs_code, rhs_code)
+            }
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         }
     }

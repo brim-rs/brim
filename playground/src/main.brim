@@ -1,5 +1,7 @@
-
 pub fn main() {
     let val: any = 42;
     let x = @cast(val, i32);
+    
+    let y = 5;
+    y = 10;
 };

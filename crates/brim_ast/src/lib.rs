@@ -33,6 +33,7 @@ generate_symbols! {
     Null = "null",
     Match = "match",
     Mod = "mod",
+    Mut = "mut",
     Parent = "parent",
     Pub = "pub",
     Return = "return",

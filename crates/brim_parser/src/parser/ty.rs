@@ -3,7 +3,7 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Const, Type,
+    Const, Mut, Type,
     expr::{Expr, ExprKind},
     item::{Block, Ident, ItemKind, TypeAlias, TypeAliasValue},
     stmts::{Stmt, StmtKind},
@@ -19,8 +19,8 @@ impl Parser {
             self.parse_ref()?
         } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
             self.parse_ptr()?
-        } else if self.current().is_keyword(Const) {
-            self.parse_const()?
+        } else if self.current().is_keyword(Mut) {
+            self.parse_mut()?
         } else if self
             .current()
             .is_delimiter(Delimiter::Bracket, Orientation::Open)
@@ -53,7 +53,7 @@ impl Parser {
         } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
             Some(self.parse_ptr()?)
         } else if self.current().is_keyword(Const) {
-            Some(self.parse_const()?)
+            Some(self.parse_mut()?)
         } else if self
             .current()
             .is_delimiter(Delimiter::Bracket, Orientation::Open)
@@ -80,21 +80,21 @@ impl Parser {
         }))
     }
 
-    pub fn parse_const(&mut self) -> PResult<TyKind> {
+    pub fn parse_mut(&mut self) -> PResult<TyKind> {
         if self.eat(TokenKind::BinOp(BinOpToken::And)) {
             Ok(self.parse_ref()?)
         } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
             Ok(self.parse_ptr()?)
         } else {
-            self.eat_keyword(ptok!(Const));
+            self.eat_keyword(ptok!(Mut));
 
-            Ok(TyKind::Const(Box::new(self.parse_type()?)))
+            Ok(TyKind::Mut(Box::new(self.parse_type()?)))
         }
     }
 
-    pub fn is_const(&mut self) -> bool {
-        if self.current().is_keyword(Const) {
-            self.eat_keyword(ptok!(Const));
+    pub fn is_mut(&mut self) -> bool {
+        if self.current().is_keyword(Mut) {
+            self.eat_keyword(ptok!(Mut));
             true
         } else {
             false
@@ -102,17 +102,17 @@ impl Parser {
     }
 
     pub fn parse_ref(&mut self) -> PResult<TyKind> {
-        let is_const = self.is_const();
+        let is_mut = self.is_mut();
 
         let ty = self.parse_type()?;
-        Ok(TyKind::Ref(Box::new(ty), Const::from_bool(is_const)))
+        Ok(TyKind::Ref(Box::new(ty), Const::from_mut(is_mut)))
     }
 
     pub fn parse_ptr(&mut self) -> PResult<TyKind> {
-        let is_const = self.is_const();
+        let is_mut = self.is_mut();
 
         let ty = self.parse_type()?;
-        Ok(TyKind::Ptr(Box::new(ty), Const::from_bool(is_const)))
+        Ok(TyKind::Ptr(Box::new(ty), Const::from_mut(is_mut)))
     }
 
     pub fn parse_array(&mut self) -> PResult<TyKind> {

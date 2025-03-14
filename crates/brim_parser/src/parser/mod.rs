@@ -70,6 +70,7 @@ pub enum PTokenKind {
     Null,
     Match,
     Mod,
+    Mut,
     Parent,
     Pub,
     Return,
