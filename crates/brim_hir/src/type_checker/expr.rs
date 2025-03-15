@@ -4,7 +4,7 @@ use crate::{
     type_checker::{
         TypeChecker,
         errors::{
-            AssignMismatch, FieldMismatch, FunctionParameterTypeMismatch,
+            AssignMismatch, CannotAssignToImmutable, FieldMismatch, FunctionParameterTypeMismatch,
             FunctionReturnTypeMismatch,
         },
     },
@@ -37,12 +37,12 @@ impl TypeChecker {
             HirExprKind::Call(func, args, call_params) => {
                 let ident = func.as_ident().unwrap().to_string();
 
-                for (arg_expr, arg_ty) in args.iter().zip(call_params) {
-                    if arg_ty.ty != arg_expr.ty {
+                for (arg_expr, param) in args.iter().zip(call_params) {
+                    if !arg_expr.ty.can_be_an_arg_for_param(&param.ty) {
                         self.ctx.emit_impl(FunctionParameterTypeMismatch {
                             span: (arg_expr.span, self.mod_id),
                             name: ident.clone(),
-                            expected: arg_ty.ty.clone(),
+                            expected: param.ty.clone(),
                             found: arg_expr.ty.clone(),
                         });
                     }
@@ -85,6 +85,16 @@ impl TypeChecker {
                         span: (lhs.span.to(rhs.span), self.mod_id),
                         expected: lhs.ty.clone(),
                         found: rhs.ty.clone(),
+                    });
+                }
+
+                if !lhs.ty.is_mutable() {
+                    self.ctx.emit_impl(CannotAssignToImmutable {
+                        span: (lhs.span.to(rhs.span), self.mod_id),
+                        name: match lhs.kind {
+                            HirExprKind::Var(ident) => ident.to_string(),
+                            _ => "".to_string(),
+                        },
                     });
                 }
 

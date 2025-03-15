@@ -54,7 +54,12 @@ impl CppCodegen {
 
                     let mod_id = symbol.id.mod_id;
 
-                    format!("module{}::{}{}", mod_id.as_usize(), ident.name, generics)
+                    format!(
+                        "const module{}::{}{}",
+                        mod_id.as_usize(),
+                        ident.name,
+                        generics
+                    )
                 }
             }
 
@@ -68,9 +73,9 @@ impl CppCodegen {
                 format!("std::array<{}, {}>", ty, size)
             }
 
-            HirTyKind::Const(ty) => {
+            HirTyKind::Mut(ty) => {
                 let ty = self.generate_ty(*ty);
-                format!("const {}", ty)
+                format!("{}", ty)
             }
 
             // Only for now, this will be replaced in type checking

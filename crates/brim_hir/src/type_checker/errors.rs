@@ -51,3 +51,11 @@ pub struct AssignMismatch {
     pub expected: HirTyKind,
     pub found: HirTyKind,
 }
+
+#[derive(Diagnostic)]
+#[error("cannot assign to immutable variable `{name}`")]
+pub struct CannotAssignToImmutable {
+    #[error]
+    pub span: (Span, usize),
+    pub name: String,
+}

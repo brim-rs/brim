@@ -1,7 +1,13 @@
+fn addPlusOne(a: &mut i32, b: i32) -> i32 {
+    a += 1;
+
+    return a + b;
+}
+
 pub fn main() {
-    let val: any = 42;
-    let x = @cast(val, i32);
-    
-    let y = 5;
-    y = "dwa";
+    let a: mut i32 = 1;
+    let b = 2;
+
+    let c = addPlusOne(a, b);
+    let x: &mut i32 = 123;
 };
