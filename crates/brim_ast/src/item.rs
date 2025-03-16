@@ -6,12 +6,12 @@ use std::{
 };
 
 #[derive(Clone, Debug)]
-pub struct Item {
+pub struct Item<Kind = ItemKind> {
     pub id: ItemId,
     pub span: Span,
     pub vis: Visibility,
     pub ident: Ident,
-    pub kind: ItemKind,
+    pub kind: Kind,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
@@ -90,6 +90,22 @@ pub enum ItemKind {
     TypeAlias(TypeAlias),
     /// Module declaration eg. `mod windows;`
     Module(ModuleDecl),
+    /// External module declaration.
+    External(ExternBlock),
+}
+
+#[derive(Debug, Clone)]
+pub struct ExternBlock {
+    pub abi: Option<Ident>,
+    pub items: Vec<ExternItem>,
+}
+
+pub type ExternItem = Item<ExternItemKind>;
+
+#[derive(Debug, Clone)]
+pub enum ExternItemKind {
+    Fn(FnDecl),
+    TypeAlias(TypeAlias),
 }
 
 #[derive(Clone, Debug)]

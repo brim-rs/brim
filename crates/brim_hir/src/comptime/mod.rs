@@ -107,6 +107,7 @@ impl<'a> ComptimeTransformer<'a> {
             HirItemKind::Fn(func) => self.visit_fn(func),
             HirItemKind::TypeAlias(type_alias) => self.visit_type_alias(type_alias),
             HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::Struct(_) => {}
+            HirItemKind::External(_) => {}
         }
 
         self.hir

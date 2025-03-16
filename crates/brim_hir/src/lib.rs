@@ -2,7 +2,7 @@
 
 use crate::{
     expr::HirExpr,
-    items::HirItem,
+    items::{HirExternItemKind, HirItem},
     stmts::HirStmt,
     transformer::{HirModule, HirModuleMap},
     ty::HirTyKind,
@@ -48,6 +48,7 @@ pub struct CompiledModules {
     pub map: HashMap<String, CompiledModule>,
     pub symbols: SymbolTable,
     pub items: HashMap<ItemId, HirItem>,
+    pub external_items: HashMap<ItemId, HirItem<HirExternItemKind>>,
     pub assigned_paths: HashMap<ItemId, ItemId>,
 }
 
@@ -58,11 +59,16 @@ impl CompiledModules {
             symbols: SymbolTable::new(),
             items: HashMap::new(),
             assigned_paths: HashMap::new(),
+            external_items: HashMap::new(),
         }
     }
 
     pub fn insert_item(&mut self, item: HirItem) {
         self.items.insert(item.id, item);
+    }
+
+    pub fn insert_external_item(&mut self, item: HirItem<HirExternItemKind>) {
+        self.external_items.insert(item.id, item);
     }
 
     pub fn resolve_symbol(&self, ident: &String, module: usize) -> Option<&HirItem> {

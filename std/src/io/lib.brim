@@ -1,7 +1,7 @@
 use { File, Handle } from self::parent::fs::file;
 
 pub fn getStdErrHandle() -> Handle {
-    return 2;
+
 }
 
 pub fn getStdErr() -> File {

@@ -21,6 +21,7 @@ generate_symbols! {
     Comptime = "comptime",
     Else = "else",
     Enum = "enum",
+    Extern = "extern",
     False = "false",
     Fn = "fn",
     For = "for",

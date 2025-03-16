@@ -7,9 +7,9 @@ use crate::{
         HirStructConstructor,
     },
     items::{
-        HirField, HirFn, HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind,
-        HirGenericParam, HirGenerics, HirImportsKind, HirItem, HirItemKind, HirParam, HirStruct,
-        HirTypeAlias, HirUse,
+        HirExternBlock, HirExternItem, HirExternItemKind, HirField, HirFn, HirFnParams, HirFnSig,
+        HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam, HirGenerics,
+        HirImportsKind, HirItem, HirItemKind, HirParam, HirStruct, HirTypeAlias, HirUse,
     },
     stmts::{HirStmt, HirStmtKind},
     ty::{HirTy, HirTyKind},
@@ -18,8 +18,8 @@ use brim_ast::{
     ItemId,
     expr::{BinOpKind, Expr, ExprKind, MatchArm},
     item::{
-        Block, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, ImportsKind, Item,
-        ItemKind, Struct, TypeAliasValue,
+        Block, ExternItemKind, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics,
+        ImportsKind, Item, ItemKind, Struct, TypeAlias, TypeAliasValue,
     },
     stmts::{Stmt, StmtKind},
     token::{AssignOpToken, Lit, LitKind},
@@ -52,9 +52,9 @@ pub fn transform_module(
 pub struct HirModuleMap {
     pub modules: Vec<HirModule>,
     pub hir_items: HashMap<ItemId, StoredHirItem>,
+    pub hir_extern_items: HashMap<ItemId, HirItem<HirExternItemKind>>,
     pub expanded_by_builtins: HashMap<ItemId, String>,
     pub symbols: SymbolTable,
-    pub items: HashMap<ItemId, HirItem>,
     pub builtin_args: HashMap<ItemId, Vec<HirExpr>>,
 }
 
@@ -63,15 +63,19 @@ impl HirModuleMap {
         Self {
             modules: Vec::new(),
             hir_items: HashMap::new(),
+            hir_extern_items: HashMap::new(),
             expanded_by_builtins: HashMap::new(),
             symbols: SymbolTable::new(),
-            items: HashMap::new(),
             builtin_args: HashMap::new(),
         }
     }
 
     pub fn insert_hir_item(&mut self, id: ItemId, item: StoredHirItem) {
         self.hir_items.insert(id, item);
+    }
+
+    pub fn insert_hir_extern_item(&mut self, id: ItemId, item: HirItem<HirExternItemKind>) {
+        self.hir_extern_items.insert(id, item);
     }
 
     pub fn insert_hir_expr(&mut self, id: ItemId, expr: HirExpr) {
@@ -235,19 +239,44 @@ impl<'a> Transformer<'a> {
                 })
             }
             ItemKind::Struct(struc) => HirItemKind::Struct(self.transform_struct(struc)),
-            ItemKind::TypeAlias(type_alias) => HirItemKind::TypeAlias(HirTypeAlias {
-                span: type_alias.span,
-                ident: type_alias.ident,
-                ty: if let TypeAliasValue::Ty(ty) = type_alias.ty {
-                    ComptimeValue::Resolved(ComptimeReturnValue::Ty(self.transform_ty(ty).kind))
-                } else if let TypeAliasValue::Const(expr) = type_alias.ty {
-                    ComptimeValue::Expr(Box::new(self.transform_expr(expr).0))
-                } else {
-                    unreachable!()
-                },
-                generics: self.transform_generics(type_alias.generics),
-            }),
+            ItemKind::TypeAlias(type_alias) => {
+                HirItemKind::TypeAlias(self.transform_type_alias(type_alias))
+            }
             ItemKind::Module(_) => return None,
+            ItemKind::External(external) => {
+                let items = external
+                    .items
+                    .iter()
+                    .map(|item| HirExternItem {
+                        id: item.id,
+                        kind: match item.kind.clone() {
+                            ExternItemKind::Fn(func) => {
+                                HirExternItemKind::Fn(self.transform_fn(func))
+                            }
+                            ExternItemKind::TypeAlias(type_alias) => {
+                                HirExternItemKind::TypeAlias(self.transform_type_alias(type_alias))
+                            }
+                        },
+                        span: item.span,
+                        ident: item.ident,
+                        mod_id: self.current_mod_id,
+                        is_public: item.vis.kind.is_public(),
+                    })
+                    .collect::<Vec<_>>();
+
+                let mut ids = vec![];
+                for item in items {
+                    self.map.insert_hir_extern_item(item.id, item.clone());
+                    self.compiled.insert_external_item(item.clone());
+
+                    ids.push(item.id);
+                }
+
+                HirItemKind::External(HirExternBlock {
+                    abi: external.abi,
+                    items: ids,
+                })
+            }
         };
 
         let item = HirItem {
@@ -264,6 +293,21 @@ impl<'a> Transformer<'a> {
         self.compiled.insert_item(item.clone());
 
         Some(item.id)
+    }
+
+    pub fn transform_type_alias(&mut self, type_alias: TypeAlias) -> HirTypeAlias {
+        HirTypeAlias {
+            span: type_alias.span,
+            ident: type_alias.ident,
+            ty: if let TypeAliasValue::Ty(ty) = type_alias.ty {
+                ComptimeValue::Resolved(ComptimeReturnValue::Ty(self.transform_ty(ty).kind))
+            } else if let TypeAliasValue::Const(expr) = type_alias.ty {
+                ComptimeValue::Expr(Box::new(self.transform_expr(expr).0))
+            } else {
+                unreachable!()
+            },
+            generics: self.transform_generics(type_alias.generics),
+        }
     }
 
     pub fn transform_fn(&mut self, f_decl: FnDecl) -> HirFn {

@@ -36,7 +36,7 @@ impl Parser {
         Ok(Block {
             id: self.new_id(),
             stmts,
-            span: span_start.to(self.prev().span),
+            span: span_start.to(self.current().span),
         })
     }
 

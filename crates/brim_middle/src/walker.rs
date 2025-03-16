@@ -1,8 +1,8 @@
 use brim_ast::{
     expr::{Expr, ExprKind, MatchArm},
     item::{
-        Block, FnDecl, FnReturnType, FnSignature, GenericArgs, Generics, Ident, Item, ItemKind,
-        Struct, TypeAlias, Use,
+        Block, ExternItemKind, FnDecl, FnReturnType, FnSignature, GenericArgs, Generics, Ident,
+        Item, ItemKind, Struct, TypeAlias, Use,
     },
     stmts::{Let, Stmt, StmtKind},
     ty::Ty,
@@ -71,6 +71,14 @@ pub trait AstWalker {
             ItemKind::Struct(str) => self.visit_struct(str),
             ItemKind::TypeAlias(type_alias) => self.visit_type_alias(type_alias),
             ItemKind::Module(_) => {}
+            ItemKind::External(external) => {
+                for item in &mut external.items {
+                    match &mut item.kind {
+                        ExternItemKind::Fn(func) => self.visit_fn(func),
+                        ExternItemKind::TypeAlias(ty) => self.visit_type_alias(ty)
+                    }
+                }
+            }
         }
     }
 

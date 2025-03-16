@@ -4,7 +4,7 @@ use crate::{
 };
 use brim_ast::{
     ItemId,
-    item::{Ident, Visibility},
+    item::{ExternBlock, FnDecl, Ident, Item, TypeAlias, Visibility},
     token::Lit,
 };
 use brim_middle::{GlobalSymbol, ModuleId};
@@ -12,11 +12,11 @@ use brim_span::span::Span;
 use std::{collections::HashMap, fmt::Display, path::PathBuf};
 
 #[derive(Clone, Debug)]
-pub struct HirItem {
+pub struct HirItem<Kind = HirItemKind> {
     pub id: ItemId,
     pub span: Span,
     pub ident: Ident,
-    pub kind: HirItemKind,
+    pub kind: Kind,
     pub is_public: bool,
     pub mod_id: ModuleId,
 }
@@ -49,6 +49,22 @@ pub enum HirItemKind {
     TypeAlias(HirTypeAlias),
     /// Namespace. Created from a default import.
     Namespace(HashMap<String, GlobalSymbol>),
+    /// External
+    External(HirExternBlock),
+}
+
+#[derive(Debug, Clone)]
+pub struct HirExternBlock {
+    pub abi: Option<Ident>,
+    pub items: Vec<ItemId>,
+}
+
+pub type HirExternItem = HirItem<HirExternItemKind>;
+
+#[derive(Debug, Clone)]
+pub enum HirExternItemKind {
+    Fn(HirFn),
+    TypeAlias(HirTypeAlias),
 }
 
 #[derive(Clone, Debug)]
