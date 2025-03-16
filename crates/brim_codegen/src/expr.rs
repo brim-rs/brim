@@ -8,6 +8,7 @@ use brim_hir::{
     expr::{HirExpr, HirExprKind, HirIfExpr, HirStructConstructor},
 };
 use std::fmt::Write;
+use brim_ast::expr::UnaryOp;
 
 impl CppCodegen {
     pub fn generate_expr(&mut self, expr: HirExpr) -> String {
@@ -69,6 +70,15 @@ impl CppCodegen {
                 let lhs_code = self.generate_expr(*lhs);
                 let rhs_code = self.generate_expr(*rhs);
                 format!("{} = {};", lhs_code, rhs_code)
+            }
+            HirExprKind::Unary(op, expr) => {
+                let expr_code = self.generate_expr(*expr);
+                match op {
+                    UnaryOp::Minus => format!("-{}", expr_code),
+                    UnaryOp::Not => format!("!{}", expr_code),
+                    UnaryOp::Deref => format!("*{}", expr_code),
+                    _ => unimplemented!(),
+                }
             }
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         }
