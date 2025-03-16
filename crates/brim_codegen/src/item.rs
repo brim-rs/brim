@@ -51,6 +51,9 @@ impl CppCodegen {
                 self.code.decrease_indent();
                 self.code.add_line("};");
             }
+            HirItemKind::External(external) => {
+                println!("{:#?}", external);
+            }
             _ => {}
         }
     }

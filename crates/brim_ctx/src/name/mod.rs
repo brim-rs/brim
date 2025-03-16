@@ -10,7 +10,7 @@ use crate::name::{
 };
 use brim_ast::{
     expr::{Expr, ExprKind, MatchArm},
-    item::{Block, FnDecl, TypeAlias, TypeAliasValue},
+    item::{Block, FnDecl, Item, ItemKind, TypeAlias, TypeAliasValue},
     stmts::Let,
 };
 use brim_diagnostics::diag_opt;
@@ -33,6 +33,7 @@ pub struct NameResolver<'a> {
     pub lints: &'static Lints,
     pub inside_comptime: bool,
     pub compiled: &'a mut CompiledModules,
+    pub external: bool,
 }
 
 impl<'a> NameResolver<'a> {
@@ -45,6 +46,7 @@ impl<'a> NameResolver<'a> {
             lints,
             inside_comptime: false,
             compiled,
+            external: false,
         }
     }
 
@@ -82,7 +84,7 @@ impl<'a> NameResolver<'a> {
 
     pub fn validate_var_name(&mut self, name: &str, span: Span) {
         let snake = name.to_case(Case::Snake);
-        if name != snake {
+        if name != snake && !self.external {
             self.ctx.emit_lint(self.lints.variable_not_snake_case(
                 name.to_string(),
                 snake,
@@ -93,6 +95,27 @@ impl<'a> NameResolver<'a> {
 }
 
 impl<'a> AstWalker for NameResolver<'a> {
+    fn walk_item(&mut self, item: &mut Item) {
+        match &mut item.kind {
+            ItemKind::Fn(func) => self.visit_fn(func),
+            ItemKind::Use(use_stmt) => self.visit_use(use_stmt),
+            ItemKind::Struct(str) => self.visit_struct(str),
+            ItemKind::TypeAlias(type_alias) => self.visit_type_alias(type_alias),
+            ItemKind::Module(_) => {}
+            ItemKind::External(external) => {
+                self.external = true;
+                for item in &mut external.items {
+                    match &mut item.kind {
+                        ItemKind::Fn(func) => self.visit_fn(func),
+                        ItemKind::TypeAlias(ty) => self.visit_type_alias(ty),
+                        _ => unreachable!("not allowed"),
+                    }
+                }
+                self.external = false;
+            }
+        }
+    }
+
     fn visit_let(&mut self, let_stmt: &mut Let) {
         let name = let_stmt.ident.to_string();
 
@@ -138,7 +161,7 @@ impl<'a> AstWalker for NameResolver<'a> {
         let name = func.sig.name.to_string();
         let camel = name.to_case(Case::Camel);
 
-        if name != camel {
+        if name != camel && !self.external {
             self.ctx.emit_lint(self.lints.function_not_camel_case(
                 name.to_string(),
                 camel,
