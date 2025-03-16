@@ -28,12 +28,14 @@ impl CppCodegen {
 
                 let block_name = format!("{} {}({})", ret, decl.sig.name.to_string(), params);
 
-                let body_expr = self.hir().get_expr(decl.body.unwrap()).clone();
-                let body_code = self.generate_expr(body_expr.clone());
+                if let Some(body) = decl.body {
+                    let body_expr = self.hir().get_expr(body).clone();
+                    let body_code = self.generate_expr(body_expr.clone());
 
-                self.code.add_block(&block_name, |code| {
-                    code.add_line_no_indent(&body_code);
-                });
+                    self.code.add_block(&block_name, |code| {
+                        code.add_line_no_indent(&body_code);
+                    });
+                }
             }
             HirItemKind::Struct(s) => {
                 self.generate_generics(&s.generics);
