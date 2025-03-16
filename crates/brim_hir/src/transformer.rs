@@ -248,6 +248,7 @@ impl<'a> Transformer<'a> {
                 HirItemKind::External(HirExternBlock {
                     abi: external.abi,
                     items,
+                    span: external.span,
                 })
             }
         };

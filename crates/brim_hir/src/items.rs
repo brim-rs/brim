@@ -8,7 +8,7 @@ use brim_ast::{
     token::Lit,
 };
 use brim_middle::{GlobalSymbol, ModuleId};
-use brim_span::span::Span;
+use brim_span::{span::Span, symbols::Symbol};
 use std::{collections::HashMap, fmt::Display, path::PathBuf};
 
 #[derive(Clone, Debug)]
@@ -55,8 +55,9 @@ pub enum HirItemKind {
 
 #[derive(Debug, Clone)]
 pub struct HirExternBlock {
-    pub abi: Option<Ident>,
+    pub abi: Option<Symbol>,
     pub items: Vec<ItemId>,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone)]

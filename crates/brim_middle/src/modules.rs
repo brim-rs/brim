@@ -133,7 +133,10 @@ impl<'a> AstWalker for UseCollector<'a> {
     fn visit_item(&mut self, item: &mut Item) {
         match &item.kind {
             ItemKind::Use(use_stmt) => {
-                let id = get_id_by_name(&use_stmt.resolved.clone().unwrap()).unwrap();
+                let id = get_id_by_name(&use_stmt.resolved.clone().unwrap()).expect(&format!(
+                    "Failed to get id for module: {}",
+                    use_stmt.resolved.clone().unwrap().display()
+                ));
 
                 let mut symbols: Vec<GlobalSymbol> = vec![];
 

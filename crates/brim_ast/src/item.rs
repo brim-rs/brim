@@ -96,7 +96,8 @@ pub enum ItemKind {
 
 #[derive(Debug, Clone)]
 pub struct ExternBlock {
-    pub abi: Option<Ident>,
+    pub span: Span,
+    pub abi: Option<Symbol>,
     pub items: Vec<Item>,
 }
 
@@ -195,6 +196,7 @@ pub enum FunctionContext {
     Item,
     Trait,
     Impl,
+    Extern,
 }
 
 impl FunctionContext {
@@ -207,7 +209,7 @@ impl FunctionContext {
 
     pub fn allows_empty_body(&self) -> bool {
         match self {
-            FunctionContext::Trait => true,
+            FunctionContext::Trait | FunctionContext::Extern => true,
             _ => false,
         }
     }

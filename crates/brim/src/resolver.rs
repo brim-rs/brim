@@ -1,8 +1,9 @@
 use crate::{CompiledModules, session::Session};
 use anyhow::Result;
 use brim_ast::item::{ItemKind, PathItemKind};
-use brim_fs::loader::BrimFileLoader;
+use brim_fs::{canonicalize_path, loader::BrimFileLoader};
 use brim_middle::{modules::ModuleMap, temp_diag::TemporaryDiagnosticContext};
+use brim_span::files::get_path;
 use std::path::PathBuf;
 use tracing::debug;
 
@@ -11,7 +12,6 @@ pub struct ImportResolver<'a> {
     pub ctx: &'a mut TemporaryDiagnosticContext,
     pub map: ModuleMap,
     pub temp_loader: BrimFileLoader,
-    pub file: usize,
     pub sess: &'a mut Session,
     pub compiled: CompiledModules,
 }
@@ -27,7 +27,6 @@ impl<'a> ImportResolver<'a> {
             ctx,
             map,
             temp_loader: BrimFileLoader,
-            file: 0,
             sess,
             compiled,
         }
@@ -37,9 +36,11 @@ impl<'a> ImportResolver<'a> {
         for module in self.map.modules.iter_mut() {
             for item in module.barrel.items.iter_mut() {
                 if let ItemKind::Use(use_stmt) = &mut item.kind {
+                    let mut current_file = get_path(module.barrel.file_id)?;
+                    current_file.pop();
+
                     let mut path = if use_stmt.path[0] == PathItemKind::Current {
-                        let mut path = self.sess.config.cwd.clone();
-                        path.push(self.sess.config.main_dir());
+                        let mut path = current_file.clone();
 
                         path
                     } else {
@@ -50,14 +51,13 @@ impl<'a> ImportResolver<'a> {
 
                         path
                     };
-
                     let file_path = ImportResolver::build_path(use_stmt.path[1..].to_vec());
                     path.push(file_path);
 
                     let path = path.with_extension("brim");
                     debug!("Resolving import: {:?}", path);
 
-                    use_stmt.resolved = Some(path.clone());
+                    use_stmt.resolved = Some(canonicalize_path(path.clone())?);
                 }
             }
         }
@@ -70,9 +70,7 @@ impl<'a> ImportResolver<'a> {
         for item in parts {
             match item {
                 PathItemKind::Module(ident) => path.push(ident.to_string()),
-                PathItemKind::Parent => {
-                    path.pop();
-                }
+                PathItemKind::Parent => path.push(".."),
                 _ => unreachable!(),
             }
         }

@@ -5,7 +5,7 @@ use crate::{
 use anyhow::Result;
 use brim_ast::{
     ItemId, Match, Pub, SYMBOL_STRINGS,
-    item::Visibility,
+    item::{FunctionContext, Visibility},
     token::{Delimiter, Orientation, Token, TokenKind},
 };
 use brim_diagnostics::{ErrorEmitted, box_diag, diagnostic::ToDiagnostic};
@@ -41,6 +41,7 @@ pub struct Parser {
     pub last_id: u32,
     pub dcx: TemporaryDiagnosticContext,
     pub experimental: Experimental,
+    pub fn_ctx: Option<FunctionContext>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -58,6 +59,7 @@ pub enum PTokenKind {
     Comptime,
     Else,
     Enum,
+    Extern,
     False,
     Fn,
     For,
@@ -99,15 +101,15 @@ macro_rules! ptok {
 
 #[macro_export]
 macro_rules! debug_ident {
-            ($( $x:expr ),*) => {
-                {
-                    $(
-                       #[cfg(debug_assertions)]
-                        println!("{}", $x.as_ident().unwrap().name);
-                    )*
-                }
-            }
+    ($( $x:expr ),*) => {
+        {
+            $(
+               #[cfg(debug_assertions)]
+                println!("{}", $x.as_ident().unwrap().name);
+            )*
         }
+    }
+}
 
 impl Parser {
     pub fn new(file: usize, experimental: Experimental) -> Self {
@@ -122,6 +124,17 @@ impl Parser {
             dcx: TemporaryDiagnosticContext::new(),
             last_id: 0,
             experimental,
+            fn_ctx: None,
+        }
+    }
+
+    pub fn fn_ctx(&self) -> FunctionContext {
+        self.fn_ctx.clone().unwrap()
+    }
+
+    pub fn set_fn_ctx(&mut self, ctx: FunctionContext) {
+        if let None = self.fn_ctx {
+            self.fn_ctx = Some(ctx);
         }
     }
 

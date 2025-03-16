@@ -10,12 +10,13 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Const, Fn, From, Mod, Parent, SelfSmall, Struct, Type, Use,
+    Const, Extern, Fn, From, Mod, Parent, SelfSmall, Struct, Type, Use,
     item::{
-        Block, Field, FnDecl, FnReturnType, FnSignature, FunctionContext, Generics, Ident,
-        ImportsKind, Item, ItemKind, ModuleDecl, Param, PathItemKind, Struct, Use,
+        Block, ExternBlock, Field, FnDecl, FnReturnType, FnSignature, FunctionContext, Generics,
+        Ident, ImportsKind, Item, ItemKind, ModuleDecl, Param, PathItemKind, Struct, Use,
+        Visibility,
     },
-    token::{BinOpToken, Delimiter, Orientation, TokenKind},
+    token::{BinOpToken, Delimiter, LitKind, Orientation, TokenKind},
     ty,
 };
 use brim_diagnostics::box_diag;
@@ -32,7 +33,8 @@ impl Parser {
         let vis = self.parse_visibility();
 
         let (ident, kind) = if self.is_function() {
-            self.parse_fn(FunctionContext::Item)?
+            self.set_fn_ctx(FunctionContext::Item);
+            self.parse_fn()?
         } else if self.current().is_keyword(Use) {
             self.parse_use(span)?
         } else if self.current().is_keyword(Struct) {
@@ -41,6 +43,8 @@ impl Parser {
             self.parse_type_alias()?
         } else if self.current().is_keyword(brim_ast::Mod) {
             self.parse_mod_decl()?
+        } else if self.current().is_keyword(Extern) {
+            self.parse_extern()?
         } else {
             box_diag!(UnknownItem {
                 span: (span, self.file),
@@ -56,6 +60,51 @@ impl Parser {
             kind,
             ident,
         }))
+    }
+
+    pub fn parse_extern(&mut self) -> PResult<(Ident, ItemKind)> {
+        let span = self.current().span;
+        self.eat_keyword(ptok!(Extern));
+
+        let abi = match self.current().kind {
+            TokenKind::Literal(lit) => match lit.kind {
+                LitKind::Str => {
+                    self.advance();
+                    Some(lit.symbol)
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+
+        self.expect_obrace()?;
+
+        let mut items = vec![];
+
+        self.fn_ctx = Some(FunctionContext::Extern);
+        loop {
+            if self.is_brace(Orientation::Close) {
+                break;
+            }
+
+            let item = self.parse_item()?;
+
+            if let Some(item) = item {
+                items.push(item);
+            }
+        }
+        self.fn_ctx = None;
+
+        self.expect_cbrace()?;
+
+        Ok((
+            Ident::dummy(),
+            ItemKind::External(ExternBlock {
+                span: span.to(self.prev().span),
+                abi,
+                items,
+            }),
+        ))
     }
 
     pub fn parse_mod_decl(&mut self) -> PResult<(Ident, ItemKind)> {
@@ -211,27 +260,29 @@ impl Parser {
             || (self.current().is_keyword(Const) && self.ahead(1).is_keyword(Fn))
     }
 
-    pub fn parse_fn(&mut self, fn_ctx: FunctionContext) -> PResult<(Ident, ItemKind)> {
-        let (generics, sig) = self.parse_fn_signature(fn_ctx)?;
+    pub fn parse_fn(&mut self) -> PResult<(Ident, ItemKind)> {
+        let (generics, sig) = self.parse_fn_signature()?;
 
-        let body = self.parse_fn_body(fn_ctx)?;
+        let body = self.parse_fn_body()?;
 
         debug!("=== Parsed function: {:?}", sig);
 
+        let copy = self.fn_ctx().clone();
+        self.fn_ctx = None;
         Ok((
             sig.name,
             ItemKind::Fn(FnDecl {
                 sig,
                 generics,
                 body,
-                context: fn_ctx,
+                context: copy,
             }),
         ))
     }
 
-    pub fn parse_fn_body(&mut self, fn_ctx: FunctionContext) -> PResult<Option<Block>> {
+    pub fn parse_fn_body(&mut self) -> PResult<Option<Block>> {
         if self.eat(TokenKind::Semicolon) {
-            if !fn_ctx.allows_empty_body() {
+            if !self.fn_ctx().allows_empty_body() {
                 self.emit(EmptyBody {
                     span: (self.prev().span, self.file),
                 });
@@ -247,10 +298,7 @@ impl Parser {
         Ok(Some(block))
     }
 
-    pub fn parse_fn_signature(
-        &mut self,
-        fn_ctx: FunctionContext,
-    ) -> PResult<(Generics, FnSignature)> {
+    pub fn parse_fn_signature(&mut self) -> PResult<(Generics, FnSignature)> {
         let span = self.current().span;
         let constant = self.parse_constant();
 
@@ -273,7 +321,7 @@ impl Parser {
         debug!("=== Starting to parse function: {}", ident);
 
         let generics = self.parse_generics()?;
-        let params = self.parse_fn_params(fn_ctx)?;
+        let params = self.parse_fn_params()?;
 
         let ret_type = self.parse_return_type()?;
 
@@ -295,7 +343,7 @@ impl Parser {
         }
     }
 
-    pub fn parse_fn_params(&mut self, fn_ctx: FunctionContext) -> PResult<Vec<Param>> {
+    pub fn parse_fn_params(&mut self) -> PResult<Vec<Param>> {
         let mut params = vec![];
         if !self
             .current_token
@@ -314,7 +362,7 @@ impl Parser {
             let ident = self.parse_ident()?;
 
             if ident.name == SelfSmall {
-                if !fn_ctx.allows_self() {
+                if !self.fn_ctx().allows_self() {
                     box_diag!(SelfOutsideMethod {
                         span: (ident.span, self.file),
                         note: "this parameter would be unnecessary. `self` is always accessible in the right context",
