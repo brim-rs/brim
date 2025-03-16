@@ -9,7 +9,8 @@ use crate::{
         scope::{TypeInfo, TypeScopeManager},
     },
     items::{
-        HirCallParam, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam, HirItemKind,
+        HirCallParam, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam, HirItem,
+        HirItemKind,
     },
     stmts::{HirStmt, HirStmtKind},
     transformer::{HirModule, HirModuleMap, StoredHirItem},
@@ -115,8 +116,8 @@ impl<'a> TypeInference<'a> {
         ty.clone()
     }
 
-    fn infer_item(&mut self, item: ItemId) {
-        let mut item = self.compiled.items.get(&item).unwrap().clone();
+    fn infer_item_inner(&mut self, id: ItemId) -> HirItem {
+        let mut item = self.compiled.items.get(&id).unwrap().clone();
         match item.kind {
             HirItemKind::Fn(ref mut f) => {
                 self.scope_manager.push_scope();
@@ -166,8 +167,19 @@ impl<'a> TypeInference<'a> {
                     field.ty = self.resolve_type_alias(&field.ty);
                 }
             }
+            HirItemKind::External(ref ext) => {
+                for item in ext.items.clone() {
+                    self.infer_item(item.clone());
+                }
+            }
             _ => {}
         }
+
+        item.clone()
+    }
+
+    fn infer_item(&mut self, item: ItemId) {
+        let item = self.infer_item_inner(item);
 
         self.hir
             .hir_items

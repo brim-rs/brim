@@ -1,5 +1,5 @@
-use { Handle } from self::parent::windows;
+use { Handle, DWORD } from self::parent::windows;
 
 extern "kernel32" {
-    fn GetStdHandle(nStdHandle: u32) -> HANDLE;
+    fn GetStdHandle(nStdHandle: DWORD) -> HANDLE;
 }
