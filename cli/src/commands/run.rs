@@ -94,9 +94,7 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
         create_file_parent_dirs(&file)?;
 
         if args.no_write && !file.exists() {
-            bail!(
-            "Found `no-write` flag but file doesn't exist. Try to run without `no-write` flag first"
-        );
+            bail!("Found `no-write` flag but file doesn't exist. Try to run without `no-write` flag first");
         }
 
         if !args.no_write {
@@ -198,7 +196,10 @@ pub fn compile_project(
     let map = resolver.resolve()?;
 
     comp.extend_temp(resolver_temp.clone());
-    bail_on_errors(comp.emitted.len())?;
+
+    if comp.should_bail() {
+        bail_on_errors(comp.emitted.len())?;
+    }
 
     let hir = comp.analyze(map, compiled)?;
 
@@ -215,7 +216,9 @@ pub fn compile_project(
         }
     }
 
-    bail_on_errors(comp.emitted.len())?;
+    if comp.should_bail() {
+        bail_on_errors(comp.emitted.len())?;
+    }
 
     Ok(hir)
 }

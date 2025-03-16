@@ -7,7 +7,7 @@ use crate::{
 use anyhow::Result;
 use brim_diagnostics::{
     ErrorEmitted,
-    diagnostic::{Diagnostic, ToDiagnostic},
+    diagnostic::{Diagnostic, Severity, ToDiagnostic},
 };
 use brim_hir::{
     CompiledModules,
@@ -143,5 +143,10 @@ impl CompilerContext {
                 span: (func.sig.span, main),
             });
         }
+    }
+
+    /// Only bails if there is at least one error diagnostic.
+    pub fn should_bail(&self) -> bool {
+        self.emitted.iter().any(|d| d.severity == Severity::Error)
     }
 }
