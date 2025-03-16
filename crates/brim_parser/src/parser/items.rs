@@ -2,9 +2,9 @@ use crate::{
     parser::{
         PResult, PToken, PTokenKind, Parser,
         errors::{
-            EmptyBody, ExpectedIdentifier, InvalidFunctionSignature, InvalidModifierOrder,
-            MissingFromKeyword, MissingParamList, SelfOutsideMethod, UnknownItem, UnnecessarySelf,
-            UseStatementBraces,
+            EmptyBody, ExpectedIdentifier, InvalidExternBlockItem, InvalidFunctionSignature,
+            InvalidModifierOrder, MissingFromKeyword, MissingParamList, SelfOutsideMethod,
+            UnknownItem, UnnecessarySelf, UseStatementBraces,
         },
     },
     ptok,
@@ -90,6 +90,13 @@ impl Parser {
             let item = self.parse_item()?;
 
             if let Some(item) = item {
+                if !matches!(item.kind, ItemKind::Fn(_) | ItemKind::TypeAlias(_)) {
+                    self.emit(InvalidExternBlockItem {
+                        span: (item.span, self.file),
+                        found: item.kind.to_string(),
+                    });
+                }
+
                 items.push(item);
             }
         }

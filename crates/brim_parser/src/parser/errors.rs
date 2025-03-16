@@ -185,3 +185,11 @@ pub struct InvalidMatchPatternError {
     #[error]
     pub span: (Span, usize),
 }
+
+#[derive(Diagnostic)]
+#[error("extern block only accepts function and type alias items. found `{found}`.")]
+pub struct InvalidExternBlockItem {
+    #[error]
+    pub span: (Span, usize),
+    pub found: String,
+}

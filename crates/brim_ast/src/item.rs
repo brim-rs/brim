@@ -94,6 +94,19 @@ pub enum ItemKind {
     External(ExternBlock),
 }
 
+impl Display for ItemKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ItemKind::Fn(_) => write!(f, "function"),
+            ItemKind::Use(_) => write!(f, "use"),
+            ItemKind::Struct(_) => write!(f, "struct"),
+            ItemKind::TypeAlias(_) => write!(f, "type alias"),
+            ItemKind::Module(_) => write!(f, "module"),
+            ItemKind::External(_) => write!(f, "external"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ExternBlock {
     pub span: Span,
