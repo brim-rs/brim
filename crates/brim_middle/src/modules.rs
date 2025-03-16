@@ -96,6 +96,17 @@ impl<'a> AstWalker for SymbolCollector<'a> {
                 self.table
                     .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
+            ItemKind::External(external) => {
+                for item in external.items.clone() {
+                    self.table.add_symbol(
+                        self.file_id,
+                        GlobalSymbol::new(item.ident.clone(), Location {
+                            mod_id: ModuleId::from_usize(self.file_id),
+                            item_id: item.id,
+                        }),
+                    );
+                }
+            }
             _ => {}
         }
     }
