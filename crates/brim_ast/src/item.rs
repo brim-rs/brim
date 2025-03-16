@@ -97,15 +97,7 @@ pub enum ItemKind {
 #[derive(Debug, Clone)]
 pub struct ExternBlock {
     pub abi: Option<Ident>,
-    pub items: Vec<ExternItem>,
-}
-
-pub type ExternItem = Item<ExternItemKind>;
-
-#[derive(Debug, Clone)]
-pub enum ExternItemKind {
-    Fn(FnDecl),
-    TypeAlias(TypeAlias),
+    pub items: Vec<Item>,
 }
 
 #[derive(Clone, Debug)]

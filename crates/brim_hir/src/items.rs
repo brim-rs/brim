@@ -59,8 +59,6 @@ pub struct HirExternBlock {
     pub items: Vec<ItemId>,
 }
 
-pub type HirExternItem = HirItem<HirExternItemKind>;
-
 #[derive(Debug, Clone)]
 pub enum HirExternItemKind {
     Fn(HirFn),
