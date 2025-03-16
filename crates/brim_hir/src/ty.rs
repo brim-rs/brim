@@ -113,6 +113,8 @@ impl Eq for HirTyKind {}
 impl HirTyKind {
     pub fn can_be_an_arg_for_param(&self, param: &HirTyKind) -> bool {
         match (param, self) {
+            (HirTyKind::Primitive(PrimitiveType::Any), _) => true,
+
             (
                 HirTyKind::Mut(ty1)
                 | HirTyKind::Ref(ty1, Mutable::Yes)
@@ -159,6 +161,7 @@ impl HirTyKind {
 
     pub fn can_be_initialized_with(&self, other: &HirTyKind) -> bool {
         match (self, other) {
+            (HirTyKind::Primitive(PrimitiveType::Any), _) => true,
             (HirTyKind::Ref(ty1, _), ty2) => ty1.can_be_initialized_with(ty2),
             (HirTyKind::Ptr(ty1, _), ty2) => ty1.can_be_initialized_with(ty2),
             (HirTyKind::Mut(ty1), ty2) => ty1.as_ref().can_be_initialized_with(ty2),
@@ -289,7 +292,9 @@ impl HirTyKind {
 
     pub fn is_mutable(&self) -> bool {
         match self {
-            HirTyKind::Ref(_, Mutable::Yes) | HirTyKind::Ptr(_, Mutable::Yes) | HirTyKind::Mut(_) => true,
+            HirTyKind::Ref(_, Mutable::Yes)
+            | HirTyKind::Ptr(_, Mutable::Yes)
+            | HirTyKind::Mut(_) => true,
             _ => false,
         }
     }

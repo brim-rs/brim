@@ -1,4 +1,15 @@
+use { File } from std::fs::file;
+
+struct Vec2<T> {
+    x: T,
+    y: T
+}
+
 pub fn main() {
-    let a: mut i32 = 1;
-    let x: &mut i32 = a;
+    let v = Vec2 { .x = 6.5, .y = 2.6 };
+    let os = @os();
+    let file = File { .handle = 23 };
+
+    let val: any = 42;
+
 };
