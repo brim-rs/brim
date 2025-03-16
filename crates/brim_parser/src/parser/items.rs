@@ -17,7 +17,6 @@ use brim_ast::{
     },
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
     ty,
-    ty::Const,
 };
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
@@ -380,13 +379,13 @@ impl Parser {
         });
     }
 
-    pub fn parse_constant(&mut self) -> ty::Const {
+    pub fn parse_constant(&mut self) -> bool {
         if self.eat_keyword(ptok!(Const)) {
             self.advance();
 
-            Const::Yes
+            true
         } else {
-            Const::No
+            false
         }
     }
 }

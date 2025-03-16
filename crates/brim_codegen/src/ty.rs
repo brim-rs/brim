@@ -1,26 +1,26 @@
 use crate::codegen::CppCodegen;
-use brim_ast::ty::PrimitiveType;
+use brim_ast::ty::{Mutable, PrimitiveType};
 use brim_hir::ty::HirTyKind;
 
 impl CppCodegen {
     pub fn generate_ty(&mut self, ty: HirTyKind) -> String {
         match ty {
             HirTyKind::Primitive(prim) => self.transform_primitive(prim),
-            HirTyKind::Ptr(ty, cnst) => {
+            HirTyKind::Ptr(ty, mutable) => {
                 let ty = self.generate_ty(*ty);
-                if cnst.as_bool() {
-                    format!("const {}*", ty)
-                } else {
+                if mutable == Mutable::Yes {
                     format!("{}*", ty)
+                } else {
+                    format!("const {}*", ty)
                 }
             }
 
-            HirTyKind::Ref(ty, cnst) => {
+            HirTyKind::Ref(ty, mutable) => {
                 let ty = self.generate_ty(*ty);
-                if cnst.as_bool() {
-                    format!("const {}&", ty)
-                } else {
+                if mutable == Mutable::Yes {
                     format!("{}&", ty)
+                } else {
+                    format!("const {}&", ty)
                 }
             }
 

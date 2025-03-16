@@ -3,7 +3,7 @@ use brim_ast::{
     ItemId,
     item::{Ident, Param},
     token::LitKind,
-    ty::{Const, PrimitiveType},
+    ty::{Mutable, PrimitiveType},
 };
 use brim_diagnostics::ErrorEmitted;
 use brim_span::span::Span;
@@ -19,9 +19,9 @@ pub struct HirTy {
 #[derive(Debug, Clone)]
 pub enum HirTyKind {
     /// Reference type eg. `&T` (brim) -> `T&` (C++) or `&const T` (brim) -> `const T&` (C++)
-    Ref(Box<HirTyKind>, Const),
+    Ref(Box<HirTyKind>, Mutable),
     /// Pointer type eg. `*T` (brim) -> `T*` (C++) or `*const T` (brim) -> `const T*` (C++)
-    Ptr(Box<HirTyKind>, Const),
+    Ptr(Box<HirTyKind>, Mutable),
     /// Mut type eg. `mut T` (brim) -> `T` (C++)
     Mut(Box<HirTyKind>),
     /// Array type eg. `[T; N]` (brim) -> `T[N]` (C++)
@@ -48,12 +48,12 @@ pub enum HirTyKind {
 impl Display for HirTyKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            HirTyKind::Ref(ty, cnst) => {
-                let const_str = if *cnst == Const::Yes { "const " } else { "" };
+            HirTyKind::Ref(ty, mutable) => {
+                let const_str = if *mutable == Mutable::Yes { "mut " } else { "" };
                 write!(f, "&{}{}", const_str, ty)
             }
-            HirTyKind::Ptr(ty, cnst) => {
-                let const_str = if *cnst == Const::Yes { "const " } else { "" };
+            HirTyKind::Ptr(ty, mutable) => {
+                let const_str = if *mutable == Mutable::Yes { "mut " } else { "" };
                 write!(f, "*{}{}", const_str, ty)
             }
             HirTyKind::Mut(ty) => write!(f, "mut {}", ty),
@@ -115,17 +115,17 @@ impl HirTyKind {
         match (param, self) {
             (
                 HirTyKind::Mut(ty1)
-                | HirTyKind::Ref(ty1, Const::No)
-                | HirTyKind::Ptr(ty1, Const::No),
+                | HirTyKind::Ref(ty1, Mutable::Yes)
+                | HirTyKind::Ptr(ty1, Mutable::Yes),
                 HirTyKind::Mut(ty2)
-                | HirTyKind::Ref(ty2, Const::No)
-                | HirTyKind::Ptr(ty2, Const::No),
+                | HirTyKind::Ref(ty2, Mutable::Yes)
+                | HirTyKind::Ptr(ty2, Mutable::Yes),
             ) => ty1 == ty2,
 
             (
                 HirTyKind::Mut(ty1)
-                | HirTyKind::Ref(ty1, Const::No)
-                | HirTyKind::Ptr(ty1, Const::No),
+                | HirTyKind::Ref(ty1, Mutable::Yes)
+                | HirTyKind::Ptr(ty1, Mutable::Yes),
                 _,
             ) => false,
 
@@ -137,6 +137,37 @@ impl HirTyKind {
 
             (HirTyKind::Primitive(p1), HirTyKind::Primitive(p2)) => p1 == p2,
 
+            (
+                HirTyKind::Ident {
+                    ident: id1,
+                    generics: gen1,
+                    is_generic: is_gen1,
+                },
+                HirTyKind::Ident {
+                    ident: id2,
+                    generics: gen2,
+                    is_generic: is_gen2,
+                },
+            ) => id1.to_string() == id2.to_string() && gen1 == gen2 && is_gen1 == is_gen2,
+
+            (HirTyKind::Err(_), _) | (_, HirTyKind::Err(_)) => false,
+            (HirTyKind::Placeholder, _) | (_, HirTyKind::Placeholder) => false,
+
+            _ => false,
+        }
+    }
+
+    pub fn can_be_initialized_with(&self, other: &HirTyKind) -> bool {
+        match (self, other) {
+            (HirTyKind::Ref(ty1, _), ty2) => ty1.can_be_initialized_with(ty2),
+            (HirTyKind::Ptr(ty1, _), ty2) => ty1.can_be_initialized_with(ty2),
+            (HirTyKind::Mut(ty1), ty2) => ty1.as_ref().can_be_initialized_with(ty2),
+            (ty1, HirTyKind::Mut(ty2)) => ty1.can_be_initialized_with(ty2.as_ref()),
+            (HirTyKind::Array(ty1, _), HirTyKind::Array(ty2, _)) => {
+                ty1.can_be_initialized_with(ty2)
+            }
+            (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.can_be_initialized_with(ty2),
+            (HirTyKind::Primitive(p1), HirTyKind::Primitive(p2)) => p1 == p2,
             (
                 HirTyKind::Ident {
                     ident: id1,
@@ -258,7 +289,7 @@ impl HirTyKind {
 
     pub fn is_mutable(&self) -> bool {
         match self {
-            HirTyKind::Ref(_, Const::No) | HirTyKind::Ptr(_, Const::No) | HirTyKind::Mut(_) => true,
+            HirTyKind::Ref(_, Mutable::Yes) | HirTyKind::Ptr(_, Mutable::Yes) | HirTyKind::Mut(_) => true,
             _ => false,
         }
     }

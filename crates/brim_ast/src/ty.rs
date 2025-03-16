@@ -17,27 +17,24 @@ pub struct Ty {
 impl Ty {
     pub fn is_const(&self) -> bool {
         match &self.kind {
-            TyKind::Mut(_) | TyKind::Ref(_, Const::Yes) | TyKind::Ptr(_, Const::Yes) => true,
+            TyKind::Mut(_) | TyKind::Ref(_, Mutable::No) | TyKind::Ptr(_, Mutable::No) => true,
             _ => false,
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Const {
+pub enum Mutable {
     Yes,
     No,
 }
 
-impl Const {
-    pub fn from_mut(is_mutable: bool) -> Self {
-        if is_mutable { Const::No } else { Const::Yes }
-    }
-
-    pub fn as_bool(&self) -> bool {
-        match self {
-            Const::Yes => true,
-            Const::No => false,
+impl Mutable {
+    pub fn from_bool(is_mutable: bool) -> Self {
+        if is_mutable {
+            Mutable::Yes
+        } else {
+            Mutable::No
         }
     }
 }
@@ -45,9 +42,9 @@ impl Const {
 #[derive(Debug, Clone)]
 pub enum TyKind {
     /// Reference type eg. `&T` (brim) -> `T&` (C++) or `mut &T` (brim) -> `T&` (C++)
-    Ref(Box<Ty>, Const),
+    Ref(Box<Ty>, Mutable),
     /// Pointer type eg. `*T` (brim) -> `T*` (C++) or `mut *T` (brim) -> `T*` (C++)
-    Ptr(Box<Ty>, Const),
+    Ptr(Box<Ty>, Mutable),
     /// Mutable type eg. `mut T` (brim) -> `T` (C++)
     Mut(Box<Ty>),
     /// Array type eg. `[T; N]` (brim) -> `T[N]` (C++)

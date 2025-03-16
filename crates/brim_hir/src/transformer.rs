@@ -295,7 +295,7 @@ impl<'a> Transformer<'a> {
 
         HirFn {
             sig: HirFnSig {
-                constant: f_decl.sig.constant.as_bool(),
+                constant: f_decl.sig.constant,
                 name: f_decl.sig.name,
                 return_type: if let FnReturnType::Ty(ty) = f_decl.sig.return_type {
                     self.transform_ty(ty).kind

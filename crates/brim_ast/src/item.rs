@@ -1,9 +1,4 @@
-use crate::{
-    Break, Empty, ItemId, While,
-    expr::Expr,
-    stmts::Stmt,
-    ty::{Const, Ty},
-};
+use crate::{Break, Empty, ItemId, While, expr::Expr, stmts::Stmt, ty::Ty};
 use brim_span::{span::Span, symbols::Symbol};
 use std::{
     fmt::{Debug, Display},
@@ -251,7 +246,7 @@ pub enum GenericKind {
 #[derive(Clone, Debug)]
 pub struct FnSignature {
     /// `const fn ...` (brim) -> `constexpr ...` (C++)
-    pub constant: Const,
+    pub constant: bool,
     pub name: Ident,
     pub return_type: FnReturnType,
     pub params: Vec<Param>,

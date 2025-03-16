@@ -8,7 +8,7 @@ use brim_ast::{
     item::{Block, Ident, ItemKind, TypeAlias, TypeAliasValue},
     stmts::{Stmt, StmtKind},
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
-    ty::{Const, PrimitiveType, Ty, TyKind},
+    ty::{Mutable, PrimitiveType, Ty, TyKind},
 };
 
 impl Parser {
@@ -52,7 +52,7 @@ impl Parser {
             Some(self.parse_ref()?)
         } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
             Some(self.parse_ptr()?)
-        } else if self.current().is_keyword(Const) {
+        } else if self.current().is_keyword(Mut) {
             Some(self.parse_mut()?)
         } else if self
             .current()
@@ -81,15 +81,9 @@ impl Parser {
     }
 
     pub fn parse_mut(&mut self) -> PResult<TyKind> {
-        if self.eat(TokenKind::BinOp(BinOpToken::And)) {
-            Ok(self.parse_ref()?)
-        } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
-            Ok(self.parse_ptr()?)
-        } else {
-            self.eat_keyword(ptok!(Mut));
+        self.eat_keyword(ptok!(Mut));
 
-            Ok(TyKind::Mut(Box::new(self.parse_type()?)))
-        }
+        Ok(TyKind::Mut(Box::new(self.parse_type()?)))
     }
 
     pub fn is_mut(&mut self) -> bool {
@@ -105,14 +99,14 @@ impl Parser {
         let is_mut = self.is_mut();
 
         let ty = self.parse_type()?;
-        Ok(TyKind::Ref(Box::new(ty), Const::from_mut(is_mut)))
+        Ok(TyKind::Ref(Box::new(ty), Mutable::from_bool(is_mut)))
     }
 
     pub fn parse_ptr(&mut self) -> PResult<TyKind> {
         let is_mut = self.is_mut();
 
         let ty = self.parse_type()?;
-        Ok(TyKind::Ptr(Box::new(ty), Const::from_mut(is_mut)))
+        Ok(TyKind::Ptr(Box::new(ty), Mutable::from_bool(is_mut)))
     }
 
     pub fn parse_array(&mut self) -> PResult<TyKind> {

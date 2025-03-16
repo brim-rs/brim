@@ -30,7 +30,7 @@ impl TypeChecker {
                 if let Some(val) = value {
                     let val_ty = val.ty.clone();
 
-                    if ty != val_ty {
+                    if !ty.can_be_initialized_with(&val_ty) {
                         self.ctx.emit_impl(CannotInitializeVariable {
                             span: (stmt.span, self.mod_id),
                             name: ident.to_string(),

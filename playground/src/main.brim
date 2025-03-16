@@ -1,13 +1,4 @@
-fn addPlusOne(a: &mut i32, b: i32) -> i32 {
-    a += 1;
-
-    return a + b;
-}
-
 pub fn main() {
     let a: mut i32 = 1;
-    let b = 2;
-
-    let c = addPlusOne(a, b);
-    let x: &mut i32 = 123;
+    let x: &mut i32 = a;
 };

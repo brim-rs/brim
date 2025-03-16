@@ -96,18 +96,15 @@ impl<'a> AstWalker for NameResolver<'a> {
     fn visit_let(&mut self, let_stmt: &mut Let) {
         let name = let_stmt.ident.to_string();
 
-        self.declare_variable(
-            &name,
-            VariableInfo {
-                id: let_stmt.id,
-                is_const: if let Some(ty) = &let_stmt.ty {
-                    ty.is_const()
-                } else {
-                    false
-                },
-                span: let_stmt.span,
+        self.declare_variable(&name, VariableInfo {
+            id: let_stmt.id,
+            is_const: if let Some(ty) = &let_stmt.ty {
+                ty.is_const()
+            } else {
+                false
             },
-        );
+            span: let_stmt.span,
+        });
 
         self.validate_var_name(&name, let_stmt.ident.span);
 
@@ -150,14 +147,11 @@ impl<'a> AstWalker for NameResolver<'a> {
         }
 
         for param in &func.sig.params {
-            self.declare_param(
-                &param.name.to_string(),
-                VariableInfo {
-                    id: param.id,
-                    is_const: false,
-                    span: param.span,
-                },
-            );
+            self.declare_param(&param.name.to_string(), VariableInfo {
+                id: param.id,
+                is_const: false,
+                span: param.span,
+            });
 
             self.validate_var_name(&param.name.to_string(), param.name.span);
         }
@@ -325,7 +319,6 @@ impl<'a> AstWalker for NameResolver<'a> {
                 }
             }
             ExprKind::Type(ty) => {
-                println!("{:#?}", ty.kind);
                 self.visit_ty(ty);
             }
         }
