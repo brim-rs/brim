@@ -91,7 +91,7 @@ builtin_function! {
 }
 
 builtin_function! {
-    fn cast(file, a, b) {
+    fn any_cast(file, a, b) {
         if let HirExprKind::Type(ty) = &b.kind {
             a.ty = ty.clone();
             Ok(a.clone())
@@ -109,7 +109,7 @@ builtin_function! {
 pub fn get_builtin_function(name: &str) -> Option<BuiltInFunction> {
     match name {
         "os" => Some(os()),
-        "cast" => Some(cast()),
+        "anyCast" => Some(any_cast()),
         _ => None,
     }
 }
