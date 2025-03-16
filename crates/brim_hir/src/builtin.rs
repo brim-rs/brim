@@ -106,10 +106,27 @@ builtin_function! {
     }
 }
 
+builtin_function! {
+    fn cast(file, a, b) {
+        if let HirExprKind::Type(ty) = &b.kind {
+            a.ty = ty.clone();
+            Ok(a.clone())
+        } else {
+            Err(Box::new(BuiltinCastExpectedType {
+                span: (b.span, file)
+            }))
+        }
+    }
+    codegen(cg_ctx) {
+        format!("static_cast<{}>({})", cg_ctx.generate_ty(b.ty.clone()), cg_ctx.generate_expr(a.clone()))
+    }
+}
+
 pub fn get_builtin_function(name: &str) -> Option<BuiltInFunction> {
     match name {
         "os" => Some(os()),
         "anyCast" => Some(any_cast()),
+        "cast" => Some(cast()),
         _ => None,
     }
 }
