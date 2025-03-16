@@ -118,7 +118,7 @@ builtin_function! {
         }
     }
     codegen(cg_ctx) {
-        format!("static_cast<{}>({})", cg_ctx.generate_ty(b.ty.clone()), cg_ctx.generate_expr(a.clone()))
+        format!("static_cast<{}>({})", cg_ctx.generate_expr(b.clone()), cg_ctx.generate_expr(a.clone()))
     }
 }
 
