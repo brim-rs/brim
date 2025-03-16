@@ -94,6 +94,8 @@ impl CompilerContext {
 
         let mut use_collector = UseCollector::new(&mut compiled.symbols);
         use_collector.collect(map);
+        
+        self.extend_temp(use_collector.ctx);
 
         for ((ident, id), symbols) in &use_collector.namespaces {
             compiled.items.insert(id.clone(), HirItem {
@@ -109,6 +111,10 @@ impl CompilerContext {
         let mut name_resolver = NameResolver::new(map.clone(), self.lints, compiled);
         name_resolver.resolve_names();
         self.extend_temp(name_resolver.ctx);
+        
+        if self.should_bail() {
+            return Ok(HirModuleMap::new());
+        }
 
         let (hir, hir_temp) = &mut transform_module(name_resolver.map, compiled);
         self.extend_temp(hir_temp.clone());

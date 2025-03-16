@@ -79,6 +79,11 @@ impl AstWalker for AstValidator {
                     self.walk_block(block);
                 }
             }
+            ItemKind::External(external) => {
+                for item in &mut external.items {
+                    self.visit_item(item);
+                }
+            }
             _ => {}
         }
     }

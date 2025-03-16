@@ -56,7 +56,7 @@ impl<'a> NameResolver<'a> {
 
             self.file = module.barrel.file_id;
             for mut item in module.barrel.items {
-                self.visit_item(&mut item);
+                self.walk_item(&mut item);
             }
         }
     }

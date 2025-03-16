@@ -50,7 +50,10 @@ impl CppCodegen {
                         .hir()
                         .symbols
                         .resolve(&ident.to_string(), self.current_mod.as_usize())
-                        .unwrap();
+                        .expect(&format!(
+                            "Failed to resolve symbol: {}",
+                            ident.name.to_string()
+                        ));
 
                     let mod_id = symbol.id.mod_id;
 

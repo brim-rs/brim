@@ -1,9 +1,14 @@
-use crate::{GlobalSymbol, Location, ModuleId, SymbolTable, barrel::Barrel, walker::AstWalker};
+use crate::{
+    GlobalSymbol, Location, ModuleId, SymbolTable, barrel::Barrel,
+    temp_diag::TemporaryDiagnosticContext, walker::AstWalker,
+};
 use brim_ast::{
     ItemId,
     item::{Ident, ImportsKind, Item, ItemKind},
 };
-use brim_span::files::get_id_by_name;
+use brim_diag_macro::Diagnostic;
+use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
+use brim_span::{files::get_id_by_name, span::Span};
 use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Debug, Clone)]
@@ -118,6 +123,7 @@ pub struct UseCollector<'a> {
     pub table: &'a mut SymbolTable,
     pub file_id: usize,
     pub namespaces: HashMap<(Ident, ItemId), HashMap<String, GlobalSymbol>>,
+    pub ctx: TemporaryDiagnosticContext,
 }
 
 impl<'a> UseCollector<'a> {
@@ -126,6 +132,7 @@ impl<'a> UseCollector<'a> {
             table,
             file_id: 0,
             namespaces: HashMap::new(),
+            ctx: TemporaryDiagnosticContext::new(),
         }
     }
 
@@ -158,9 +165,16 @@ impl<'a> AstWalker for UseCollector<'a> {
                     }
                     ImportsKind::List(list) => {
                         for import in list {
-                            let symbol = self.table.get_by_ident(import, id).unwrap();
+                            let symbol = self.table.get_by_ident(import, id);
 
-                            symbols.push(symbol.clone());
+                            if let Some(symbol) = symbol {
+                                symbols.push(symbol.clone());
+                            } else {
+                                self.ctx.emit(Box::new(UseError {
+                                    span: (import.span.clone(), self.file_id),
+                                    symbol: import.to_string(),
+                                }));
+                            }
                         }
                     }
                     // use windows from std::os::windows;
@@ -183,4 +197,12 @@ impl<'a> AstWalker for UseCollector<'a> {
             _ => {}
         }
     }
+}
+
+#[derive(Diagnostic)]
+#[error("symbol `{symbol}` not found")]
+pub struct UseError {
+    #[error]
+    pub span: (Span, usize),
+    pub symbol: String,
 }

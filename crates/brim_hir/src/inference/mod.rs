@@ -127,10 +127,6 @@ impl<'a> TypeInference<'a> {
                     self.ctx.push_generic(generic.clone());
                 }
 
-                f.sig.return_type = self.resolve_type_alias(&f.sig.return_type);
-
-                f.resolved_type = self.resolve_type_alias(&f.resolved_type);
-
                 for param in &mut f.sig.params.params {
                     param.ty.kind = self.resolve_type_alias(&param.ty.kind);
 
@@ -145,6 +141,9 @@ impl<'a> TypeInference<'a> {
                         true,
                     );
                 }
+
+                f.sig.return_type = self.resolve_type_alias(&f.sig.return_type);
+                f.resolved_type = self.resolve_type_alias(&f.resolved_type);
 
                 if let Some(body_id) = f.body {
                     self.infer_body(body_id);

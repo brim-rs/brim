@@ -39,13 +39,24 @@ impl TypeChecker {
         }
     }
 
+    pub fn check_item(&mut self, item: HirItemKind) {
+        match item {
+            HirItemKind::Fn(func) => self.check_fn(func),
+            HirItemKind::External(external) => {
+                for item in external.items {
+                    let item = self.compiled.get_item(item).clone();
+                    self.check_item(item.kind);
+                }
+            }
+            _ => {}
+        }
+    }
+
     pub fn check_module(&mut self, module: HirModule) {
         for item in module.items {
             let item = self.compiled.get_item(item).clone();
-            match item.kind {
-                HirItemKind::Fn(func) => self.check_fn(func),
-                _ => {}
-            }
+
+            self.check_item(item.kind);
         }
     }
 }

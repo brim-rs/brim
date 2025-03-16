@@ -1,4 +1,4 @@
-use { Handle, DWORD } from self::parent::windows;
+use { HANDLE, DWORD } from self::parent::windows;
 
 extern "kernel32" {
     fn GetStdHandle(nStdHandle: DWORD) -> HANDLE;

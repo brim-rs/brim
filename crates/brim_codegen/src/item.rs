@@ -51,7 +51,20 @@ impl CppCodegen {
                 self.code.decrease_indent();
                 self.code.add_line("};");
             }
-            HirItemKind::External(external) => {}
+            HirItemKind::External(external) => {
+                if let Some(abi) = external.abi {
+                    self.code.add_line(&format!("extern \"{}\" {{", abi));
+                } else {
+                    self.code.add_line("extern {");
+                }
+
+                self.code.increase_indent();
+                for item in external.items {
+                    self.generate_item(compiled.get_item(item).clone(), compiled);
+                }
+                self.code.decrease_indent();
+                self.code.add_line("}");
+            }
             _ => {}
         }
     }

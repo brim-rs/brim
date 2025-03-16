@@ -1,7 +1,7 @@
 use windows from self::parent::os::windows;
 
 pub type Handle = match @os() {
-    "windows" => windows::Handle,
+    "windows" => windows::HANDLE,
     "linux" => i32,
     "macos" => i32,
     else => i32
