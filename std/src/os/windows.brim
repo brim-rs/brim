@@ -1,3 +1,4 @@
 mod windows::kernel32;
 
 pub type Handle = any;
+pub type DWORD = u32;
