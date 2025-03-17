@@ -35,7 +35,9 @@ impl CppCodegen {
                     self.code.add_block(&block_name, |code| {
                         code.add_line_no_indent(&body_code);
                     });
-                }
+                } else {
+                    self.code.add_line(&format!("{};", block_name));
+                };
             }
             HirItemKind::Struct(s) => {
                 self.generate_generics(&s.generics);
@@ -62,7 +64,8 @@ impl CppCodegen {
 
                 self.code.increase_indent();
                 for item in external.items {
-                    self.generate_item(compiled.get_item(item).clone(), compiled);
+                    let item = compiled.get_item(item).clone();
+                    self.generate_item(item, compiled);
                 }
                 self.code.decrease_indent();
                 self.code.add_line("}");

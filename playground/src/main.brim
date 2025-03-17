@@ -1,4 +1,5 @@
 use { File } from std::fs::file;
+use { getStdErr } from std::io::lib;
 
 struct Vec2<T> {
     x: T,
@@ -11,5 +12,5 @@ pub fn main() {
     let file = File { .handle = 23 };
 
     let val: any = 42;
-
+    let std = getStdErr();
 };
