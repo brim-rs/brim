@@ -27,7 +27,7 @@ use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
 use brim_ctx::errors::NoMainFunction;
 use brim_parser::parser::Parser;
 use clap::Command;
-use std::{collections::HashSet, env::current_dir, process};
+use std::{collections::HashSet, env::current_dir, process, process::exit};
 use tracing::debug;
 
 pub fn run_cmd() -> Command {
@@ -140,6 +140,12 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
 
         command.status()?;
 
+        if !command.status()?.success() {
+            let code = command.status()?.code().unwrap_or(1);
+
+            shell.error(format!("program failed to run with code: {}", code))?;
+            exit(code);
+        }
         Ok(())
     }, "execute project")?;
 
