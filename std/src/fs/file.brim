@@ -8,5 +8,7 @@ pub type Handle = match @os() {
 };
 
 pub struct File {
-    handle: Handle
+    handle: Handle,
+
+    fn write() {}
 }

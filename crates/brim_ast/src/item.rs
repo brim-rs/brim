@@ -140,6 +140,7 @@ pub struct Struct {
     pub ident: Ident,
     pub fields: Vec<Field>,
     pub generics: Generics,
+    pub items: Vec<Item>,
 }
 
 #[derive(Clone, Debug)]
@@ -208,15 +209,15 @@ pub struct FnDecl {
 pub enum FunctionContext {
     Item,
     Trait,
-    Impl,
     Extern,
+    Method,
 }
 
 impl FunctionContext {
     pub fn allows_self(&self) -> bool {
         match self {
-            FunctionContext::Item => false,
-            _ => true,
+            FunctionContext::Method => true,
+            _ => false,
         }
     }
 

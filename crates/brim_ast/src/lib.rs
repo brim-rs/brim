@@ -27,7 +27,6 @@ generate_symbols! {
     For = "for",
     From = "from",
     If = "if",
-    Impl = "impl",
     In = "in",
     Let = "let",
     Loop = "loop",
