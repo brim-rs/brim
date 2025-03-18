@@ -50,7 +50,7 @@ impl CppCodegen {
                     format!("({} {} {})", lhs_code, self.bin_op(op), rhs_code)
                 }
             }
-            HirExprKind::Var(ident) => ident.name.to_string(),
+            HirExprKind::Var(ident) => format!("brim_{}", ident),
             HirExprKind::Call(func, args, _) => self.generate_call_expr(func, args),
             HirExprKind::Literal(lit) => self.generate_lit(lit, expr.ty),
             HirExprKind::Index(expr, index) => {
@@ -103,7 +103,7 @@ impl CppCodegen {
             .join(", ");
 
         format!(
-            "(module{}::{}({}))",
+            "(module{}::brim_{}({}))",
             func_mod_id.as_usize(),
             fn_name,
             args_code
@@ -165,7 +165,12 @@ impl CppCodegen {
             format!("<{}>", self.generate_generic_args(&str.generics))
         };
 
-        let mut code = format!("module{}::{}{}", mod_id.as_usize(), ident.name, generics);
+        let mut code = format!(
+            "module{}::brim_{}{}",
+            mod_id.as_usize(),
+            ident.name,
+            generics
+        );
 
         if !str.fields.is_empty() {
             let fields_code = str

@@ -10,9 +10,9 @@ impl CppCodegen {
 
                 if let Some(value) = value {
                     let value = self.generate_expr(value);
-                    format!("{} {} = {};", ty, ident.to_string(), value)
+                    format!("{} brim_{} = {};", ty, ident.to_string(), value)
                 } else {
-                    format!("{} {};", ty, ident.to_string())
+                    format!("{} brim_{};", ty, ident.to_string())
                 }
             }
         }

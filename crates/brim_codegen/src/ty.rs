@@ -58,7 +58,7 @@ impl CppCodegen {
                     let mod_id = symbol.id.mod_id;
 
                     format!(
-                        "const module{}::{}{}",
+                        "const module{}::brim_{}{}",
                         mod_id.as_usize(),
                         ident.name,
                         generics

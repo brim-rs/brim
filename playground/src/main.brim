@@ -1,5 +1,5 @@
 use { File } from std::fs::file;
-use { getStdErr } from std::io::lib;
+use { getStdErr } from std::io::stdio;
 
 struct Vec2<T> {
     x: T,
@@ -16,5 +16,5 @@ pub fn main() {
     // and only then we can perform standard cast to u32
     let x = @cast(@anyCast(val, i32), u32);
 
-    let std = getStdErr();
+    let stderr = getStdErr();
 };
