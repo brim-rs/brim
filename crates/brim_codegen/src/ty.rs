@@ -109,7 +109,7 @@ impl CppCodegen {
             PrimitiveType::Char => "char".to_string(),
             PrimitiveType::Str => "std::string".to_string(),
 
-            PrimitiveType::Any => "SafeAny".to_string(),
+            PrimitiveType::Any => "std::any".to_string(),
         }
     }
 }

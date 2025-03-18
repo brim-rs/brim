@@ -27,7 +27,10 @@ impl CppCodegen {
                             param.name.to_string()
                         ));
                         if let Some(default) = default {
-                            gens.push_str(&format!(" = {}", self.generate_lit(default.clone())));
+                            gens.push_str(&format!(
+                                " = {}",
+                                self.generate_lit(default.clone(), ty.kind.clone())
+                            ));
                         }
                     }
                 }

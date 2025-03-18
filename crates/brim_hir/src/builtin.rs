@@ -102,7 +102,7 @@ builtin_function! {
         }
     }
     codegen(cg_ctx) {
-        format!("({}).cast<{}>()", cg_ctx.generate_expr(a.clone()), cg_ctx.generate_expr(b.clone()))
+        format!("safe_cast<{}>({})", cg_ctx.generate_expr(b.clone()), cg_ctx.generate_expr(a.clone()))
     }
 }
 

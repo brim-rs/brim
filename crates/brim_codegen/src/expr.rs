@@ -1,14 +1,14 @@
 use crate::codegen::CppCodegen;
 use brim_ast::{
-    expr::BinOpKind,
+    expr::{BinOpKind, UnaryOp},
     token::{Lit, LitKind},
 };
 use brim_hir::{
     builtin::get_builtin_function,
     expr::{HirExpr, HirExprKind, HirIfExpr, HirStructConstructor},
+    ty::HirTyKind,
 };
 use std::fmt::Write;
-use brim_ast::expr::UnaryOp;
 
 impl CppCodegen {
     pub fn generate_expr(&mut self, expr: HirExpr) -> String {
@@ -52,7 +52,7 @@ impl CppCodegen {
             }
             HirExprKind::Var(ident) => ident.name.to_string(),
             HirExprKind::Call(func, args, _) => self.generate_call_expr(func, args),
-            HirExprKind::Literal(lit) => self.generate_lit(lit),
+            HirExprKind::Literal(lit) => self.generate_lit(lit, expr.ty),
             HirExprKind::Index(expr, index) => {
                 let expr_code = self.generate_expr(*expr);
                 let index_code = self.generate_expr(*index);
@@ -201,13 +201,18 @@ impl CppCodegen {
         .to_string()
     }
 
-    pub fn generate_lit(&self, lit: Lit) -> String {
+    pub fn generate_lit(&mut self, lit: Lit, expr_ty: HirTyKind) -> String {
         match lit.kind {
             LitKind::Integer | LitKind::Float => {
                 if let Some(suffix) = lit.suffix {
-                    format!("{}{}", lit.symbol, self.generate_suffix(suffix.to_string()))
+                    format!(
+                        "{}({}{})",
+                        self.generate_ty(expr_ty),
+                        lit.symbol,
+                        self.generate_suffix(suffix.to_string())
+                    )
                 } else {
-                    lit.symbol.to_string()
+                    format!("{}({})", self.generate_ty(expr_ty), lit.symbol)
                 }
             }
             LitKind::Str => format!("\"{}\"", escape_string(&lit.symbol.to_string())),
