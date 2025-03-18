@@ -143,7 +143,7 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
         if !command.status()?.success() {
             let code = command.status()?.code().unwrap_or(1);
 
-            shell.error(format!("program failed to run with code: {}", code))?;
+            shell.error(format!("process didn't exit successfully: {}", code))?;
             exit(code);
         }
         Ok(())
