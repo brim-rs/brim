@@ -147,8 +147,13 @@ impl Parser {
         self.expect_obrace()?;
 
         let mut fields = vec![];
+        let mut items = vec![];
 
         while !self.is_brace(Orientation::Close) {
+            if self.is_function() || self.current().is_keyword(Use) {
+                break;
+            }
+
             let vis = self.parse_visibility();
             let ident = self.parse_ident()?;
             self.expect(TokenKind::Colon)?;
@@ -167,9 +172,41 @@ impl Parser {
             }
         }
 
+        while !self.is_brace(Orientation::Close) {
+            let item_span = self.current().span;
+            let vis = self.parse_visibility();
+
+            let (item_ident, kind) = if self.is_function() {
+                self.set_fn_ctx(FunctionContext::Method);
+                self.parse_fn()?
+            } else if self.current().is_keyword(Use) {
+                self.parse_use(item_span)?
+            } else if self.current().is_keyword(Type) {
+                self.parse_type_alias()?
+            } else {
+                break;
+            };
+
+            self.eat_semis();
+
+            items.push(Item {
+                id: self.new_id(),
+                span: item_span,
+                vis,
+                kind,
+                ident: item_ident,
+            });
+        }
+
         self.expect_cbrace()?;
 
-        debug!("Parsed struct: {:?}", ident);
+        debug!(
+            "Parsed struct: {:?} with {} fields and {} items",
+            ident,
+            fields.len(),
+            items.len()
+        );
+
         Ok((
             ident,
             ItemKind::Struct(Struct {
@@ -177,6 +214,7 @@ impl Parser {
                 generics,
                 span,
                 fields,
+                items,
             }),
         ))
     }
@@ -332,13 +370,16 @@ impl Parser {
 
         let ret_type = self.parse_return_type()?;
 
-        Ok((generics, FnSignature {
-            constant,
-            span: span.to(self.prev().span),
-            name: ident,
-            params,
-            return_type: ret_type,
-        }))
+        Ok((
+            generics,
+            FnSignature {
+                constant,
+                span: span.to(self.prev().span),
+                name: ident,
+                params,
+                return_type: ret_type,
+            },
+        ))
     }
 
     pub fn parse_return_type(&mut self) -> PResult<FnReturnType> {

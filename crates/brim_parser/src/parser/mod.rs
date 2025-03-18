@@ -65,7 +65,6 @@ pub enum PTokenKind {
     For,
     From,
     If,
-    Impl,
     In,
     Let,
     Loop,
