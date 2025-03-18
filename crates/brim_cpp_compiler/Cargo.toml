@@ -14,3 +14,4 @@ tracing = { workspace = true }
 tempfile = "3.18.0"
 thiserror = { workspace = true }
 brim-shell = { workspace = true }
+spinners = "4.1.1"

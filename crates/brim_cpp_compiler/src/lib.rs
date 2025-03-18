@@ -6,7 +6,8 @@ use crate::{
 };
 use anyhow::{Context, Result, bail, ensure};
 use brim_config::toml::{LibType, OptLevel, ProjectType};
-use brim_shell::Shell;
+use brim_shell::{Shell, styles::HEADER};
+use spinners::{Spinner, Spinners};
 use std::{
     collections::HashSet,
     ffi::OsStr,
@@ -127,6 +128,7 @@ impl CppBuild {
     pub fn compile(&self, output_name: impl AsRef<OsStr>, shell: &mut Shell) -> Result<PathBuf> {
         ensure!(!self.source_files.is_empty(), "No source files specified");
 
+        let mut sp = Spinner::new(Spinners::Line, "Waiting for C++ compiler to finish".into());
         let mut command = Command::new(&self.compiler.path());
         self.configure_command(&mut command, output_name.as_ref())?;
 
@@ -141,6 +143,8 @@ impl CppBuild {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
 
+            sp.stop_with_message("\r".into());
+            
             shell.centered("Output from stderr", stderr, true)?;
             shell.centered("Output from stdout", stdout, true)?;
 
@@ -148,6 +152,13 @@ impl CppBuild {
         }
 
         let output_path = self.get_output_path(output_name.as_ref());
+        sp.stop_with_message(format!(
+            "{style}{status:>12}{style:#} {message}",
+            style = &HEADER,
+            status = "Finished",
+            message = "C++ compilation"
+        ));
+
         ensure!(
             output_path.exists(),
             "Compilation succeeded but output file was not created: {}",
