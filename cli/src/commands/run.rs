@@ -25,9 +25,10 @@ use brim::{
 use brim_codegen::codegen::CppCodegen;
 use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
 use brim_ctx::errors::NoMainFunction;
+use brim_middle::SimpleModules;
 use brim_parser::parser::Parser;
 use clap::Command;
-use std::{collections::HashSet, env::current_dir, process};
+use std::{collections::HashSet, env::current_dir, process, process::exit};
 use tracing::debug;
 
 pub fn run_cmd() -> Command {
@@ -67,11 +68,12 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
         let configs = resolver.get_configs(&order);
 
         let compiled_projects = &mut CompiledModules::new();
+        let simple = &mut SimpleModules {items: Default::default()};
 
         for config in configs {
             let sess = &mut Session::new(config.cwd.clone(), config.clone(), c_choice);
             let ctx = &mut CompilerContext::new(args.clone(), lints);
-            let hir = compile_project(sess, ctx, c_choice, args.clone(), compiled_projects)?;
+            let hir = compile_project(sess, ctx, c_choice, args.clone(), compiled_projects, simple)?;
 
             compiled_projects
                 .map
@@ -140,6 +142,12 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
 
         command.status()?;
 
+        if !command.status()?.success() {
+            let code = command.status()?.code().unwrap_or(1);
+
+            shell.error(format!("process didn't exit successfully: {}", code))?;
+            exit(code);
+        }
         Ok(())
     }, "execute project")?;
 
@@ -164,6 +172,7 @@ pub fn compile_project(
     c_choice: ColorChoice,
     args: RunArgs,
     compiled: &mut CompiledModules,
+    simple: &mut SimpleModules,
 ) -> Result<HirModuleMap> {
     let project_name = sess.config.project.name.clone();
     let shell = &mut Shell::new(c_choice);
@@ -201,7 +210,7 @@ pub fn compile_project(
         bail_on_errors(comp.emitted.len())?;
     }
 
-    let hir = comp.analyze(map, compiled)?;
+    let hir = comp.analyze(map, compiled, simple)?;
 
     if sess.config.is_bin() {
         let main_mod = hir.get_module(ModuleId::from_usize(entry_file)).unwrap();

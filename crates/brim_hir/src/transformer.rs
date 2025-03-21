@@ -7,9 +7,9 @@ use crate::{
         HirStructConstructor,
     },
     items::{
-        HirExternBlock, HirExternItemKind, HirField, HirFn, HirFnParams, HirFnSig, HirGenericArg,
-        HirGenericArgs, HirGenericKind, HirGenericParam, HirGenerics, HirImportsKind, HirItem,
-        HirItemKind, HirParam, HirStruct, HirTypeAlias, HirUse,
+        HirExternBlock, HirField, HirFn, HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs,
+        HirGenericKind, HirGenericParam, HirGenerics, HirImportsKind, HirItem, HirItemKind,
+        HirParam, HirStruct, HirTypeAlias, HirUse,
     },
     stmts::{HirStmt, HirStmtKind},
     ty::{HirTy, HirTyKind},
@@ -27,7 +27,7 @@ use brim_ast::{
 };
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{
-    ModuleId, SymbolTable,
+    GlobalSymbol, ModuleId, SymbolTable,
     modules::{Module, ModuleMap},
     temp_diag::TemporaryDiagnosticContext,
 };
@@ -250,6 +250,15 @@ impl<'a> Transformer<'a> {
                     items,
                     span: external.span,
                 })
+            }
+            ItemKind::Namespace(syms) => {
+                let mut hash = HashMap::new();
+
+                for sym in syms {
+                    hash.insert(sym.0, GlobalSymbol::from_temp(sym.1));
+                }
+
+                HirItemKind::Namespace(hash)
             }
         };
 
@@ -589,6 +598,11 @@ impl<'a> Transformer<'a> {
                     HirExprKind::Path(id)
                 }
                 ExprKind::Type(ty) => HirExprKind::Type(self.transform_ty(*ty).kind),
+                ExprKind::StaticAccess(ident, expr) => {
+                    let id = self.compiled.get_assigned_path(expr.id);
+
+                    HirExprKind::StaticAccess(id, Box::new(self.transform_expr(*expr).0))
+                }
             },
             ty,
         };

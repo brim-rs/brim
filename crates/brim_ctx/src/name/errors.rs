@@ -52,3 +52,38 @@ pub struct NamespaceMissingSymbol {
     pub name: String,
     pub symbol: String,
 }
+
+#[derive(Diagnostic)]
+#[error("struct `{name}` used in a static access is not declared in this scope")]
+pub struct UndeclaredStructStatic {
+    #[error("struct `{name}` is not declared in this scope")]
+    pub span: (Span, usize),
+    pub name: String,
+}
+
+#[derive(Diagnostic)]
+#[error("no item `{name}` found in struct `{struct_name}`")]
+pub struct UndeclaredStructField {
+    #[error("no item `{name}` found in struct `{struct_name}`")]
+    pub span: (Span, usize),
+    pub name: String,
+    pub struct_name: String,
+}
+
+#[derive(Diagnostic)]
+#[error("no item `{name}` found in struct `{struct_name}`")]
+pub struct NoItemInStruct {
+    #[error("no item `{name}` found in struct `{struct_name}`")]
+    pub span: (Span, usize),
+    pub name: String,
+    pub struct_name: String,
+}
+
+#[derive(Diagnostic)]
+#[error("found item is not an method in struct `{struct_name}`")]
+pub struct ItemNotAMethodInStruct {
+    #[error("found item is not an method in struct `{struct_name}`")]
+    pub span: (Span, usize),
+    pub name: String,
+    pub struct_name: String,
+}

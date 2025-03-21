@@ -1,4 +1,7 @@
-use brim_ast::{ItemId, item::Ident};
+use brim_ast::{
+    ItemId,
+    item::{Ident, Item},
+};
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
 use brim_index::index_type;
@@ -41,6 +44,18 @@ pub struct GlobalSymbol {
 impl GlobalSymbol {
     pub fn new(name: Ident, location: Location) -> Self {
         Self { name, id: location }
+    }
+
+    pub fn from_temp(val: (Ident, (ItemId, usize))) -> Self {
+        let item_id = val.1.0;
+        let mod_id = val.1.1;
+        Self::new(val.0, Location::new(ModuleId::from_usize(mod_id), item_id))
+    }
+
+    pub fn into_temp(self) -> (Ident, (ItemId, usize)) {
+        let item_id = self.id.item_id;
+        let mod_id = self.id.mod_id.as_usize();
+        (self.name, (item_id, mod_id))
     }
 }
 
@@ -112,5 +127,19 @@ impl SymbolTable {
 
     pub fn iter_symbols(&self) -> impl Iterator<Item = &GlobalSymbol> {
         self.symbols.values().flatten()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SimpleModules {
+    pub items: HashMap<ItemId, Item>,
+}
+
+impl SimpleModules {
+    pub fn get_item(&self, item_id: ItemId) -> &Item {
+        self.items.get(&item_id).expect(&format!(
+            "tried to query an item with id: {:?}, but it doesn't exist",
+            item_id
+        ))
     }
 }

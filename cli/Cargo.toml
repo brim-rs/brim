@@ -20,3 +20,4 @@ toml_edit = { workspace = true }
 brim-codegen = { workspace = true }
 terminal_size = { workspace = true }
 sysinfo = { workspace = true }
+brim-middle = { workspace = true }

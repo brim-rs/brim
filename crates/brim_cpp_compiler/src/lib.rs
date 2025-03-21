@@ -144,7 +144,7 @@ impl CppBuild {
             let stdout = String::from_utf8_lossy(&output.stdout);
 
             sp.stop_with_message("\r".into());
-            
+
             shell.centered("Output from stderr", stderr, true)?;
             shell.centered("Output from stdout", stdout, true)?;
 

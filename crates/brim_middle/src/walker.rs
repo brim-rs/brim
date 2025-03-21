@@ -70,7 +70,6 @@ pub trait AstWalker {
             ItemKind::Use(use_stmt) => self.visit_use(use_stmt),
             ItemKind::Struct(str) => self.visit_struct(str),
             ItemKind::TypeAlias(type_alias) => self.visit_type_alias(type_alias),
-            ItemKind::Module(_) => {}
             ItemKind::External(external) => {
                 for item in &mut external.items {
                     match &mut item.kind {
@@ -80,6 +79,7 @@ pub trait AstWalker {
                     }
                 }
             }
+            ItemKind::Namespace(_) | ItemKind::Module(_) => {}
         }
     }
 
@@ -157,6 +157,9 @@ pub trait AstWalker {
             ExprKind::Path(_) => {}
             ExprKind::Type(ty) => {
                 self.visit_ty(ty);
+            }
+            ExprKind::StaticAccess(ident, expr) => {
+                self.visit_expr(expr);
             }
         }
     }

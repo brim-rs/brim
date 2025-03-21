@@ -77,6 +77,8 @@ pub enum HirExprKind {
     Type(HirTyKind),
     /// Comptime block to be evaluated at compile time.
     Comptime(ComptimeValue),
+    /// Static access to a struct field.
+    StaticAccess(ItemId, Box<HirExpr>),
 }
 
 impl HirExprKind {

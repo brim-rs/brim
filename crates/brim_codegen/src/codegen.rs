@@ -22,6 +22,7 @@ pub struct CppCodegen {
     pub main_file: usize,
     pub modules: Vec<usize>,
     pub imports: Vec<String>,
+    pub add_prefix: bool,
 }
 
 #[derive(Debug)]
@@ -167,16 +168,15 @@ impl CppCodegen {
                 "sstream",
                 "iostream",
                 "optional",
-                "memory",
                 "typeinfo",
                 "typeindex",
-                "functional",
                 "cassert",
                 "cstring",
             ]
             .iter()
             .map(|s| s.to_string())
             .collect(),
+            add_prefix: true,
         }
     }
 
@@ -204,7 +204,7 @@ impl CppCodegen {
         self.code.add_line("int main() {");
         self.code.increase_indent();
         self.code
-            .add_line(&format!("module{}::main();", self.main_file));
+            .add_line(&format!("module{}::brim_main();", self.main_file));
         self.code.add_line("return 0;");
         self.code.decrease_indent();
         self.code.add_line("}");

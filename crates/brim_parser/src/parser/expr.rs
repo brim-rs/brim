@@ -226,8 +226,6 @@ impl Parser {
     }
 
     fn parse_match_expression(&mut self) -> PResult<Expr> {
-        let match_keyword_span = self.prev().span;
-
         if !self.eat_keyword(ptok!(Match)) {
             box_diag!(UnexpectedTokenInMatch {
                 found: self.current().kind,
@@ -334,9 +332,10 @@ impl Parser {
             TokenKind::Delimiter(Delimiter::Paren, Orientation::Open) => {
                 debug!("Found parenthesized expression");
 
-                self.advance();
+                self.expect_oparen()?;
                 let expr = self.parse_expr()?;
                 self.expect_cparen()?;
+
                 Ok(self.new_expr(expr.span, ExprKind::Paren(Box::new(expr))))
             }
             TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
@@ -491,7 +490,18 @@ impl Parser {
                             let mut path = vec![ident];
 
                             loop {
-                                if let TokenKind::Ident(ident) = self.current().kind {
+                                if let TokenKind::Ident(_) = self.current().kind {
+                                    if self.next().kind
+                                        == TokenKind::Delimiter(Delimiter::Paren, Orientation::Open)
+                                    {
+                                        let expr = self.parse_expr()?;
+
+                                        return Ok(self.new_expr(
+                                            span,
+                                            ExprKind::StaticAccess(path, Box::new(expr)),
+                                        ));
+                                    }
+
                                     path.push(self.parse_ident()?);
                                 } else {
                                     break;

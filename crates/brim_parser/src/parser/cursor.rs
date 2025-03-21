@@ -22,4 +22,8 @@ impl TokenCursor {
     pub fn is_eof(&self) -> bool {
         self.current >= self.tokens.len()
     }
+
+    pub fn peek(&self) -> Option<&Token> {
+        self.tokens.get(self.current)
+    }
 }

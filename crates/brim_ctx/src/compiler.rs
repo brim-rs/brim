@@ -5,6 +5,7 @@ use crate::{
     validator::AstValidator,
 };
 use anyhow::Result;
+use brim_ast::item::{Item, ItemKind, Visibility};
 use brim_diagnostics::{
     ErrorEmitted,
     diagnostic::{Diagnostic, Severity, ToDiagnostic},
@@ -13,12 +14,12 @@ use brim_hir::{
     CompiledModules,
     comptime::transform_comptime,
     inference::infer_types,
-    items::{HirFn, HirItem, HirItemKind},
+    items::HirFn,
     transformer::{HirModuleMap, transform_module},
     type_checker::TypeChecker,
 };
 use brim_middle::{
-    ModuleId,
+    SimpleModules,
     args::RunArgs,
     lints::Lints,
     modules::{ModuleMap, SymbolCollector, UseCollector},
@@ -82,6 +83,7 @@ impl CompilerContext {
         &mut self,
         mut map: ModuleMap,
         compiled: &mut CompiledModules,
+        simple: &mut SimpleModules,
     ) -> Result<HirModuleMap> {
         let map = &mut map;
 
@@ -89,29 +91,33 @@ impl CompilerContext {
         validator.validate(map.clone())?;
         self.extend_temp(validator.ctx);
 
-        let mut collector = SymbolCollector::new(&mut compiled.symbols);
+        let mut collector = SymbolCollector::new(&mut compiled.symbols, simple);
         collector.collect(map);
 
         let mut use_collector = UseCollector::new(&mut compiled.symbols);
         use_collector.collect(map);
-        
+
         self.extend_temp(use_collector.ctx);
 
-        for ((ident, id), symbols) in &use_collector.namespaces {
-            compiled.items.insert(id.clone(), HirItem {
+        for ((ident, id), symbols) in use_collector.namespaces.clone() {
+            simple.items.insert(id.clone(), Item {
                 id: id.clone(),
                 span: Span::DUMMY,
                 ident: ident.clone(),
-                kind: HirItemKind::Namespace(symbols.clone()),
-                is_public: true,
-                mod_id: ModuleId::new(),
+                kind: ItemKind::Namespace(
+                    symbols
+                        .iter()
+                        .map(|(k, v)| (k.clone(), v.clone().into_temp()))
+                        .collect(),
+                ),
+                vis: Visibility::from_bool(true, Span::DUMMY),
             });
         }
 
-        let mut name_resolver = NameResolver::new(map.clone(), self.lints, compiled);
+        let mut name_resolver = NameResolver::new(map.clone(), self.lints, compiled, simple);
         name_resolver.resolve_names();
         self.extend_temp(name_resolver.ctx);
-        
+
         if self.should_bail() {
             return Ok(HirModuleMap::new());
         }

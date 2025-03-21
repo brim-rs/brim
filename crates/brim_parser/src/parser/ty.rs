@@ -3,7 +3,7 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Const, Mut, Type,
+    Mut, Type,
     expr::{Expr, ExprKind},
     item::{Block, Ident, ItemKind, TypeAlias, TypeAliasValue},
     stmts::{Stmt, StmtKind},

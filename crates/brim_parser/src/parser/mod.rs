@@ -231,6 +231,10 @@ impl Parser {
         self.current_token.clone()
     }
 
+    pub fn next(&self) -> Token {
+        self.token_cursor.peek().expect("shouldn't happen").clone()
+    }
+
     pub fn prev(&self) -> Token {
         self.previous_token.clone()
     }

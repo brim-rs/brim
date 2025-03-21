@@ -36,6 +36,8 @@ pub enum ExprKind {
     Field(Box<Expr>, Ident),
     /// `x[0]`
     Index(Box<Expr>, Box<Expr>),
+    /// `Vec::new()`
+    StaticAccess(Vec<Ident>, Box<Expr>),
     /// `123`, `"hello"`, etc.
     Literal(Lit),
     /// `(x + y) * z`

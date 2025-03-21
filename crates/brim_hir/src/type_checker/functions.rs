@@ -1,5 +1,4 @@
 use crate::{
-    expr::HirExprKind,
     inference::scope::TypeInfo,
     items::HirFn,
     stmts::{HirStmt, HirStmtKind},

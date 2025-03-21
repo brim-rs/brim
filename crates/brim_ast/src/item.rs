@@ -1,6 +1,7 @@
 use crate::{Break, Empty, ItemId, While, expr::Expr, stmts::Stmt, ty::Ty};
 use brim_span::{span::Span, symbols::Symbol};
 use std::{
+    collections::HashMap,
     fmt::{Debug, Display},
     path::PathBuf,
 };
@@ -14,10 +15,16 @@ pub struct Item<Kind = ItemKind> {
     pub kind: Kind,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Eq, Hash)]
 pub struct Ident {
     pub name: Symbol,
     pub span: Span,
+}
+
+impl PartialEq for Ident {
+    fn eq(&self, other: &Self) -> bool {
+        self.name.to_string() == other.name.to_string()
+    }
 }
 
 impl Ident {
@@ -92,6 +99,17 @@ pub enum ItemKind {
     Module(ModuleDecl),
     /// External module declaration.
     External(ExternBlock),
+    /// Namespace. Created internally by the compiler.
+    Namespace(HashMap<String, (Ident, (ItemId, usize))>),
+}
+
+impl ItemKind {
+    pub fn as_struct(&self) -> Option<&Struct> {
+        match self {
+            ItemKind::Struct(struct_) => Some(struct_),
+            _ => None,
+        }
+    }
 }
 
 impl Display for ItemKind {
@@ -103,6 +121,7 @@ impl Display for ItemKind {
             ItemKind::TypeAlias(_) => write!(f, "type alias"),
             ItemKind::Module(_) => write!(f, "module"),
             ItemKind::External(_) => write!(f, "external"),
+            ItemKind::Namespace(_) => write!(f, "namespace"),
         }
     }
 }
@@ -141,6 +160,12 @@ pub struct Struct {
     pub fields: Vec<Field>,
     pub generics: Generics,
     pub items: Vec<Item>,
+}
+
+impl Struct {
+    pub fn find_item(&self, id: Ident) -> Option<&Item> {
+        self.items.iter().find(|item| item.ident == id)
+    }
 }
 
 #[derive(Clone, Debug)]
