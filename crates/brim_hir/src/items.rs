@@ -4,7 +4,7 @@ use crate::{
 };
 use brim_ast::{
     ItemId,
-    item::{ExternBlock, FnDecl, Ident, Item, TypeAlias, Visibility},
+    item::{Ident, Visibility},
     token::Lit,
 };
 use brim_middle::{GlobalSymbol, ModuleId};

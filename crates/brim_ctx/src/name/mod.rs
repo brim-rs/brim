@@ -15,7 +15,7 @@ use brim_ast::{
     stmts::Let,
 };
 use brim_diagnostics::diag_opt;
-use brim_hir::{CompiledModules, items::HirItemKind};
+use brim_hir::CompiledModules;
 use brim_middle::{
     SimpleModules, builtins::BUILTIN_FUNCTIONS, lints::Lints, modules::ModuleMap,
     temp_diag::TemporaryDiagnosticContext, walker::AstWalker,

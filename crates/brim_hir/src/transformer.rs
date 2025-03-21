@@ -7,9 +7,9 @@ use crate::{
         HirStructConstructor,
     },
     items::{
-        HirExternBlock, HirExternItemKind, HirField, HirFn, HirFnParams, HirFnSig, HirGenericArg,
-        HirGenericArgs, HirGenericKind, HirGenericParam, HirGenerics, HirImportsKind, HirItem,
-        HirItemKind, HirParam, HirStruct, HirTypeAlias, HirUse,
+        HirExternBlock, HirField, HirFn, HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs,
+        HirGenericKind, HirGenericParam, HirGenerics, HirImportsKind, HirItem, HirItemKind,
+        HirParam, HirStruct, HirTypeAlias, HirUse,
     },
     stmts::{HirStmt, HirStmtKind},
     ty::{HirTy, HirTyKind},

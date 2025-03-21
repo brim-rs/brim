@@ -14,12 +14,12 @@ use brim_hir::{
     CompiledModules,
     comptime::transform_comptime,
     inference::infer_types,
-    items::{HirFn, HirItem, HirItemKind},
+    items::HirFn,
     transformer::{HirModuleMap, transform_module},
     type_checker::TypeChecker,
 };
 use brim_middle::{
-    ModuleId, SimpleModules,
+    SimpleModules,
     args::RunArgs,
     lints::Lints,
     modules::{ModuleMap, SymbolCollector, UseCollector},

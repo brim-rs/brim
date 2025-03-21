@@ -1,7 +1,7 @@
 use crate::items::HirGenericArgs;
 use brim_ast::{
     ItemId,
-    item::{Ident, Param},
+    item::Ident,
     token::LitKind,
     ty::{Mutable, PrimitiveType},
 };

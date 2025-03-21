@@ -2,7 +2,7 @@
 
 use crate::{
     expr::HirExpr,
-    items::{HirExternItemKind, HirItem},
+    items::HirItem,
     stmts::HirStmt,
     transformer::{HirModule, HirModuleMap},
     ty::HirTyKind,

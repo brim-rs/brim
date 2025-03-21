@@ -14,10 +14,8 @@ use brim_ast::{
     item::{
         Block, ExternBlock, Field, FnDecl, FnReturnType, FnSignature, FunctionContext, Generics,
         Ident, ImportsKind, Item, ItemKind, ModuleDecl, Param, PathItemKind, Struct, Use,
-        Visibility,
     },
     token::{BinOpToken, Delimiter, LitKind, Orientation, TokenKind},
-    ty,
 };
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
@@ -370,16 +368,13 @@ impl Parser {
 
         let ret_type = self.parse_return_type()?;
 
-        Ok((
-            generics,
-            FnSignature {
-                constant,
-                span: span.to(self.prev().span),
-                name: ident,
-                params,
-                return_type: ret_type,
-            },
-        ))
+        Ok((generics, FnSignature {
+            constant,
+            span: span.to(self.prev().span),
+            name: ident,
+            params,
+            return_type: ret_type,
+        }))
     }
 
     pub fn parse_return_type(&mut self) -> PResult<FnReturnType> {

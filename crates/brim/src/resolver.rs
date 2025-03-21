@@ -40,7 +40,7 @@ impl<'a> ImportResolver<'a> {
                     current_file.pop();
 
                     let mut path = if use_stmt.path[0] == PathItemKind::Current {
-                        let mut path = current_file.clone();
+                        let path = current_file.clone();
 
                         path
                     } else {
