@@ -9,18 +9,20 @@ use crate::name::{
     scopes::Scope,
 };
 use brim_ast::{
+    ItemId,
     expr::{Expr, ExprKind, MatchArm},
-    item::{Block, FnDecl, Item, ItemKind, TypeAlias, TypeAliasValue},
+    item::{Block, FnDecl, Ident, Item, ItemKind, TypeAlias, TypeAliasValue},
     stmts::Let,
 };
 use brim_diagnostics::diag_opt;
 use brim_hir::{CompiledModules, items::HirItemKind};
 use brim_middle::{
-    builtins::BUILTIN_FUNCTIONS, lints::Lints, modules::ModuleMap,
+    SimpleModules, builtins::BUILTIN_FUNCTIONS, lints::Lints, modules::ModuleMap,
     temp_diag::TemporaryDiagnosticContext, walker::AstWalker,
 };
 use brim_span::span::Span;
 use convert_case::{Case, Casing};
+use errors::{ItemNotAMethodInStruct, NoItemInStruct, UndeclaredStructStatic};
 use scopes::{ScopeManager, VariableInfo};
 use tracing::debug;
 
@@ -34,10 +36,16 @@ pub struct NameResolver<'a> {
     pub inside_comptime: bool,
     pub compiled: &'a mut CompiledModules,
     pub external: bool,
+    pub simple: &'a mut SimpleModules,
 }
 
 impl<'a> NameResolver<'a> {
-    pub fn new(map: ModuleMap, lints: &'static Lints, compiled: &'a mut CompiledModules) -> Self {
+    pub fn new(
+        map: ModuleMap,
+        lints: &'static Lints,
+        compiled: &'a mut CompiledModules,
+        simple: &'a mut SimpleModules,
+    ) -> Self {
         Self {
             ctx: TemporaryDiagnosticContext::new(),
             map,
@@ -47,6 +55,7 @@ impl<'a> NameResolver<'a> {
             inside_comptime: false,
             compiled,
             external: false,
+            simple,
         }
     }
 
@@ -92,6 +101,59 @@ impl<'a> NameResolver<'a> {
             ));
         }
     }
+
+    pub fn resolve_path(&mut self, idents: Vec<Ident>, expr_id: ItemId, from_call: bool) {
+        if idents.is_empty() {
+            return;
+        }
+
+        let name = idents[0].to_string();
+        let span = (idents[0].span, self.file);
+
+        match self.compiled.symbols.resolve(&name, self.file) {
+            Some(item) => {
+                let item = self.simple.get_item(item.id.item_id);
+
+                if from_call {
+                    match &item.kind {
+                        ItemKind::Struct(_) => self.compiled.assign_path(expr_id, item.id),
+                        _ => {
+                            self.ctx.emit_impl(UndeclaredStructStatic { span, name });
+                        }
+                    }
+                } else if idents.len() > 1 {
+                    let second_ident = &idents[1];
+                    let second_name = second_ident.to_string();
+
+                    match &item.kind {
+                        ItemKind::Namespace(symbols) => {
+                            if let Some(sym) = symbols.get(&second_name) {
+                                self.compiled.assign_path(expr_id, sym.1.0);
+                            } else {
+                                self.ctx.emit_impl(NamespaceMissingSymbol {
+                                    span: (second_ident.span, self.file),
+                                    name,
+                                    symbol: second_name,
+                                });
+                            }
+                        }
+                        _ => {
+                            self.ctx.emit_impl(InvalidPathAccess { span, name });
+                        }
+                    }
+                } else {
+                    self.compiled.assign_path(expr_id, item.id);
+                }
+            }
+            None => {
+                if from_call {
+                    self.ctx.emit_impl(UndeclaredStructStatic { span, name });
+                } else {
+                    self.ctx.emit_impl(InvalidPathAccess { span, name });
+                }
+            }
+        }
+    }
 }
 
 impl<'a> AstWalker for NameResolver<'a> {
@@ -113,6 +175,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                 }
                 self.external = false;
             }
+            ItemKind::Namespace(_) => unreachable!(),
         }
     }
 
@@ -292,6 +355,36 @@ impl<'a> AstWalker for NameResolver<'a> {
                     self.visit_expr(field);
                 }
             }
+            ExprKind::StaticAccess(ident, expr) => {
+                self.resolve_path(ident.clone(), expr.id, true);
+
+                let assigned = self.compiled.get_assigned_path(expr.id);
+                let str = self.simple.get_item(assigned);
+
+                if let ExprKind::Call(ident, _) = &expr.kind {
+                    let ident = ident.as_ident().unwrap().clone();
+                    let item = str.kind.as_struct().unwrap().find_item(ident);
+
+                    if let Some(item) = item {
+                        if let ItemKind::Fn(_) = &item.kind {
+                        } else {
+                            self.ctx.emit(Box::new(ItemNotAMethodInStruct {
+                                span: (ident.span, self.file),
+                                name: ident.name.to_string(),
+                                struct_name: str.ident.to_string(),
+                            }));
+                        }
+                    } else {
+                        self.ctx.emit(Box::new(NoItemInStruct {
+                            span: (ident.span, self.file),
+                            name: ident.name.to_string(),
+                            struct_name: str.ident.to_string(),
+                        }));
+                    }
+                } else {
+                    todo!("error message")
+                }
+            }
             ExprKind::Match(expr, arms) => {
                 self.visit_expr(expr);
                 for arm in arms {
@@ -307,39 +400,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                 }
             }
             ExprKind::Path(idents) => {
-                let item = self
-                    .compiled
-                    .symbols
-                    .resolve(&idents[0].to_string(), self.file);
-
-                if let Some(item) = item {
-                    let item = self.compiled.get_item(item.id.item_id);
-
-                    match &item.kind {
-                        HirItemKind::Namespace(symbols) => {
-                            if let Some(sym) = symbols.get(&idents[1].to_string()) {
-                                self.compiled.assign_path(expr.id, sym.id.item_id);
-                            } else {
-                                self.ctx.emit_impl(NamespaceMissingSymbol {
-                                    span: (idents[1].span, self.file),
-                                    name: idents[0].to_string(),
-                                    symbol: idents[1].to_string(),
-                                });
-                            }
-                        }
-                        _ => {
-                            self.ctx.emit_impl(InvalidPathAccess {
-                                span: (idents[0].span, self.file),
-                                name: idents[0].to_string(),
-                            });
-                        }
-                    }
-                } else {
-                    self.ctx.emit_impl(InvalidPathAccess {
-                        span: (idents[0].span, self.file),
-                        name: idents[0].to_string(),
-                    });
-                }
+                self.resolve_path(idents.clone(), expr.id, false);
             }
             ExprKind::Type(ty) => {
                 self.visit_ty(ty);

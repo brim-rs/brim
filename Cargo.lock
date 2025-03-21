@@ -168,6 +168,7 @@ dependencies = [
  "brim-codegen",
  "brim-cpp-compiler",
  "brim-ctx",
+ "brim-middle",
  "brim-parser",
  "clap",
  "colored",

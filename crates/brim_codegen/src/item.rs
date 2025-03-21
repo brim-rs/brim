@@ -116,7 +116,7 @@ impl CppCodegen {
 
                 let original_name = decl.sig.name.to_string();
                 let wrapper_name = format!("brim_{}", original_name);
-                let block_name = format!("{} {}({})", ret, wrapper_name, params);
+                let block_name = format!("inline {} {}({})", ret, wrapper_name, params);
 
                 self.code.add_block(&block_name, |code| {
                     let param_names = decl

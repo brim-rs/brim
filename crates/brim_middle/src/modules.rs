@@ -1,5 +1,5 @@
 use crate::{
-    GlobalSymbol, Location, ModuleId, SymbolTable, barrel::Barrel,
+    GlobalSymbol, Location, ModuleId, SimpleModules, SymbolTable, barrel::Barrel,
     temp_diag::TemporaryDiagnosticContext, walker::AstWalker,
 };
 use brim_ast::{
@@ -63,11 +63,16 @@ impl ModuleMap {
 pub struct SymbolCollector<'a> {
     pub table: &'a mut SymbolTable,
     pub file_id: usize,
+    pub simple: &'a mut SimpleModules,
 }
 
 impl<'a> SymbolCollector<'a> {
-    pub fn new(table: &'a mut SymbolTable) -> Self {
-        Self { table, file_id: 0 }
+    pub fn new(table: &'a mut SymbolTable, simple: &'a mut SimpleModules) -> Self {
+        Self {
+            table,
+            file_id: 0,
+            simple,
+        }
     }
 
     pub fn collect(&mut self, map: &mut ModuleMap) {
@@ -88,6 +93,7 @@ impl<'a> AstWalker for SymbolCollector<'a> {
             item_id: item.id,
         };
 
+        self.simple.items.insert(item.id, item.clone());
         match &item.kind {
             ItemKind::Fn(f) => {
                 self.table
