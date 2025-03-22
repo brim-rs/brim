@@ -84,6 +84,11 @@ impl AstWalker for AstValidator {
                     self.visit_item(item);
                 }
             }
+            ItemKind::Struct(str) => {
+                for item in str.items.iter_mut() {
+                    self.visit_item(item);
+                }
+            }
             _ => {}
         }
     }

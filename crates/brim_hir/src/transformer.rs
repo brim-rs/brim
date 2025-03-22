@@ -340,12 +340,19 @@ impl<'a> Transformer<'a> {
                 generics: self.transform_generics(f_decl.generics),
                 span: f_decl.sig.span,
             },
-            resolved_type: HirTyKind::Placeholder,
             body,
         }
     }
 
     pub fn transform_struct(&mut self, struc: Struct) -> HirStruct {
+        let mut items = HashMap::new();
+
+        for i in struc.items {
+            if let Some(item) = self.transform_item(i.clone()) {
+                items.insert(i.ident, item);
+            }
+        }
+
         HirStruct {
             ident: struc.ident,
             fields: struc
@@ -361,6 +368,7 @@ impl<'a> Transformer<'a> {
                 .collect(),
             generics: self.transform_generics(struc.generics),
             span: struc.span,
+            items,
         }
     }
 

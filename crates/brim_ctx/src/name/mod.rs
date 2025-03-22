@@ -11,7 +11,7 @@ use crate::name::{
 use brim_ast::{
     ItemId,
     expr::{Expr, ExprKind, MatchArm},
-    item::{Block, FnDecl, Ident, Item, ItemKind, TypeAlias, TypeAliasValue},
+    item::{Block, FnDecl, Ident, Item, ItemKind, Struct, TypeAlias, TypeAliasValue},
     stmts::Let,
 };
 use brim_diagnostics::diag_opt;
@@ -176,6 +176,12 @@ impl<'a> AstWalker for NameResolver<'a> {
                 self.external = false;
             }
             ItemKind::Namespace(_) => unreachable!(),
+        }
+    }
+
+    fn visit_struct(&mut self, str: &mut Struct) {
+        for item in &mut str.items {
+            self.visit_item(item);
         }
     }
 

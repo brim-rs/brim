@@ -80,11 +80,20 @@ pub struct HirStruct {
     pub ident: Ident,
     pub fields: Vec<HirField>,
     pub generics: HirGenerics,
+    pub items: HashMap<Ident, ItemId>,
 }
 
 impl HirStruct {
     pub fn get_field(&self, name: &str) -> Option<&HirField> {
         self.fields.iter().find(|f| f.ident.to_string() == name)
+    }
+
+    pub fn get_item(&self, id: Ident) -> ItemId {
+        self.items
+            .iter()
+            .find(|(k, _)| k == &&id)
+            .map(|(_, v)| *v)
+            .unwrap()
     }
 }
 
@@ -119,15 +128,12 @@ pub struct HirFn {
     pub sig: HirFnSig,
     /// ID of the function body block
     pub body: Option<ItemId>,
-    /// Return type specified by the user or the default return type. Different from the signature return type.
-    pub resolved_type: HirTyKind,
 }
 
 #[derive(Clone, Debug)]
 pub struct HirFnSig {
     pub constant: bool,
     pub name: Ident,
-    /// We use option instead of FnReturnType
     pub return_type: HirTyKind,
     pub params: HirFnParams,
     pub generics: HirGenerics,

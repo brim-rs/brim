@@ -1,6 +1,8 @@
 mod errors;
 pub mod scope;
 
+use std::thread::park;
+
 use crate::{
     CompiledModules,
     expr::{HirExpr, HirExprKind},
@@ -9,8 +11,8 @@ use crate::{
         scope::{TypeInfo, TypeScopeManager},
     },
     items::{
-        HirCallParam, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam, HirItem,
-        HirItemKind,
+        HirCallParam, HirFn, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam,
+        HirItem, HirItemKind,
     },
     stmts::{HirStmt, HirStmtKind},
     transformer::{HirModule, HirModuleMap, StoredHirItem},
@@ -19,6 +21,7 @@ use crate::{
 use brim_ast::{
     ItemId,
     expr::{BinOpKind, UnaryOp},
+    item::{FnDecl, Ident},
     token::{Lit, LitKind},
     ty::PrimitiveType,
 };
@@ -99,7 +102,7 @@ impl<'a> TypeInference<'a> {
     }
 
     fn resolve_type_alias(&self, ty: &HirTyKind) -> HirTyKind {
-        if let Some((name, _)) = ty.as_ident() {
+        if let Some((name, generics)) = ty.as_ident() {
             if let Some(sym) = self
                 .compiled
                 .resolve_symbol(&name.to_string(), self.current_mod.as_usize())
@@ -122,13 +125,12 @@ impl<'a> TypeInference<'a> {
             HirItemKind::Fn(ref mut f) => {
                 self.scope_manager.push_scope();
 
-                self.ctx.clear_generics();
                 for generic in &f.sig.generics.params {
                     self.ctx.push_generic(generic.clone());
                 }
 
                 for param in &mut f.sig.params.params {
-                    param.ty.kind = self.resolve_type_alias(&param.ty.kind);
+                    param.ty.kind = self.update_generic(param.ty.kind.clone());
 
                     let param_type = param.ty.kind.clone();
                     let type_info = TypeInfo {
@@ -142,8 +144,7 @@ impl<'a> TypeInference<'a> {
                     );
                 }
 
-                f.sig.return_type = self.resolve_type_alias(&f.sig.return_type);
-                f.resolved_type = self.resolve_type_alias(&f.resolved_type);
+                f.sig.return_type = self.update_generic(f.sig.return_type.clone());
 
                 if let Some(body_id) = f.body {
                     self.infer_body(body_id);
@@ -152,19 +153,21 @@ impl<'a> TypeInference<'a> {
                 self.scope_manager.pop_scope();
             }
             HirItemKind::Struct(ref mut str) => {
-                for field in str.fields.iter_mut() {
-                    if let Some(generic) = str.generics.is_generic(&field.ty) {
-                        let (ident, generics) = field.ty.clone().as_ident().unwrap();
+                self.scope_manager.push_scope();
 
-                        field.ty = HirTyKind::Ident {
-                            ident,
-                            generics,
-                            is_generic: true,
-                        }
-                    }
-
-                    field.ty = self.resolve_type_alias(&field.ty);
+                for generic in &str.generics.params {
+                    self.ctx.push_generic(generic.clone());
                 }
+
+                for field in str.fields.iter_mut() {
+                    field.ty = self.update_generic(field.ty.clone());
+                }
+
+                for (_, id) in str.items.iter_mut() {
+                    self.infer_item(id.clone());
+                }
+
+                self.scope_manager.pop_scope();
             }
             HirItemKind::External(ref ext) => {
                 for item in ext.items.clone() {
@@ -175,6 +178,36 @@ impl<'a> TypeInference<'a> {
         }
 
         item.clone()
+    }
+
+    fn update_generic(&mut self, mut ty: HirTyKind) -> HirTyKind {
+        if let Some(_) = self.is_generic(&ty) {
+            let (ident, mut generics) = ty.clone().as_ident().unwrap();
+
+            for generic in generics.params.iter_mut() {
+                generic.ty = self.update_generic(generic.ty.clone());
+            }
+
+            ty = HirTyKind::Ident {
+                ident,
+                generics,
+                is_generic: true,
+            };
+        } else if let Some((ident, mut generics)) = ty.clone().as_ident() {
+            for generic in generics.params.iter_mut() {
+                generic.ty = self.update_generic(generic.ty.clone());
+            }
+
+            ty = self.resolve_type_alias(&HirTyKind::Ident {
+                ident,
+                generics,
+                is_generic: false,
+            })
+        } else {
+            ty = self.resolve_type_alias(&ty)
+        }
+
+        ty
     }
 
     fn infer_item(&mut self, item: ItemId) {
@@ -395,79 +428,15 @@ impl<'a> TypeInference<'a> {
                     .cloned()
                 {
                     Some(f) => f,
-                    None => panic!("handle this better"),
+                    None => panic!("'{}' function not found", func_ident),
                 };
 
                 let fn_def = match &func.kind {
                     HirItemKind::Fn(f) => f,
                     _ => panic!("not a func"),
                 };
-                let func_params = fn_def.sig.params.params.clone();
-                let mut generic_types: IndexMap<String, HirTyKind> = IndexMap::new();
 
-                for (arg, fn_param) in args.iter_mut().zip(func_params) {
-                    self.infer_expr(arg);
-
-                    if let Some(generic_param) = fn_def.sig.generics.is_generic(&fn_param.ty.kind) {
-                        match &generic_param.kind {
-                            HirGenericKind::Type { default } => {
-                                let inferred_type = if let Some(def) = default {
-                                    def.kind.clone()
-                                } else if arg.ty == fn_param.ty.kind {
-                                    arg.ty.clone()
-                                } else {
-                                    arg.ty.clone()
-                                };
-
-                                let mut final_ty = inferred_type.clone();
-                                if let Some(existing) = generic_types
-                                    .insert(generic_param.name.to_string(), inferred_type.clone())
-                                {
-                                    final_ty = existing;
-                                }
-
-                                params.push(HirCallParam {
-                                    span: fn_param.span,
-                                    name: func.ident,
-                                    ty: final_ty,
-                                    from_generic: Some(generic_param),
-                                });
-                            }
-                            HirGenericKind::Const { .. } => {
-                                params.push(HirCallParam {
-                                    span: fn_param.span,
-                                    name: func.ident,
-                                    ty: arg.ty.clone(),
-                                    from_generic: Some(generic_param),
-                                });
-                            }
-                        }
-                    } else {
-                        params.push(HirCallParam {
-                            span: fn_param.span,
-                            name: func.ident,
-                            ty: fn_param.ty.kind.clone(),
-                            from_generic: None,
-                        });
-                    }
-                }
-
-                let res_type = fn_def.sig.return_type.clone();
-                let mut ty = if let Some(ret_ty_param) = fn_def.sig.generics.is_generic(&res_type) {
-                    if let Some(inferred_type) = generic_types.get(&ret_ty_param.name.to_string()) {
-                        inferred_type.clone()
-                    } else {
-                        match &ret_ty_param.kind {
-                            HirGenericKind::Type { default: Some(def) } => def.kind.clone(),
-                            _ => res_type,
-                        }
-                    }
-                } else {
-                    res_type
-                };
-
-                self.replace_generics(&mut ty, &generic_types);
-                &ty.clone()
+                &self.infer_call_expr(func.ident, fn_def, args, params)
             }
             HirExprKind::StructConstructor(hir_struct) => {
                 let fields = &mut hir_struct.fields;
@@ -611,6 +580,24 @@ impl<'a> TypeInference<'a> {
 
                 &HirTyKind::void()
             }
+            HirExprKind::StaticAccess(id, expr) => {
+                let str = self.compiled.get_item(id.clone()).as_struct();
+
+                match &mut expr.kind {
+                    HirExprKind::Call(ident, args, params) => {
+                        let ident = ident.as_ident().unwrap().clone();
+                        let method = str.get_item(ident);
+                        let func = self.compiled.get_item(method).as_fn().clone();
+
+                        &self.infer_call_expr(ident, &func, args, params)
+                    }
+                    _ => {
+                        self.infer_expr(expr);
+
+                        &expr.ty
+                    }
+                }
+            }
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
         expr.ty = kind.clone();
@@ -620,6 +607,81 @@ impl<'a> TypeInference<'a> {
             .insert(expr.id, StoredHirItem::Expr(expr.clone()));
 
         self.hir.update_builtins(expr.clone());
+    }
+
+    pub fn infer_call_expr(
+        &mut self,
+        ident: Ident,
+        fn_def: &HirFn,
+        args: &mut Vec<HirExpr>,
+        params: &mut Vec<HirCallParam>,
+    ) -> HirTyKind {
+        let func_params = fn_def.sig.params.params.clone();
+        let mut generic_types: IndexMap<String, HirTyKind> = IndexMap::new();
+
+        for (arg, fn_param) in args.iter_mut().zip(func_params) {
+            self.infer_expr(arg);
+
+            if let Some(generic_param) = fn_def.sig.generics.is_generic(&fn_param.ty.kind) {
+                match &generic_param.kind {
+                    HirGenericKind::Type { default } => {
+                        let inferred_type = if let Some(def) = default {
+                            def.kind.clone()
+                        } else if arg.ty == fn_param.ty.kind {
+                            arg.ty.clone()
+                        } else {
+                            arg.ty.clone()
+                        };
+
+                        let mut final_ty = inferred_type.clone();
+                        if let Some(existing) = generic_types
+                            .insert(generic_param.name.to_string(), inferred_type.clone())
+                        {
+                            final_ty = existing;
+                        }
+
+                        params.push(HirCallParam {
+                            span: fn_param.span,
+                            name: ident,
+                            ty: final_ty,
+                            from_generic: Some(generic_param),
+                        });
+                    }
+                    HirGenericKind::Const { .. } => {
+                        params.push(HirCallParam {
+                            span: fn_param.span,
+                            name: ident,
+                            ty: arg.ty.clone(),
+                            from_generic: Some(generic_param),
+                        });
+                    }
+                }
+            } else {
+                params.push(HirCallParam {
+                    span: fn_param.span,
+                    name: ident,
+                    ty: fn_param.ty.kind.clone(),
+                    from_generic: None,
+                });
+            }
+        }
+
+        let res_type = fn_def.sig.return_type.clone();
+        let mut ty = if let Some(ret_ty_param) = fn_def.sig.generics.is_generic(&res_type) {
+            if let Some(inferred_type) = generic_types.get(&ret_ty_param.name.to_string()) {
+                inferred_type.clone()
+            } else {
+                match &ret_ty_param.kind {
+                    HirGenericKind::Type { default: Some(def) } => def.kind.clone(),
+                    _ => res_type,
+                }
+            }
+        } else {
+            res_type
+        };
+
+        self.replace_generics(&mut ty, &generic_types);
+        ty.clone()
     }
 
     /// Replace generic types with inferred types.
