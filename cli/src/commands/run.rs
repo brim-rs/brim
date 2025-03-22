@@ -82,7 +82,7 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
                     hir: hir.clone(),
                 });
         }
-        let mut cg = CppCodegen::new(main_sess.main_file()?);
+        let mut cg = CppCodegen::new(main_sess.main_file()?, compiled_projects.clone());
         cg.generate(compiled_projects);
 
         let mut sources = vec![];

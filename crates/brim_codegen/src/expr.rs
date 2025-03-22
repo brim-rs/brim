@@ -80,6 +80,11 @@ impl CppCodegen {
                     _ => unimplemented!(),
                 }
             }
+            HirExprKind::StaticAccess(id, path) => {
+                // let item = self.compiled.get_item(id).clone();
+                // format!("{}::{}", item.ident, self.generate_expr(*path))
+                format!("")
+            }
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         }
     }

@@ -512,7 +512,7 @@ impl<'a> TypeInference<'a> {
                     }
                 }
 
-                self.replace_generics(&mut expr.ty, &generic_types);
+                self.replace_generics_recursive(&mut expr.ty, &generic_types);
 
                 // Generics have to be sorted in the way they are defined in the struct.
                 let mut sorted_generics = IndexMap::new();
@@ -589,6 +589,10 @@ impl<'a> TypeInference<'a> {
                         let method = str.get_item(ident);
                         let func = self.compiled.get_item(method).as_fn().clone();
 
+                        for generic in str.generics.params.clone() {
+                            self.ctx.push_generic(generic);
+                        }
+
                         &self.infer_call_expr(ident, &func, args, params)
                     }
                     _ => {
@@ -617,12 +621,14 @@ impl<'a> TypeInference<'a> {
         params: &mut Vec<HirCallParam>,
     ) -> HirTyKind {
         let func_params = fn_def.sig.params.params.clone();
+        for generic in fn_def.sig.generics.params.clone() {
+            self.ctx.push_generic(generic);
+        }
         let mut generic_types: IndexMap<String, HirTyKind> = IndexMap::new();
 
         for (arg, fn_param) in args.iter_mut().zip(func_params) {
             self.infer_expr(arg);
-
-            if let Some(generic_param) = fn_def.sig.generics.is_generic(&fn_param.ty.kind) {
+            if let Some(generic_param) = self.is_generic(&fn_param.ty.kind) {
                 match &generic_param.kind {
                     HirGenericKind::Type { default } => {
                         let inferred_type = if let Some(def) = default {
@@ -632,14 +638,12 @@ impl<'a> TypeInference<'a> {
                         } else {
                             arg.ty.clone()
                         };
-
                         let mut final_ty = inferred_type.clone();
                         if let Some(existing) = generic_types
                             .insert(generic_param.name.to_string(), inferred_type.clone())
                         {
                             final_ty = existing;
                         }
-
                         params.push(HirCallParam {
                             span: fn_param.span,
                             name: ident,
@@ -666,34 +670,49 @@ impl<'a> TypeInference<'a> {
             }
         }
 
-        let res_type = fn_def.sig.return_type.clone();
-        let mut ty = if let Some(ret_ty_param) = fn_def.sig.generics.is_generic(&res_type) {
-            if let Some(inferred_type) = generic_types.get(&ret_ty_param.name.to_string()) {
-                inferred_type.clone()
-            } else {
-                match &ret_ty_param.kind {
-                    HirGenericKind::Type { default: Some(def) } => def.kind.clone(),
-                    _ => res_type,
-                }
-            }
-        } else {
-            res_type
-        };
-
-        self.replace_generics(&mut ty, &generic_types);
-        ty.clone()
+        let mut ty = fn_def.sig.return_type.clone();
+        self.replace_generics_recursive(&mut ty, &generic_types);
+        ty
     }
 
-    /// Replace generic types with inferred types.
-    pub fn replace_generics(&self, ty: &mut HirTyKind, generics: &IndexMap<String, HirTyKind>) {
+    pub fn replace_generics_recursive(
+        &self,
+        ty: &mut HirTyKind,
+        generic_types: &IndexMap<String, HirTyKind>,
+    ) {
         match ty {
-            HirTyKind::Ident { ident, .. } => {
-                if generics.contains_key(&ident.to_string()) {
-                    *ty = generics.get(&ident.to_string()).unwrap().clone();
+            HirTyKind::Ref(inner, _) => {
+                self.replace_generics_recursive(inner, generic_types);
+            }
+            HirTyKind::Ptr(inner, _) => {
+                self.replace_generics_recursive(inner, generic_types);
+            }
+            HirTyKind::Mut(inner) => {
+                self.replace_generics_recursive(inner, generic_types);
+            }
+            HirTyKind::Array(inner, _) => {
+                self.replace_generics_recursive(inner, generic_types);
+            }
+            HirTyKind::Vec(inner) => {
+                self.replace_generics_recursive(inner, generic_types);
+            }
+            HirTyKind::Ident {
+                ident,
+                generics,
+                is_generic,
+            } => {
+                let ident_string = ident.to_string();
+                if *is_generic {
+                    if let Some(replacement) = generic_types.get(&ident_string) {
+                        *ty = replacement.clone();
+                        return;
+                    }
+                }
+
+                for param in &mut generics.params {
+                    self.replace_generics_recursive(&mut param.ty, generic_types);
                 }
             }
-            HirTyKind::Array(ty, _) => self.replace_generics(ty, generics),
-            HirTyKind::Vec(ty) => self.replace_generics(ty, generics),
             _ => {}
         }
     }

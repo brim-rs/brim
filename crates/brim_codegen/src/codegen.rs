@@ -23,6 +23,7 @@ pub struct CppCodegen {
     pub modules: Vec<usize>,
     pub imports: Vec<String>,
     pub add_prefix: bool,
+    pub compiled: CompiledModules,
 }
 
 #[derive(Debug)]
@@ -147,7 +148,7 @@ impl ModuleDependencyResolver {
 }
 
 impl CppCodegen {
-    pub fn new(main_file: usize) -> Self {
+    pub fn new(main_file: usize, compiled: CompiledModules) -> Self {
         let code = CodeBuilder::new(4);
 
         Self {
@@ -177,6 +178,7 @@ impl CppCodegen {
             .map(|s| s.to_string())
             .collect(),
             add_prefix: true,
+            compiled,
         }
     }
 
