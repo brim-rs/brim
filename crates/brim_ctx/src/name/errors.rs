@@ -87,3 +87,11 @@ pub struct ItemNotAMethodInStruct {
     pub name: String,
     pub struct_name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("static call to a method in struct `{struct_name}`")]
+pub struct StaticCallToMethodInStruct {
+    #[error("static call to a method in struct `{struct_name}`")]
+    pub span: (Span, usize),
+    pub struct_name: String,
+}

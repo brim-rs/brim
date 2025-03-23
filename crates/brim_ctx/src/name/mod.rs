@@ -22,7 +22,9 @@ use brim_middle::{
 };
 use brim_span::span::Span;
 use convert_case::{Case, Casing};
-use errors::{ItemNotAMethodInStruct, NoItemInStruct, UndeclaredStructStatic};
+use errors::{
+    ItemNotAMethodInStruct, NoItemInStruct, StaticCallToMethodInStruct, UndeclaredStructStatic,
+};
 use scopes::{ScopeManager, VariableInfo};
 use tracing::debug;
 
@@ -372,20 +374,26 @@ impl<'a> AstWalker for NameResolver<'a> {
                     let item = str.kind.as_struct().unwrap().find_item(ident);
 
                     if let Some(item) = item {
-                        if let ItemKind::Fn(_) = &item.kind {
+                        if let ItemKind::Fn(func) = &item.kind {
+                            if !func.is_static() {
+                                self.ctx.emit_impl(StaticCallToMethodInStruct {
+                                    span: (ident.span, self.file),
+                                    struct_name: str.ident.to_string(),
+                                });
+                            }
                         } else {
-                            self.ctx.emit(Box::new(ItemNotAMethodInStruct {
+                            self.ctx.emit_impl(ItemNotAMethodInStruct {
                                 span: (ident.span, self.file),
                                 name: ident.name.to_string(),
                                 struct_name: str.ident.to_string(),
-                            }));
+                            });
                         }
                     } else {
-                        self.ctx.emit(Box::new(NoItemInStruct {
+                        self.ctx.emit_impl(NoItemInStruct {
                             span: (ident.span, self.file),
                             name: ident.name.to_string(),
                             struct_name: str.ident.to_string(),
-                        }));
+                        });
                     }
                 } else {
                     todo!("error message")

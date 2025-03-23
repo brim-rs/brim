@@ -230,6 +230,18 @@ pub struct FnDecl {
     pub context: FunctionContext,
 }
 
+impl FnDecl {
+    /// Isn't static if first parameter is self
+    pub fn is_static(&self) -> bool {
+        if self.sig.params.is_empty() {
+            return true;
+        }
+
+        let first_param = &self.sig.params[0];
+        !first_param.name.to_string().eq("self")
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum FunctionContext {
     Item,

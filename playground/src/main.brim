@@ -5,6 +5,9 @@ struct Vec2<T> {
     fn new(x: T, y: T) Vec2<T> {
         return Vec2 { .x = x, .y = y };
     }
+
+    fn notStaticFn(self: Vec2<T>) {
+    }
 }
 
 pub fn main() {
@@ -15,4 +18,5 @@ pub fn main() {
     //let x = @cast(@anyCast(val, i32), u32);
 
     let vec = Vec2::new(1, 2);
+    let x = Vec2::notStaticFn(vec);
 };
