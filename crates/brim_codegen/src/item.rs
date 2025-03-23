@@ -9,7 +9,13 @@ impl CppCodegen {
         match item.kind {
             HirItemKind::Fn(decl) => {
                 let ret = self.generate_ty(decl.sig.return_type);
-                self.generate_generics(&decl.sig.generics);
+
+                let generics = if let Some(str) = &self.parent_struct {
+                    str.generics.join(&decl.sig.generics)
+                } else {
+                    decl.sig.generics.clone()
+                };
+                self.generate_generics(&generics);
 
                 let params = decl
                     .sig
@@ -18,7 +24,7 @@ impl CppCodegen {
                     .iter()
                     .map(|p| {
                         format!(
-                            "{} {}",
+                            "{} brim_{}",
                             self.generate_ty(p.ty.kind.clone()),
                             p.name.to_string()
                         )
@@ -27,7 +33,11 @@ impl CppCodegen {
                     .join(", ");
 
                 let name = if self.add_prefix {
-                    format!("brim_{}", decl.sig.name.to_string())
+                    if let Some(str) = &self.parent_struct {
+                        format!("brim_{}_{}", str.ident, decl.sig.name.to_string())
+                    } else {
+                        format!("brim_{}", decl.sig.name.to_string())
+                    }
                 } else {
                     decl.sig.name.to_string()
                 };
@@ -54,7 +64,7 @@ impl CppCodegen {
                 self.code.add_line(&format!("struct {} {{", name));
                 self.code.increase_indent();
 
-                for field in s.fields {
+                for field in s.fields.clone() {
                     let ty = self.generate_ty(field.ty.clone());
 
                     self.code
@@ -63,6 +73,14 @@ impl CppCodegen {
 
                 self.code.decrease_indent();
                 self.code.add_line("};");
+
+                self.parent_struct = Some(s.clone());
+                for (_, id) in s.items {
+                    let item = self.compiled.get_item(id);
+
+                    self.generate_item(item.clone(), compiled);
+                }
+                self.parent_struct.take();
             }
             HirItemKind::External(external) => {
                 if let Some(abi) = external.abi {

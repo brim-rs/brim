@@ -163,6 +163,15 @@ impl HirGenerics {
             None
         }
     }
+
+    pub fn join(&self, other: &HirGenerics) -> HirGenerics {
+        let mut params = self.params.clone();
+        params.extend(other.params.clone());
+        HirGenerics {
+            params,
+            span: self.span.to(other.span),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

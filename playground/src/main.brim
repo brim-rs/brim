@@ -6,7 +6,7 @@ struct Vec2<T> {
     y: T,
 
     fn new(x: T, y: T) -> Vec2<T> {
-        Vec2 { .x = x, .y = y }
+        return Vec2 { .x = x, .y = y };
     }
 }
 

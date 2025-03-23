@@ -88,7 +88,7 @@ impl CppCodegen {
                         let ident = ident.as_ident().unwrap().to_string();
                         let call = format!("{}({})", ident, self.generate_call_args(args));
                         format!(
-                            "(module{}::brim_{}::{})",
+                            "(module{}::brim_{}_{})",
                             item.mod_id.as_usize(),
                             item.ident,
                             call
