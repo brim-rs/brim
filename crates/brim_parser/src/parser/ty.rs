@@ -39,11 +39,29 @@ impl Parser {
             }
         };
 
-        Ok(Ty {
+        let mut ty = Ty {
             span,
             kind,
             id: self.new_id(),
-        })
+        };
+
+        if self
+            .current()
+            .is_delimiter(Delimiter::Bracket, Orientation::Open)
+            && self
+                .next()
+                .is_delimiter(Delimiter::Bracket, Orientation::Close)
+        {
+            self.expect_obracket()?;
+            self.expect_cbracket()?;
+            ty = Ty {
+                span,
+                kind: TyKind::Vec(Box::new(ty)),
+                id: self.new_id(),
+            };
+        }
+
+        Ok(ty)
     }
 
     pub fn parse_ty_without_ident(&mut self) -> PResult<Option<Ty>> {
@@ -73,11 +91,31 @@ impl Parser {
             }
         };
 
-        Ok(kind.map(|kind| Ty {
+        let mut ty_opt = kind.map(|kind| Ty {
             span,
             kind,
             id: self.new_id(),
-        }))
+        });
+
+        if let Some(ref mut ty) = ty_opt {
+            if self
+                .current()
+                .is_delimiter(Delimiter::Bracket, Orientation::Open)
+                && self
+                    .next()
+                    .is_delimiter(Delimiter::Bracket, Orientation::Close)
+            {
+                self.expect_obracket()?;
+                self.expect_cbracket()?;
+                *ty = Ty {
+                    span,
+                    kind: TyKind::Vec(Box::new(ty.clone())),
+                    id: self.new_id(),
+                };
+            }
+        }
+
+        Ok(ty_opt)
     }
 
     pub fn parse_mut(&mut self) -> PResult<TyKind> {

@@ -212,6 +212,10 @@ pub fn compile_project(
 
     let hir = comp.analyze(map, compiled, simple)?;
 
+    if hir.modules.is_empty() && comp.should_bail() {
+        bail_on_errors(comp.emitted.len())?;
+    }
+
     if sess.config.is_bin() {
         let main_mod = hir.get_module(ModuleId::from_usize(entry_file)).unwrap();
         let main_fn = hir.get_fn(ModuleId::from_usize(entry_file), "main");

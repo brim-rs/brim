@@ -4,7 +4,7 @@ use crate::{
         errors::{
             EmptyBody, ExpectedIdentifier, InvalidExternBlockItem, InvalidFunctionSignature,
             InvalidModifierOrder, MissingFromKeyword, MissingParamList, SelfOutsideMethod,
-            UnknownItem, UnnecessarySelf, UseStatementBraces,
+            UnknownItem, UseStatementBraces,
         },
     },
     ptok,
@@ -411,11 +411,6 @@ impl Parser {
             if ident.name == SelfSmall {
                 if !self.fn_ctx().allows_self() {
                     box_diag!(SelfOutsideMethod {
-                        span: (ident.span, self.file),
-                        note: "this parameter would be unnecessary. `self` is always accessible in the right context",
-                    });
-                } else {
-                    box_diag!(UnnecessarySelf {
                         span: (ident.span, self.file),
                     });
                 }

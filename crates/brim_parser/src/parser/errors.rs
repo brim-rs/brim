@@ -52,20 +52,10 @@ pub struct MissingParamList {
 }
 
 #[derive(Diagnostic)]
-#[warning("unnecessary `self` keyword. `self` is always available in methods.")]
-pub struct UnnecessarySelf {
-    #[warning("argument will be ignored")]
-    pub span: (Span, usize),
-}
-
-// TODO: consider changing to something like: "`self` not allowed as a parameter name."
-#[derive(Diagnostic)]
 #[error("`self` keyword is only available in methods.")]
 pub struct SelfOutsideMethod {
     #[error]
     pub span: (Span, usize),
-    #[note]
-    pub note: &'static str,
 }
 
 #[derive(Diagnostic)]
