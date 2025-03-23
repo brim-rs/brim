@@ -80,13 +80,32 @@ impl CppCodegen {
                     _ => unimplemented!(),
                 }
             }
-            HirExprKind::StaticAccess(id, path) => {
-                // let item = self.compiled.get_item(id).clone();
-                // format!("{}::{}", item.ident, self.generate_expr(*path))
-                format!("")
+            HirExprKind::StaticAccess(id, expr) => {
+                let item = self.compiled.get_item(id).clone();
+
+                match expr.kind {
+                    HirExprKind::Call(ident, args, _) => {
+                        let ident = ident.as_ident().unwrap().to_string();
+                        let call = format!("{}({})", ident, self.generate_call_args(args));
+                        format!(
+                            "(module{}::brim_{}::{})",
+                            item.mod_id.as_usize(),
+                            item.ident,
+                            call
+                        )
+                    }
+                    _ => unimplemented!(),
+                }
             }
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         }
+    }
+
+    fn generate_call_args(&mut self, args: Vec<HirExpr>) -> String {
+        args.iter()
+            .map(|arg| self.generate_expr(arg.clone()))
+            .collect::<Vec<String>>()
+            .join(", ")
     }
 
     fn generate_call_expr(&mut self, func: Box<HirExpr>, args: Vec<HirExpr>) -> String {
@@ -101,17 +120,11 @@ impl CppCodegen {
 
         let func_mod_id = func_symbol.id.mod_id;
 
-        let args_code = args
-            .iter()
-            .map(|arg| self.generate_expr(arg.clone()))
-            .collect::<Vec<String>>()
-            .join(", ");
-
         format!(
             "(module{}::brim_{}({}))",
             func_mod_id.as_usize(),
             fn_name,
-            args_code
+            self.generate_call_args(args)
         )
     }
 
