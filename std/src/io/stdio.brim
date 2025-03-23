@@ -1,7 +1,7 @@
 use { File, Handle } from self::parent::fs::file;
 use { GetStdHandle } from self::parent::os::windows::kernel32;
 
-pub fn getStdErrHandle() -> Handle {
+pub fn getStdErrHandle() Handle {
     if @os() == "windows" {
         return GetStdHandle(@cast(-12, u32));
     }
@@ -9,6 +9,6 @@ pub fn getStdErrHandle() -> Handle {
     return 2;
 }
 
-pub fn getStdErr() -> File {
+pub fn getStdErr() File {
     return File { .handle = getStdErrHandle() };
 }

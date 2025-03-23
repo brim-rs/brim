@@ -10,5 +10,6 @@ pub type Handle = match @os() {
 pub struct File {
     handle: Handle,
 
-    fn write() {}
+    fn write(self: File, data: u8[]) {
+    }
 }

@@ -378,11 +378,15 @@ impl Parser {
     }
 
     pub fn parse_return_type(&mut self) -> PResult<FnReturnType> {
-        if self.eat(TokenKind::Arrow) {
+        if self
+            .current()
+            .is_delimiter(Delimiter::Brace, Orientation::Open)
+            || self.current().kind == TokenKind::Semicolon
+        {
+            Ok(FnReturnType::Default)
+        } else {
             let ty = self.parse_type()?;
             Ok(FnReturnType::Ty(ty))
-        } else {
-            Ok(FnReturnType::Default)
         }
     }
 

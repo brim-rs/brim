@@ -1,26 +1,18 @@
-//use { File } from std::fs::file;
-//use { getStdErr } from std::io::stdio;
-
 struct Vec2<T> {
     x: T,
     y: T,
 
-    fn new(x: T, y: T) -> Vec2<T> {
+    fn new(x: T, y: T) Vec2<T> {
         return Vec2 { .x = x, .y = y };
     }
 }
 
 pub fn main() {
-    //let v = Vec2 { .x = 6.5, .y = 2.6 };
-    //let os = @os();
-
     // Here val is any
     //let val: any = 42;
     // so first we need to cast val to default numeric type which is i32
     // and only then we can perform standard cast to u32
     //let x = @cast(@anyCast(val, i32), u32);
-
-    //let stderr = getStdErr();
 
     let vec = Vec2::new(1, 2);
 };
