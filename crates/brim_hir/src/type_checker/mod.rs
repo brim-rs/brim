@@ -48,6 +48,12 @@ impl TypeChecker {
                     self.check_item(item.kind);
                 }
             }
+            HirItemKind::Struct(str) => {
+                for (_, item) in str.items {
+                    let item = self.compiled.get_item(item).clone();
+                    self.check_item(item.kind);
+                }
+            }
             HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::TypeAlias(_) => {}
             _ => todo!("missing implementation for {:?}", item),
         }

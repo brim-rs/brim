@@ -101,6 +101,13 @@ impl TypeChecker {
                 self.check_expr(*lhs);
                 self.check_expr(*rhs);
             }
+            // Checked in type inference
+            HirExprKind::Binary(_, _, _) => {}
+            // Doesn't require any checks
+            HirExprKind::Literal(_) => {}
+            HirExprKind::StaticAccess(_, call) => {
+                self.check_expr(*call);
+            }
             _ => todo!("missing implementation for {:?}", expr),
         }
     }
