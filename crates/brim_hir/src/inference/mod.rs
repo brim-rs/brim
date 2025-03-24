@@ -1,8 +1,6 @@
 mod errors;
 pub mod scope;
 
-use std::thread::park;
-
 use crate::{
     CompiledModules,
     expr::{HirExpr, HirExprKind},
@@ -21,12 +19,13 @@ use crate::{
 use brim_ast::{
     ItemId,
     expr::{BinOpKind, UnaryOp},
-    item::{FnDecl, Ident},
+    item::{FnDecl, FunctionContext, Ident},
     token::{Lit, LitKind},
     ty::PrimitiveType,
 };
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{ModuleId, temp_diag::TemporaryDiagnosticContext};
+use errors::NoMethod;
 use indexmap::IndexMap;
 
 #[derive(Debug)]
@@ -588,7 +587,7 @@ impl<'a> TypeInference<'a> {
                     HirExprKind::Call(ident, args, params) => {
                         let ident = ident.as_ident().unwrap().clone();
                         let method = str.get_item(ident);
-                        let func = self.compiled.get_item(method).as_fn().clone();
+                        let func = self.compiled.get_item(method.unwrap()).as_fn().clone();
 
                         for generic in str.generics.params.clone() {
                             self.ctx.push_generic(generic);
@@ -601,6 +600,76 @@ impl<'a> TypeInference<'a> {
 
                         &expr.ty
                     }
+                }
+            }
+            HirExprKind::MethodCall(method_ident, expr) => {
+                let name = method_ident.to_string();
+                let variable = self.scope_manager.resolve_variable(&name).cloned();
+                let function_call = expr.as_call().as_ident().unwrap();
+
+                if let Some(var) = variable {
+                    match &var.ty {
+                        HirTyKind::Ident { ident, .. } => {
+                            let ident_str = ident.clone().to_string();
+                            let sym = self
+                                .compiled
+                                .resolve_symbol(&ident_str, self.current_mod.as_usize());
+
+                            if let Some(sym) = sym {
+                                let method_id = sym.as_struct().get_item(function_call.clone());
+
+                                if let Some(method_id) = method_id {
+                                    let method_fn =
+                                        self.compiled.get_item(method_id).as_fn().clone();
+                                    let return_type = method_fn.sig.return_type.clone();
+
+                                    match &mut expr.kind {
+                                        HirExprKind::Call(call_ident, args, params) => {
+                                            let ident_clone =
+                                                call_ident.as_ident().unwrap().clone();
+                                            let inferred_type = self.infer_call_expr(
+                                                ident_clone,
+                                                &method_fn,
+                                                args,
+                                                params,
+                                            );
+                                            // remove self argument if not static
+                                            if !method_fn.is_static()
+                                                && method_fn.ctx == FunctionContext::Method
+                                            {
+                                                params.remove(0);
+                                                // args.remove(0);
+                                            }
+                                            &inferred_type
+                                        }
+                                        _ => unreachable!(),
+                                    };
+
+                                    &return_type.clone()
+                                } else {
+                                    self.temp.emit_impl(NoMethod {
+                                        span: (function_call.span, self.current_mod.as_usize()),
+                                        method: function_call.to_string(),
+                                        ty: var.ty.clone(),
+                                    });
+
+                                    &HirTyKind::err()
+                                }
+                            } else {
+                                &HirTyKind::err()
+                            }
+                        }
+                        _ => {
+                            self.temp.emit_impl(NoMethod {
+                                span: (function_call.span, self.current_mod.as_usize()),
+                                method: function_call.to_string(),
+                                ty: var.ty.clone(),
+                            });
+                            &HirTyKind::err()
+                        }
+                    }
+                } else {
+                    &HirTyKind::err()
                 }
             }
             _ => todo!("infer_expr: {:?}", expr.kind),
@@ -713,6 +782,10 @@ impl<'a> TypeInference<'a> {
                 for param in &mut generics.params {
                     self.replace_generics_recursive(&mut param.ty, generic_types);
                 }
+            }
+            HirTyKind::Result(ok, err) => {
+                self.replace_generics_recursive(ok, generic_types);
+                self.replace_generics_recursive(err, generic_types);
             }
 
             HirTyKind::Primitive(_) | HirTyKind::Placeholder => {}

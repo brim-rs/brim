@@ -514,6 +514,10 @@ impl Parser {
 
                             debug!("Parsed path expression");
                             Ok(self.new_expr(span, ExprKind::Path(path)))
+                        } else if self.eat(TokenKind::Dot) {
+                            let expr = self.parse_expr()?;
+
+                            Ok(self.new_expr(span, ExprKind::MethodCall(ident, Box::new(expr))))
                         } else {
                             debug!("Parsed variable expression: {}", ident);
                             Ok(self.new_expr(span, ExprKind::Var(ident)))

@@ -161,7 +161,14 @@ pub trait AstWalker {
             ExprKind::StaticAccess(ident, expr) => {
                 self.visit_expr(expr);
             }
+            ExprKind::MethodCall(ident, expr) => {
+                self.visit_method_call(ident, expr);
+            }
         }
+    }
+
+    fn visit_method_call(&mut self, ident: &Ident, expr: &mut Expr) {
+        self.visit_expr(expr);
     }
 
     fn walk_let(&mut self, let_stmt: &mut Let) {

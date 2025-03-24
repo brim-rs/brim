@@ -32,3 +32,12 @@ pub struct CannotCompare {
     pub lhs: HirTyKind,
     pub rhs: HirTyKind,
 }
+
+#[derive(Diagnostic)]
+#[error("no method `{method}` found for type `{ty}`")]
+pub struct NoMethod {
+    #[error]
+    pub span: (Span, usize),
+    pub method: String,
+    pub ty: HirTyKind,
+}

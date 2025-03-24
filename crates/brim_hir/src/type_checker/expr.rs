@@ -108,16 +108,10 @@ impl TypeChecker {
             HirExprKind::StaticAccess(_, call) => {
                 self.check_expr(*call);
             }
+            HirExprKind::MethodCall(_, call) => {
+                self.check_expr(*call);
+            }
             _ => todo!("missing implementation for {:?}", expr),
         }
-    }
-
-    fn param_mismatch(&mut self, span: Span, expected: HirTyKind, found: HirTyKind, name: String) {
-        self.ctx.emit_impl(FunctionParameterTypeMismatch {
-            span: (span, self.mod_id),
-            name,
-            expected,
-            found,
-        });
     }
 }

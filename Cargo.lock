@@ -187,6 +187,7 @@ dependencies = [
  "brim-ast",
  "brim-hir",
  "brim-middle",
+ "brim-span",
  "tracing",
 ]
 

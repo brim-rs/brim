@@ -242,7 +242,7 @@ impl FnDecl {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FunctionContext {
     Item,
     Trait,

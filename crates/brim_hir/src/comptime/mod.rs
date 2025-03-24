@@ -227,7 +227,8 @@ impl<'a> ComptimeTransformer<'a> {
             HirExprKind::Path(_)
             | HirExprKind::Builtin(_, _)
             | HirExprKind::Type(_)
-            | HirExprKind::StaticAccess(_, _) => panic!(
+            | HirExprKind::StaticAccess(_, _)
+            | HirExprKind::MethodCall(_, _) => panic!(
                 "not implemented. or isn't allowed in a comptime block (add an error for this)",
             ),
         }

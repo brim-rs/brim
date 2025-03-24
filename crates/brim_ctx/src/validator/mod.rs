@@ -5,7 +5,7 @@ use crate::validator::errors::{
 };
 use anyhow::Result;
 use brim_ast::{
-    expr::Expr,
+    expr::{Expr, ExprKind},
     item::{FnSignature, GenericArgs, Ident, Item, ItemKind},
 };
 use brim_middle::{

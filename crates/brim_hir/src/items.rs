@@ -4,7 +4,7 @@ use crate::{
 };
 use brim_ast::{
     ItemId,
-    item::{Ident, Visibility},
+    item::{FunctionContext, Ident, Visibility},
     token::Lit,
 };
 use brim_middle::{GlobalSymbol, ModuleId};
@@ -33,6 +33,13 @@ impl HirItem {
         match &self.kind {
             HirItemKind::Struct(s) => s,
             _ => panic!("Expected struct item"),
+        }
+    }
+
+    pub fn as_fn_safe(&self) -> Option<&HirFn> {
+        match &self.kind {
+            HirItemKind::Fn(f) => Some(f),
+            _ => None,
         }
     }
 }
@@ -88,12 +95,8 @@ impl HirStruct {
         self.fields.iter().find(|f| f.ident.to_string() == name)
     }
 
-    pub fn get_item(&self, id: Ident) -> ItemId {
-        self.items
-            .iter()
-            .find(|(k, _)| k == &&id)
-            .map(|(_, v)| *v)
-            .unwrap()
+    pub fn get_item(&self, id: Ident) -> Option<ItemId> {
+        self.items.iter().find(|(k, _)| k == &&id).map(|(_, v)| *v)
     }
 }
 
@@ -128,6 +131,19 @@ pub struct HirFn {
     pub sig: HirFnSig,
     /// ID of the function body block
     pub body: Option<ItemId>,
+    pub ctx: FunctionContext,
+}
+
+impl HirFn {
+    /// Only if the first parameter is named `self`
+    pub fn is_static(&self) -> bool {
+        !self
+            .sig
+            .params
+            .params
+            .first()
+            .map_or(false, |param| param.name.to_string() == "self")
+    }
 }
 
 #[derive(Clone, Debug)]

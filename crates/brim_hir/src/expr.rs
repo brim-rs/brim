@@ -36,6 +36,13 @@ impl HirExpr {
             _ => None,
         }
     }
+
+    pub fn as_call(&self) -> &HirExpr {
+        match &self.kind {
+            HirExprKind::Call(expr, _, _) => expr,
+            _ => panic!("Expected call expression"),
+        }
+    }
 }
 
 // We no longer need parenthesized expressions, because the tree defines the structure.
@@ -79,6 +86,8 @@ pub enum HirExprKind {
     Comptime(ComptimeValue),
     /// Static access to a struct field.
     StaticAccess(ItemId, Box<HirExpr>),
+    /// Method call on an expression.
+    MethodCall(Ident, Box<HirExpr>),
 }
 
 impl HirExprKind {

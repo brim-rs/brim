@@ -156,6 +156,32 @@ impl<'a> NameResolver<'a> {
             }
         }
     }
+
+    fn resolve_variable(&mut self, ident: &Ident) -> Option<(Scope, VariableInfo)> {
+        let var_name = ident.name.to_string();
+        let scope = self.is_variable_declared(&var_name);
+
+        if let Some((scope, var)) = scope {
+            if self.inside_comptime && !scope.inside_comptime {
+                self.ctx.emit_impl(AccessOutsideComptime {
+                    span: (ident.span, self.file),
+                    name: var_name,
+                    decl: (var.span, self.file),
+                });
+
+                None
+            } else {
+                Some((scope, var.clone()))
+            }
+        } else {
+            self.ctx.emit_impl(UndeclaredVariable {
+                span: (ident.span, self.file),
+                name: var_name.clone(),
+            });
+
+            None
+        }
+    }
 }
 
 impl<'a> AstWalker for NameResolver<'a> {
@@ -262,7 +288,9 @@ impl<'a> AstWalker for NameResolver<'a> {
                 self.visit_expr(rhs);
             }
             ExprKind::Unary(_, operand) => self.visit_expr(operand),
-            ExprKind::Field(base, _) => self.visit_expr(base),
+            ExprKind::Field(base, _) => {
+                self.visit_expr(base);
+            }
             ExprKind::Index(base, index) => {
                 self.visit_expr(base);
                 self.visit_expr(index);
@@ -271,23 +299,7 @@ impl<'a> AstWalker for NameResolver<'a> {
             ExprKind::Paren(inner) => self.visit_expr(inner),
             ExprKind::Return(inner) => self.visit_expr(inner),
             ExprKind::Var(ident) => {
-                let var_name = ident.name.to_string();
-                let scope = self.is_variable_declared(&var_name);
-
-                if let Some((scope, var)) = scope {
-                    if self.inside_comptime && !scope.inside_comptime {
-                        self.ctx.emit_impl(AccessOutsideComptime {
-                            span: (ident.span, self.file),
-                            name: var_name,
-                            decl: (var.span, self.file),
-                        });
-                    }
-                } else {
-                    self.ctx.emit_impl(UndeclaredVariable {
-                        span: (ident.span, self.file),
-                        name: var_name.clone(),
-                    });
-                }
+                self.resolve_variable(ident);
             }
             ExprKind::AssignOp(lhs, _, rhs) | ExprKind::Assign(lhs, rhs) => {
                 self.visit_expr(lhs);
@@ -398,6 +410,10 @@ impl<'a> AstWalker for NameResolver<'a> {
                 } else {
                     todo!("error message")
                 }
+            }
+            ExprKind::MethodCall(_, _) => {
+                // Can only be checked in type inference so we actually
+                // know where to look for the method
             }
             ExprKind::Match(expr, arms) => {
                 self.visit_expr(expr);

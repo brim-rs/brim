@@ -341,6 +341,7 @@ impl<'a> Transformer<'a> {
                 span: f_decl.sig.span,
             },
             body,
+            ctx: f_decl.context,
         }
     }
 
@@ -610,6 +611,9 @@ impl<'a> Transformer<'a> {
                     let id = self.compiled.get_assigned_path(expr.id);
 
                     HirExprKind::StaticAccess(id, Box::new(self.transform_expr(*expr).0))
+                }
+                ExprKind::MethodCall(ident, expr) => {
+                    HirExprKind::MethodCall(ident, Box::new(self.transform_expr(*expr).0))
                 }
             },
             ty,

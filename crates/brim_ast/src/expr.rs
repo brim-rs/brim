@@ -36,6 +36,8 @@ pub enum ExprKind {
     Field(Box<Expr>, Ident),
     /// `x[0]`
     Index(Box<Expr>, Box<Expr>),
+    /// `x.foo()`
+    MethodCall(Ident, Box<Expr>),
     /// `Vec::new()`
     StaticAccess(Vec<Ident>, Box<Expr>),
     /// `123`, `"hello"`, etc.
@@ -60,7 +62,7 @@ pub enum ExprKind {
     Builtin(Ident, Vec<Expr>),
     /// `comptime { ... }`
     Comptime(Box<Expr>),
-    /// `Vec2 {x: 1, y: 2}`
+    /// `Vec2 { x: 1, y: 2 }`
     StructConstructor(Ident, GenericArgs, IndexMap<Ident, Expr>),
     /// `match x { ... }`
     Match(Box<Expr>, Vec<MatchArm>),

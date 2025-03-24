@@ -1,5 +1,6 @@
 use crate::codegen::CppCodegen;
 use brim_ast::{
+    ItemId,
     expr::{BinOpKind, UnaryOp},
     token::{Lit, LitKind},
 };
@@ -8,6 +9,7 @@ use brim_hir::{
     expr::{HirExpr, HirExprKind, HirIfExpr, HirStructConstructor},
     ty::HirTyKind,
 };
+use brim_span::span::Span;
 use std::fmt::Write;
 
 impl CppCodegen {
@@ -97,6 +99,21 @@ impl CppCodegen {
                     _ => unimplemented!(),
                 }
             }
+            HirExprKind::MethodCall(r_ident, call) => match call.kind {
+                HirExprKind::Call(ident, args, _) => {
+                    let ident = ident.as_ident().unwrap().to_string();
+                    let mut new_args = vec![HirExpr {
+                        kind: HirExprKind::Var(r_ident),
+                        id: ItemId::new(),
+                        span: Span::DUMMY,
+                        ty: HirTyKind::Placeholder,
+                    }];
+                    new_args.extend(args);
+                    let call = format!("{}({})", ident, self.generate_call_args(new_args));
+                    format!("(brim_{}.brim_{})", r_ident, call)
+                }
+                _ => unimplemented!(),
+            },
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         }
     }
@@ -238,7 +255,10 @@ impl CppCodegen {
                     format!("{}({})", self.generate_ty(expr_ty), lit.symbol)
                 }
             }
-            LitKind::Str => format!("\"{}\"", escape_string(&lit.symbol.to_string())),
+            LitKind::Str => format!(
+                "std::string(\"{}\")",
+                escape_string(&lit.symbol.to_string())
+            ),
             LitKind::Char => format!("'{}'", escape_char(&lit.symbol.to_string())),
             LitKind::Bool => lit.symbol.to_string(),
             LitKind::Byte => format!(

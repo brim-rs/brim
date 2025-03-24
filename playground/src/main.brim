@@ -8,9 +8,6 @@ struct Vec2<T> {
     fn new(x: T, y: T) Vec2<T> {
         return Vec2 { .x = x, .y = y };
     }
-
-    fn notStaticFn(self: Vec2<T>) {
-    }
 }
 
 pub fn main() {
@@ -21,4 +18,5 @@ pub fn main() {
     //let x = @cast(@anyCast(val, i32), u32);
 
     let stderr = getStdErr();
+    let usize = stderr.write("dw");
 };

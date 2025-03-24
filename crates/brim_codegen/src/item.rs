@@ -1,4 +1,5 @@
 use crate::codegen::CppCodegen;
+use brim_ast::item::FunctionContext;
 use brim_hir::{
     CompiledModules,
     items::{HirItem, HirItemKind},
@@ -8,7 +9,7 @@ impl CppCodegen {
     pub fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules) {
         match item.kind {
             HirItemKind::Fn(decl) => {
-                let ret = self.generate_ty(decl.sig.return_type);
+                let ret = self.generate_ty(decl.sig.return_type.clone());
 
                 let generics = if let Some(str) = &self.parent_struct {
                     str.generics.join(&decl.sig.generics)
@@ -17,10 +18,8 @@ impl CppCodegen {
                 };
                 self.generate_generics(&generics);
 
-                let params = decl
-                    .sig
-                    .params
-                    .params
+                let mut params = decl.sig.params.params.clone();
+                let params = params
                     .iter()
                     .map(|p| {
                         format!(
@@ -54,7 +53,7 @@ impl CppCodegen {
                     self.code.add_line(&format!("{};", block_name));
                 };
             }
-            HirItemKind::Struct(s) => {
+            HirItemKind::Struct(mut s) => {
                 self.generate_generics(&s.generics);
                 let name = if self.add_prefix {
                     format!("brim_{}", s.ident.name.to_string())
@@ -69,6 +68,18 @@ impl CppCodegen {
 
                     self.code
                         .add_line(&format!("{} {};", ty, field.ident.to_string()));
+                }
+
+                for (ident, id) in s.items.clone() {
+                    let item = self.compiled.get_item(id.clone());
+
+                    if let Some(func) = item.as_fn_safe() {
+                        if !func.is_static() {
+                            self.generate_item(item.clone(), compiled);
+
+                            s.items.remove(&ident);
+                        }
+                    }
                 }
 
                 self.code.decrease_indent();

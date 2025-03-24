@@ -8,20 +8,12 @@ impl CppCodegen {
             HirTyKind::Primitive(prim) => self.transform_primitive(prim),
             HirTyKind::Ptr(ty, mutable) => {
                 let ty = self.generate_ty(*ty);
-                if mutable == Mutable::Yes {
-                    format!("{}*", ty)
-                } else {
-                    format!("const {}*", ty)
-                }
+                format!("{}*", ty)
             }
 
             HirTyKind::Ref(ty, mutable) => {
                 let ty = self.generate_ty(*ty);
-                if mutable == Mutable::Yes {
-                    format!("{}&", ty)
-                } else {
-                    format!("const {}&", ty)
-                }
+                format!("{}&", ty)
             }
 
             HirTyKind::Ident {
@@ -58,7 +50,7 @@ impl CppCodegen {
                     let mod_id = symbol.id.mod_id;
 
                     format!(
-                        "const module{}::brim_{}{}",
+                        "module{}::brim_{}{}",
                         mod_id.as_usize(),
                         ident.name,
                         generics
