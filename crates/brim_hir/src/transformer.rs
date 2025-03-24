@@ -313,7 +313,7 @@ impl<'a> Transformer<'a> {
             .params
             .iter()
             .map(|param| HirParam {
-                id: ItemId::from_u32(param.id.as_u32()),
+                id: param.id,
                 span: param.span,
                 name: param.name,
                 ty: self.transform_ty(param.ty.clone()),

@@ -619,7 +619,7 @@ impl<'a> TypeInference<'a> {
                                 let method_id = sym.as_struct().get_item(function_call.clone());
 
                                 if let Some(method_id) = method_id {
-                                    let method_fn =
+                                    let mut method_fn =
                                         self.compiled.get_item(method_id).as_fn().clone();
                                     let return_type = method_fn.sig.return_type.clone();
 
@@ -627,19 +627,29 @@ impl<'a> TypeInference<'a> {
                                         HirExprKind::Call(call_ident, args, params) => {
                                             let ident_clone =
                                                 call_ident.as_ident().unwrap().clone();
+
+                                            // remove self argument if not static
+                                            if !method_fn.is_static()
+                                                && method_fn.ctx == FunctionContext::Method
+                                            {
+                                                method_fn.sig.params.params.remove(0);
+                                            }
+
                                             let inferred_type = self.infer_call_expr(
                                                 ident_clone,
                                                 &method_fn,
                                                 args,
                                                 params,
                                             );
-                                            // remove self argument if not static
-                                            if !method_fn.is_static()
-                                                && method_fn.ctx == FunctionContext::Method
-                                            {
-                                                params.remove(0);
-                                                // args.remove(0);
-                                            }
+                                            expr.ty = inferred_type.clone();
+
+                                            self.hir.hir_items.insert(
+                                                expr.id,
+                                                StoredHirItem::Expr(*expr.clone()),
+                                            );
+
+                                            self.hir.update_builtins(*expr.clone());
+
                                             &inferred_type
                                         }
                                         _ => unreachable!(),
