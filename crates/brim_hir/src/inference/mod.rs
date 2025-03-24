@@ -174,7 +174,8 @@ impl<'a> TypeInference<'a> {
                     self.infer_item(item.clone());
                 }
             }
-            _ => {}
+            HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::TypeAlias(_) => {}
+            _ => todo!("missing implementation for {:?}", item.kind),
         }
 
         item.clone()
@@ -713,7 +714,10 @@ impl<'a> TypeInference<'a> {
                     self.replace_generics_recursive(&mut param.ty, generic_types);
                 }
             }
-            _ => {}
+
+            HirTyKind::Primitive(_) | HirTyKind::Placeholder => {}
+
+            _ => todo!("missing implementation for {:?}", ty),
         }
     }
 

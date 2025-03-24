@@ -18,5 +18,4 @@ pub fn main() {
     //let x = @cast(@anyCast(val, i32), u32);
 
     let vec = Vec2::new(1, 2);
-    let x = Vec2::notStaticFn(vec);
 };

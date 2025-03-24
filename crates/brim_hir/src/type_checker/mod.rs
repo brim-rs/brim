@@ -48,7 +48,8 @@ impl TypeChecker {
                     self.check_item(item.kind);
                 }
             }
-            _ => {}
+            HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::TypeAlias(_) => {}
+            _ => todo!("missing implementation for {:?}", item),
         }
     }
 

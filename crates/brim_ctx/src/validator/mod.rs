@@ -89,7 +89,11 @@ impl AstWalker for AstValidator {
                     self.visit_item(item);
                 }
             }
-            _ => {}
+            ItemKind::Namespace(_)
+            | ItemKind::Module(_)
+            | ItemKind::TypeAlias(_)
+            | ItemKind::Use(_) => {}
+            _ => todo!("missing implementation for {:?}", item.kind),
         }
     }
 

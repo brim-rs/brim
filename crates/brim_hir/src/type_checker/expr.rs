@@ -101,7 +101,7 @@ impl TypeChecker {
                 self.check_expr(*lhs);
                 self.check_expr(*rhs);
             }
-            _ => {}
+            _ => todo!("missing implementation for {:?}", expr),
         }
     }
 
