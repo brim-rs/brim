@@ -59,6 +59,16 @@ impl Parser {
                 kind: TyKind::Vec(Box::new(ty)),
                 id: self.new_id(),
             };
+        } else if self.current().kind == TokenKind::Bang {
+            self.eat(TokenKind::Bang);
+
+            let err_ty = self.parse_type()?;
+
+            ty = Ty {
+                span,
+                kind: TyKind::Result(Box::new(ty), Box::new(err_ty)),
+                id: self.new_id(),
+            };
         }
 
         Ok(ty)

@@ -172,8 +172,8 @@ impl CppCodegen {
                 "optional",
                 "typeinfo",
                 "typeindex",
-                "cassert",
                 "cstring",
+                "cstddef",
             ]
             .iter()
             .map(|s| s.to_string())

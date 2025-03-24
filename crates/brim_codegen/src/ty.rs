@@ -81,6 +81,12 @@ impl CppCodegen {
                 format!("{}", ty)
             }
 
+            HirTyKind::Result(ok, err) => {
+                let ok = self.generate_ty(*ok);
+                let err = self.generate_ty(*err);
+                format!("std::expected<{}, {}>", ok, err)
+            }
+
             // Only for now, this will be replaced in type checking
             HirTyKind::Placeholder | HirTyKind::Err(_) => "auto".to_string(),
 
@@ -90,26 +96,29 @@ impl CppCodegen {
 
     fn transform_primitive(&self, prim: PrimitiveType) -> String {
         match prim {
-            PrimitiveType::Void => "void".to_string(),
-            PrimitiveType::I8 => "std::int8_t".to_string(),
-            PrimitiveType::I16 => "std::int16_t".to_string(),
-            PrimitiveType::I32 => "std::int32_t".to_string(),
-            PrimitiveType::I64 => "std::int64_t".to_string(),
+            PrimitiveType::Void => "void",
+            PrimitiveType::I8 => "std::int8_t",
+            PrimitiveType::I16 => "std::int16_t",
+            PrimitiveType::I32 => "std::int32_t",
+            PrimitiveType::I64 => "std::int64_t",
+            PrimitiveType::Isize => "std::intptr_t",
 
-            PrimitiveType::U8 => "std::uint8_t".to_string(),
-            PrimitiveType::U16 => "std::uint16_t".to_string(),
-            PrimitiveType::U32 => "std::uint32_t".to_string(),
-            PrimitiveType::U64 => "std::uint64_t".to_string(),
+            PrimitiveType::U8 => "std::uint8_t",
+            PrimitiveType::U16 => "std::uint16_t",
+            PrimitiveType::U32 => "std::uint32_t",
+            PrimitiveType::U64 => "std::uint64_t",
+            PrimitiveType::Usize => "std::uintptr_t",
 
-            PrimitiveType::F32 => "float".to_string(),
-            PrimitiveType::F64 => "double".to_string(),
+            PrimitiveType::F32 => "float",
+            PrimitiveType::F64 => "double",
 
-            PrimitiveType::Bool => "bool".to_string(),
+            PrimitiveType::Bool => "bool",
 
-            PrimitiveType::Char => "char".to_string(),
-            PrimitiveType::Str => "std::string".to_string(),
+            PrimitiveType::Char => "char",
+            PrimitiveType::Str => "std::string",
 
-            PrimitiveType::Any => "std::any".to_string(),
+            PrimitiveType::Any => "std::any",
         }
+        .to_string()
     }
 }

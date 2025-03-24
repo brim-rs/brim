@@ -668,6 +668,10 @@ impl<'a> Transformer<'a> {
                     generics: self.transform_generic_arguments(generics),
                     is_generic: false,
                 },
+                TyKind::Result(ty, err_ty) => HirTyKind::Result(
+                    Box::new(self.transform_ty(*ty).kind),
+                    Box::new(self.transform_ty(*err_ty).kind),
+                ),
                 TyKind::Err(_) => panic!("on ty: {:?}", ty),
             },
         }

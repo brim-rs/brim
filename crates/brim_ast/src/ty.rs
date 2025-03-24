@@ -56,6 +56,8 @@ pub enum TyKind {
     Primitive(PrimitiveType),
     /// Any other type that can be enum, struct, type, etc.
     Ident { ident: Ident, generics: GenericArgs },
+    /// Result type eg. `Result<T, E>` (brim) -> `std::expected<T, E>` (C++)
+    Result(Box<Ty>, Box<Ty>),
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),
@@ -68,12 +70,14 @@ pub enum PrimitiveType {
     I16,
     I32,
     I64,
+    Isize,
 
     // Unsigned integers
     U8,
     U16,
     U32,
     U64,
+    Usize,
 
     // Floating point numbers
     F32,
@@ -95,11 +99,13 @@ impl PrimitiveType {
             "i16" => Some(PrimitiveType::I16),
             "i32" => Some(PrimitiveType::I32),
             "i64" => Some(PrimitiveType::I64),
+            "isize" => Some(PrimitiveType::Isize),
 
             "u8" => Some(PrimitiveType::U8),
             "u16" => Some(PrimitiveType::U16),
             "u32" => Some(PrimitiveType::U32),
             "u64" => Some(PrimitiveType::U64),
+            "usize" => Some(PrimitiveType::Usize),
 
             "f32" => Some(PrimitiveType::F32),
             "f64" => Some(PrimitiveType::F64),
@@ -121,17 +127,29 @@ impl PrimitiveType {
             (I8, I16) | (I16, I8) => Some(I16),
             (I16, I32) | (I32, I16) => Some(I32),
             (I32, I64) | (I64, I32) => Some(I64),
+            (I8, Isize) | (Isize, I8) => Some(Isize),
+            (I16, Isize) | (Isize, I16) => Some(Isize),
+            (I32, Isize) | (Isize, I32) => Some(Isize),
+            (I64, Isize) | (Isize, I64) => Some(I64),
 
             // Unsigned integer promotion
             (U8, U16) | (U16, U8) => Some(U16),
             (U16, U32) | (U32, U16) => Some(U32),
             (U32, U64) | (U64, U32) => Some(U64),
+            (U8, Usize) | (Usize, U8) => Some(Usize),
+            (U16, Usize) | (Usize, U16) => Some(Usize),
+            (U32, Usize) | (Usize, U32) => Some(Usize),
+            (U64, Usize) | (Usize, U64) => Some(U64),
 
             // Mixed integer and float promotion
             (I32, F32) | (F32, I32) => Some(F32),
             (I32, F64) | (F64, I32) => Some(F64),
             (U32, F32) | (F32, U32) => Some(F32),
             (U32, F64) | (F64, U32) => Some(F64),
+            (Isize, F32) | (F32, Isize) => Some(F32),
+            (Isize, F64) | (F64, Isize) => Some(F64),
+            (Usize, F32) | (F32, Usize) => Some(F32),
+            (Usize, F64) | (F64, Usize) => Some(F64),
 
             // Float promotion
             (F32, F64) | (F64, F32) => Some(F64),
@@ -157,11 +175,13 @@ impl Display for PrimitiveType {
             I16 => "i16",
             I32 => "i32",
             I64 => "i64",
+            Isize => "isize",
 
             U8 => "u8",
             U16 => "u16",
             U32 => "u32",
             U64 => "u64",
+            Usize => "usize",
 
             F32 => "f32",
             F64 => "f64",

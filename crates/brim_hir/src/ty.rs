@@ -7,7 +7,10 @@ use brim_ast::{
 };
 use brim_diagnostics::ErrorEmitted;
 use brim_span::span::Span;
-use std::fmt::{Debug, Display};
+use std::{
+    f32::consts::E,
+    fmt::{Debug, Display},
+};
 
 #[derive(Debug, Clone)]
 pub struct HirTy {
@@ -37,6 +40,8 @@ pub enum HirTyKind {
         generics: HirGenericArgs,
         is_generic: bool,
     },
+    /// Result type eg. `Result<T, E>` (brim) -> `std::expected<T, E>` (C++)
+    Result(Box<HirTyKind>, Box<HirTyKind>),
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),
@@ -69,6 +74,7 @@ impl Display for HirTyKind {
                     write!(f, "{}{}", ident, generics)
                 }
             }
+            HirTyKind::Result(ty, err) => write!(f, "{}!{}", ty, err),
             HirTyKind::Err(_) => write!(f, "<error>"),
             HirTyKind::Placeholder => write!(f, "_"),
         }
@@ -152,6 +158,10 @@ impl HirTyKind {
                 },
             ) => id1.to_string() == id2.to_string() && gen1 == gen2 && is_gen1 == is_gen2,
 
+            (HirTyKind::Result(ok1, err1), HirTyKind::Result(ok2, err2)) => {
+                ok1.can_be_an_arg_for_param(ok2) && err1.can_be_an_arg_for_param(err2)
+            }
+
             (HirTyKind::Err(_), _) | (_, HirTyKind::Err(_)) => false,
             (HirTyKind::Placeholder, _) | (_, HirTyKind::Placeholder) => false,
 
@@ -183,6 +193,10 @@ impl HirTyKind {
                     is_generic: is_gen2,
                 },
             ) => id1.to_string() == id2.to_string() && gen1 == gen2 && is_gen1 == is_gen2,
+
+            (HirTyKind::Result(ok1, err1), HirTyKind::Result(ok2, err2)) => {
+                ok1.can_be_initialized_with(ok2) && err1.can_be_initialized_with(err2)
+            }
 
             (HirTyKind::Err(_), _) | (_, HirTyKind::Err(_)) => false,
             (HirTyKind::Placeholder, _) | (_, HirTyKind::Placeholder) => false,
