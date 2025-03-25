@@ -18,5 +18,5 @@ pub fn main() {
     //let x = @cast(@anyCast(val, i32), u32);
 
     let stderr = getStdErr();
-    let usize = stderr.write("dw");
+    let usize = stderr.write(b"dw");
 };

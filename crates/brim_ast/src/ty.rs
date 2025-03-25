@@ -48,7 +48,7 @@ pub enum TyKind {
     /// Mutable type eg. `mut T` (brim) -> `T` (C++)
     Mut(Box<Ty>),
     /// Array type eg. `[T; N]` (brim) -> `T[N]` (C++)
-    Array(Box<Ty>, Expr),
+    Array(Box<Ty>, Option<Expr>),
     /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim
     /// is the same as array in C++.
     Vec(Box<Ty>),

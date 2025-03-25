@@ -545,7 +545,7 @@ impl Parser {
                     if self.eat(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close)) {
                         return Ok(Some(Ty {
                             span: span_start.to(self.prev().span),
-                            kind: TyKind::Array(Box::new(elem_ty), len_expr),
+                            kind: TyKind::Array(Box::new(elem_ty), Some(len_expr)),
                             id: self.new_id(),
                         }));
                     }

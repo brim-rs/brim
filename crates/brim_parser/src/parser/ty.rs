@@ -161,13 +161,19 @@ impl Parser {
         self.expect_obracket()?;
 
         let ty = self.parse_type()?;
-        self.expect(TokenKind::Semicolon)?;
-        let size_expr = self.parse_expr()?;
-        let size_block = self.block_from_expr(size_expr);
-        let size = self.new_expr(size_block.span, ExprKind::Block(size_block));
 
-        self.expect_cbracket()?;
-        Ok(TyKind::Array(Box::new(ty), size))
+        if self.is_bracket(Orientation::Close) {
+            self.expect_cbracket()?;
+            Ok(TyKind::Array(Box::new(ty), None))
+        } else {
+            self.expect(TokenKind::Comma)?;
+            let size_expr = self.parse_expr()?;
+            let size_block = self.block_from_expr(size_expr);
+            let size = self.new_expr(size_block.span, ExprKind::Block(size_block));
+
+            self.expect_cbracket()?;
+            Ok(TyKind::Array(Box::new(ty), Some(size)))
+        }
     }
 
     pub fn is_primitive(&self, ident: Ident) -> PResult<Option<PrimitiveType>> {

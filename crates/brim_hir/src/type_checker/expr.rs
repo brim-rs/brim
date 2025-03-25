@@ -61,7 +61,9 @@ impl TypeChecker {
                     });
                 }
 
-                self.check_expr(*expr);
+                self.check_expr(*expr.clone());
+
+                self.ty_returned_from_fn = Some(expr.ty);
             }
             HirExprKind::StructConstructor(hir_struct) => {
                 let fields = hir_struct.fields;

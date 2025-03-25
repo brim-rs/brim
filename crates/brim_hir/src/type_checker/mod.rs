@@ -7,6 +7,7 @@ use crate::{
     inference::scope::TypeScopeManager,
     items::{HirFn, HirItemKind},
     transformer::{HirModule, HirModuleMap},
+    ty::HirTyKind,
 };
 use brim_middle::temp_diag::TemporaryDiagnosticContext;
 
@@ -18,6 +19,7 @@ pub struct TypeChecker {
     pub scope_manager: TypeScopeManager,
     pub current_fn: Option<HirFn>,
     pub compiled: CompiledModules,
+    pub ty_returned_from_fn: Option<HirTyKind>,
 }
 
 impl TypeChecker {
@@ -29,6 +31,7 @@ impl TypeChecker {
             scope_manager: TypeScopeManager::new(),
             current_fn: None,
             compiled,
+            ty_returned_from_fn: None,
         }
     }
 

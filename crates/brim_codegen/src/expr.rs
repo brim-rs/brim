@@ -265,7 +265,15 @@ impl CppCodegen {
                 "static_cast<unsigned char>('{}')",
                 escape_char(&lit.symbol.to_string())
             ),
-            LitKind::ByteStr => format!("\"{}\"", escape_string(&lit.symbol.to_string())),
+            LitKind::ByteStr => format!(
+                "std::vector<uint8_t>{{{}}}",
+                lit.symbol
+                    .to_string()
+                    .chars()
+                    .map(|b| format!("\"{}\"", b))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
             LitKind::CStr => format!("\"{}\"", escape_string(&lit.symbol.to_string())),
             _ => format!("/* Unsupported literal: {:?} */", lit.kind),
         }

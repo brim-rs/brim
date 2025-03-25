@@ -28,7 +28,7 @@ pub enum HirTyKind {
     /// Mut type eg. `mut T` (brim) -> `T` (C++)
     Mut(Box<HirTyKind>),
     /// Array type eg. `[T; N]` (brim) -> `T[N]` (C++)
-    Array(Box<HirTyKind>, usize),
+    Array(Box<HirTyKind>, Option<usize>),
     /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim
     /// is the same as array in C++.
     Vec(Box<HirTyKind>),
@@ -62,7 +62,16 @@ impl Display for HirTyKind {
                 write!(f, "*{}{}", const_str, ty)
             }
             HirTyKind::Mut(ty) => write!(f, "mut {}", ty),
-            HirTyKind::Array(ty, len) => write!(f, "[{}; {}]", ty, len),
+            HirTyKind::Array(ty, len) => write!(
+                f,
+                "[{}{}]",
+                ty,
+                if let Some(len) = len {
+                    format!("; {}", len)
+                } else {
+                    String::new()
+                }
+            ),
             HirTyKind::Vec(ty) => write!(f, "{}[]", ty),
             HirTyKind::Primitive(p) => write!(f, "{}", p),
             HirTyKind::Ident {
@@ -136,6 +145,8 @@ impl HirTyKind {
                 | HirTyKind::Ptr(ty1, Mutable::Yes),
                 _,
             ) => false,
+
+            (HirTyKind::Array(ty1, None), HirTyKind::Array(ty2, len2)) => ty1 == ty2,
 
             (HirTyKind::Array(ty1, len1), HirTyKind::Array(ty2, len2)) => {
                 ty1 == ty2 && len1 == len2
@@ -309,6 +320,13 @@ impl HirTyKind {
             HirTyKind::Ref(_, Mutable::Yes)
             | HirTyKind::Ptr(_, Mutable::Yes)
             | HirTyKind::Mut(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn can_be_ignored(&self) -> bool {
+        match self {
+            HirTyKind::Primitive(PrimitiveType::Void) => true,
             _ => false,
         }
     }

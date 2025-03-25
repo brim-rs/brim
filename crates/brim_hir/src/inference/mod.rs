@@ -541,7 +541,7 @@ impl<'a> TypeInference<'a> {
                 LitKind::Byte => &HirTyKind::Primitive(PrimitiveType::U8),
                 LitKind::ByteStr => &HirTyKind::Array(
                     Box::new(HirTyKind::Primitive(PrimitiveType::U8)),
-                    lit.symbol.to_string().len(),
+                    Some(lit.symbol.to_string().len()),
                 ),
                 LitKind::Char => &HirTyKind::Primitive(PrimitiveType::Char),
                 LitKind::Bool => &HirTyKind::Primitive(PrimitiveType::Bool),

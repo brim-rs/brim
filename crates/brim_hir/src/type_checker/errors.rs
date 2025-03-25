@@ -59,3 +59,12 @@ pub struct CannotAssignToImmutable {
     pub span: (Span, usize),
     pub name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("function `{name}` does not return a value. expected value of type `{expected}`")]
+pub struct NoReturnFound {
+    #[error]
+    pub span: (Span, usize),
+    pub name: String,
+    pub expected: HirTyKind,
+}

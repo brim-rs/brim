@@ -65,7 +65,12 @@ impl CppCodegen {
 
             HirTyKind::Array(ty, size) => {
                 let ty = self.generate_ty(*ty);
-                format!("std::array<{}, {}>", ty, size)
+
+                if let Some(size) = size {
+                    format!("std::array<{}, {}>", ty, size)
+                } else {
+                    format!("std::vector<{}>", ty)
+                }
             }
 
             HirTyKind::Mut(ty) => {

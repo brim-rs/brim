@@ -2,7 +2,10 @@ use crate::{
     inference::scope::TypeInfo,
     items::HirFn,
     stmts::{HirStmt, HirStmtKind},
-    type_checker::{TypeChecker, errors::CannotInitializeVariable},
+    type_checker::{
+        TypeChecker,
+        errors::{CannotInitializeVariable, NoReturnFound},
+    },
 };
 
 impl TypeChecker {
@@ -13,6 +16,18 @@ impl TypeChecker {
             self.current_fn = Some(func.clone());
             self.check_expr(body.clone());
             self.current_fn = None;
+
+            if let None = &self.ty_returned_from_fn {
+                if !func.sig.return_type.can_be_ignored() {
+                    self.ctx.emit_impl(NoReturnFound {
+                        span: (func.sig.span, self.mod_id),
+                        name: func.sig.name.to_string(),
+                        expected: func.sig.return_type.clone(),
+                    });
+                }
+            }
+
+            self.ty_returned_from_fn = None;
         }
     }
 

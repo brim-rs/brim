@@ -649,16 +649,23 @@ impl<'a> Transformer<'a> {
                     HirTyKind::Ptr(Box::new(self.transform_ty(*ty).kind), cnst)
                 }
                 TyKind::Array(ty, expr) => {
-                    let len = self.transform_comptime_expr(expr.clone()).as_lit().clone();
+                    if let Some(expr) = expr {
+                        let len = self.transform_comptime_expr(expr.clone()).as_lit().clone();
 
-                    if LitKind::Integer != len.kind {
-                        self.ret_with_error(ComptimeExprExpectedTy {
-                            span: (expr.span, self.current_mod_id.as_usize()),
-                            expected_ty: HirTyKind::Primitive(PrimitiveType::I32),
-                            actual_ty: HirTyKind::from_lit(&len.kind),
-                        })
+                        if LitKind::Integer != len.kind {
+                            self.ret_with_error(ComptimeExprExpectedTy {
+                                span: (expr.span, self.current_mod_id.as_usize()),
+                                expected_ty: HirTyKind::Primitive(PrimitiveType::I32),
+                                actual_ty: HirTyKind::from_lit(&len.kind),
+                            })
+                        } else {
+                            HirTyKind::Array(
+                                Box::new(self.transform_ty(*ty).kind),
+                                Some(len.to_int()),
+                            )
+                        }
                     } else {
-                        HirTyKind::Array(Box::new(self.transform_ty(*ty).kind), len.to_int())
+                        HirTyKind::Array(Box::new(self.transform_ty(*ty).kind), None)
                     }
                 }
                 TyKind::Ref(ty, cnst) => {
