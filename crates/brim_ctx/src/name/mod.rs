@@ -23,7 +23,8 @@ use brim_middle::{
 use brim_span::span::Span;
 use convert_case::{Case, Casing};
 use errors::{
-    ItemNotAMethodInStruct, NoItemInStruct, StaticCallToMethodInStruct, UndeclaredStructStatic,
+    InvalidReceiverForStaticAccess, ItemNotAMethodInStruct, NoItemInStruct, NoVariantInEnum,
+    StaticCallToMethodInStruct,
 };
 use scopes::{ScopeManager, VariableInfo};
 use tracing::debug;
@@ -118,9 +119,12 @@ impl<'a> NameResolver<'a> {
 
                 if from_call {
                     match &item.kind {
-                        ItemKind::Struct(_) => self.compiled.assign_path(expr_id, item.id),
+                        ItemKind::Struct(_) | ItemKind::Enum(_) => {
+                            self.compiled.assign_path(expr_id, item.id)
+                        }
                         _ => {
-                            self.ctx.emit_impl(UndeclaredStructStatic { span, name });
+                            self.ctx
+                                .emit_impl(InvalidReceiverForStaticAccess { span, name });
                         }
                     }
                 } else if idents.len() > 1 {
@@ -149,7 +153,8 @@ impl<'a> NameResolver<'a> {
             }
             None => {
                 if from_call {
-                    self.ctx.emit_impl(UndeclaredStructStatic { span, name });
+                    self.ctx
+                        .emit_impl(InvalidReceiverForStaticAccess { span, name });
                 } else {
                     self.ctx.emit_impl(InvalidPathAccess { span, name });
                 }
@@ -204,6 +209,11 @@ impl<'a> AstWalker for NameResolver<'a> {
                 self.external = false;
             }
             ItemKind::Namespace(_) => unreachable!(),
+            ItemKind::Enum(e) => {
+                for item in &mut e.items {
+                    self.visit_item(item);
+                }
+            }
         }
     }
 
@@ -378,37 +388,51 @@ impl<'a> AstWalker for NameResolver<'a> {
             ExprKind::StaticAccess(ident, expr) => {
                 self.resolve_path(ident.clone(), expr.id, true);
 
-                let assigned = self.compiled.get_assigned_path(expr.id);
-                let str = self.simple.get_item(assigned);
+                let assigned = self.compiled.assigned_paths.get(&expr.id);
+                if let Some(assigned) = assigned {
+                    let str = self.simple.get_item(*assigned);
 
-                if let ExprKind::Call(ident, _) = &expr.kind {
-                    let ident = ident.as_ident().unwrap().clone();
-                    let item = str.kind.as_struct().unwrap().find_item(ident);
+                    if let ExprKind::Call(ident, _) = &expr.kind {
+                        let ident = ident.as_ident().unwrap().clone();
 
-                    if let Some(item) = item {
-                        if let ItemKind::Fn(func) = &item.kind {
-                            if !func.is_static() {
-                                self.ctx.emit_impl(StaticCallToMethodInStruct {
+                        if let Some(item) = str.kind.as_struct() {
+                            let item = item.find_item(ident);
+
+                            if let Some(item) = item {
+                                if let ItemKind::Fn(func) = &item.kind {
+                                    if !func.is_static() {
+                                        self.ctx.emit_impl(StaticCallToMethodInStruct {
+                                            span: (ident.span, self.file),
+                                            struct_name: str.ident.to_string(),
+                                        });
+                                    }
+                                } else {
+                                    self.ctx.emit_impl(ItemNotAMethodInStruct {
+                                        span: (ident.span, self.file),
+                                        name: ident.name.to_string(),
+                                        struct_name: str.ident.to_string(),
+                                    });
+                                }
+                            } else {
+                                self.ctx.emit_impl(NoItemInStruct {
                                     span: (ident.span, self.file),
+                                    name: ident.name.to_string(),
                                     struct_name: str.ident.to_string(),
                                 });
                             }
-                        } else {
-                            self.ctx.emit_impl(ItemNotAMethodInStruct {
-                                span: (ident.span, self.file),
-                                name: ident.name.to_string(),
-                                struct_name: str.ident.to_string(),
-                            });
+                        } else if let Some(item) = str.kind.as_enum() {
+                            if let Some(variant) = item.find(&ident) {
+                            } else {
+                                self.ctx.emit_impl(NoVariantInEnum {
+                                    span: (ident.span, self.file),
+                                    name: ident.name.to_string(),
+                                    enum_name: str.ident.to_string(),
+                                });
+                            }
                         }
                     } else {
-                        self.ctx.emit_impl(NoItemInStruct {
-                            span: (ident.span, self.file),
-                            name: ident.name.to_string(),
-                            struct_name: str.ident.to_string(),
-                        });
+                        todo!("error message")
                     }
-                } else {
-                    todo!("error message")
                 }
             }
             ExprKind::MethodCall(_, _) => {

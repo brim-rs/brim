@@ -79,6 +79,7 @@ pub trait AstWalker {
                     }
                 }
             }
+            ItemKind::Enum(en) => {}
             ItemKind::Namespace(_) | ItemKind::Module(_) => {}
         }
     }

@@ -54,9 +54,9 @@ pub struct NamespaceMissingSymbol {
 }
 
 #[derive(Diagnostic)]
-#[error("struct `{name}` used in a static access is not declared in this scope")]
-pub struct UndeclaredStructStatic {
-    #[error("struct `{name}` is not declared in this scope")]
+#[error("`{name}` is not a valid receiver for a static access")]
+pub struct InvalidReceiverForStaticAccess {
+    #[error("expected a struct or enum, found `{name}`")]
     pub span: (Span, usize),
     pub name: String,
 }
@@ -94,4 +94,13 @@ pub struct StaticCallToMethodInStruct {
     #[error("static call to a method in struct `{struct_name}`")]
     pub span: (Span, usize),
     pub struct_name: String,
+}
+
+#[derive(Diagnostic)]
+#[error("no variant `{name}` found in enum `{enum_name}`")]
+pub struct NoVariantInEnum {
+    #[error("no variant `{name}` found in enum `{enum_name}`")]
+    pub span: (Span, usize),
+    pub name: String,
+    pub enum_name: String,
 }

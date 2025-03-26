@@ -10,10 +10,11 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Const, Extern, Fn, From, Mod, Parent, SelfSmall, Struct, Type, Use,
+    Const, Enum, Extern, Fn, From, Mod, Parent, SelfSmall, Struct, Type, Use,
     item::{
-        Block, ExternBlock, Field, FnDecl, FnReturnType, FnSignature, FunctionContext, Generics,
-        Ident, ImportsKind, Item, ItemKind, ModuleDecl, Param, PathItemKind, Struct, Use,
+        Block, Enum as AstEnum, EnumField, EnumVariant, ExternBlock, Field, FnDecl, FnReturnType,
+        FnSignature, FunctionContext, Generics, Ident, ImportsKind, Item, ItemKind, ModuleDecl,
+        Param, PathItemKind, Struct, Use,
     },
     token::{BinOpToken, Delimiter, LitKind, Orientation, TokenKind},
 };
@@ -43,6 +44,8 @@ impl Parser {
             self.parse_mod_decl()?
         } else if self.current().is_keyword(Extern) {
             self.parse_extern()?
+        } else if self.current().is_keyword(brim_ast::Enum) {
+            self.parse_enum()?
         } else {
             box_diag!(UnknownItem {
                 span: (span, self.file),
@@ -60,80 +63,99 @@ impl Parser {
         }))
     }
 
-    pub fn parse_extern(&mut self) -> PResult<(Ident, ItemKind)> {
+    pub fn parse_enum(&mut self) -> PResult<(Ident, ItemKind)> {
         let span = self.current().span;
-        self.eat_keyword(ptok!(Extern));
-
-        let abi = match self.current().kind {
-            TokenKind::Literal(lit) => match lit.kind {
-                LitKind::Str => {
-                    self.advance();
-                    Some(lit.symbol)
-                }
-                _ => None,
-            },
-            _ => None,
-        };
-
+        self.eat_keyword(ptok!(Enum));
+        let ident = self.parse_ident()?;
+        let generics = self.parse_generics()?;
         self.expect_obrace()?;
 
+        let mut variants = vec![];
         let mut items = vec![];
 
-        self.fn_ctx = Some(FunctionContext::Extern);
-        loop {
-            if self.is_brace(Orientation::Close) {
+        while !self.is_brace(Orientation::Close) {
+            if self.is_ident()
+                && self.next().kind == TokenKind::Delimiter(Delimiter::Paren, Orientation::Open)
+                || self.is_ident() && self.next().kind == TokenKind::Comma
+            {
+                let variant = self.parse_enum_variant()?;
+                variants.push(variant);
+
+                self.eat_possible(TokenKind::Comma);
+            } else if self.is_function()
+                || self.current().is_keyword(Use)
+                || self.current().is_keyword(Type)
+            {
+                let item_span = self.current().span;
+                let vis = self.parse_visibility();
+
+                let (item_ident, kind) = if self.is_function() {
+                    self.set_fn_ctx(FunctionContext::Method);
+                    self.parse_fn()?
+                } else if self.current().is_keyword(Use) {
+                    self.parse_use(item_span)?
+                } else if self.current().is_keyword(Type) {
+                    self.parse_type_alias()?
+                } else {
+                    break;
+                };
+
+                self.eat_semis();
+                items.push(Item {
+                    id: self.new_id(),
+                    span: item_span,
+                    vis,
+                    kind,
+                    ident: item_ident,
+                });
+            } else {
                 break;
             }
-
-            let item = self.parse_item()?;
-
-            if let Some(item) = item {
-                if !matches!(item.kind, ItemKind::Fn(_) | ItemKind::TypeAlias(_)) {
-                    self.emit(InvalidExternBlockItem {
-                        span: (item.span, self.file),
-                        found: item.kind.to_string(),
-                    });
-                }
-
-                items.push(item);
-            }
         }
-        self.fn_ctx = None;
 
         self.expect_cbrace()?;
 
+        debug!(
+            "Parsed enum: {:?} with {} variants and {} items",
+            ident,
+            variants.len(),
+            items.len()
+        );
+
         Ok((
-            Ident::dummy(),
-            ItemKind::External(ExternBlock {
+            ident,
+            ItemKind::Enum(AstEnum {
                 span: span.to(self.prev().span),
-                abi,
+                generics,
+                variants,
                 items,
+                ident,
             }),
         ))
     }
 
-    pub fn parse_mod_decl(&mut self) -> PResult<(Ident, ItemKind)> {
-        let mut idents = vec![];
+    pub fn parse_enum_variant(&mut self) -> PResult<EnumVariant> {
+        let ident = self.parse_ident()?;
+        let mut fields = vec![];
 
-        self.eat_keyword(ptok!(Mod));
-
-        while self.is_ident() {
-            let ident = self.parse_ident()?;
-            idents.push(ident);
-
-            if !self.eat(TokenKind::DoubleColon) {
-                break;
+        if self.is_paren(Orientation::Open) {
+            self.expect_oparen()?;
+            while !self.is_paren(Orientation::Close) {
+                let ty = self.parse_type()?;
+                fields.push(EnumField {
+                    span: ty.span.to(self.current().span),
+                    ty,
+                });
+                self.eat_possible(TokenKind::Comma);
             }
+            self.expect_cparen()?;
         }
 
-        debug!("Parsed module declaration: {:?}", idents);
-        Ok((
-            Ident::dummy(),
-            ItemKind::Module(ModuleDecl {
-                span: idents[0].span.to(self.prev().span),
-                idents,
-            }),
-        ))
+        Ok(EnumVariant {
+            span: ident.span.to(self.current().span),
+            ident,
+            fields,
+        })
     }
 
     pub fn parse_struct(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {
@@ -213,6 +235,82 @@ impl Parser {
                 span,
                 fields,
                 items,
+            }),
+        ))
+    }
+
+    pub fn parse_extern(&mut self) -> PResult<(Ident, ItemKind)> {
+        let span = self.current().span;
+        self.eat_keyword(ptok!(Extern));
+
+        let abi = match self.current().kind {
+            TokenKind::Literal(lit) => match lit.kind {
+                LitKind::Str => {
+                    self.advance();
+                    Some(lit.symbol)
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+
+        self.expect_obrace()?;
+
+        let mut items = vec![];
+
+        self.fn_ctx = Some(FunctionContext::Extern);
+        loop {
+            if self.is_brace(Orientation::Close) {
+                break;
+            }
+
+            let item = self.parse_item()?;
+
+            if let Some(item) = item {
+                if !matches!(item.kind, ItemKind::Fn(_) | ItemKind::TypeAlias(_)) {
+                    self.emit(InvalidExternBlockItem {
+                        span: (item.span, self.file),
+                        found: item.kind.to_string(),
+                    });
+                }
+
+                items.push(item);
+            }
+        }
+        self.fn_ctx = None;
+
+        self.expect_cbrace()?;
+
+        Ok((
+            Ident::dummy(),
+            ItemKind::External(ExternBlock {
+                span: span.to(self.prev().span),
+                abi,
+                items,
+            }),
+        ))
+    }
+
+    pub fn parse_mod_decl(&mut self) -> PResult<(Ident, ItemKind)> {
+        let mut idents = vec![];
+
+        self.eat_keyword(ptok!(Mod));
+
+        while self.is_ident() {
+            let ident = self.parse_ident()?;
+            idents.push(ident);
+
+            if !self.eat(TokenKind::DoubleColon) {
+                break;
+            }
+        }
+
+        debug!("Parsed module declaration: {:?}", idents);
+        Ok((
+            Ident::dummy(),
+            ItemKind::Module(ModuleDecl {
+                span: idents[0].span.to(self.prev().span),
+                idents,
             }),
         ))
     }

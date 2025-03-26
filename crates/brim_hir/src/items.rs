@@ -29,10 +29,17 @@ impl HirItem {
         }
     }
 
-    pub fn as_struct(&self) -> &HirStruct {
+    pub fn as_struct(&self) -> Option<&HirStruct> {
         match &self.kind {
-            HirItemKind::Struct(s) => s,
-            _ => panic!("Expected struct item"),
+            HirItemKind::Struct(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    pub fn as_enum(&self) -> Option<&HirEnum> {
+        match &self.kind {
+            HirItemKind::Enum(e) => Some(e),
+            _ => None,
         }
     }
 
@@ -58,6 +65,40 @@ pub enum HirItemKind {
     Namespace(HashMap<String, GlobalSymbol>),
     /// External
     External(HirExternBlock),
+    /// Enum definition
+    Enum(HirEnum),
+}
+
+#[derive(Clone, Debug)]
+pub struct HirEnum {
+    pub span: Span,
+    pub ident: Ident,
+    pub variants: Vec<HirEnumVariant>,
+    pub generics: HirGenerics,
+    pub items: HashMap<Ident, ItemId>,
+}
+
+impl HirEnum {
+    pub fn get_item(&self, ident: Ident) -> Option<&ItemId> {
+        self.items.get(&ident)
+    }
+
+    pub fn get_variant(&self, ident: Ident) -> Option<&HirEnumVariant> {
+        self.variants.iter().find(|v| v.ident == ident)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct HirEnumVariant {
+    pub span: Span,
+    pub ident: Ident,
+    pub fields: Vec<HirEnumField>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HirEnumField {
+    pub span: Span,
+    pub ty: HirTyKind,
 }
 
 #[derive(Debug, Clone)]

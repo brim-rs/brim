@@ -7,9 +7,9 @@ use crate::{
         HirStructConstructor,
     },
     items::{
-        HirExternBlock, HirField, HirFn, HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs,
-        HirGenericKind, HirGenericParam, HirGenerics, HirImportsKind, HirItem, HirItemKind,
-        HirParam, HirStruct, HirTypeAlias, HirUse,
+        HirEnum, HirEnumField, HirEnumVariant, HirExternBlock, HirField, HirFn, HirFnParams,
+        HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam, HirGenerics,
+        HirImportsKind, HirItem, HirItemKind, HirParam, HirStruct, HirTypeAlias, HirUse,
     },
     stmts::{HirStmt, HirStmtKind},
     ty::{HirTy, HirTyKind},
@@ -18,7 +18,7 @@ use brim_ast::{
     ItemId,
     expr::{BinOpKind, Expr, ExprKind, MatchArm},
     item::{
-        Block, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, ImportsKind, Item,
+        Block, Enum, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, ImportsKind, Item,
         ItemKind, Struct, TypeAlias, TypeAliasValue,
     },
     stmts::{Stmt, StmtKind},
@@ -260,6 +260,7 @@ impl<'a> Transformer<'a> {
 
                 HirItemKind::Namespace(hash)
             }
+            ItemKind::Enum(en) => HirItemKind::Enum(self.transform_enum(en)),
         };
 
         let item = HirItem {
@@ -369,6 +370,39 @@ impl<'a> Transformer<'a> {
                 .collect(),
             generics: self.transform_generics(struc.generics),
             span: struc.span,
+            items,
+        }
+    }
+
+    pub fn transform_enum(&mut self, enm: Enum) -> HirEnum {
+        let mut items = HashMap::new();
+
+        for i in enm.items {
+            if let Some(item) = self.transform_item(i.clone()) {
+                items.insert(i.ident, item);
+            }
+        }
+
+        HirEnum {
+            ident: enm.ident,
+            variants: enm
+                .variants
+                .iter()
+                .map(|variant| HirEnumVariant {
+                    span: variant.span,
+                    ident: variant.ident,
+                    fields: variant
+                        .fields
+                        .iter()
+                        .map(|field| HirEnumField {
+                            span: field.span,
+                            ty: self.transform_ty(field.ty.clone()).kind,
+                        })
+                        .collect(),
+                })
+                .collect(),
+            generics: self.transform_generics(enm.generics),
+            span: enm.span,
             items,
         }
     }

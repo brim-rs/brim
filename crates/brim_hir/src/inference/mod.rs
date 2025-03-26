@@ -168,6 +168,25 @@ impl<'a> TypeInference<'a> {
 
                 self.scope_manager.pop_scope();
             }
+            HirItemKind::Enum(ref mut en) => {
+                self.scope_manager.push_scope();
+
+                for generic in &en.generics.params {
+                    self.ctx.push_generic(generic.clone());
+                }
+
+                for variant in en.variants.iter_mut() {
+                    for field in variant.fields.iter_mut() {
+                        field.ty = self.update_generic(field.ty.clone());
+                    }
+                }
+
+                for (_, id) in en.items.iter_mut() {
+                    self.infer_item(id.clone());
+                }
+
+                self.scope_manager.pop_scope();
+            }
             HirItemKind::External(ref ext) => {
                 for item in ext.items.clone() {
                     self.infer_item(item.clone());
@@ -581,19 +600,49 @@ impl<'a> TypeInference<'a> {
                 &HirTyKind::void()
             }
             HirExprKind::StaticAccess(id, expr) => {
-                let str = self.compiled.get_item(id.clone()).as_struct();
+                let citem = self.compiled.get_item(id.clone());
+
+                let generics = if let Some(str) = citem.as_struct() {
+                    str.generics.clone().params
+                } else if let Some(str) = citem.as_enum() {
+                    str.generics.clone().params
+                } else {
+                    Vec::new()
+                };
 
                 match &mut expr.kind {
                     HirExprKind::Call(ident, args, params) => {
                         let ident = ident.as_ident().unwrap().clone();
-                        let method = str.get_item(ident);
-                        let func = self.compiled.get_item(method.unwrap()).as_fn().clone();
+                        if let Some(str) = citem.as_struct() {
+                            let method = str.get_item(ident);
+                            let func = self.compiled.get_item(method.unwrap()).as_fn().clone();
 
-                        for generic in str.generics.params.clone() {
-                            self.ctx.push_generic(generic);
+                            for generic in generics {
+                                self.ctx.push_generic(generic);
+                            }
+
+                            &self.infer_call_expr(ident, &func, args, params)
+                        } else if let Some(str) = citem.as_enum() {
+                            if let Some(_) = str.get_variant(ident) {
+                                &HirTyKind::Ident {
+                                    ident: citem.ident.clone(),
+                                    generics: HirGenericArgs::empty(),
+                                    is_generic: false,
+                                }
+                            } else if let Some(item) = str.get_item(ident) {
+                                let func = self.compiled.get_item(*item).as_fn().clone();
+
+                                for generic in generics {
+                                    self.ctx.push_generic(generic);
+                                }
+
+                                &self.infer_call_expr(ident, &func, args, params)
+                            } else {
+                                todo!()
+                            }
+                        } else {
+                            todo!()
                         }
-
-                        &self.infer_call_expr(ident, &func, args, params)
                     }
                     _ => {
                         self.infer_expr(expr);
@@ -616,7 +665,8 @@ impl<'a> TypeInference<'a> {
                                 .resolve_symbol(&ident_str, self.current_mod.as_usize());
 
                             if let Some(sym) = sym {
-                                let method_id = sym.as_struct().get_item(function_call.clone());
+                                let method_id =
+                                    sym.as_struct().unwrap().get_item(function_call.clone());
 
                                 if let Some(method_id) = method_id {
                                     let mut method_fn =

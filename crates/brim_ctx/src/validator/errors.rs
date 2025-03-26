@@ -39,3 +39,13 @@ pub struct DuplicateFieldInitializer {
     pub second: (Span, usize),
     pub name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("found an item with a same name as the variant: `{name}`")]
+pub struct DuplicateVariantName {
+    #[error("variant defined here")]
+    pub span: (Span, usize),
+    #[error("duplicate found here")]
+    pub dup: (Span, usize),
+    pub name: String,
+}

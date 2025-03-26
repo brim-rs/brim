@@ -57,6 +57,12 @@ impl TypeChecker {
                     self.check_item(item.kind);
                 }
             }
+            HirItemKind::Enum(en) => {
+                for (_, item) in en.items {
+                    let item = self.compiled.get_item(item).clone();
+                    self.check_item(item.kind);
+                }
+            }
             HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::TypeAlias(_) => {}
             _ => todo!("missing implementation for {:?}", item),
         }

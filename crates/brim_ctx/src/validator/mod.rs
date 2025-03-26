@@ -13,6 +13,7 @@ use brim_middle::{
     walker::AstWalker,
 };
 use brim_span::span::Span;
+use errors::DuplicateVariantName;
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use tracing::debug;
@@ -87,6 +88,22 @@ impl AstWalker for AstValidator {
             ItemKind::Struct(str) => {
                 for item in str.items.iter_mut() {
                     self.visit_item(item);
+                }
+            }
+            ItemKind::Enum(e) => {
+                for item in &mut e.items {
+                    self.visit_item(item);
+                }
+
+                for variant in e.variants.clone() {
+                    // we check if there is an item with the same name as the variant
+                    if let Some(item) = e.find_item(&variant.ident) {
+                        self.ctx.emit_impl(DuplicateVariantName {
+                            dup: (item.span, self.current_file),
+                            span: (variant.span, self.current_file),
+                            name: variant.ident.to_string(),
+                        });
+                    }
                 }
             }
             ItemKind::Namespace(_)

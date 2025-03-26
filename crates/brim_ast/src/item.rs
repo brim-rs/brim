@@ -101,12 +101,53 @@ pub enum ItemKind {
     External(ExternBlock),
     /// Namespace. Created internally by the compiler.
     Namespace(HashMap<String, (Ident, (ItemId, usize))>),
+    /// Enum declaration eg. `enum Foo { ... }`
+    Enum(Enum),
+}
+
+#[derive(Clone, Debug)]
+pub struct Enum {
+    pub span: Span,
+    pub ident: Ident,
+    pub variants: Vec<EnumVariant>,
+    pub generics: Generics,
+    pub items: Vec<Item>,
+}
+
+impl Enum {
+    pub fn find(&self, ident: &Ident) -> Option<&EnumVariant> {
+        self.variants.iter().find(|variant| &variant.ident == ident)
+    }
+
+    pub fn find_item(&self, ident: &Ident) -> Option<&Item> {
+        self.items.iter().find(|item| &item.ident == ident)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct EnumVariant {
+    pub span: Span,
+    pub ident: Ident,
+    pub fields: Vec<EnumField>,
+}
+
+#[derive(Clone, Debug)]
+pub struct EnumField {
+    pub span: Span,
+    pub ty: Ty,
 }
 
 impl ItemKind {
     pub fn as_struct(&self) -> Option<&Struct> {
         match self {
             ItemKind::Struct(struct_) => Some(struct_),
+            _ => None,
+        }
+    }
+
+    pub fn as_enum(&self) -> Option<&Enum> {
+        match self {
+            ItemKind::Enum(enum_) => Some(enum_),
             _ => None,
         }
     }
@@ -122,6 +163,7 @@ impl Display for ItemKind {
             ItemKind::Module(_) => write!(f, "module"),
             ItemKind::External(_) => write!(f, "external"),
             ItemKind::Namespace(_) => write!(f, "namespace"),
+            ItemKind::Enum(_) => write!(f, "enum"),
         }
     }
 }

@@ -10,6 +10,16 @@ struct Vec2<T> {
     }
 }
 
+enum Val {
+    Int(i32),
+    Float(f64),
+    String(String),
+    Empty,
+}
+
+pub fn testFn(val: Val) {
+}
+
 pub fn main() {
     // Here val is any
     //let val: any = 42;
@@ -18,5 +28,9 @@ pub fn main() {
     //let x = @cast(@anyCast(val, i32), u32);
 
     let stderr = getStdErr();
-    let usize = stderr.write(b"dw");
+    //let usize = stderr.write(b"dw");
+
+    let int_val = Val::Int(42);
+    let empty_variant = Val::Empty();
+    let x = testFn(int_val);
 };

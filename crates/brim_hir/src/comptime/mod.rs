@@ -106,7 +106,17 @@ impl<'a> ComptimeTransformer<'a> {
         match &mut item.kind {
             HirItemKind::Fn(func) => self.visit_fn(func),
             HirItemKind::TypeAlias(type_alias) => self.visit_type_alias(type_alias),
-            HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::Struct(_) => {}
+            HirItemKind::Enum(en) => {
+                for (_, id) in &mut en.items {
+                    self.visit_item(id);
+                }
+            }
+            HirItemKind::Struct(str) => {
+                for (_, id) in &mut str.items {
+                    self.visit_item(id);
+                }
+            }
+            HirItemKind::Namespace(_) | HirItemKind::Use(_) => {}
             HirItemKind::External(_) => {}
         }
 
