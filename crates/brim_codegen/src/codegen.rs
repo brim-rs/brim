@@ -175,6 +175,7 @@ impl CppCodegen {
                 "cstring",
                 "cstddef",
                 "span",
+                "variant",
             ]
             .iter()
             .map(|s| s.to_string())
