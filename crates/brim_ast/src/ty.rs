@@ -85,7 +85,7 @@ pub enum PrimitiveType {
 
     Bool,
     Char,
-    Str,
+    String,
     Void,
 
     /// Any type `any` (brim) -> `std::any` (C++)
@@ -112,7 +112,7 @@ impl PrimitiveType {
 
             "bool" => Some(PrimitiveType::Bool),
             "char" => Some(PrimitiveType::Char),
-            "str" => Some(PrimitiveType::Str),
+            "string" => Some(PrimitiveType::String),
 
             "any" => Some(PrimitiveType::Any),
             _ => None,
@@ -158,7 +158,7 @@ impl PrimitiveType {
             (l, r) if l == r => Some(l.clone()),
 
             // String promotion
-            (Str, Char) | (Char, Str) => Some(Str),
+            (String, Char) | (Char, String) => Some(String),
 
             // Default case
             _ => None,
@@ -188,7 +188,7 @@ impl Display for PrimitiveType {
 
             Bool => "bool",
             Char => "char",
-            Str => "str",
+            String => "str",
             Void => "void",
 
             Any => "any",

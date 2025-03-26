@@ -75,7 +75,7 @@ builtin_function! {
     fn os(file) {
         Ok(HirExpr {
             id: ItemId::new(),
-            ty: HirTyKind::Primitive(PrimitiveType::Str),
+            ty: HirTyKind::Primitive(PrimitiveType::String),
             kind: HirExprKind::Literal(Lit::new(LitKind::Str, Symbol::new(&if cfg!(target_os = "linux") {
                 "linux"
             } else if cfg!(target_os = "macos") {

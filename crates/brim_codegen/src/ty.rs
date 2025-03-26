@@ -112,7 +112,7 @@ impl CppCodegen {
             PrimitiveType::Bool => "bool",
 
             PrimitiveType::Char => "char",
-            PrimitiveType::Str => "std::string",
+            PrimitiveType::String => "std::string",
 
             PrimitiveType::Any => "std::any",
         }

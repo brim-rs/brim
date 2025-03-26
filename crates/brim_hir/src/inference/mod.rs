@@ -556,7 +556,7 @@ impl<'a> TypeInference<'a> {
                 }
             }
             HirExprKind::Literal(lit) => match lit.kind {
-                LitKind::Str => &HirTyKind::Primitive(PrimitiveType::Str),
+                LitKind::Str => &HirTyKind::Primitive(PrimitiveType::String),
                 LitKind::Byte => &HirTyKind::Primitive(PrimitiveType::U8),
                 LitKind::ByteStr => &HirTyKind::Array(
                     Box::new(HirTyKind::Primitive(PrimitiveType::U8)),

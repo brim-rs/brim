@@ -286,7 +286,7 @@ impl HirTyKind {
             LitKind::Float => HirTyKind::Primitive(PrimitiveType::F32),
             LitKind::Bool => HirTyKind::Primitive(PrimitiveType::Bool),
             LitKind::Char => HirTyKind::Primitive(PrimitiveType::Char),
-            LitKind::Str => HirTyKind::Primitive(PrimitiveType::Str),
+            LitKind::Str => HirTyKind::Primitive(PrimitiveType::String),
             LitKind::ByteStr => HirTyKind::Vec(Box::new(HirTyKind::Primitive(PrimitiveType::U8))),
             LitKind::Byte => HirTyKind::Primitive(PrimitiveType::U8),
             _ => unimplemented!(),

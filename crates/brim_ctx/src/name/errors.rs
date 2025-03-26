@@ -104,3 +104,11 @@ pub struct NoVariantInEnum {
     pub name: String,
     pub enum_name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("identifier `{name}` not found as a symbol or a generic parameter")]
+pub struct IdentifierNotFound {
+    #[error("identifier `{name}` not found")]
+    pub span: (Span, usize),
+    pub name: String,
+}

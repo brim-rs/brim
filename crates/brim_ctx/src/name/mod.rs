@@ -11,8 +11,9 @@ use crate::name::{
 use brim_ast::{
     ItemId,
     expr::{Expr, ExprKind, MatchArm},
-    item::{Block, FnDecl, Ident, Item, ItemKind, Struct, TypeAlias, TypeAliasValue},
+    item::{Block, FnDecl, GenericParam, Ident, Item, ItemKind, Struct, TypeAlias, TypeAliasValue},
     stmts::Let,
+    ty::{Ty, TyKind},
 };
 use brim_diagnostics::diag_opt;
 use brim_hir::CompiledModules;
@@ -23,11 +24,37 @@ use brim_middle::{
 use brim_span::span::Span;
 use convert_case::{Case, Casing};
 use errors::{
-    InvalidReceiverForStaticAccess, ItemNotAMethodInStruct, NoItemInStruct, NoVariantInEnum,
-    StaticCallToMethodInStruct,
+    IdentifierNotFound, InvalidReceiverForStaticAccess, ItemNotAMethodInStruct, NoItemInStruct,
+    NoVariantInEnum, StaticCallToMethodInStruct,
 };
 use scopes::{ScopeManager, VariableInfo};
 use tracing::debug;
+
+#[derive(Debug, Clone)]
+pub struct GenericsCtx {
+    /// Generics available in the current scope.
+    pub generics: Vec<GenericParam>,
+}
+
+impl GenericsCtx {
+    pub fn new() -> Self {
+        Self {
+            generics: Vec::new(),
+        }
+    }
+
+    pub fn push_generic(&mut self, generic: GenericParam) {
+        self.generics.push(generic);
+    }
+
+    pub fn clear_generics(&mut self) {
+        self.generics.clear();
+    }
+
+    pub fn find(&self, name: &str) -> Option<&GenericParam> {
+        self.generics.iter().find(|g| &g.ident.to_string() == name)
+    }
+}
 
 #[derive(Debug)]
 pub struct NameResolver<'a> {
@@ -40,6 +67,7 @@ pub struct NameResolver<'a> {
     pub compiled: &'a mut CompiledModules,
     pub external: bool,
     pub simple: &'a mut SimpleModules,
+    pub generics: GenericsCtx,
 }
 
 impl<'a> NameResolver<'a> {
@@ -59,6 +87,7 @@ impl<'a> NameResolver<'a> {
             compiled,
             external: false,
             simple,
+            generics: GenericsCtx::new(),
         }
     }
 
@@ -162,6 +191,44 @@ impl<'a> NameResolver<'a> {
         }
     }
 
+    fn resolve_type(&mut self, ty: Ty) {
+        match &ty.kind {
+            TyKind::Ref(ty, _) | TyKind::Ptr(ty, _) | TyKind::Array(ty, _) => {
+                self.resolve_type(*ty.clone())
+            }
+            TyKind::Mut(ty) | TyKind::Vec(ty) => self.resolve_type(*ty.clone()),
+            TyKind::Result(ok, err) => {
+                self.resolve_type(*ok.clone());
+                self.resolve_type(*err.clone());
+            }
+            TyKind::Ident { ident, generics } => {
+                // try to resolve the identifier
+                let ident = ident.clone();
+                self.resolve_ident(ident);
+
+                for generic in generics.params.clone() {
+                    self.resolve_type(generic.ty);
+                }
+            }
+            TyKind::Primitive(_) | TyKind::Err(_) => {}
+        }
+    }
+
+    pub fn resolve_ident(&mut self, ident: Ident) {
+        let sym = self.compiled.symbols.resolve(&ident.to_string(), self.file);
+
+        if let None = sym {
+            // if the symbol wasn't found then we will look for a generic
+
+            if let None = self.generics.find(&ident.to_string()) {
+                self.ctx.emit_impl(IdentifierNotFound {
+                    span: (ident.span, self.file),
+                    name: ident.to_string(),
+                });
+            }
+        }
+    }
+
     fn resolve_variable(&mut self, ident: &Ident) -> Option<(Scope, VariableInfo)> {
         let var_name = ident.name.to_string();
         let scope = self.is_variable_declared(&var_name);
@@ -210,17 +277,39 @@ impl<'a> AstWalker for NameResolver<'a> {
             }
             ItemKind::Namespace(_) => unreachable!(),
             ItemKind::Enum(e) => {
+                for generics in e.generics.params.clone() {
+                    self.generics.push_generic(generics);
+                }
+
+                for variant in &mut e.variants {
+                    for field in &mut variant.fields {
+                        self.resolve_type(field.ty.clone());
+                    }
+                }
+
                 for item in &mut e.items {
                     self.visit_item(item);
                 }
+
+                self.generics.clear_generics();
             }
         }
     }
 
     fn visit_struct(&mut self, str: &mut Struct) {
+        for generics in str.generics.params.clone() {
+            self.generics.push_generic(generics);
+        }
+
+        for field in &mut str.fields {
+            self.resolve_type(field.ty.clone());
+        }
+
         for item in &mut str.items {
             self.visit_item(item);
         }
+
+        self.generics.clear_generics();
     }
 
     fn visit_let(&mut self, let_stmt: &mut Let) {
@@ -238,6 +327,10 @@ impl<'a> AstWalker for NameResolver<'a> {
 
         self.validate_var_name(&name, let_stmt.ident.span);
 
+        if let Some(ty) = &mut let_stmt.ty {
+            self.resolve_type(ty.clone());
+        }
+
         if let Some(expr) = &mut let_stmt.value {
             self.walk_expr(expr);
         }
@@ -247,6 +340,9 @@ impl<'a> AstWalker for NameResolver<'a> {
         match &mut ta.ty {
             TypeAliasValue::Const(expr) => {
                 self.walk_expr(expr);
+            }
+            TypeAliasValue::Ty(ty) => {
+                self.resolve_type(ty.clone());
             }
             _ => {}
         }
@@ -263,6 +359,9 @@ impl<'a> AstWalker for NameResolver<'a> {
     }
 
     fn visit_fn(&mut self, func: &mut FnDecl) {
+        for generic in func.generics.params.clone() {
+            self.generics.push_generic(generic);
+        }
         self.scopes = ScopeManager::new(self.file);
 
         let name = func.sig.name.to_string();
@@ -284,11 +383,14 @@ impl<'a> AstWalker for NameResolver<'a> {
             });
 
             self.validate_var_name(&param.name.to_string(), param.name.span);
+            self.resolve_type(param.ty.clone());
         }
 
         if let Some(body) = &mut func.body {
             self.visit_block(body);
         }
+
+        self.generics.clear_generics();
     }
 
     fn walk_expr(&mut self, expr: &mut Expr) {
@@ -457,7 +559,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                 self.resolve_path(idents.clone(), expr.id, false);
             }
             ExprKind::Type(ty) => {
-                self.visit_ty(ty);
+                self.resolve_type(*ty.clone());
             }
         }
     }

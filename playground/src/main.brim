@@ -13,7 +13,7 @@ struct Vec2<T> {
 enum Val {
     Int(i32),
     Float(f64),
-    String(String),
+    String(string),
     Empty,
 }
 
