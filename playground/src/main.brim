@@ -17,7 +17,8 @@ enum Val {
     Empty,
 }
 
-pub fn testFn(val: Val) {
+pub fn testFn(val: Val) Val {
+    return Val::String("Hello, World!");
 }
 
 pub fn main() {

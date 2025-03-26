@@ -9,7 +9,10 @@ use crate::{
         },
     },
 };
+use brim_ast::ty::PrimitiveType;
 use brim_span::span::Span;
+
+use super::errors::CannotInitializeWithVoid;
 
 impl TypeChecker {
     pub fn check_expr(&mut self, expr: HirExpr) {
@@ -82,7 +85,11 @@ impl TypeChecker {
                 }
             }
             HirExprKind::Assign(lhs, rhs) => {
-                if lhs.ty != rhs.ty {
+                if rhs.ty == HirTyKind::Primitive(PrimitiveType::Void) {
+                    self.ctx.emit_impl(CannotInitializeWithVoid {
+                        span: (rhs.span, self.mod_id),
+                    });
+                } else if lhs.ty != rhs.ty {
                     self.ctx.emit_impl(AssignMismatch {
                         span: (lhs.span.to(rhs.span), self.mod_id),
                         expected: lhs.ty.clone(),

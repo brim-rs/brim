@@ -68,3 +68,10 @@ pub struct NoReturnFound {
     pub name: String,
     pub expected: HirTyKind,
 }
+
+#[derive(Diagnostic)]
+#[error("variables can't be initialized or assigned to with an expression of type void")]
+pub struct CannotInitializeWithVoid {
+    #[error]
+    pub span: (Span, usize),
+}

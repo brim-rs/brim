@@ -1,12 +1,17 @@
+use brim_ast::ty::PrimitiveType;
+
 use crate::{
     inference::scope::TypeInfo,
     items::HirFn,
     stmts::{HirStmt, HirStmtKind},
+    ty::HirTyKind,
     type_checker::{
         TypeChecker,
         errors::{CannotInitializeVariable, NoReturnFound},
     },
 };
+
+use super::errors::CannotInitializeWithVoid;
 
 impl TypeChecker {
     pub fn check_fn(&mut self, func: HirFn) {
@@ -44,13 +49,19 @@ impl TypeChecker {
                 if let Some(val) = value {
                     let val_ty = val.ty.clone();
 
-                    if !ty.can_be_initialized_with(&val_ty) {
-                        self.ctx.emit_impl(CannotInitializeVariable {
+                    if val.ty == HirTyKind::Primitive(PrimitiveType::Void) {
+                        self.ctx.emit_impl(CannotInitializeWithVoid {
                             span: (stmt.span, self.mod_id),
-                            name: ident.to_string(),
-                            ty: ty.clone(),
-                            val_ty,
                         });
+                    } else {
+                        if !ty.can_be_initialized_with(&val_ty) {
+                            self.ctx.emit_impl(CannotInitializeVariable {
+                                span: (stmt.span, self.mod_id),
+                                name: ident.to_string(),
+                                ty: ty.clone(),
+                                val_ty,
+                            });
+                        }
                     }
 
                     self.check_expr(val);
