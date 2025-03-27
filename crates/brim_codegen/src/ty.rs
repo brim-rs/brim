@@ -85,7 +85,8 @@ impl CppCodegen {
             }
 
             // Only for now, this will be replaced in type checking
-            HirTyKind::Placeholder | HirTyKind::Err(_) => "auto".to_string(),
+            HirTyKind::Placeholder => panic!("should be resolved: {:#?}", ty),
+            HirTyKind::Err(_) => panic!("some unhandeled error"),
 
             _ => todo!("transform_ty: {:?}", ty),
         }

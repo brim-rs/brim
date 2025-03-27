@@ -55,7 +55,7 @@ impl TypeChecker {
                 let func = self.current_fn();
                 let ret_ty = &func.sig.return_type;
 
-                if ret_ty != &expr.ty {
+                if !ret_ty.simple_eq(&expr.ty) {
                     self.ctx.emit_impl(FunctionReturnTypeMismatch {
                         span: (expr.span, self.mod_id),
                         expected: ret_ty.clone(),

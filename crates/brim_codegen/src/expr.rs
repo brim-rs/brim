@@ -19,6 +19,7 @@ impl CppCodegen {
             self.hir_mut().expanded_by_builtins.remove(&expr.id);
             let params = &mut self.hir().builtin_args.get(&expr.id).unwrap().clone();
 
+            println!("{:#?}", params);
             if let Some(codegen) = func.codegen {
                 return (codegen)(self, params);
             }
@@ -252,7 +253,8 @@ impl CppCodegen {
                         self.generate_suffix(suffix.to_string())
                     )
                 } else {
-                    format!("{}({})", self.generate_ty(expr_ty), lit.symbol)
+                    let ty = self.generate_ty(expr_ty);
+                    format!("{}({})", ty, lit.symbol)
                 }
             }
             LitKind::Str => format!(

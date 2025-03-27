@@ -303,10 +303,6 @@ impl<'a> TypeInference<'a> {
     }
 
     fn infer_expr(&mut self, expr: &mut HirExpr) {
-        if expr.ty != HirTyKind::Placeholder {
-            return;
-        }
-
         let kind = match &mut expr.kind {
             HirExprKind::Unary(op, operand) => {
                 self.infer_expr(operand);
@@ -582,8 +578,7 @@ impl<'a> TypeInference<'a> {
                     self.infer_expr(&mut branch.block);
                 }
 
-                // For now, we will just use placeholder until we figure out how to compare types.
-                &HirTyKind::Placeholder
+                &if_expr.then_block.ty
             }
             HirExprKind::Builtin(_, args) => {
                 for arg in args {
@@ -734,7 +729,14 @@ impl<'a> TypeInference<'a> {
             }
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
-        expr.ty = kind.clone();
+
+        if expr.ty == HirTyKind::Placeholder {
+            expr.ty = kind.clone();
+        }
+
+        if let HirExprKind::Unary(op, ope) = &expr.kind {
+            println!("{:#?}", self.hir.builtin_args);
+        }
 
         self.hir
             .hir_items

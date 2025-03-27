@@ -19,7 +19,7 @@ pub struct HirTy {
     pub span: Span,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum HirTyKind {
     /// Reference type eg. `&T` (brim) -> `T&` (C++) or `&const T` (brim) -> `const T&` (C++)
     Ref(Box<HirTyKind>, Mutable),
@@ -90,19 +90,19 @@ impl Display for HirTyKind {
     }
 }
 
-impl PartialEq for HirTyKind {
-    fn eq(&self, other: &Self) -> bool {
+impl HirTyKind {
+    pub fn simple_eq(&self, other: &Self) -> bool {
         match (self, other) {
             (HirTyKind::Primitive(PrimitiveType::Any), _) => true,
-            (HirTyKind::Ref(ty1, c1), HirTyKind::Ref(ty2, c2)) => ty1 == ty2,
-            (HirTyKind::Ptr(ty1, c1), HirTyKind::Ptr(ty2, c2)) => ty1 == ty2,
-            (HirTyKind::Ref(ty1, _) | HirTyKind::Ptr(ty1, _), ty2) => *ty1 == Box::new(ty2.clone()),
-            (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1 == ty2,
-            (HirTyKind::Mut(ty1), ty2) => *ty1 == Box::new(ty2.clone()),
+            (HirTyKind::Ref(ty1, c1), HirTyKind::Ref(ty2, c2)) => ty1.simple_eq(ty2),
+            (HirTyKind::Ptr(ty1, c1), HirTyKind::Ptr(ty2, c2)) => ty1.simple_eq(ty2),
+            (HirTyKind::Ref(ty1, _) | HirTyKind::Ptr(ty1, _), ty2) => ty1.simple_eq(ty2),
+            (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1.simple_eq(ty2),
+            (HirTyKind::Mut(ty1), ty2) => ty1.simple_eq(ty2),
             (HirTyKind::Array(ty1, len1), HirTyKind::Array(ty2, len2)) => {
-                ty1 == ty2 && len1 == len2
+                ty1.simple_eq(ty2) && len1 == len2
             }
-            (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1 == ty2,
+            (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.simple_eq(ty2),
             (HirTyKind::Primitive(p1), HirTyKind::Primitive(p2)) => p1 == p2,
             (
                 HirTyKind::Ident {
@@ -121,11 +121,7 @@ impl PartialEq for HirTyKind {
             _ => false,
         }
     }
-}
 
-impl Eq for HirTyKind {}
-
-impl HirTyKind {
     pub fn can_be_an_arg_for_param(&self, param: &HirTyKind) -> bool {
         match (param, self) {
             (HirTyKind::Primitive(PrimitiveType::Any), _) => true,
@@ -137,7 +133,7 @@ impl HirTyKind {
                 HirTyKind::Mut(ty2)
                 | HirTyKind::Ref(ty2, Mutable::Yes)
                 | HirTyKind::Ptr(ty2, Mutable::Yes),
-            ) => ty1 == ty2,
+            ) => ty1.simple_eq(ty2),
 
             (
                 HirTyKind::Mut(ty1)
@@ -146,13 +142,13 @@ impl HirTyKind {
                 _,
             ) => false,
 
-            (HirTyKind::Array(ty1, None), HirTyKind::Array(ty2, len2)) => ty1 == ty2,
+            (HirTyKind::Array(ty1, None), HirTyKind::Array(ty2, len2)) => ty1.simple_eq(ty2),
 
             (HirTyKind::Array(ty1, len1), HirTyKind::Array(ty2, len2)) => {
-                ty1 == ty2 && len1 == len2
+                ty1.simple_eq(ty2) && len1 == len2
             }
 
-            (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1 == ty2,
+            (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.simple_eq(ty2),
 
             (HirTyKind::Primitive(p1), HirTyKind::Primitive(p2)) => p1 == p2,
 
