@@ -104,7 +104,7 @@ impl<'a> ComptimeTransformer<'a> {
         let mut item = self.compiled.items.get(&item).unwrap().clone();
 
         match &mut item.kind {
-            HirItemKind::Fn(func) => self.visit_fn(func),
+            HirItemKind::Fn(func) => {}
             HirItemKind::TypeAlias(type_alias) => self.visit_type_alias(type_alias),
             HirItemKind::Enum(en) => {
                 for (_, id) in &mut en.items {
@@ -143,111 +143,6 @@ impl<'a> ComptimeTransformer<'a> {
 
     fn transform_comptime_expr(&mut self, expr: HirExpr) -> ComptimeReturnValue {
         Evaluator::new(self.current_mod, self.compiled).eval_expr(expr)
-    }
-
-    fn visit_fn(&mut self, func: &mut HirFn) {}
-
-    fn visit_let(
-        &mut self,
-        ident: &mut Ident,
-        ty: &mut Option<HirTyKind>,
-        value: &mut Option<HirExpr>,
-    ) {
-        if let Some(value) = value {
-            self.visit_expr(value);
-        }
-    }
-
-    fn visit_stmt(&mut self, stmt: &mut HirStmt) {
-        match &mut stmt.kind {
-            HirStmtKind::Let { ident, ty, value } => self.visit_let(ident, ty, value),
-            HirStmtKind::Expr(expr) => self.visit_expr(expr),
-        }
-    }
-
-    fn visit_expr(&mut self, expr: &mut HirExpr) {
-        match &mut expr.kind {
-            HirExprKind::Binary(lhs, _, rhs) => {
-                self.visit_expr(lhs);
-                self.visit_expr(rhs);
-            }
-            HirExprKind::Unary(_, operand) => self.visit_expr(operand),
-            HirExprKind::Field(base, _) => self.visit_expr(base),
-            HirExprKind::Index(base, index) => {
-                self.visit_expr(base);
-                self.visit_expr(index);
-            }
-            HirExprKind::Literal(_) => {}
-            HirExprKind::Return(inner) => self.visit_expr(inner),
-            HirExprKind::Var(_) => {}
-            HirExprKind::Assign(lhs, rhs) => {
-                self.visit_expr(lhs);
-                self.visit_expr(rhs);
-            }
-            HirExprKind::If(if_expr) => {
-                self.visit_expr(&mut if_expr.condition);
-                self.visit_expr(&mut if_expr.then_block);
-
-                for else_if in &mut if_expr.else_ifs {
-                    self.visit_expr(&mut else_if.condition);
-                    self.visit_expr(&mut else_if.block);
-                }
-
-                if let Some(else_branch) = &mut if_expr.else_block {
-                    self.visit_expr(else_branch);
-                }
-            }
-            HirExprKind::Block(block) => self.visit_block(block),
-            HirExprKind::Call(func, args, _) => {
-                self.visit_expr(func);
-                for arg in args {
-                    self.visit_expr(arg);
-                }
-            }
-            HirExprKind::Comptime(inner) => {
-                if let ComptimeValue::Expr(expr) = inner {
-                    *inner = ComptimeValue::Resolved(self.transform_comptime_expr(*expr.clone()));
-                }
-            }
-            HirExprKind::Array(items) => {
-                for item in items {
-                    self.visit_expr(item);
-                }
-            }
-
-            HirExprKind::StructConstructor(constructor) => {
-                for (_, field) in &mut constructor.fields {
-                    self.visit_expr(field);
-                }
-            }
-            HirExprKind::Match(expr, arms) => {
-                self.visit_expr(expr);
-                for arm in arms {
-                    match arm {
-                        HirMatchArm::Case(pat, block) => {
-                            self.visit_expr(pat);
-                            self.visit_expr(block);
-                        }
-                        HirMatchArm::Else(block) => {
-                            self.visit_expr(block);
-                        }
-                    }
-                }
-            }
-            HirExprKind::Path(_)
-            | HirExprKind::Builtin(_, _)
-            | HirExprKind::Type(_)
-            | HirExprKind::StaticAccess(_, _)
-            | HirExprKind::MethodCall(_, _) => panic!(
-                "not implemented. or isn't allowed in a comptime block (add an error for this)",
-            ),
-        }
-    }
-
-    fn visit_block(&mut self, block: &mut HirBlock) {
-        for stmt in &mut block.stmts {
-            self.visit_stmt(stmt);
-        }
     }
 }
 
