@@ -1,4 +1,5 @@
 use windows from self::parent::os::windows;
+use { IoError } from self::parent::io::error;
 
 pub type Handle = match @os() {
     "windows" => windows::HANDLE,
@@ -10,5 +11,5 @@ pub type Handle = match @os() {
 pub struct File {
     handle: Handle,
 
-    //fn write(self: &File, data: &[u8]) usize!any {}
+    //fn write(self: &File, data: &[u8]) usize!IoError {}
 }

@@ -161,7 +161,21 @@ impl<'a> AstWalker for UseCollector<'a> {
     fn visit_item(&mut self, item: &mut Item) {
         match &item.kind {
             ItemKind::Use(use_stmt) => {
-                let id = get_id_by_name(&use_stmt.resolved.clone().unwrap()).expect(&format!(
+                let path = &use_stmt.resolved.clone().unwrap();
+                let id = get_id_by_name(path);
+
+                if id.is_err() {
+                    self.ctx.emit_impl(ModuleNotFoundError {
+                        span: (use_stmt.span.clone(), self.file_id),
+                        path: path.clone().display().to_string(),
+                        note: "make sure you added this module using `mod <path to module>`"
+                            .to_string(),
+                    });
+
+                    return;
+                }
+
+                let id = id.expect(&format!(
                     "Failed to get id for module: {}",
                     use_stmt.resolved.clone().unwrap().display()
                 ));
@@ -215,4 +229,14 @@ pub struct UseError {
     #[error]
     pub span: (Span, usize),
     pub symbol: String,
+}
+
+#[derive(Diagnostic)]
+#[error("module `{path}` not found in file map.")]
+pub struct ModuleNotFoundError {
+    #[error]
+    pub span: (Span, usize),
+    pub path: String,
+    #[note]
+    pub note: String,
 }

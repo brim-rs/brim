@@ -1,3 +1,4 @@
 mod fs::file;
 mod os::windows;
 mod io::stdio;
+mod io::error;
