@@ -74,43 +74,45 @@ impl Parser {
         let mut items = vec![];
 
         while !self.is_brace(Orientation::Close) {
-            if self.is_ident()
-                && self.next().kind == TokenKind::Delimiter(Delimiter::Paren, Orientation::Open)
-                || self.is_ident() && self.next().kind == TokenKind::Comma
-            {
-                let variant = self.parse_enum_variant()?;
-                variants.push(variant);
-
-                self.eat_possible(TokenKind::Comma);
-            } else if self.is_function()
+            if self.is_function()
                 || self.current().is_keyword(Use)
                 || self.current().is_keyword(Type)
             {
-                let item_span = self.current().span;
-                let vis = self.parse_visibility();
-
-                let (item_ident, kind) = if self.is_function() {
-                    self.set_fn_ctx(FunctionContext::Method);
-                    self.parse_fn()?
-                } else if self.current().is_keyword(Use) {
-                    self.parse_use(item_span)?
-                } else if self.current().is_keyword(Type) {
-                    self.parse_type_alias()?
-                } else {
-                    break;
-                };
-
-                self.eat_semis();
-                items.push(Item {
-                    id: self.new_id(),
-                    span: item_span,
-                    vis,
-                    kind,
-                    ident: item_ident,
-                });
-            } else {
                 break;
             }
+
+            let variant = self.parse_enum_variant()?;
+            variants.push(variant);
+
+            if !self.eat(TokenKind::Comma) {
+                break;
+            }
+        }
+
+        while !self.is_brace(Orientation::Close) {
+            let item_span = self.current().span;
+            let vis = self.parse_visibility();
+
+            let (item_ident, kind) = if self.is_function() {
+                self.set_fn_ctx(FunctionContext::Method);
+                self.parse_fn()?
+            } else if self.current().is_keyword(Use) {
+                self.parse_use(item_span)?
+            } else if self.current().is_keyword(Type) {
+                self.parse_type_alias()?
+            } else {
+                break;
+            };
+
+            self.eat_semis();
+
+            items.push(Item {
+                id: self.new_id(),
+                span: item_span,
+                vis,
+                kind,
+                ident: item_ident,
+            });
         }
 
         self.expect_cbrace()?;
