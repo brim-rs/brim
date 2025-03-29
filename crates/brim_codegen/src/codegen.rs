@@ -1,8 +1,9 @@
 use crate::CodeBuilder;
+use brim_ast::item::Ident;
 use brim_hir::{
     Codegen, CompiledModules,
     expr::HirExpr,
-    items::{HirItem, HirItemKind, HirStruct},
+    items::{HirGenerics, HirItem, HirItemKind, HirStruct},
     stmts::HirStmt,
     transformer::{HirModule, HirModuleMap},
     ty::HirTyKind,
@@ -24,7 +25,7 @@ pub struct CppCodegen {
     pub imports: Vec<String>,
     pub add_prefix: bool,
     pub compiled: CompiledModules,
-    pub parent_struct: Option<HirStruct>,
+    pub parent_item: Option<(Ident, HirGenerics)>,
 }
 
 #[derive(Debug)]
@@ -182,7 +183,7 @@ impl CppCodegen {
             .collect(),
             add_prefix: true,
             compiled,
-            parent_struct: None,
+            parent_item: None,
         }
     }
 

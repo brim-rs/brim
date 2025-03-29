@@ -10,8 +10,8 @@ impl CppCodegen {
             HirItemKind::Fn(decl) => {
                 let ret = self.generate_ty(decl.sig.return_type.clone());
 
-                let generics = if let Some(str) = &self.parent_struct {
-                    str.generics.join(&decl.sig.generics)
+                let generics = if let Some((_, generics)) = &self.parent_item {
+                    generics.join(&decl.sig.generics)
                 } else {
                     decl.sig.generics.clone()
                 };
@@ -31,8 +31,8 @@ impl CppCodegen {
                     .join(", ");
 
                 let name = if self.add_prefix {
-                    if let Some(str) = &self.parent_struct {
-                        format!("brim_{}_{}", str.ident, decl.sig.name.to_string())
+                    if let Some((ident, _)) = &self.parent_item {
+                        format!("brim_{}_{}", ident, decl.sig.name.to_string())
                     } else {
                         format!("brim_{}", decl.sig.name.to_string())
                     }
@@ -84,13 +84,13 @@ impl CppCodegen {
                 self.code.decrease_indent();
                 self.code.add_line("};");
 
-                self.parent_struct = Some(s.clone());
+                self.parent_item = Some((s.ident.clone(), s.generics));
                 for (_, id) in s.items {
                     let item = self.compiled.get_item(id);
 
                     self.generate_item(item.clone(), compiled);
                 }
-                self.parent_struct.take();
+                self.parent_item.take();
             }
             HirItemKind::External(external) => {
                 if let Some(abi) = external.abi {
@@ -117,7 +117,7 @@ impl CppCodegen {
                     self.generate_wrapper_item(item, compiled);
                 }
             }
-            HirItemKind::Enum(e) => {
+            HirItemKind::Enum(mut e) => {
                 self.generate_generics(&e.generics);
                 let name = if self.add_prefix {
                     format!("brim_{}", e.ident.name.to_string())
@@ -203,8 +203,28 @@ impl CppCodegen {
                     ));
                 }
 
+                for (ident, id) in e.items.clone() {
+                    let item = self.compiled.get_item(id.clone());
+
+                    if let Some(func) = item.as_fn_safe() {
+                        if !func.is_static() {
+                            self.generate_item(item.clone(), compiled);
+
+                            e.items.remove(&ident);
+                        }
+                    }
+                }
+
                 self.code.decrease_indent();
                 self.code.add_line("};");
+
+                self.parent_item = Some((e.ident, e.generics));
+                for (_, id) in e.items {
+                    let item = self.compiled.get_item(id);
+
+                    self.generate_item(item.clone(), compiled);
+                }
+                self.parent_item.take();
             }
             _ => {}
         }
