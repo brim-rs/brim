@@ -23,6 +23,8 @@ use brim_span::span::Span;
 use indexmap::IndexMap;
 use tracing::debug;
 
+use super::errors::ExpectedStringLiteralError;
+
 impl Parser {
     pub fn parse_expr(&mut self) -> PResult<Expr> {
         self.parse_assignment_expr()
@@ -318,6 +320,24 @@ impl Parser {
             Ok(self.new_expr(block.span, ExprKind::Block(block)))
         } else {
             self.parse_expr()
+        }
+    }
+
+    pub fn expect_str_literal(&mut self) -> PResult<String> {
+        match self.current().kind {
+            TokenKind::Literal(lit) => match lit.kind {
+                LitKind::Str => {
+                    self.advance();
+
+                    Ok(lit.symbol.to_string())
+                }
+                _ => box_diag!(ExpectedStringLiteralError {
+                    span: (self.current().span, self.file)
+                }),
+            },
+            _ => box_diag!(ExpectedStringLiteralError {
+                span: (self.current().span, self.file)
+            }),
         }
     }
 

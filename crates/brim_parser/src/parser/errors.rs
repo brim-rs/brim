@@ -183,3 +183,10 @@ pub struct InvalidExternBlockItem {
     pub span: (Span, usize),
     pub found: String,
 }
+
+#[derive(Diagnostic)]
+#[error("expected string literal.")]
+pub struct ExpectedStringLiteralError {
+    #[error]
+    pub span: (Span, usize),
+}

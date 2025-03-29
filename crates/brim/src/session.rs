@@ -101,7 +101,7 @@ impl Session {
         let file = if self.config.is_bin() {
             self.config.binary_path(path(vec!["src", "main.brim"]))
         } else {
-            self.config.library_path(path(vec!["src", "lib.brim"]))
+            self.config.library_path(path(vec!["src", "index.brim"]))
         };
 
         let path = self.cwd.join(&file);

@@ -1,0 +1,10 @@
+mod fs::file;
+mod os::windows;
+mod io::stdio;
+mod io::error;
+
+// Re-export all symbols from the modules
+pub use * from "./fs/file.brim";
+pub use * from "./os/windows.brim";
+pub use * from "./io/stdio.brim";
+pub use * from "./io/error.brim";

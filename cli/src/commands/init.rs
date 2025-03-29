@@ -35,7 +35,7 @@ impl ProjectType {
     fn default_filename(&self) -> &'static str {
         match self {
             ProjectType::Bin => "main.brim",
-            ProjectType::Lib => "lib.brim",
+            ProjectType::Lib => "index.brim",
         }
     }
 }
@@ -247,5 +247,5 @@ pub fn main() {
 const LIB_CONTENT: &str = r#"
 pub fn add(a: i32, b: i32) -> i32 {
     a + b
-}   
+}
 "#;

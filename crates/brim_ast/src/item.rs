@@ -222,34 +222,14 @@ pub struct Field {
 #[derive(Clone, Debug)]
 pub struct Use {
     pub span: Span,
-    pub path: Vec<PathItemKind>,
+    pub path: String,
     pub imports: ImportsKind,
     pub resolved: Option<PathBuf>,
 }
 
 impl Use {
     pub fn is_dep(&self) -> bool {
-        matches!(self.path[0], PathItemKind::Module(_))
-    }
-
-    pub fn first(&self) -> &PathItemKind {
-        &self.path[0]
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum PathItemKind {
-    Parent,
-    Module(Ident),
-    Current,
-}
-
-impl PathItemKind {
-    pub fn ident(&self) -> Ident {
-        match self {
-            PathItemKind::Module(ident) => ident.clone(),
-            _ => unreachable!("shouldn't be called"),
-        }
+        !self.path.contains('/') && !self.path.contains('\\') && !self.path.starts_with('.')
     }
 }
 

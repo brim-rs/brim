@@ -1,5 +1,5 @@
-use { File, Handle } from self::parent::fs::file;
-use { GetStdHandle } from self::parent::os::windows::kernel32;
+use { File, Handle } from "../fs/file.brim";
+use { GetStdHandle } from "../os/windows/kernel32.brim";
 
 pub fn getStdErrHandle() Handle {
     if @os() == "windows" {

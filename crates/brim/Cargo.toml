@@ -20,6 +20,7 @@ brim-ctx = { workspace = true }
 brim-hir = { workspace = true }
 brim-codegen = { workspace = true }
 brim-middle = { workspace = true }
+fs-err = { workspace = true }
 
 [features]
 snap = []

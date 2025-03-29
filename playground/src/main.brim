@@ -1,5 +1,5 @@
-use { File } from std::fs::file;
-use { getStdErr } from std::io::stdio;
+use { File } from "std";
+use { getStdErr } from "std";
 
 struct Vec2<T> {
     x: T,

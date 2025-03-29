@@ -14,7 +14,7 @@ use brim_ast::{
     item::{
         Block, Enum as AstEnum, EnumField, EnumVariant, ExternBlock, Field, FnDecl, FnReturnType,
         FnSignature, FunctionContext, Generics, Ident, ImportsKind, Item, ItemKind, ModuleDecl,
-        Param, PathItemKind, Struct, Use,
+        Param, Struct, Use,
     },
     token::{BinOpToken, Delimiter, LitKind, Orientation, TokenKind},
 };
@@ -320,7 +320,7 @@ impl Parser {
     pub fn parse_use(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {
         self.eat_keyword(ptok!(Use));
 
-        let kind = if self.ahead(1).kind == TokenKind::BinOp(BinOpToken::Star) {
+        let kind = if self.current().kind == TokenKind::BinOp(BinOpToken::Star) {
             self.advance();
             ImportsKind::All
         } else if self.is_brace(Orientation::Open) {
@@ -354,7 +354,7 @@ impl Parser {
             });
         }
 
-        let path = self.expect_path()?;
+        let path = self.expect_str_literal()?;
 
         debug!("Parsed use statement: {:?}", path);
         Ok((
@@ -366,35 +366,6 @@ impl Parser {
                 resolved: None,
             }),
         ))
-    }
-
-    pub fn expect_path(&mut self) -> PResult<Vec<PathItemKind>> {
-        let mut path = vec![];
-
-        loop {
-            if self.eat_keyword(ptok!(Parent)) {
-                path.push(PathItemKind::Parent);
-            } else if self.eat_keyword(ptok!(SelfSmall)) {
-                if !path.is_empty() {
-                    self.emit(InvalidModifierOrder {
-                        span: (self.prev().span, self.file),
-                        message: "`self` keyword should be placed at the beginning of the path"
-                            .to_string(),
-                    });
-                }
-
-                path.push(PathItemKind::Current);
-            } else {
-                let ident = self.parse_ident()?;
-                path.push(PathItemKind::Module(ident));
-            }
-
-            if !self.eat(TokenKind::DoubleColon) {
-                break;
-            }
-        }
-
-        Ok(path)
     }
 
     /// Function can only contain `const` before the `fn` keyword eg: `pub const fn foo() {}`

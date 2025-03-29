@@ -1,6 +1,6 @@
 use crate::{CompiledModules, session::Session};
 use anyhow::Result;
-use brim_ast::item::{ItemKind, PathItemKind};
+use brim_ast::item::ItemKind;
 use brim_fs::{canonicalize_path, loader::BrimFileLoader};
 use brim_middle::{modules::ModuleMap, temp_diag::TemporaryDiagnosticContext};
 use brim_span::files::get_path;
@@ -39,22 +39,17 @@ impl<'a> ImportResolver<'a> {
                     let mut current_file = get_path(module.barrel.file_id)?;
                     current_file.pop();
 
-                    let mut path = if use_stmt.path[0] == PathItemKind::Current {
-                        let path = current_file.clone();
-
-                        path
-                    } else {
-                        let dep_name = use_stmt.path[0].ident().to_string();
+                    let path = if use_stmt.is_dep() {
+                        let dep_name = use_stmt.path.clone();
                         let project = self.compiled.map.get(&dep_name).unwrap();
                         let mut path = project.config.cwd.clone();
                         path.push(project.config.main_dir());
 
                         path
+                    } else {
+                        current_file.join(use_stmt.path.clone())
                     };
-                    let file_path = ImportResolver::build_path(use_stmt.path[1..].to_vec());
-                    path.push(file_path);
 
-                    let path = path.with_extension("brim");
                     debug!("Resolving import: {:?}", path);
 
                     use_stmt.resolved = Some(canonicalize_path(path.clone())?);
@@ -63,18 +58,5 @@ impl<'a> ImportResolver<'a> {
         }
 
         Ok(self.map.clone())
-    }
-
-    pub fn build_path(parts: Vec<PathItemKind>) -> PathBuf {
-        let mut path = PathBuf::new();
-        for item in parts {
-            match item {
-                PathItemKind::Module(ident) => path.push(ident.to_string()),
-                PathItemKind::Parent => path.push(".."),
-                _ => unreachable!(),
-            }
-        }
-
-        path.clone()
     }
 }

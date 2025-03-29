@@ -1,4 +1,4 @@
-use { HANDLE, DWORD } from self::parent::windows;
+use { HANDLE, DWORD } from "../windows.brim";
 
 extern "C" {
     fn GetStdHandle(nStdHandle: DWORD) HANDLE;
