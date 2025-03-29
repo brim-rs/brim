@@ -19,9 +19,9 @@ impl CppCodegen {
             self.hir_mut().expanded_by_builtins.remove(&expr.id);
             let params = &mut self.hir().builtin_args.get(&expr.id).unwrap().clone();
 
-            println!("{:#?}", params);
             if let Some(codegen) = func.codegen {
-                return (codegen)(self, params);
+                let string = (codegen)(self, params);
+                return string;
             }
         }
 

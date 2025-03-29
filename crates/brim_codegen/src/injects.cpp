@@ -2,7 +2,7 @@ inline void panic_impl(const std::string& message,
                        const std::source_location& location) {
     std::cerr << "\n[PANIC] " << message << "\n    at " << location.file_name()
               << ":" << location.line() << ":" << location.column() << std::endl;
-    std::abort();
+    exit(1);
 }
 
 #define PANIC(message) panic_impl(message, std::source_location::current())

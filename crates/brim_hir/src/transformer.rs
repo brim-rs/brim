@@ -128,7 +128,7 @@ impl HirModuleMap {
 
     /// looks for an expr in a self.builtin_args and updates if found
     pub fn update_builtins(&mut self, expr: HirExpr) {
-        for (id, args) in self.builtin_args.iter_mut() {
+        for (_, args) in self.builtin_args.iter_mut() {
             for arg in args.iter_mut() {
                 if arg.id == expr.id {
                     *arg = expr.clone();
@@ -466,9 +466,10 @@ impl<'a> Transformer<'a> {
     pub fn transform_expr(&mut self, expr: Expr) -> (HirExpr, ItemId) {
         let mut fn_name: Option<String> = None;
         let mut builtin_params: Vec<HirExpr> = Vec::new();
+        let mut overwrite_id: Option<ItemId> = None;
 
         let mut ty = HirTyKind::Placeholder;
-        let expr = HirExpr {
+        let mut expr = HirExpr {
             id: expr.id,
             span: expr.span,
             kind: match expr.kind {
@@ -595,6 +596,9 @@ impl<'a> Transformer<'a> {
                         if let Ok(val) = x {
                             ty = val.ty;
                             builtin_params = new_args.clone();
+                            if val.id == expr.id {
+                                overwrite_id = Some(val.id);
+                            }
                             val.kind
                         } else {
                             self.ctx.emit(x.unwrap_err());
@@ -652,12 +656,20 @@ impl<'a> Transformer<'a> {
             },
             ty,
         };
-        self.map.insert_hir_expr(expr.id, expr.clone());
+        let id = if let Some(id) = overwrite_id {
+            id
+        } else {
+            expr.id
+        };
+        expr.id = id;
+
+        self.map.insert_hir_expr(id, expr.clone());
         if let Some(fn_name) = fn_name {
-            self.map.expanded_by_builtins.insert(expr.id, fn_name);
-            self.map.builtin_args.insert(expr.id, builtin_params);
+            self.map.expanded_by_builtins.insert(id, fn_name);
+            self.map.builtin_args.insert(id, builtin_params);
         }
-        (expr.clone(), expr.id)
+
+        (expr.clone(), id)
     }
 
     pub fn transform_generic_arguments(&mut self, generics: GenericArgs) -> HirGenericArgs {

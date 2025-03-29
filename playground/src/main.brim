@@ -23,10 +23,10 @@ pub fn testFn(val: Val) Val {
 
 pub fn main() {
     // Here val is any
-    //let val: any = 42;
+    let val: any = 42;
     // so first we need to cast val to default numeric type which is i32
     // and only then we can perform standard cast to u32
-    //let x = @cast(@anyCast(val, i32), u32);
+    let xy = @cast(@anyCast(val, i32), u32);
 
     let stderr = getStdErr();
     //let usize = stderr.write(b"dw");

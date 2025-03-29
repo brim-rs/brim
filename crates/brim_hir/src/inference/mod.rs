@@ -734,10 +734,6 @@ impl<'a> TypeInference<'a> {
             expr.ty = kind.clone();
         }
 
-        if let HirExprKind::Unary(op, ope) = &expr.kind {
-            println!("{:#?}", self.hir.builtin_args);
-        }
-
         self.hir
             .hir_items
             .insert(expr.id, StoredHirItem::Expr(expr.clone()));
