@@ -730,8 +730,12 @@ impl<'a> TypeInference<'a> {
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
 
-        if expr.ty == HirTyKind::Placeholder {
-            expr.ty = kind.clone();
+        if expr.ty.is_placeholder() {
+            match expr.ty {
+                HirTyKind::ResultOk(_) => expr.ty = HirTyKind::ResultOk(Box::new(kind.clone())),
+                HirTyKind::ResultErr(_) => expr.ty = HirTyKind::ResultErr(Box::new(kind.clone())),
+                _ => expr.ty = kind.clone(),
+            }
         }
 
         self.hir

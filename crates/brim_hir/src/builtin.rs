@@ -122,11 +122,29 @@ builtin_function! {
     }
 }
 
+builtin_function! {
+    fn ok(file, value) {
+        value.ty = HirTyKind::ResultOk(Box::new(value.ty.clone()));
+
+        Ok(value.clone())
+    }
+}
+
+builtin_function! {
+    fn err(file, value) {
+        value.ty = HirTyKind::ResultErr(Box::new(value.ty.clone()));
+
+        Ok(value.clone())
+    }
+}
+
 pub fn get_builtin_function(name: &str) -> Option<BuiltInFunction> {
     match name {
         "os" => Some(os()),
         "anyCast" => Some(any_cast()),
         "cast" => Some(cast()),
+        "ok" => Some(ok()),
+        "err" => Some(err()),
         _ => None,
     }
 }

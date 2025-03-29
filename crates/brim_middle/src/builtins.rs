@@ -22,6 +22,14 @@ lazy_static! {
             description: "Static cast",
             expected_args: 2,
         });
+        m.insert("ok".to_string(), FunctionData {
+            description: "Creates a Result::Ok",
+            expected_args: 1,
+        });
+        m.insert("err".to_string(), FunctionData {
+            description: "Creates a Result::Err",
+            expected_args: 1,
+        });
         m
     };
 }

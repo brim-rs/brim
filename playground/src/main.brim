@@ -1,5 +1,4 @@
-use { File } from "std";
-use { getStdErr } from "std";
+use { File, getStdErr } from "std";
 
 struct Vec2<T> {
     x: T,

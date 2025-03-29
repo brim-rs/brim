@@ -84,6 +84,8 @@ impl CppCodegen {
                 format!("std::expected<{}, {}>", ok, err)
             }
 
+            HirTyKind::ResultOk(ty) | HirTyKind::ResultErr(ty) => self.generate_ty(*ty),
+
             // Only for now, this will be replaced in type checking
             HirTyKind::Placeholder => "auto".to_string(),
             HirTyKind::Err(_) => panic!("some unhandeled error"),
