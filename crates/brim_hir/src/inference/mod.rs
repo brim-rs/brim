@@ -19,7 +19,7 @@ use crate::{
 use brim_ast::{
     ItemId,
     expr::{BinOpKind, UnaryOp},
-    item::{FnDecl, FunctionContext, Ident},
+    item::{FunctionContext, Ident},
     token::{Lit, LitKind},
     ty::PrimitiveType,
 };

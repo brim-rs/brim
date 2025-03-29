@@ -1,5 +1,4 @@
 use crate::codegen::CppCodegen;
-use brim_ast::item::FunctionContext;
 use brim_hir::{
     CompiledModules,
     items::{HirItem, HirItemKind},
@@ -18,7 +17,7 @@ impl CppCodegen {
                 };
                 self.generate_generics(&generics);
 
-                let mut params = decl.sig.params.params.clone();
+                let params = decl.sig.params.params.clone();
                 let params = params
                     .iter()
                     .map(|p| {

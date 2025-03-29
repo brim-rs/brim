@@ -9,15 +9,14 @@ use crate::{
     },
     errors::ComptimeExpectedType,
     expr::{ComptimeValue, HirBlock, HirExpr, HirExprKind, HirMatchArm},
-    items::{HirFn, HirItemKind, HirTypeAlias},
-    stmts::{HirStmt, HirStmtKind},
+    items::{HirItemKind, HirTypeAlias},
+    stmts::HirStmtKind,
     transformer::{HirModule, HirModuleMap, StoredHirItem, Transformer},
     ty::HirTyKind,
 };
 use brim_ast::{
     Empty, ItemId,
     expr::Expr,
-    item::Ident,
     token::{Lit, LitKind},
 };
 use brim_middle::{ModuleId, temp_diag::TemporaryDiagnosticContext};

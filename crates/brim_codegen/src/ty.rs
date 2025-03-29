@@ -1,5 +1,5 @@
 use crate::codegen::CppCodegen;
-use brim_ast::ty::{Mutable, PrimitiveType};
+use brim_ast::ty::PrimitiveType;
 use brim_hir::ty::HirTyKind;
 
 impl CppCodegen {

@@ -10,7 +10,6 @@ use crate::{
     },
 };
 use brim_ast::ty::PrimitiveType;
-use brim_span::span::Span;
 
 use super::errors::CannotInitializeWithVoid;
 

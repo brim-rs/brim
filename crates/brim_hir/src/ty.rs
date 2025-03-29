@@ -7,10 +7,7 @@ use brim_ast::{
 };
 use brim_diagnostics::ErrorEmitted;
 use brim_span::span::Span;
-use std::{
-    f32::consts::E,
-    fmt::{Debug, Display},
-};
+use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone)]
 pub struct HirTy {
