@@ -114,6 +114,8 @@ impl PrimitiveType {
             "char" => Some(PrimitiveType::Char),
             "string" => Some(PrimitiveType::String),
 
+            "void" => Some(PrimitiveType::Void),
+
             "any" => Some(PrimitiveType::Any),
             _ => None,
         }
