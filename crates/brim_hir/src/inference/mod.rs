@@ -101,21 +101,47 @@ impl<'a> TypeInference<'a> {
     }
 
     fn resolve_type_alias(&self, ty: &HirTyKind) -> HirTyKind {
-        if let Some((name, generics)) = ty.as_ident() {
-            if let Some(sym) = self
-                .compiled
-                .resolve_symbol(&name.to_string(), self.current_mod.as_usize())
-            {
-                if let HirItemKind::TypeAlias(ty_alias) = &sym.kind {
-                    let resolved_ty = ty_alias.ty.resolved().as_ty();
+        match ty {
+            HirTyKind::Ref(inner, m) => {
+                HirTyKind::Ref(Box::new(self.resolve_type_alias(inner)), m.clone())
+            }
+            HirTyKind::Ptr(inner, m) => {
+                HirTyKind::Ptr(Box::new(self.resolve_type_alias(inner)), m.clone())
+            }
+            HirTyKind::Mut(inner) => HirTyKind::Mut(Box::new(self.resolve_type_alias(inner))),
+            HirTyKind::Array(inner, size) => {
+                HirTyKind::Array(Box::new(self.resolve_type_alias(inner)), size.clone())
+            }
+            HirTyKind::Vec(inner) => HirTyKind::Vec(Box::new(self.resolve_type_alias(inner))),
+            HirTyKind::Ident {
+                ident,
+                generics,
+                is_generic,
+            } => {
+                if let Some(sym) = self
+                    .compiled
+                    .resolve_symbol(&ident.to_string(), self.current_mod.as_usize())
+                {
+                    if let HirItemKind::TypeAlias(ty_alias) = &sym.kind {
+                        let resolved_ty = ty_alias.ty.resolved().as_ty();
 
-                    if resolved_ty.can_be_directly_used() {
-                        return resolved_ty.clone();
+                        if resolved_ty.can_be_directly_used() {
+                            return resolved_ty.clone();
+                        }
                     }
                 }
+
+                ty.clone()
             }
+            HirTyKind::Result(ok, err) => {
+                let resolved_ok = Box::new(self.resolve_type_alias(ok));
+                let resolved_err = Box::new(self.resolve_type_alias(err));
+
+                HirTyKind::Result(resolved_ok, resolved_err)
+            }
+            HirTyKind::Primitive(_) | HirTyKind::Placeholder => ty.clone(),
+            _ => todo!("missing implementation for {:?}", ty),
         }
-        ty.clone()
     }
 
     fn infer_item_inner(&mut self, id: ItemId) -> HirItem {
