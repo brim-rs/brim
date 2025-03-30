@@ -140,10 +140,10 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
             ),
         )?;
 
-        command.status()?;
+        let status = command.status()?;
 
-        if !command.status()?.success() {
-            let code = command.status()?.code().unwrap_or(1);
+        if !status.success() {
+            let code = status.code().unwrap_or(1);
 
             shell.error(format!("process didn't exit successfully: {}", code))?;
             exit(code);
