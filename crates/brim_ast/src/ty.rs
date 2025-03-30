@@ -58,6 +58,8 @@ pub enum TyKind {
     Ident { ident: Ident, generics: GenericArgs },
     /// Result type eg. `Result<T, E>` (brim) -> `std::expected<T, E>` (C++)
     Result(Box<Ty>, Box<Ty>),
+    /// Option type eg. `T?` (brim) -> `std::optional<T>` (C++)
+    Option(Box<Ty>),
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),

@@ -9,28 +9,16 @@ struct Vec2<T> {
     }
 }
 
-enum Val {
-    Int(i32),
-    Float(f64),
-    String(string),
-    Empty,
-}
-
-pub fn testFn(val: Val) Val {
-    return Val::String("Hello, World!");
+pub fn optionTest(x: string?) string {
+    return x orelse "None";
 }
 
 pub fn main() {
     // Here val is any
-    let val: any = 42;
+    //let val: any = 42;
     // so first we need to cast val to default numeric type which is i32
     // and only then we can perform standard cast to u32
-    let xy = @cast(@anyCast(val, i32), u32);
+    //let xy = @cast(@anyCast(val, i32), u32);
 
-    let stderr = getStdErr();
-    //let usize = stderr.write(b"dw");
-
-    let int_val = Val::Int(42);
-    let empty_variant = Val::Empty();
-    let x = testFn(int_val);
+    let val = optionTest(@none());
 };

@@ -138,6 +138,25 @@ builtin_function! {
     }
 }
 
+builtin_function! {
+    fn none(file) {
+        Ok(HirExpr {
+            id: ItemId::new(),
+            ty: HirTyKind::None,
+            kind: HirExprKind::Dummy,
+            span: Default::default(),
+        })
+    }
+}
+
+builtin_function! {
+    fn some(file, value) {
+        value.ty = HirTyKind::Some(Box::new(value.ty.clone()));
+
+        Ok(value.clone())
+    }
+}
+
 pub fn get_builtin_function(name: &str) -> Option<BuiltInFunction> {
     match name {
         "os" => Some(os()),
@@ -145,6 +164,8 @@ pub fn get_builtin_function(name: &str) -> Option<BuiltInFunction> {
         "cast" => Some(cast()),
         "ok" => Some(ok()),
         "err" => Some(err()),
+        "none" => Some(none()),
+        "some" => Some(some()),
         _ => None,
     }
 }

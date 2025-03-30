@@ -5,7 +5,7 @@ use crate::{
     CompiledModules,
     expr::{HirExpr, HirExprKind},
     inference::{
-        errors::{CannotApplyBinary, CannotApplyUnary, CannotCompare},
+        errors::{CannotApplyBinary, CannotApplyUnary, CannotCompare, OrelseExpectedOption},
         scope::{TypeInfo, TypeScopeManager},
     },
     items::{
@@ -138,6 +138,16 @@ impl<'a> TypeInference<'a> {
                 let resolved_err = Box::new(self.resolve_type_alias(err));
 
                 HirTyKind::Result(resolved_ok, resolved_err)
+            }
+            HirTyKind::Option(ty) => {
+                let resolved_ty = Box::new(self.resolve_type_alias(ty));
+
+                HirTyKind::Option(resolved_ty)
+            }
+            HirTyKind::Some(inner) => {
+                let resolved_inner = Box::new(self.resolve_type_alias(inner));
+
+                HirTyKind::Some(resolved_inner)
             }
             HirTyKind::Primitive(_) | HirTyKind::Placeholder => ty.clone(),
             _ => todo!("missing implementation for {:?}", ty),
@@ -450,6 +460,14 @@ impl<'a> TypeInference<'a> {
                             })
                         }
                     }
+
+                    (BinOpKind::OrElse, l, r) => &match l.is_option() {
+                        Some(x) => x,
+                        None => self.ret_with_error(OrelseExpectedOption {
+                            span: (expr.span.clone(), self.current_mod.as_usize()),
+                            ty: l.clone(),
+                        }),
+                    },
                 }
             }
             HirExprKind::Var(name) => {
@@ -753,6 +771,7 @@ impl<'a> TypeInference<'a> {
                     &HirTyKind::err()
                 }
             }
+            HirExprKind::Dummy => &expr.ty.clone(),
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
 
@@ -760,6 +779,7 @@ impl<'a> TypeInference<'a> {
             match expr.ty {
                 HirTyKind::ResultOk(_) => expr.ty = HirTyKind::ResultOk(Box::new(kind.clone())),
                 HirTyKind::ResultErr(_) => expr.ty = HirTyKind::ResultErr(Box::new(kind.clone())),
+                HirTyKind::Some(_) => expr.ty = HirTyKind::Some(Box::new(kind.clone())),
                 _ => expr.ty = kind.clone(),
             }
         }

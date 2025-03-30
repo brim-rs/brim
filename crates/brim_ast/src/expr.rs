@@ -159,6 +159,8 @@ pub enum BinOpKind {
     ShiftLeft,
     /// `>>`
     ShiftRight,
+    /// `orelse`
+    OrElse,
 }
 
 impl Display for BinOpKind {
@@ -183,6 +185,7 @@ impl Display for BinOpKind {
             BinOpKind::Or => write!(f, "| (bitwise or)"),
             BinOpKind::ShiftLeft => write!(f, "<< (bitwise shift left)"),
             BinOpKind::ShiftRight => write!(f, ">> (bitwise shift right)"),
+            BinOpKind::OrElse => write!(f, "orelse (logical or else)"),
         }
     }
 }
@@ -221,6 +224,7 @@ impl BinOpKind {
             // Logical operators
             BinOpKind::AndAnd => 11,
             BinOpKind::OrOr => 10,
+            BinOpKind::OrElse => 9,
         }
     }
 }

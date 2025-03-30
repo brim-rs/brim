@@ -30,6 +30,14 @@ lazy_static! {
             description: "Creates a Result::Err",
             expected_args: 1,
         });
+        m.insert("some".to_string(), FunctionData {
+            description: "Creates an Option::Some",
+            expected_args: 1,
+        });
+        m.insert("none".to_string(), FunctionData {
+            description: "Creates an Option::None",
+            expected_args: 0,
+        });
         m
     };
 }

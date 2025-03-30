@@ -42,6 +42,13 @@ pub struct Parser {
     pub dcx: TemporaryDiagnosticContext,
     pub experimental: Experimental,
     pub fn_ctx: Option<FunctionContext>,
+    pub parsing_ctx: ParsingContext,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ParsingContext {
+    Normal,
+    IfStatement,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -124,6 +131,7 @@ impl Parser {
             last_id: 0,
             experimental,
             fn_ctx: None,
+            parsing_ctx: ParsingContext::Normal,
         }
     }
 

@@ -1,6 +1,7 @@
+use super::errors::ExpectedStringLiteralError;
 use crate::{
     parser::{
-        PResult, PToken, PTokenKind, Parser,
+        PResult, PToken, PTokenKind, Parser, ParsingContext,
         errors::{
             ElseBranchExpr, ElseIfAfterElse, EmptyMatchExpressionError, InvalidLiteralSuffix,
             MissingFatArrowError, MultipleElseArmsError, UnexpectedLiteralSuffix, UnexpectedToken,
@@ -22,8 +23,6 @@ use brim_diagnostics::box_diag;
 use brim_span::span::Span;
 use indexmap::IndexMap;
 use tracing::debug;
-
-use super::errors::ExpectedStringLiteralError;
 
 impl Parser {
     pub fn parse_expr(&mut self) -> PResult<Expr> {
@@ -86,6 +85,7 @@ impl Parser {
             TokenKind::Le => Some(BinOpKind::Le),
             TokenKind::Gt => Some(BinOpKind::Gt),
             TokenKind::Ge => Some(BinOpKind::Ge),
+            TokenKind::Ident(sym) if sym.to_string() == "orelse" => Some(BinOpKind::OrElse),
             _ => None,
         }
     }
@@ -460,6 +460,10 @@ impl Parser {
                             ExprKind::Call(Box::new(var), args),
                         ))
                     } else if self.is_brace(Orientation::Open) {
+                        if self.parsing_ctx == ParsingContext::IfStatement {
+                            return Ok(self.new_expr(span, ExprKind::Var(ident)));
+                        }
+
                         self.advance();
 
                         let mut fields: IndexMap<Ident, Expr> = IndexMap::new();
@@ -576,6 +580,7 @@ impl Parser {
     }
 
     pub fn parse_if(&mut self) -> PResult<Expr> {
+        self.parsing_ctx = ParsingContext::IfStatement;
         let span = self.prev().span;
         let condition = self.parse_expr()?;
         let then_block = self.parse_block(true)?;
@@ -619,6 +624,7 @@ impl Parser {
 
         let then_block = self.new_expr(then_block.span, ExprKind::Block(then_block));
 
+        self.parsing_ctx = ParsingContext::Normal;
         debug!("Parsed if expression");
         Ok(self.new_expr(
             span,

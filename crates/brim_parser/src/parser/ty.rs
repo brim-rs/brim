@@ -69,6 +69,14 @@ impl Parser {
                 kind: TyKind::Result(Box::new(ty), Box::new(err_ty)),
                 id: self.new_id(),
             };
+        } else if self.current().kind == TokenKind::QuestionMark {
+            self.eat(TokenKind::QuestionMark);
+
+            ty = Ty {
+                span,
+                kind: TyKind::Option(Box::new(ty)),
+                id: self.new_id(),
+            };
         }
 
         Ok(ty)
@@ -120,6 +128,24 @@ impl Parser {
                 *ty = Ty {
                     span,
                     kind: TyKind::Vec(Box::new(ty.clone())),
+                    id: self.new_id(),
+                };
+            } else if self.current().kind == TokenKind::Bang {
+                self.eat(TokenKind::Bang);
+
+                let err_ty = self.parse_type()?;
+
+                *ty = Ty {
+                    span,
+                    kind: TyKind::Result(Box::new(ty.clone()), Box::new(err_ty)),
+                    id: self.new_id(),
+                };
+            } else if self.current().kind == TokenKind::QuestionMark {
+                self.eat(TokenKind::QuestionMark);
+
+                *ty = Ty {
+                    span,
+                    kind: TyKind::Option(Box::new(ty.clone())),
                     id: self.new_id(),
                 };
             }

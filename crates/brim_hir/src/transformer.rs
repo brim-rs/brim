@@ -729,6 +729,7 @@ impl<'a> Transformer<'a> {
                     Box::new(self.transform_ty(*ty).kind),
                     Box::new(self.transform_ty(*err_ty).kind),
                 ),
+                TyKind::Option(ty) => HirTyKind::Option(Box::new(self.transform_ty(*ty).kind)),
                 TyKind::Err(_) => panic!("on ty: {:?}", ty),
             },
         }

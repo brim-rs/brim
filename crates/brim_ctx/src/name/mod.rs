@@ -212,6 +212,7 @@ impl<'a> NameResolver<'a> {
                     self.resolve_type(generic.ty);
                 }
             }
+            TyKind::Option(ty) => self.resolve_type(*ty.clone()),
             TyKind::Primitive(_) | TyKind::Err(_) => {}
         }
     }

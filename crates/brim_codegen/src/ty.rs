@@ -86,6 +86,11 @@ impl CppCodegen {
 
             HirTyKind::ResultOk(ty) | HirTyKind::ResultErr(ty) => self.generate_ty(*ty),
 
+            HirTyKind::Option(ty) => {
+                let ty = self.generate_ty(*ty);
+                format!("std::optional<{}>", ty)
+            }
+
             // Only for now, this will be replaced in type checking
             HirTyKind::Placeholder => "auto".to_string(),
             HirTyKind::Err(_) => panic!("some unhandeled error"),

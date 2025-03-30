@@ -37,12 +37,20 @@ pub enum HirTyKind {
         generics: HirGenericArgs,
         is_generic: bool,
     },
+
     /// Result type eg. `Result<T, E>` (brim) -> `std::expected<T, E>` (C++)
     Result(Box<HirTyKind>, Box<HirTyKind>),
     /// Ok variant of Result type.
     ResultOk(Box<HirTyKind>),
     /// Err variant of Result type.
     ResultErr(Box<HirTyKind>),
+
+    /// Optional type
+    Option(Box<HirTyKind>),
+    /// No value
+    None,
+    /// Some value
+    Some(Box<HirTyKind>),
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),
@@ -84,9 +92,15 @@ impl Display for HirTyKind {
                     write!(f, "{}{}", ident, generics)
                 }
             }
+
             HirTyKind::Result(ty, err) => write!(f, "{}!{}", ty, err),
             HirTyKind::ResultOk(ty) => write!(f, "@ok({})", ty),
             HirTyKind::ResultErr(err) => write!(f, "@err({})", err),
+
+            HirTyKind::Option(ty) => write!(f, "{}?", ty),
+            HirTyKind::None => write!(f, "None"),
+            HirTyKind::Some(ty) => write!(f, "Some({})", ty),
+
             HirTyKind::Err(_) => write!(f, "<error>"),
             HirTyKind::Placeholder => write!(f, "_"),
         }
@@ -120,6 +134,17 @@ impl HirTyKind {
             (HirTyKind::Result(_, err1), HirTyKind::ResultErr(err2)) => err1.simple_eq(err2),
             (HirTyKind::ResultOk(ok1), HirTyKind::Result(ok2, _)) => ok1.simple_eq(ok2),
             (HirTyKind::ResultErr(err1), HirTyKind::Result(_, err2)) => err1.simple_eq(err2),
+
+            // Option-related matches
+            (HirTyKind::Option(ty1), HirTyKind::Option(ty2)) => ty1.simple_eq(ty2),
+            (HirTyKind::Some(val1), HirTyKind::Some(val2)) => val1.simple_eq(val2),
+            (HirTyKind::None, HirTyKind::None) => true,
+            (HirTyKind::Some(_), HirTyKind::None) => false,
+            (HirTyKind::None, HirTyKind::Some(_)) => false,
+            (HirTyKind::Option(val1), HirTyKind::Some(val2)) => val1.simple_eq(val2),
+            (HirTyKind::Some(val1), HirTyKind::Option(val2)) => val1.simple_eq(val2),
+            (HirTyKind::Option(_), HirTyKind::None) => true,
+            (HirTyKind::None, HirTyKind::Option(_)) => true,
 
             (
                 HirTyKind::Ident {
@@ -190,6 +215,17 @@ impl HirTyKind {
                 err1.can_be_an_arg_for_param(err2)
             }
 
+            // Option-related matches
+            (HirTyKind::Option(ty1), HirTyKind::Option(ty2)) => ty1.can_be_an_arg_for_param(ty2),
+            (HirTyKind::Some(val1), HirTyKind::Some(val2)) => val1.can_be_an_arg_for_param(val2),
+            (HirTyKind::None, HirTyKind::None) => true,
+            (HirTyKind::Some(_), HirTyKind::None) => false,
+            (HirTyKind::None, HirTyKind::Some(_)) => false,
+            (HirTyKind::Option(val1), HirTyKind::Some(val2)) => val1.can_be_an_arg_for_param(val2),
+            (HirTyKind::Some(val1), HirTyKind::Option(val2)) => val1.can_be_an_arg_for_param(val2),
+            (HirTyKind::Option(_), HirTyKind::None) => true,
+            (HirTyKind::None, HirTyKind::Option(_)) => true,
+
             (
                 HirTyKind::Ident {
                     ident: id1,
@@ -255,6 +291,16 @@ impl HirTyKind {
             (HirTyKind::ResultErr(err), HirTyKind::Result(_, err1)) => {
                 err.can_be_initialized_with(err1)
             }
+
+            (HirTyKind::Option(ty1), HirTyKind::Option(ty2)) => ty1.can_be_initialized_with(ty2),
+            (HirTyKind::Some(val1), HirTyKind::Some(val2)) => val1.can_be_initialized_with(val2),
+            (HirTyKind::None, HirTyKind::None) => true,
+            (HirTyKind::Some(_), HirTyKind::None) => false,
+            (HirTyKind::None, HirTyKind::Some(_)) => false,
+            (HirTyKind::Option(val), HirTyKind::Some(val1)) => val.can_be_initialized_with(val1),
+            (HirTyKind::Some(val), HirTyKind::Option(val1)) => val.can_be_initialized_with(val1),
+            (HirTyKind::Option(_), HirTyKind::None) => true,
+            (HirTyKind::None, HirTyKind::Option(_)) => true,
 
             (HirTyKind::Err(_), _) | (_, HirTyKind::Err(_)) => false,
             (HirTyKind::Placeholder, _) | (_, HirTyKind::Placeholder) => false,
@@ -381,8 +427,17 @@ impl HirTyKind {
     pub fn is_placeholder(&self) -> bool {
         match self {
             HirTyKind::Placeholder => true,
-            HirTyKind::ResultOk(ty) | HirTyKind::ResultErr(ty) => ty.is_placeholder(),
+            HirTyKind::ResultOk(ty) | HirTyKind::ResultErr(ty) | HirTyKind::Some(ty) => {
+                ty.is_placeholder()
+            }
             _ => false,
+        }
+    }
+
+    pub fn is_option(&self) -> Option<HirTyKind> {
+        match self {
+            HirTyKind::Option(ty) => Some(*ty.clone()),
+            _ => None,
         }
     }
 }

@@ -88,6 +88,8 @@ pub enum HirExprKind {
     StaticAccess(ItemId, Box<HirExpr>),
     /// Method call on an expression.
     MethodCall(Ident, Box<HirExpr>),
+
+    Dummy,
 }
 
 impl HirExprKind {

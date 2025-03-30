@@ -41,3 +41,11 @@ pub struct NoMethod {
     pub method: String,
     pub ty: HirTyKind,
 }
+
+#[derive(Diagnostic)]
+#[error("`orelse` operator can only be applied to option types, found `{ty}`")]
+pub struct OrelseExpectedOption {
+    #[error]
+    pub span: (Span, usize),
+    pub ty: HirTyKind,
+}

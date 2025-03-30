@@ -49,6 +49,8 @@ impl CppCodegen {
                 // Special handling for power operator which doesn't exist in C++
                 if op == BinOpKind::Power {
                     format!("(std::pow({}, {}))", lhs_code, rhs_code)
+                } else if op == BinOpKind::OrElse {
+                    format!("({} ? {}.value() : {})", lhs_code, lhs_code, rhs_code)
                 } else {
                     format!("({} {} {})", lhs_code, self.bin_op(op), rhs_code)
                 }
@@ -114,6 +116,10 @@ impl CppCodegen {
                     format!("(brim_{}.brim_{})", r_ident, call)
                 }
                 _ => unimplemented!(),
+            },
+            HirExprKind::Dummy => match expr.ty {
+                HirTyKind::None => "std::nullopt".to_string(),
+                _ => unreachable!(),
             },
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         }
@@ -302,6 +308,7 @@ impl CppCodegen {
             BinOpKind::ShiftRight => ">>",
             BinOpKind::AndAnd => "&&",
             BinOpKind::OrOr => "||",
+            _ => unreachable!(),
         }
     }
 }
