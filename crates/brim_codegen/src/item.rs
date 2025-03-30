@@ -102,14 +102,11 @@ impl CppCodegen {
                     self.code.add_line("extern {");
                 }
 
-                let mut externs = vec![];
                 self.code.increase_indent();
                 self.add_prefix = false;
                 for item in external.items.clone() {
                     let item = compiled.get_item(item).clone();
                     self.generate_item(item.clone(), compiled);
-
-                    externs.push(item.ident.to_string());
                 }
                 self.add_prefix = true;
                 self.code.decrease_indent();

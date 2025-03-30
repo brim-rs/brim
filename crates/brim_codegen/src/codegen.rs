@@ -1,5 +1,8 @@
 use crate::{CodeBuilder, item::sort_items_by_module};
-use brim_ast::{ItemId, item::Ident};
+use brim_ast::{
+    ItemId,
+    item::{FunctionContext, Ident},
+};
 use brim_hir::{
     Codegen, CompiledModules,
     expr::HirExpr,
@@ -281,9 +284,18 @@ impl Codegen for CppCodegen {
                     order.push(*item);
                 }
             }
-
             for item in order {
                 let item = compiled.get_item(item).clone();
+
+                match &item.kind {
+                    HirItemKind::Fn(f) => {
+                        if f.ctx == FunctionContext::Extern {
+                            continue;
+                        }
+                    }
+                    _ => {}
+                }
+
                 self.generate_item(item, compiled);
             }
         } else {
