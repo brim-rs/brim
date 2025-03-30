@@ -260,8 +260,9 @@ impl Parser {
 
         let mut items = vec![];
 
-        self.fn_ctx = Some(FunctionContext::Extern);
         loop {
+            self.fn_ctx = Some(FunctionContext::Extern);
+
             if self.is_brace(Orientation::Close) {
                 break;
             }

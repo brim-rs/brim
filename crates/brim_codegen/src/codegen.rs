@@ -1,5 +1,5 @@
-use crate::CodeBuilder;
-use brim_ast::item::Ident;
+use crate::{CodeBuilder, item::sort_items_by_module};
+use brim_ast::{ItemId, item::Ident};
 use brim_hir::{
     Codegen, CompiledModules,
     expr::HirExpr,
@@ -8,7 +8,7 @@ use brim_hir::{
     transformer::{HirModule, HirModuleMap},
     ty::HirTyKind,
 };
-use brim_middle::ModuleId;
+use brim_middle::{GlobalSymbol, ModuleId};
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
@@ -26,6 +26,7 @@ pub struct CppCodegen {
     pub add_prefix: bool,
     pub compiled: CompiledModules,
     pub parent_item: Option<(Ident, HirGenerics)>,
+    pub items_order: HashMap<ModuleId, Vec<ItemId>>,
 }
 
 #[derive(Debug)]
@@ -153,6 +154,8 @@ impl CppCodegen {
     pub fn new(main_file: usize, compiled: CompiledModules) -> Self {
         let code = CodeBuilder::new(4);
 
+        let sorted_modules = sort_items_by_module(&compiled.item_relations);
+
         Self {
             code,
             current_mod: ModuleId::from_usize(0),
@@ -184,6 +187,7 @@ impl CppCodegen {
             add_prefix: true,
             compiled,
             parent_item: None,
+            items_order: sorted_modules,
         }
     }
 
@@ -269,9 +273,24 @@ impl Codegen for CppCodegen {
             .add_line(&format!("namespace module{} {{", mod_id.as_u32()));
         self.code.increase_indent();
 
-        for item in module.items {
-            let item = compiled.get_item(item).clone();
-            Codegen::generate_item(self, item, compiled);
+        let order = self.items_order.get(&mod_id);
+
+        if let Some(mut order) = order.cloned() {
+            for item in &module.items {
+                if !order.contains(item) {
+                    order.push(*item);
+                }
+            }
+
+            for item in order {
+                let item = compiled.get_item(item).clone();
+                self.generate_item(item, compiled);
+            }
+        } else {
+            for item in module.items {
+                let item = compiled.get_item(item).clone();
+                self.generate_item(item, compiled);
+            }
         }
 
         self.code.decrease_indent();

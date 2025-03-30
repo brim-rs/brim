@@ -1,5 +1,13 @@
-use { HANDLE, DWORD } from "../windows.brim";
+use { HANDLE, DWORD, BOOL, OVERLAPPED } from "../windows.brim";
 
 extern "C" {
     fn GetStdHandle(nStdHandle: DWORD) HANDLE;
+
+    fn WriteFile(
+        hFile: HANDLE,
+        lpBuffer: *u8,
+        nNumberOfBytesToWrite: DWORD,
+        lpNumberOfBytesWritten: *mut DWORD,
+        lpOverlapped: *mut OVERLAPPED
+    ) BOOL;
 }

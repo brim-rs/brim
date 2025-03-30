@@ -1,8 +1,11 @@
 use crate::codegen::CppCodegen;
+use brim_ast::ItemId;
 use brim_hir::{
     CompiledModules,
     items::{HirItem, HirItemKind},
 };
+use brim_middle::{GlobalSymbol, ModuleId};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 impl CppCodegen {
     pub fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules) {
@@ -271,4 +274,114 @@ impl CppCodegen {
             _ => {}
         }
     }
+}
+
+pub fn sort_items_by_module(
+    item_relations: &HashMap<GlobalSymbol, Vec<GlobalSymbol>>,
+) -> HashMap<ModuleId, Vec<ItemId>> {
+    let mut module_items: HashMap<ModuleId, HashSet<ItemId>> = HashMap::new();
+    let mut all_items: HashSet<GlobalSymbol> = HashSet::new();
+
+    for (item, dependencies) in item_relations {
+        all_items.insert(item.clone());
+        for dep in dependencies {
+            all_items.insert(dep.clone());
+        }
+    }
+
+    for item in &all_items {
+        module_items
+            .entry(item.id.mod_id.clone())
+            .or_insert_with(HashSet::new)
+            .insert(item.id.item_id.clone());
+    }
+
+    let mut module_graphs: HashMap<ModuleId, HashMap<ItemId, Vec<ItemId>>> = HashMap::new();
+
+    for (item, dependencies) in item_relations {
+        let mod_id = item.id.mod_id.clone();
+        let item_id = item.id.item_id.clone();
+
+        if !module_graphs.contains_key(&mod_id) {
+            module_graphs.insert(mod_id.clone(), HashMap::new());
+        }
+
+        // Add dependencies within the same module
+        let same_module_deps: Vec<ItemId> = dependencies
+            .iter()
+            .filter(|dep| dep.id.mod_id == mod_id)
+            .map(|dep| dep.id.item_id.clone())
+            .collect();
+
+        module_graphs
+            .get_mut(&mod_id)
+            .unwrap()
+            .insert(item_id, same_module_deps);
+    }
+
+    let mut result: HashMap<ModuleId, Vec<ItemId>> = HashMap::new();
+
+    for (mod_id, items) in &module_items {
+        let temp = HashMap::new();
+        let graph = module_graphs.get(mod_id).unwrap_or(&temp);
+        let sorted_items = topological_sort(items, graph);
+        result.insert(mod_id.clone(), sorted_items);
+    }
+
+    result
+}
+
+pub fn topological_sort(
+    items: &HashSet<ItemId>,
+    graph: &HashMap<ItemId, Vec<ItemId>>,
+) -> Vec<ItemId> {
+    let mut indegree: HashMap<ItemId, usize> = HashMap::new();
+    let mut adj_list: HashMap<ItemId, Vec<ItemId>> = HashMap::new();
+
+    for &item in items {
+        indegree.insert(item.clone(), 0);
+        adj_list.insert(item.clone(), Vec::new());
+    }
+
+    for (item, deps) in graph {
+        for dep in deps {
+            if items.contains(dep) {
+                adj_list.entry(item.clone()).or_default().push(dep.clone());
+                *indegree.entry(dep.clone()).or_default() += 1;
+            }
+        }
+    }
+
+    let mut queue: VecDeque<ItemId> = indegree
+        .iter()
+        .filter(|&(_, &count)| count == 0)
+        .map(|(item, _)| item.clone())
+        .collect();
+
+    let mut result = Vec::new();
+
+    while let Some(item) = queue.pop_front() {
+        result.push(item.clone());
+
+        if let Some(adjacent) = adj_list.get(&item) {
+            for adj in adjacent {
+                if let Some(count) = indegree.get_mut(adj) {
+                    *count -= 1;
+                    if *count == 0 {
+                        queue.push_back(adj.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    if result.len() != items.len() {
+        for item in items {
+            if !result.contains(item) {
+                result.push(item.clone());
+            }
+        }
+    }
+
+    result
 }

@@ -18,7 +18,7 @@ use brim_ast::{
 use brim_diagnostics::diag_opt;
 use brim_hir::CompiledModules;
 use brim_middle::{
-    SimpleModules, builtins::BUILTIN_FUNCTIONS, lints::Lints, modules::ModuleMap,
+    GlobalSymbol, SimpleModules, builtins::BUILTIN_FUNCTIONS, lints::Lints, modules::ModuleMap,
     temp_diag::TemporaryDiagnosticContext, walker::AstWalker,
 };
 use brim_span::span::Span;
@@ -68,6 +68,7 @@ pub struct NameResolver<'a> {
     pub external: bool,
     pub simple: &'a mut SimpleModules,
     pub generics: GenericsCtx,
+    pub current_sym: Option<GlobalSymbol>,
 }
 
 impl<'a> NameResolver<'a> {
@@ -88,6 +89,7 @@ impl<'a> NameResolver<'a> {
             external: false,
             simple,
             generics: GenericsCtx::new(),
+            current_sym: None,
         }
     }
 
@@ -217,7 +219,13 @@ impl<'a> NameResolver<'a> {
     pub fn resolve_ident(&mut self, ident: Ident) {
         let sym = self.compiled.symbols.resolve(&ident.to_string(), self.file);
 
-        if let None = sym {
+        if let Some(sym) = sym {
+            if let Some(current) = self.current_sym.clone() {
+                self.compiled.add_item_relation(sym, current);
+            } else {
+                panic!("no current sym")
+            }
+        } else {
             // if the symbol wasn't found then we will look for a generic
 
             if let None = self.generics.find(&ident.to_string()) {
@@ -254,6 +262,16 @@ impl<'a> NameResolver<'a> {
             None
         }
     }
+
+    fn set_id(&mut self, id: Option<GlobalSymbol>) {
+        if let Some(id) = id {
+            self.current_sym = Some(id);
+        }
+    }
+
+    fn reset_id(&mut self) {
+        self.current_sym = None;
+    }
 }
 
 impl<'a> AstWalker for NameResolver<'a> {
@@ -277,6 +295,12 @@ impl<'a> AstWalker for NameResolver<'a> {
             }
             ItemKind::Namespace(_) => unreachable!(),
             ItemKind::Enum(e) => {
+                let en = self
+                    .compiled
+                    .symbols
+                    .resolve(&e.ident.to_string(), self.file);
+
+                self.set_id(en);
                 for generics in e.generics.params.clone() {
                     self.generics.push_generic(generics);
                 }
@@ -292,11 +316,19 @@ impl<'a> AstWalker for NameResolver<'a> {
                 }
 
                 self.generics.clear_generics();
+                self.reset_id();
             }
         }
     }
 
     fn visit_struct(&mut self, str: &mut Struct) {
+        let s = self
+            .compiled
+            .symbols
+            .resolve(&str.ident.to_string(), self.file);
+
+        self.set_id(s);
+
         for generics in str.generics.params.clone() {
             self.generics.push_generic(generics);
         }
@@ -310,6 +342,7 @@ impl<'a> AstWalker for NameResolver<'a> {
         }
 
         self.generics.clear_generics();
+        self.reset_id();
     }
 
     fn visit_let(&mut self, let_stmt: &mut Let) {
@@ -359,12 +392,16 @@ impl<'a> AstWalker for NameResolver<'a> {
     }
 
     fn visit_fn(&mut self, func: &mut FnDecl) {
+        let name = func.sig.name.to_string();
+
+        let sym = self.compiled.symbols.resolve(&name, self.file);
+        self.set_id(sym);
+
         for generic in func.generics.params.clone() {
             self.generics.push_generic(generic);
         }
         self.scopes = ScopeManager::new(self.file);
 
-        let name = func.sig.name.to_string();
         let camel = name.to_case(Case::Camel);
 
         if name != camel && !self.external {
@@ -391,6 +428,7 @@ impl<'a> AstWalker for NameResolver<'a> {
         }
 
         self.generics.clear_generics();
+        self.reset_id();
     }
 
     fn walk_expr(&mut self, expr: &mut Expr) {

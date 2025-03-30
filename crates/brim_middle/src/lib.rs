@@ -35,7 +35,7 @@ impl Location {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GlobalSymbol {
     pub id: Location,
     pub name: Ident,

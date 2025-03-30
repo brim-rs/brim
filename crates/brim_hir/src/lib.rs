@@ -9,7 +9,7 @@ use crate::{
 };
 use brim_ast::ItemId;
 use brim_config::toml::Config;
-use brim_middle::SymbolTable;
+use brim_middle::{GlobalSymbol, SymbolTable};
 use std::collections::HashMap;
 
 pub mod builtin;
@@ -49,6 +49,8 @@ pub struct CompiledModules {
     pub symbols: SymbolTable,
     pub items: HashMap<ItemId, HirItem>,
     pub assigned_paths: HashMap<ItemId, ItemId>,
+    // tracks which items use which other items
+    pub item_relations: HashMap<GlobalSymbol, Vec<GlobalSymbol>>,
 }
 
 impl CompiledModules {
@@ -58,6 +60,7 @@ impl CompiledModules {
             symbols: SymbolTable::new(),
             items: HashMap::new(),
             assigned_paths: HashMap::new(),
+            item_relations: HashMap::new(),
         }
     }
 
@@ -92,5 +95,16 @@ impl CompiledModules {
                 item_id
             ))
             .clone()
+    }
+
+    pub fn add_item_relation(&mut self, item_id: GlobalSymbol, relation: GlobalSymbol) {
+        self.item_relations
+            .entry(item_id)
+            .or_insert_with(Vec::new)
+            .push(relation);
+    }
+
+    pub fn get_item_relations(&self, item_id: GlobalSymbol) -> Option<&Vec<GlobalSymbol>> {
+        self.item_relations.get(&item_id)
     }
 }

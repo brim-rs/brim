@@ -2,3 +2,21 @@ mod windows::kernel32;
 
 pub type HANDLE = any;
 pub type DWORD = u32;
+pub type BOOL = i32;
+
+pub struct OVERLAPPED {
+    pub Internal: usize,
+    pub InternalHigh: usize,
+    pub Anonymous: OVERLAPPED_0,
+    pub hEvent: HANDLE,
+}
+
+pub struct OVERLAPPED_0 {
+    pub Anonymous: OVERLAPPED_0_0,
+    pub Pointer: any
+}
+
+pub struct OVERLAPPED_0_0 {
+    pub Offset: DWORD,
+    pub OffsetHigh: DWORD,
+}

@@ -49,6 +49,13 @@ impl HirItem {
             _ => None,
         }
     }
+
+    pub fn generate_extra_namespace(&self) -> bool {
+        match &self.kind {
+            HirItemKind::Fn(_) | HirItemKind::Struct(_) | HirItemKind::Enum(_) => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
