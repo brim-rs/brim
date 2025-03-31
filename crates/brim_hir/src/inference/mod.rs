@@ -5,7 +5,10 @@ use crate::{
     CompiledModules,
     expr::{HirExpr, HirExprKind},
     inference::{
-        errors::{CannotApplyBinary, CannotApplyUnary, CannotCompare, OrelseExpectedOption},
+        errors::{
+            CannotApplyBinary, CannotApplyUnary, CannotCompare, InvalidFunctionArgCount,
+            OrelseExpectedOption,
+        },
         scope::{TypeInfo, TypeScopeManager},
     },
     items::{
@@ -903,6 +906,26 @@ impl<'a> TypeInference<'a> {
             self.ctx.push_generic(generic);
         }
         let mut generic_types: IndexMap<String, HirTyKind> = IndexMap::new();
+
+        let mut req_params = func_params.clone().len();
+
+        if !fn_def.is_static() {
+            req_params -= 1; // Static methods don't count the self parameter
+        }
+
+        if args.len() != req_params {
+            let span = if let Some(last) = args.last() {
+                args[0].span.to(last.span)
+            } else {
+                args[0].span
+            };
+
+            self.temp.emit_impl(InvalidFunctionArgCount {
+                span: (span, self.current_mod.as_usize()),
+                expected: req_params as u16,
+                found: args.len() as u16,
+            });
+        }
 
         for (arg, fn_param) in args.iter_mut().zip(func_params) {
             self.infer_expr(arg);

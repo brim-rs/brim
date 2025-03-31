@@ -49,3 +49,12 @@ pub struct OrelseExpectedOption {
     pub span: (Span, usize),
     pub ty: HirTyKind,
 }
+
+#[derive(Diagnostic)]
+#[error("invalid argument count to a function. expected `{expected}` but found `{found}`")]
+pub struct InvalidFunctionArgCount {
+    #[error]
+    pub span: (Span, usize),
+    pub expected: u16,
+    pub found: u16,
+}

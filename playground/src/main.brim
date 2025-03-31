@@ -13,6 +13,10 @@ pub fn optionTest(x: string?) string {
     return x orelse "None";
 }
 
+fn add(x: i32, y: i32) i32 {
+    return x + y;
+}
+
 pub fn main() {
     // Here val is any
     //let val: any = 42;
@@ -21,4 +25,5 @@ pub fn main() {
     //let xy = @cast(@anyCast(val, i32), u32);
 
     let val = optionTest(@none());
+    let y = add(1);
 };
