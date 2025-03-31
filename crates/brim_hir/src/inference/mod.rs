@@ -692,7 +692,9 @@ impl<'a> TypeInference<'a> {
                 }
             }
             HirExprKind::MethodCall(idents, expr) => {
+                let idents_clone = idents.clone();
                 let item = self.resolve_method_from_idents(idents, expr, None);
+                *idents = idents_clone; // Restore the original idents after resolution
 
                 if let Some(item) = item {
                     let method_fn = item.as_fn().clone();

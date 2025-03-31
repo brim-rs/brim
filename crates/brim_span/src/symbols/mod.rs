@@ -4,7 +4,6 @@ use std::{collections::HashMap, fmt::Display, sync::Mutex};
 
 index_type! {
     /// A unique identifier for a symbol interned in the global interner.
-    #[derive(PartialOrd, Ord)]
     pub struct SymbolIndex {}
 }
 

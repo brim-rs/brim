@@ -5,7 +5,7 @@ use brim_hir::{
     items::{HirItem, HirItemKind},
 };
 use brim_middle::{GlobalSymbol, ModuleId};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, VecDeque};
 
 impl CppCodegen {
     pub fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules) {
@@ -276,8 +276,8 @@ impl CppCodegen {
 pub fn sort_items_by_module(
     item_relations: &HashMap<GlobalSymbol, Vec<GlobalSymbol>>,
 ) -> HashMap<ModuleId, Vec<ItemId>> {
-    let mut module_items: HashMap<ModuleId, HashSet<ItemId>> = HashMap::new();
-    let mut all_items: HashSet<GlobalSymbol> = HashSet::new();
+    let mut module_items: BTreeMap<ModuleId, BTreeSet<ItemId>> = BTreeMap::new();
+    let mut all_items: BTreeSet<GlobalSymbol> = BTreeSet::new();
 
     for (item, dependencies) in item_relations {
         all_items.insert(item.clone());
@@ -289,18 +289,18 @@ pub fn sort_items_by_module(
     for item in &all_items {
         module_items
             .entry(item.id.mod_id.clone())
-            .or_insert_with(HashSet::new)
+            .or_insert_with(BTreeSet::new)
             .insert(item.id.item_id.clone());
     }
 
-    let mut module_graphs: HashMap<ModuleId, HashMap<ItemId, Vec<ItemId>>> = HashMap::new();
+    let mut module_graphs: BTreeMap<ModuleId, BTreeMap<ItemId, Vec<ItemId>>> = BTreeMap::new();
 
     for (item, dependencies) in item_relations {
         let mod_id = item.id.mod_id.clone();
         let item_id = item.id.item_id.clone();
 
         if !module_graphs.contains_key(&mod_id) {
-            module_graphs.insert(mod_id.clone(), HashMap::new());
+            module_graphs.insert(mod_id.clone(), BTreeMap::new());
         }
 
         // Add dependencies within the same module
@@ -319,7 +319,7 @@ pub fn sort_items_by_module(
     let mut result: HashMap<ModuleId, Vec<ItemId>> = HashMap::new();
 
     for (mod_id, items) in &module_items {
-        let temp = HashMap::new();
+        let temp = BTreeMap::new();
         let graph = module_graphs.get(mod_id).unwrap_or(&temp);
         let sorted_items = topological_sort(items, graph);
         result.insert(mod_id.clone(), sorted_items);
@@ -329,13 +329,13 @@ pub fn sort_items_by_module(
 }
 
 pub fn topological_sort(
-    items: &HashSet<ItemId>,
-    graph: &HashMap<ItemId, Vec<ItemId>>,
+    items: &BTreeSet<ItemId>,
+    graph: &BTreeMap<ItemId, Vec<ItemId>>,
 ) -> Vec<ItemId> {
-    let mut indegree: HashMap<ItemId, usize> = HashMap::new();
-    let mut adj_list: HashMap<ItemId, Vec<ItemId>> = HashMap::new();
+    let mut indegree: BTreeMap<ItemId, usize> = BTreeMap::new();
+    let mut adj_list: BTreeMap<ItemId, Vec<ItemId>> = BTreeMap::new();
 
-    for &item in items {
+    for item in items {
         indegree.insert(item.clone(), 0);
         adj_list.insert(item.clone(), Vec::new());
     }
@@ -349,15 +349,15 @@ pub fn topological_sort(
         }
     }
 
-    let mut queue: VecDeque<ItemId> = indegree
+    let mut queue: BinaryHeap<std::cmp::Reverse<ItemId>> = indegree
         .iter()
         .filter(|&(_, &count)| count == 0)
-        .map(|(item, _)| item.clone())
+        .map(|(item, _)| std::cmp::Reverse(item.clone()))
         .collect();
 
     let mut result = Vec::new();
 
-    while let Some(item) = queue.pop_front() {
+    while let Some(std::cmp::Reverse(item)) = queue.pop() {
         result.push(item.clone());
 
         if let Some(adjacent) = adj_list.get(&item) {
@@ -365,7 +365,7 @@ pub fn topological_sort(
                 if let Some(count) = indegree.get_mut(adj) {
                     *count -= 1;
                     if *count == 0 {
-                        queue.push_back(adj.clone());
+                        queue.push(std::cmp::Reverse(adj.clone()));
                     }
                 }
             }

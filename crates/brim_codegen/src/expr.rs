@@ -102,19 +102,22 @@ impl CppCodegen {
                     _ => unimplemented!(),
                 }
             }
-            HirExprKind::MethodCall(r_ident, call) => match call.kind {
+            HirExprKind::MethodCall(mut r_ident, call) => match call.kind.clone() {
                 HirExprKind::Call(ident, args, _) => {
-                    // let ident = ident.as_ident().unwrap().to_string();
-                    // let mut new_args = vec![HirExpr {
-                    //     kind: HirExprKind::Var(r_ident),
-                    //     id: ItemId::new(),
-                    //     span: Span::DUMMY,
-                    //     ty: HirTyKind::Placeholder,
-                    // }];
-                    // new_args.extend(args);
-                    // let call = format!("{}({})", ident, self.generate_call_args(new_args));
-                    // format!("(brim_{}.brim_{})", r_ident, call)
-                    format!("")
+                    let call = format!(
+                        "{}({})",
+                        r_ident.last().unwrap(),
+                        self.generate_call_args(args)
+                    );
+
+                    r_ident.pop();
+                    let path = r_ident
+                        .iter()
+                        .map(|id| id.to_string())
+                        .collect::<Vec<String>>()
+                        .join(".");
+
+                    format!("(brim_{}.brim_{})", path, call)
                 }
                 _ => unimplemented!(),
             },

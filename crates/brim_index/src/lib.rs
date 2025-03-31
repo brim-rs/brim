@@ -9,7 +9,7 @@ macro_rules! index_type {
         use std::sync::atomic::{AtomicUsize, Ordering};
 
         $(#[$attrs])*
-        #[derive(Clone, Copy, PartialEq, Eq, Hash)]
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
         $vis struct $name {
             value: u32,
         }

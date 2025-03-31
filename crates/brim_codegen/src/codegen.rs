@@ -13,6 +13,7 @@ use brim_hir::{
 };
 use brim_middle::{GlobalSymbol, ModuleId};
 use std::{
+    any::Any,
     collections::{HashMap, HashSet},
     path::PathBuf,
 };

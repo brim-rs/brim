@@ -19,11 +19,10 @@ pub mod temp_diag;
 pub mod walker;
 
 index_type! {
-    #[derive(PartialOrd, Ord)]
     pub struct ModuleId {}
 }
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
 pub struct Location {
     pub mod_id: ModuleId,
     pub item_id: ItemId,
@@ -35,7 +34,7 @@ impl Location {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct GlobalSymbol {
     pub id: Location,
     pub name: Ident,

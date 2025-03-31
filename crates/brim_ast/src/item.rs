@@ -15,7 +15,7 @@ pub struct Item<Kind = ItemKind> {
     pub kind: Kind,
 }
 
-#[derive(Copy, Clone, Eq, Hash)]
+#[derive(Copy, Clone, Eq, Hash, Ord, PartialOrd)]
 pub struct Ident {
     pub name: Symbol,
     pub span: Span,
