@@ -169,13 +169,11 @@ impl HirTyKind {
             (HirTyKind::Primitive(PrimitiveType::Any), _) => true,
 
             (
-                HirTyKind::Mut(ty1)
-                | HirTyKind::Ref(ty1, Mutable::Yes)
-                | HirTyKind::Ptr(ty1, Mutable::Yes),
-                HirTyKind::Mut(ty2)
-                | HirTyKind::Ref(ty2, Mutable::Yes)
-                | HirTyKind::Ptr(ty2, Mutable::Yes),
-            ) => ty1.simple_eq(ty2),
+                HirTyKind::Ref(ty1, mutability1) | HirTyKind::Ptr(ty1, mutability1),
+                HirTyKind::Ref(ty2, mutability2) | HirTyKind::Ptr(ty2, mutability2),
+            ) => ty1.simple_eq(ty2) && mutability1 == mutability2,
+
+            (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1.simple_eq(ty2),
 
             (
                 HirTyKind::Mut(ty1)
@@ -184,7 +182,7 @@ impl HirTyKind {
                 _,
             ) => false,
 
-            (HirTyKind::Array(ty1, None), HirTyKind::Array(ty2, _)) => ty1.simple_eq(ty2),
+            (HirTyKind::Array(ty1, None), HirTyKind::Array(ty2, None)) => ty1.simple_eq(ty2),
 
             (HirTyKind::Array(ty1, len1), HirTyKind::Array(ty2, len2)) => {
                 ty1.simple_eq(ty2) && len1 == len2
