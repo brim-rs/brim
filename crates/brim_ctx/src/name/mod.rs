@@ -576,9 +576,15 @@ impl<'a> AstWalker for NameResolver<'a> {
                     }
                 }
             }
-            ExprKind::MethodCall(_, _) => {
-                // Can only be checked in type inference so we actually
+            ExprKind::MethodCall(_, call) => {
+                // Identifiers can only be checked in type inference so we actually
                 // know where to look for the method
+
+                if let ExprKind::Call(_, args) = call.kind.clone() {
+                    for mut arg in args {
+                        self.visit_expr(&mut arg);
+                    }
+                }
             }
             ExprKind::Match(expr, arms) => {
                 self.visit_expr(expr);

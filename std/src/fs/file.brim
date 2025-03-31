@@ -20,6 +20,6 @@ pub struct File {
     handle: Handle,
 
     fn write(self: &File, data: &[u8]) usize!IoError {
-        return self.handle.write(data, none);
+        return self.handle.write(data, @none());
     }
 }

@@ -104,18 +104,16 @@ impl CppCodegen {
             }
             HirExprKind::MethodCall(mut r_ident, call) => match call.kind.clone() {
                 HirExprKind::Call(ident, args, _) => {
-                    let call = format!(
-                        "{}({})",
-                        r_ident.last().unwrap(),
-                        self.generate_call_args(args)
-                    );
-
+                    let last = r_ident.last().unwrap().clone();
                     r_ident.pop();
                     let path = r_ident
                         .iter()
                         .map(|id| id.to_string())
                         .collect::<Vec<String>>()
                         .join(".");
+
+                    let call =
+                        format!("{}(brim_{}, {})", last, path, self.generate_call_args(args));
 
                     format!("(brim_{}.brim_{})", path, call)
                 }
