@@ -255,10 +255,12 @@ impl<'a> NameResolver<'a> {
                 Some((scope, var.clone()))
             }
         } else {
-            self.ctx.emit_impl(UndeclaredVariable {
-                span: (ident.span, self.file),
-                name: var_name.clone(),
-            });
+            if let None = self.compiled.symbols.resolve(&var_name, self.file) {
+                self.ctx.emit_impl(UndeclaredVariable {
+                    span: (ident.span, self.file),
+                    name: var_name.clone(),
+                });
+            }
 
             None
         }
@@ -435,38 +437,61 @@ impl<'a> AstWalker for NameResolver<'a> {
     fn walk_expr(&mut self, expr: &mut Expr) {
         match &mut expr.kind {
             ExprKind::Binary(lhs, _, rhs) => {
-                self.visit_expr(lhs);
-                self.visit_expr(rhs);
+                self.walk_expr(lhs);
+                self.walk_expr(rhs);
             }
-            ExprKind::Unary(_, operand) => self.visit_expr(operand),
+            ExprKind::Unary(_, operand) => self.walk_expr(operand),
             ExprKind::Field(base, _) => {
-                self.visit_expr(base);
+                self.walk_expr(base);
             }
             ExprKind::Index(base, index) => {
-                self.visit_expr(base);
-                self.visit_expr(index);
+                self.walk_expr(base);
+                self.walk_expr(index);
             }
             ExprKind::Literal(_) => {}
-            ExprKind::Paren(inner) => self.visit_expr(inner),
-            ExprKind::Return(inner) => self.visit_expr(inner),
+            ExprKind::Paren(inner) => self.walk_expr(inner),
+            ExprKind::Return(inner) => self.walk_expr(inner),
             ExprKind::Var(ident) => {
-                self.resolve_variable(ident);
+                if let Some(item) = self.compiled.symbols.resolve(&ident.to_string(), self.file) {
+                    let item = self.simple.get_item(item.id.item_id);
+
+                    match &item.kind {
+                        ItemKind::TypeAlias(ty) => {
+                            expr.kind = match &ty.ty {
+                                TypeAliasValue::Ty(ty) => ExprKind::Type(Box::new(ty.clone())),
+                                TypeAliasValue::Const(expr) => {
+                                    ExprKind::Comptime(Box::new(expr.clone()))
+                                }
+                            };
+                        }
+                        _ => {
+                            self.ctx.emit_impl(IdentifierNotFound {
+                                span: (ident.span, self.file),
+                                name: ident.to_string(),
+                            });
+                        }
+                    }
+
+                    println!("{:#?}", expr.kind);
+                } else {
+                    self.resolve_variable(ident);
+                }
             }
             ExprKind::AssignOp(lhs, _, rhs) | ExprKind::Assign(lhs, rhs) => {
-                self.visit_expr(lhs);
-                self.visit_expr(rhs);
+                self.walk_expr(lhs);
+                self.walk_expr(rhs);
             }
             ExprKind::If(if_expr) => {
-                self.visit_expr(&mut if_expr.condition);
-                self.visit_expr(&mut if_expr.then_block);
+                self.walk_expr(&mut if_expr.condition);
+                self.walk_expr(&mut if_expr.then_block);
 
                 for else_if in &mut if_expr.else_ifs {
-                    self.visit_expr(&mut else_if.condition);
-                    self.visit_expr(&mut else_if.block);
+                    self.walk_expr(&mut else_if.condition);
+                    self.walk_expr(&mut else_if.block);
                 }
 
                 if let Some(else_branch) = &mut if_expr.else_block {
-                    self.visit_expr(else_branch);
+                    self.walk_expr(else_branch);
                 }
             }
             ExprKind::Block(block) => self.visit_block(block),
@@ -483,17 +508,17 @@ impl<'a> AstWalker for NameResolver<'a> {
                 }
 
                 for arg in args {
-                    self.visit_expr(arg);
+                    self.walk_expr(arg);
                 }
             }
             ExprKind::Comptime(expr) => {
                 self.inside_comptime = true;
-                self.visit_expr(expr);
+                self.walk_expr(expr);
                 self.inside_comptime = false;
             }
             ExprKind::Array(items) => {
                 for item in items {
-                    self.visit_expr(item);
+                    self.walk_expr(item);
                 }
             }
             ExprKind::Builtin(ident, args) => {
@@ -508,7 +533,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                 }
 
                 for arg in args {
-                    self.visit_expr(arg);
+                    self.walk_expr(arg);
                 }
             }
             ExprKind::StructConstructor(ident, _, fields) => {
@@ -523,7 +548,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                 }
 
                 for (_, field) in fields {
-                    self.visit_expr(field);
+                    self.walk_expr(field);
                 }
             }
             ExprKind::StaticAccess(ident, expr) => {
@@ -582,20 +607,20 @@ impl<'a> AstWalker for NameResolver<'a> {
 
                 if let ExprKind::Call(_, args) = call.kind.clone() {
                     for mut arg in args {
-                        self.visit_expr(&mut arg);
+                        self.walk_expr(&mut arg);
                     }
                 }
             }
             ExprKind::Match(expr, arms) => {
-                self.visit_expr(expr);
+                self.walk_expr(expr);
                 for arm in arms {
                     match arm {
                         MatchArm::Case(pat, block) => {
-                            self.visit_expr(pat);
-                            self.visit_expr(block);
+                            self.walk_expr(pat);
+                            self.walk_expr(block);
                         }
                         MatchArm::Else(block) => {
-                            self.visit_expr(block);
+                            self.walk_expr(block);
                         }
                     }
                 }

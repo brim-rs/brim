@@ -587,6 +587,7 @@ impl<'a> Transformer<'a> {
                     for arg in args {
                         new_args.push(self.transform_expr(arg.clone()).0);
                     }
+                    println!("{:#?}", new_args);
 
                     if let Some(func) = func {
                         let x = (func.func)(self.current_mod_id.as_usize(), new_args);

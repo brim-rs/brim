@@ -1,8 +1,8 @@
-use windows from "../os/windows.brim"
+use { HANDLE, DWORD, OVERLAPPED, OVERLAPPED_0, OVERLAPPED_0_0 } from "../os/windows.brim"
 use { IoError } from "../io/error.brim";
 
 pub type HandleTy = match @os() {
-    "windows" => windows::HANDLE,
+    "windows" => HANDLE,
     "linux" => i32,
     "macos" => i32,
     else => i32
@@ -12,7 +12,21 @@ pub struct Handle {
     inner: HandleTy
 
     fn write(self: &Handle, data: &[u8], offset: u64?) usize!IoError {
-        return @ok(@cast(5, usize));
+        let overlapped = if offset {
+            return OVERLAPPED {
+                .Internal = 0,
+                .InternalHigh = 0,
+                .Anonymous = OVERLAPPED_0 {
+                    .Anonymous = OVERLAPPED_0_0 {
+                        .Offset = @cast(offset, DWORD),
+                        .OffsetHigh = @cast((offset >> 32), DWORD),
+                    },
+                },
+                .hEvent = @none(),
+            }
+        } else {
+            // Write data at current position
+        }
     }
 }
 

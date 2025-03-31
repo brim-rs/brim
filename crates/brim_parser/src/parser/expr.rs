@@ -410,12 +410,11 @@ impl Parser {
                 debug!("Parsed builtin function with name: {}", ident);
                 Ok(self.new_expr(span.to(self.prev().span), ExprKind::Builtin(ident, args)))
             }
-            TokenKind::Ident(_) => {
+            TokenKind::Ident(x) => {
                 if self.eat_keyword(ptok!(Return)) {
                     let span = self.current().span;
                     let expr = self.parse_expr()?;
 
-                    debug!("Parsed return expression");
                     Ok(self.new_expr(span.to(expr.span), ExprKind::Return(Box::new(expr))))
                 } else if self.eat_keyword(ptok!(If)) {
                     self.parse_if()
@@ -611,7 +610,9 @@ impl Parser {
         self.parsing_ctx = ParsingContext::IfStatement;
         let span = self.prev().span;
         let condition = self.parse_expr()?;
+        self.parsing_ctx = ParsingContext::Normal;
         let then_block = self.parse_block(true)?;
+        self.parsing_ctx = ParsingContext::IfStatement;
 
         let mut else_block: Option<Expr> = None;
         let mut else_ifs: Vec<ConditionBranch> = Vec::new();
@@ -626,7 +627,9 @@ impl Parser {
                         else_block: (else_block.span, self.file),
                     });
                 }
+                self.parsing_ctx = ParsingContext::Normal;
                 let block = self.parse_block(true)?;
+                self.parsing_ctx = ParsingContext::IfStatement;
 
                 else_ifs.push(ConditionBranch {
                     span: span.to(block.span),
@@ -645,7 +648,9 @@ impl Parser {
                         span: (span.to(self.prev().span), self.file),
                     });
                 }
+                self.parsing_ctx = ParsingContext::Normal;
                 let block = self.parse_block(true)?;
+                self.parsing_ctx = ParsingContext::IfStatement;
                 else_block = Some(self.new_expr(block.span, ExprKind::Block(block)));
             };
         }
