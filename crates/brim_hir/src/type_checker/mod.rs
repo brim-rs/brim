@@ -20,6 +20,7 @@ pub struct TypeChecker {
     pub current_fn: Option<HirFn>,
     pub compiled: CompiledModules,
     pub ty_returned_from_fn: Option<HirTyKind>,
+    pub is_current_block_fn: bool
 }
 
 impl TypeChecker {
@@ -32,6 +33,7 @@ impl TypeChecker {
             current_fn: None,
             compiled,
             ty_returned_from_fn: None,
+            is_current_block_fn: false
         }
     }
 

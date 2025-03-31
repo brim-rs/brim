@@ -17,11 +17,16 @@ impl TypeChecker {
     pub fn check_expr(&mut self, expr: HirExpr) {
         match expr.kind {
             HirExprKind::Block(block) => {
+                let copy = self.is_current_block_fn;
+
+                self.is_current_block_fn = false;
                 self.scope_manager.push_scope();
                 for stmt in block.stmts {
                     self.check_stmt(stmt);
                 }
                 self.scope_manager.pop_scope();
+
+                self.is_current_block_fn = copy;
             }
             HirExprKind::If(if_expr) => {
                 self.check_expr(*if_expr.condition);
@@ -54,7 +59,7 @@ impl TypeChecker {
                 let func = self.current_fn();
                 let ret_ty = &func.sig.return_type;
 
-                if !ret_ty.simple_eq(&expr.ty) {
+                if !ret_ty.simple_eq(&expr.ty) && self.is_current_block_fn {
                     self.ctx.emit_impl(FunctionReturnTypeMismatch {
                         span: (expr.span, self.mod_id),
                         expected: ret_ty.clone(),

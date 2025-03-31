@@ -40,7 +40,12 @@ impl CppCodegen {
             }
             HirExprKind::Return(expr) => {
                 let expr_code = self.generate_expr(*expr);
-                format!("return {};", expr_code)
+
+                if let Some(id) = self.inside_if {
+                    format!("temp_{} = {};", id, expr_code)
+                } else {
+                    format!("return {};", expr_code)
+                }
             }
             HirExprKind::Binary(lhs, op, rhs) => {
                 let lhs_code = self.generate_expr(*lhs);
@@ -67,7 +72,7 @@ impl CppCodegen {
                 let expr_code = self.generate_expr(*expr);
                 format!("{}.{}", expr_code, field)
             }
-            HirExprKind::If(if_stmt) => self.generate_if_expr(if_stmt),
+            HirExprKind::If(ref if_stmt) => self.generate_if_expr(if_stmt.clone(), expr),
             HirExprKind::Array(exprs) => self.generate_array_expr(exprs),
             HirExprKind::StructConstructor(str) => self.generate_struct_constructor(str),
             HirExprKind::Type(ty) => self.generate_ty(ty),
@@ -154,14 +159,19 @@ impl CppCodegen {
         )
     }
 
-    fn generate_if_expr(&mut self, if_stmt: HirIfExpr) -> String {
+    fn generate_if_expr(&mut self, if_stmt: HirIfExpr, expr: HirExpr) -> String {
+        let id = expr.id.as_usize();
         let condition = self.generate_expr(*if_stmt.condition);
-        let then_block = self.generate_expr(*if_stmt.then_block);
+        self.inside_if = Some(id);
+        let then_block = self.generate_expr(*if_stmt.then_block.clone());
+        self.inside_if = None;
 
         let mut else_ifs = String::new();
         for branch in &if_stmt.else_ifs {
             let branch_condition = self.generate_expr(*branch.condition.clone());
+            self.inside_if = Some(id);
             let branch_block = self.generate_expr(*branch.block.clone());
+            self.inside_if = None;
             write!(
                 else_ifs,
                 " else if ({}) {{ {} }}",
@@ -171,14 +181,25 @@ impl CppCodegen {
         }
 
         let else_block = if let Some(else_block) = if_stmt.else_block {
-            format!(" else {{ {} }}", self.generate_expr(*else_block))
+            self.inside_if = Some(id);
+            let temp = format!(" else {{ {} }}", self.generate_expr(*else_block));
+            self.inside_if = None;
+
+            temp
         } else {
             String::new()
         };
 
+        let temp_value = format!("{} temp_{};", self.generate_ty(expr.ty), expr.id.as_usize());
+
         format!(
-            "if ({}) {{ {} }}{}{}",
-            condition, then_block, else_ifs, else_block
+            "({{ {} \n if ({}) {{ {} }}{}{}; {} }});",
+            temp_value,
+            condition,
+            then_block,
+            else_ifs,
+            else_block,
+            format!("temp_{};", id)
         )
     }
 

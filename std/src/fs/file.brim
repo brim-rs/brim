@@ -11,7 +11,7 @@ pub type HandleTy = match @os() {
 pub struct Handle {
     inner: HandleTy
 
-    fn write(self: &Handle, data: &[u8]) usize!IoError {
+    fn write(self: &Handle, data: &[u8], offset: u64?) usize!IoError {
         return @ok(@cast(5, usize));
     }
 }

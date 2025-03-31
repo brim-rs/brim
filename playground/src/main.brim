@@ -25,5 +25,9 @@ pub fn main() {
     //let xy = @cast(@anyCast(val, i32), u32);
 
     let val = optionTest(@none());
-    let y = add(1);
+    let y = if val == "None" {
+        return 42;
+    } else {
+        return 0;
+    };
 };
