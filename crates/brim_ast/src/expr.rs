@@ -37,7 +37,7 @@ pub enum ExprKind {
     /// `x[0]`
     Index(Box<Expr>, Box<Expr>),
     /// `x.foo()`
-    MethodCall(Ident, Box<Expr>),
+    MethodCall(Vec<Ident>, Box<Expr>),
     /// `Vec::new()`
     StaticAccess(Vec<Ident>, Box<Expr>),
     /// `123`, `"hello"`, etc.

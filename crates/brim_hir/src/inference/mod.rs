@@ -25,6 +25,7 @@ use brim_ast::{
 };
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{ModuleId, temp_diag::TemporaryDiagnosticContext};
+use brim_span::span::Span;
 use errors::NoMethod;
 use indexmap::IndexMap;
 
@@ -690,82 +691,41 @@ impl<'a> TypeInference<'a> {
                     }
                 }
             }
-            HirExprKind::MethodCall(method_ident, expr) => {
-                let name = method_ident.to_string();
-                let variable = self.scope_manager.resolve_variable(&name).cloned();
-                let function_call = expr.as_call().as_ident().unwrap();
+            HirExprKind::MethodCall(idents, expr) => {
+                let item = self.resolve_method_from_idents(idents, expr, None);
 
-                if let Some(var) = variable {
-                    match &var.ty {
-                        HirTyKind::Ident { ident, .. } => {
-                            let ident_str = ident.clone().to_string();
-                            let sym = self
-                                .compiled
-                                .resolve_symbol(&ident_str, self.current_mod.as_usize());
+                if let Some(item) = item {
+                    let method_fn = item.as_fn().clone();
+                    let return_type = method_fn.sig.return_type.clone();
 
-                            if let Some(sym) = sym {
-                                let method_id =
-                                    sym.as_struct().unwrap().get_item(function_call.clone());
+                    &match &mut expr.kind {
+                        HirExprKind::Call(call_ident, args, params) => {
+                            let ident_clone = call_ident.as_ident().unwrap().clone();
 
-                                if let Some(method_id) = method_id {
-                                    let mut method_fn =
-                                        self.compiled.get_item(method_id).as_fn().clone();
-                                    let return_type = method_fn.sig.return_type.clone();
-
-                                    match &mut expr.kind {
-                                        HirExprKind::Call(call_ident, args, params) => {
-                                            let ident_clone =
-                                                call_ident.as_ident().unwrap().clone();
-
-                                            // remove self argument if not static
-                                            if !method_fn.is_static()
-                                                && method_fn.ctx == FunctionContext::Method
-                                            {
-                                                method_fn.sig.params.params.remove(0);
-                                            }
-
-                                            let inferred_type = self.infer_call_expr(
-                                                ident_clone,
-                                                &method_fn,
-                                                args,
-                                                params,
-                                            );
-                                            expr.ty = inferred_type.clone();
-
-                                            self.hir.hir_items.insert(
-                                                expr.id,
-                                                StoredHirItem::Expr(*expr.clone()),
-                                            );
-
-                                            self.hir.update_builtins(*expr.clone());
-
-                                            &inferred_type
-                                        }
-                                        _ => unreachable!(),
-                                    };
-
-                                    &return_type.clone()
-                                } else {
-                                    self.temp.emit_impl(NoMethod {
-                                        span: (function_call.span, self.current_mod.as_usize()),
-                                        method: function_call.to_string(),
-                                        ty: var.ty.clone(),
-                                    });
-
-                                    &HirTyKind::err()
-                                }
-                            } else {
-                                &HirTyKind::err()
+                            let mut method_fn_for_inference = method_fn.clone();
+                            if !method_fn_for_inference.is_static()
+                                && method_fn_for_inference.ctx == FunctionContext::Method
+                            {
+                                method_fn_for_inference.sig.params.params.remove(0);
                             }
+
+                            let inferred_type = self.infer_call_expr(
+                                ident_clone,
+                                &method_fn_for_inference,
+                                args,
+                                params,
+                            );
+                            expr.ty = inferred_type.clone();
+
+                            self.hir
+                                .hir_items
+                                .insert(expr.id, StoredHirItem::Expr(*expr.clone()));
+
+                            self.hir.update_builtins(*expr.clone());
+
+                            return_type
                         }
-                        _ => {
-                            self.temp.emit_impl(NoMethod {
-                                span: (function_call.span, self.current_mod.as_usize()),
-                                method: function_call.to_string(),
-                                ty: var.ty.clone(),
-                            });
-                            &HirTyKind::err()
-                        }
+                        _ => unreachable!(),
                     }
                 } else {
                     &HirTyKind::err()
@@ -789,6 +749,144 @@ impl<'a> TypeInference<'a> {
             .insert(expr.id, StoredHirItem::Expr(expr.clone()));
 
         self.hir.update_builtins(expr.clone());
+    }
+
+    pub fn resolve_method_from_idents(
+        &mut self,
+        idents: &mut Vec<Ident>,
+        expr: &mut Box<HirExpr>,
+        last: Option<TypeInfo>,
+    ) -> Option<HirItem> {
+        if idents.is_empty() {
+            return None;
+        }
+
+        let first = idents.first().unwrap().to_string();
+
+        if let Some(type_info) = last {
+            return self.resolve_from_type(type_info, idents, expr);
+        }
+
+        let var = self.scope_manager.resolve_variable(&first).cloned();
+        let function_call = expr.as_call().as_ident().unwrap();
+
+        if let Some(var) = var {
+            idents.remove(0);
+
+            if idents.is_empty() {
+                return None;
+            }
+
+            return self.resolve_member_access(var.ty, idents, expr, function_call.span);
+        } else {
+            self.temp.emit_impl(NoMethod {
+                span: (function_call.span, self.current_mod.as_usize()),
+                method: first,
+                ty: HirTyKind::err(),
+            });
+
+            None
+        }
+    }
+
+    fn resolve_from_type(
+        &mut self,
+        type_info: TypeInfo,
+        idents: &mut Vec<Ident>,
+        expr: &mut Box<HirExpr>,
+    ) -> Option<HirItem> {
+        if let Some(ident) = type_info.ty.is_ident() {
+            let ident_str = ident.to_string();
+
+            let sym = self
+                .compiled
+                .resolve_symbol(&ident_str, self.current_mod.as_usize());
+
+            if let Some(sym) = sym {
+                return self.resolve_member_access(
+                    type_info.ty.clone(),
+                    idents,
+                    expr,
+                    idents.first().unwrap().span,
+                );
+            }
+        }
+
+        self.temp.emit_impl(NoMethod {
+            span: (idents.first().unwrap().span, self.current_mod.as_usize()),
+            method: idents.first().unwrap().to_string(),
+            ty: type_info.ty.clone(),
+        });
+
+        None
+    }
+
+    fn resolve_member_access(
+        &mut self,
+        ty: HirTyKind,
+        idents: &mut Vec<Ident>,
+        expr: &mut Box<HirExpr>,
+        error_span: Span,
+    ) -> Option<HirItem> {
+        let current_ident = idents.first().unwrap().clone();
+
+        if let Some(type_ident) = ty.is_ident() {
+            let type_name = type_ident.to_string();
+
+            let sym = self
+                .compiled
+                .resolve_symbol(&type_name, self.current_mod.as_usize());
+
+            if let Some(sym) = sym {
+                let method_id = sym.as_struct().unwrap().get_item(current_ident.clone());
+
+                if let Some(method_id) = method_id {
+                    idents.remove(0);
+
+                    let item = self.compiled.get_item(method_id).clone();
+
+                    if idents.is_empty() {
+                        return Some(item);
+                    } else {
+                        let method_fn = item.as_fn();
+                        let return_type = method_fn.sig.return_type.clone();
+
+                        let next_type = TypeInfo {
+                            ty: return_type,
+                            span: idents.first().unwrap().span,
+                        };
+
+                        return self.resolve_method_from_idents(idents, expr, Some(next_type));
+                    }
+                }
+
+                let struct_data = sym.as_struct().unwrap();
+                for field in &struct_data.fields {
+                    if field.ident == current_ident {
+                        idents.remove(0);
+
+                        if idents.is_empty() {
+                            return None;
+                        }
+
+                        let next_type = TypeInfo {
+                            ty: field.ty.clone(),
+                            span: idents.first().unwrap().span,
+                        };
+
+                        return self.resolve_method_from_idents(idents, expr, Some(next_type));
+                    }
+                }
+            }
+        }
+
+        self.temp.emit_impl(NoMethod {
+            span: (error_span, self.current_mod.as_usize()),
+            method: current_ident.to_string(),
+            ty: ty.clone(),
+        });
+
+        None
     }
 
     pub fn infer_call_expr(

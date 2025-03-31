@@ -440,4 +440,12 @@ impl HirTyKind {
             _ => None,
         }
     }
+
+    pub fn is_ident(&self) -> Option<Ident> {
+        match self {
+            HirTyKind::Ident { ident, .. } => Some(ident.clone()),
+            HirTyKind::Ptr(ty, _) | HirTyKind::Ref(ty, _) | HirTyKind::Mut(ty) => ty.is_ident(),
+            _ => None,
+        }
+    }
 }

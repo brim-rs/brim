@@ -1,17 +1,25 @@
 use windows from "../os/windows.brim"
 use { IoError } from "../io/error.brim";
 
-pub type Handle = match @os() {
+pub type HandleTy = match @os() {
     "windows" => windows::HANDLE,
     "linux" => i32,
     "macos" => i32,
     else => i32
 };
 
+pub struct Handle {
+    inner: HandleTy
+
+    fn write(self: &Handle, data: &[u8]) usize!IoError {
+        return @ok(@cast(5, usize));
+    }
+}
+
 pub struct File {
     handle: Handle,
 
-    //fn write(self: &File, data: &[u8]) usize!IoError {
-        //return self.handle.write(data, none);
-    //}
+    fn write(self: &File, data: &[u8]) usize!IoError {
+        return self.handle.write(data, none);
+    }
 }

@@ -87,7 +87,7 @@ pub enum HirExprKind {
     /// Static access to a struct field.
     StaticAccess(ItemId, Box<HirExpr>),
     /// Method call on an expression.
-    MethodCall(Ident, Box<HirExpr>),
+    MethodCall(Vec<Ident>, Box<HirExpr>),
 
     Dummy,
 }
@@ -99,7 +99,7 @@ impl HirExprKind {
 }
 
 #[derive(Clone, Debug)]
-/// it can be either resolved value or a expr to be evaluated
+/// it can be either resolved value or an expr to be evaluated
 pub enum ComptimeValue {
     Resolved(ComptimeReturnValue),
     Expr(Box<HirExpr>),

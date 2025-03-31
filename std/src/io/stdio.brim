@@ -10,5 +10,5 @@ pub fn getStdErrHandle() Handle {
 }
 
 pub fn getStdErr() File {
-    return File { .handle = getStdErrHandle() };
+    return File { .handle = Handle { .inner = getStdErrHandle() } };
 }

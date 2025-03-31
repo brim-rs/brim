@@ -22,6 +22,7 @@ use brim_ast::{
 use brim_diagnostics::box_diag;
 use brim_span::span::Span;
 use indexmap::IndexMap;
+use std::env::var;
 use tracing::debug;
 
 impl Parser {
@@ -537,9 +538,36 @@ impl Parser {
                             debug!("Parsed path expression");
                             Ok(self.new_expr(span, ExprKind::Path(path)))
                         } else if self.eat(TokenKind::Dot) {
-                            let expr = self.parse_expr()?;
+                            let mut idents = vec![ident];
 
-                            Ok(self.new_expr(span, ExprKind::MethodCall(ident, Box::new(expr))))
+                            while let TokenKind::Ident(_) = self.current().kind {
+                                idents.push(self.parse_ident()?);
+
+                                if !self.eat(TokenKind::Dot) {
+                                    break;
+                                }
+                            }
+
+                            self.expect_oparen()?;
+                            let mut args = vec![];
+                            while !self.is_paren(Orientation::Close) {
+                                args.push(self.parse_expr()?);
+                                if !self.eat(TokenKind::Comma) {
+                                    break;
+                                }
+                            }
+                            self.expect_cparen()?;
+
+                            let call_span = span.to(self.prev().span);
+                            let ex = ExprKind::Call(
+                                Box::new(
+                                    self.new_expr(idents[0].span, ExprKind::Var(idents[0].clone())),
+                                ),
+                                args,
+                            );
+                            let call_expr = self.new_expr(call_span, ex);
+                            Ok(self
+                                .new_expr(span, ExprKind::MethodCall(idents, Box::new(call_expr))))
                         } else {
                             debug!("Parsed variable expression: {}", ident);
                             Ok(self.new_expr(span, ExprKind::Var(ident)))
