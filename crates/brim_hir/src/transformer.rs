@@ -653,6 +653,9 @@ impl<'a> Transformer<'a> {
                 ExprKind::MethodCall(ident, expr) => {
                     HirExprKind::MethodCall(ident, Box::new(self.transform_expr(*expr).0))
                 }
+                ExprKind::Unwrap(expr) => {
+                    HirExprKind::Unwrap(Box::new(self.transform_expr(*expr).0))
+                }
             },
             ty,
         };

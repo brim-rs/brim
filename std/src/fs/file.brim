@@ -14,12 +14,12 @@ pub struct Handle {
     fn write(self: &Handle, data: &[u8], offset: u64?) usize!IoError {
         let overlapped = if offset {
             return OVERLAPPED {
-                .Internal = 0,
-                .InternalHigh = 0,
+                .Internal = @cast(0, usize),
+                .InternalHigh = @cast(0, usize),
                 .Anonymous = OVERLAPPED_0 {
                     .Anonymous = OVERLAPPED_0_0 {
-                        .Offset = @cast(offset, DWORD),
-                        .OffsetHigh = @cast((offset >> 32), DWORD),
+                        .Offset = @cast(offset?, DWORD),
+                        .OffsetHigh = @cast(32, DWORD),
                     },
                 },
                 .hEvent = @none(),

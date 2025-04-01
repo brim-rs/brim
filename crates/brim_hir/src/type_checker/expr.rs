@@ -78,7 +78,7 @@ impl TypeChecker {
                 for (ident, field) in fields {
                     let field_ty = hir_struct.field_types.get(&ident).unwrap().clone();
 
-                    if field_ty != field.ty {
+                    if !field_ty.simple_eq(&field.ty) {
                         self.ctx.emit_impl(FieldMismatch {
                             span: (field.span, self.mod_id),
                             field: ident.to_string(),
@@ -121,6 +121,9 @@ impl TypeChecker {
             }
             HirExprKind::MethodCall(_, call) => {
                 self.check_expr(*call);
+            }
+            HirExprKind::Unwrap(expr) => {
+                self.check_expr(*expr);
             }
             HirExprKind::Var(_) | HirExprKind::Literal(_) => {}
             _ => todo!("missing implementation for {:?}", expr),

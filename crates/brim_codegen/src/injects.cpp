@@ -58,3 +58,11 @@ T safe_cast(const std::any& value) {
                 typeid(T).name(), value.type().name());
     }
 }
+
+template <typename T>
+T unwrap(const std::optional<T>& opt) {
+    if (!opt.has_value()) {
+        PANIC_F("Attempted to unwrap an empty optional of type {}", typeid(T).name());
+    }
+    return *opt;
+}

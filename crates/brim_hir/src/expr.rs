@@ -88,6 +88,8 @@ pub enum HirExprKind {
     StaticAccess(ItemId, Box<HirExpr>),
     /// Method call on an expression.
     MethodCall(Vec<Ident>, Box<HirExpr>),
+    /// Unwrap an option.
+    Unwrap(Box<HirExpr>),
 
     Dummy,
 }

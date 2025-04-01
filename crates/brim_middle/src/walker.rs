@@ -165,6 +165,9 @@ pub trait AstWalker {
             ExprKind::MethodCall(ident, expr) => {
                 self.visit_method_call(ident, expr);
             }
+            ExprKind::Unwrap(expr) => {
+                self.visit_expr(expr);
+            }
         }
     }
 

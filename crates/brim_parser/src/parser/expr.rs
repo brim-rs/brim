@@ -168,6 +168,14 @@ impl Parser {
 
                     debug!("Parsed index expression");
                 }
+                TokenKind::QuestionMark => {
+                    self.advance();
+
+                    primary = self.new_expr(
+                        primary.span.to(self.prev().span),
+                        ExprKind::Unwrap(Box::new(primary)),
+                    )
+                }
                 _ => break,
             }
         }

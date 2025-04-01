@@ -8,7 +8,7 @@ pub struct OVERLAPPED {
     pub Internal: usize,
     pub InternalHigh: usize,
     pub Anonymous: OVERLAPPED_0,
-    pub hEvent: HANDLE,
+    pub hEvent: HANDLE?,
 }
 
 pub struct OVERLAPPED_0 {

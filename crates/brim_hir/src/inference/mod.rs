@@ -7,7 +7,7 @@ use crate::{
     inference::{
         errors::{
             CannotApplyBinary, CannotApplyUnary, CannotCompare, InvalidFunctionArgCount,
-            OrelseExpectedOption,
+            OrelseExpectedOption, UnwrapNonOptional,
         },
         scope::{TypeInfo, TypeScopeManager},
     },
@@ -734,6 +734,18 @@ impl<'a> TypeInference<'a> {
                     }
                 } else {
                     &HirTyKind::err()
+                }
+            }
+            HirExprKind::Unwrap(expr) => {
+                self.infer_expr(expr);
+
+                &match &expr.ty {
+                    HirTyKind::Option(ty) => ty.clone(),
+                    HirTyKind::Some(ty) => ty.clone(),
+                    _ => Box::from(self.ret_with_error(UnwrapNonOptional {
+                        span: (expr.span.clone(), self.current_mod.as_usize()),
+                        ty: expr.ty.clone(),
+                    })),
                 }
             }
             HirExprKind::Dummy => &expr.ty.clone(),

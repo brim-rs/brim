@@ -32,6 +32,7 @@ pub struct CppCodegen {
     pub parent_item: Option<(Ident, HirGenerics)>,
     pub items_order: HashMap<ModuleId, Vec<ItemId>>,
     pub inside_if: Option<usize>,
+    pub inside_expr: bool,
 }
 
 #[derive(Debug)]
@@ -194,6 +195,7 @@ impl CppCodegen {
             parent_item: None,
             items_order: sorted_modules,
             inside_if: None,
+            inside_expr: false,
         }
     }
 

@@ -70,6 +70,8 @@ pub enum ExprKind {
     Path(Vec<Ident>),
     /// `i32`. Type as an value.
     Type(Box<Ty>),
+    /// `expr?` unwrap an option
+    Unwrap(Box<Expr>),
 }
 
 #[derive(Clone, Debug)]
