@@ -100,18 +100,21 @@ impl CompilerContext {
         self.extend_temp(use_collector.ctx);
 
         for ((ident, id), symbols) in use_collector.namespaces.clone() {
-            simple.items.insert(id.clone(), Item {
-                id: id.clone(),
-                span: Span::DUMMY,
-                ident: ident.clone(),
-                kind: ItemKind::Namespace(
-                    symbols
-                        .iter()
-                        .map(|(k, v)| (k.clone(), v.clone().into_temp()))
-                        .collect(),
-                ),
-                vis: Visibility::from_bool(true, Span::DUMMY),
-            });
+            simple.items.insert(
+                id.clone(),
+                Item {
+                    id: id.clone(),
+                    span: Span::DUMMY,
+                    ident: ident.clone(),
+                    kind: ItemKind::Namespace(
+                        symbols
+                            .iter()
+                            .map(|(k, v)| (k.clone(), v.clone().into_temp()))
+                            .collect(),
+                    ),
+                    vis: Visibility::from_bool(true, Span::DUMMY),
+                },
+            );
         }
 
         let mut name_resolver = NameResolver::new(map.clone(), self.lints, compiled, simple);
