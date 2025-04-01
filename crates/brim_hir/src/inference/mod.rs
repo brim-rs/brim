@@ -418,7 +418,7 @@ impl<'a> TypeInference<'a> {
                         if l.is_numeric() && r.is_numeric() {
                             let ty =
                                 PrimitiveType::promote_type(&l.to_primitive(), &r.to_primitive())
-                                    .unwrap();
+                                    .expect(&format!("failed for types: {:?} and {:?}", l, r));
 
                             &HirTyKind::Primitive(ty)
                         } else {

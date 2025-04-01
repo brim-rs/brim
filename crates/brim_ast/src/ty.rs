@@ -145,11 +145,61 @@ impl PrimitiveType {
             (U32, Usize) | (Usize, U32) => Some(Usize),
             (U64, Usize) | (Usize, U64) => Some(U64),
 
+            // Mixed signed and unsigned integer promotion
+            // I8 with unsigned types
+            (I8, U8) | (U8, I8) => Some(I16),
+            (I8, U16) | (U16, I8) => Some(U16),
+            (I8, U32) | (U32, I8) => Some(U32),
+            (I8, U64) | (U64, I8) => Some(U64),
+            (I8, Usize) | (Usize, I8) => Some(Usize),
+
+            // I16 with unsigned types
+            (I16, U8) | (U8, I16) => Some(I16),
+            (I16, U16) | (U16, I16) => Some(I32),
+            (I16, U32) | (U32, I16) => Some(U32),
+            (I16, U64) | (U64, I16) => Some(U64),
+            (I16, Usize) | (Usize, I16) => Some(Usize),
+
+            // I32 with unsigned types
+            (I32, U8) | (U8, I32) => Some(I32),
+            (I32, U16) | (U16, I32) => Some(I32),
+            (I32, U32) | (U32, I32) => Some(I64),
+            (I32, U64) | (U64, I32) => Some(U64),
+            (I32, Usize) | (Usize, I32) => Some(Usize),
+
+            // I64 with unsigned types
+            (I64, U8) | (U8, I64) => Some(I64),
+            (I64, U16) | (U16, I64) => Some(I64),
+            (I64, U32) | (U32, I64) => Some(I64),
+            (I64, U64) | (U64, I64) => Some(U64),
+            (I64, Usize) | (Usize, I64) => Some(Usize),
+
+            // Isize with unsigned types
+            (Isize, U8) | (U8, Isize) => Some(Isize),
+            (Isize, U16) | (U16, Isize) => Some(Isize),
+            (Isize, U32) | (U32, Isize) => Some(Isize),
+            (Isize, U64) | (U64, Isize) => Some(U64),
+            (Isize, Usize) | (Usize, Isize) => Some(Usize),
+
             // Mixed integer and float promotion
+            (I8, F32) | (F32, I8) => Some(F32),
+            (I16, F32) | (F32, I16) => Some(F32),
             (I32, F32) | (F32, I32) => Some(F32),
-            (I32, F64) | (F64, I32) => Some(F64),
+            (I64, F32) | (F32, I64) => Some(F32),
+            (U8, F32) | (F32, U8) => Some(F32),
+            (U16, F32) | (F32, U16) => Some(F32),
             (U32, F32) | (F32, U32) => Some(F32),
+            (U64, F32) | (F32, U64) => Some(F32),
+
+            (I8, F64) | (F64, I8) => Some(F64),
+            (I16, F64) | (F64, I16) => Some(F64),
+            (I32, F64) | (F64, I32) => Some(F64),
+            (I64, F64) | (F64, I64) => Some(F64),
+            (U8, F64) | (F64, U8) => Some(F64),
+            (U16, F64) | (F64, U16) => Some(F64),
             (U32, F64) | (F64, U32) => Some(F64),
+            (U64, F64) | (F64, U64) => Some(F64),
+
             (Isize, F32) | (F32, Isize) => Some(F32),
             (Isize, F64) | (F64, Isize) => Some(F64),
             (Usize, F32) | (F32, Usize) => Some(F32),
