@@ -209,7 +209,6 @@ impl CppCodegen {
             condition, then_block, else_ifs, else_block,
         );
 
-        println!("{}", self.inside_expr);
         if !self.inside_expr {
             let temp_value = format!("{} temp_{};", self.generate_ty(expr.ty), expr.id.as_usize());
 

@@ -551,9 +551,17 @@ impl<'a> TypeInference<'a> {
                             }
                         }
                     } else {
+                        let field_ty = str_field.ty.clone();
+
+                        self.try_promote_type(&mut expr.ty, &field_ty);
+
                         hir_struct
                             .field_types
-                            .insert(ident.clone(), str_field.ty.clone());
+                            .insert(ident.clone(), expr.ty.clone());
+
+                        hir_struct
+                            .field_types
+                            .insert(ident.clone(), expr.ty.clone());
                     }
                 }
 
@@ -974,10 +982,14 @@ impl<'a> TypeInference<'a> {
                     }
                 }
             } else {
+                let param_ty = fn_param.ty.kind.clone();
+
+                self.try_promote_type(&mut arg.ty, &param_ty);
+
                 params.push(HirCallParam {
                     span: fn_param.span,
                     name: ident,
-                    ty: fn_param.ty.kind.clone(),
+                    ty: param_ty,
                     from_generic: None,
                 });
             }
@@ -986,6 +998,23 @@ impl<'a> TypeInference<'a> {
         let mut ty = fn_def.sig.return_type.clone();
         self.replace_generics_recursive(&mut ty, &generic_types);
         ty
+    }
+
+    pub fn try_promote_type(&self, source_ty: &mut HirTyKind, target_ty: &HirTyKind) -> bool {
+        if *source_ty == *target_ty {
+            return true;
+        }
+
+        if let (HirTyKind::Primitive(source_prim), HirTyKind::Primitive(target_prim)) =
+            (source_ty.clone(), target_ty)
+        {
+            if let Some(promoted) = PrimitiveType::promote_type(&source_prim, target_prim) {
+                *source_ty = HirTyKind::Primitive(promoted);
+                return true;
+            }
+        }
+
+        false
     }
 
     pub fn replace_generics_recursive(
