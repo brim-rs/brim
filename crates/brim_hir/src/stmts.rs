@@ -1,4 +1,7 @@
-use crate::{expr::HirExpr, ty::HirTyKind};
+use crate::{
+    expr::{HirExpr, HirIfExpr},
+    ty::HirTyKind,
+};
 use brim_ast::{ItemId, item::Ident};
 use brim_span::span::Span;
 
@@ -15,6 +18,7 @@ impl HirStmt {
             // Let statement can't be used for inference.
             HirStmtKind::Let { .. } => None,
             HirStmtKind::Expr(expr) => Some(expr.ty.clone()),
+            HirStmtKind::If(_) => None,
         }
     }
 }
@@ -29,4 +33,6 @@ pub enum HirStmtKind {
     },
     /// An expression statement.
     Expr(HirExpr),
+    /// An if statement.
+    If(HirExpr),
 }

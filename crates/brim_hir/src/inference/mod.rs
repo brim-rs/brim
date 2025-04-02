@@ -3,7 +3,7 @@ pub mod scope;
 
 use crate::{
     CompiledModules,
-    expr::{HirExpr, HirExprKind},
+    expr::{HirExpr, HirExprKind, HirIfExpr},
     inference::{
         errors::{
             CannotApplyBinary, CannotApplyUnary, CannotCompare, InvalidFunctionArgCount,
@@ -305,6 +305,9 @@ impl<'a> TypeInference<'a> {
                     },
                     true,
                 );
+            }
+            HirStmtKind::If(if_expr) => {
+                self.infer_expr(if_expr);
             }
         }
 
@@ -621,21 +624,7 @@ impl<'a> TypeInference<'a> {
                 LitKind::CStr => todo!("CStr"),
                 _ => unreachable!("literal error: {:#?}", lit),
             },
-            HirExprKind::If(if_expr) => {
-                self.infer_expr(&mut if_expr.condition);
-                self.infer_expr(&mut if_expr.then_block);
-
-                if let Some(else_block) = &mut if_expr.else_block {
-                    self.infer_expr(else_block);
-                }
-
-                for branch in &mut if_expr.else_ifs {
-                    self.infer_expr(&mut branch.condition);
-                    self.infer_expr(&mut branch.block);
-                }
-
-                &if_expr.then_block.ty
-            }
+            HirExprKind::If(if_expr) => &self.infer_if_expr(if_expr),
             HirExprKind::Builtin(_, args) => {
                 for arg in args {
                     self.infer_expr(arg);
@@ -774,6 +763,22 @@ impl<'a> TypeInference<'a> {
             .insert(expr.id, StoredHirItem::Expr(expr.clone()));
 
         self.hir.update_builtins(expr.clone());
+    }
+
+    pub fn infer_if_expr(&mut self, if_expr: &mut HirIfExpr) -> HirTyKind {
+        self.infer_expr(&mut if_expr.condition);
+        self.infer_expr(&mut if_expr.then_block);
+
+        if let Some(else_block) = &mut if_expr.else_block {
+            self.infer_expr(else_block);
+        }
+
+        for branch in &mut if_expr.else_ifs {
+            self.infer_expr(&mut branch.condition);
+            self.infer_expr(&mut branch.block);
+        }
+
+        if_expr.then_block.ty.clone()
     }
 
     pub fn resolve_method_from_idents(

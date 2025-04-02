@@ -187,6 +187,9 @@ impl<'a> Evaluator<'a> {
                             val,
                         });
                 }
+                HirStmtKind::If(if_expr) => {
+                    self.eval_expr(if_expr);
+                }
             };
         }
         self.scopes.pop_scope();

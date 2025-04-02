@@ -1,4 +1,9 @@
-use crate::{ItemId, expr::Expr, item::Ident, ty::Ty};
+use crate::{
+    ItemId,
+    expr::{Expr, IfExpr},
+    item::Ident,
+    ty::Ty,
+};
 use brim_span::span::Span;
 
 #[derive(Clone, Debug)]
@@ -12,6 +17,7 @@ pub struct Stmt {
 pub enum StmtKind {
     Let(Let),
     Expr(Expr),
+    If(Expr),
 }
 
 #[derive(Clone, Debug)]

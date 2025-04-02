@@ -43,6 +43,13 @@ impl HirExpr {
             _ => panic!("Expected call expression"),
         }
     }
+
+    pub fn as_if(&self) -> &HirIfExpr {
+        match &self.kind {
+            HirExprKind::If(if_expr) => if_expr,
+            _ => panic!("Expected if expression"),
+        }
+    }
 }
 
 // We no longer need parenthesized expressions, because the tree defines the structure.

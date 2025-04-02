@@ -1,5 +1,5 @@
 use brim_ast::{
-    expr::{Expr, ExprKind, MatchArm},
+    expr::{Expr, ExprKind, IfExpr, MatchArm},
     item::{
         Block, FnDecl, FnReturnType, FnSignature, GenericArgs, Generics, Ident, Item, ItemKind,
         Struct, TypeAlias, Use,
@@ -88,6 +88,21 @@ pub trait AstWalker {
         match &mut stmt.kind {
             StmtKind::Let(let_stmt) => self.visit_let(let_stmt),
             StmtKind::Expr(expr) => self.visit_expr(expr),
+            StmtKind::If(if_expr) => self.visit_expr(if_expr),
+        }
+    }
+
+    fn visit_if(&mut self, if_expr: &mut IfExpr) {
+        self.visit_expr(&mut if_expr.condition);
+        self.visit_expr(&mut if_expr.then_block);
+
+        for else_if in &mut if_expr.else_ifs {
+            self.visit_expr(&mut else_if.condition);
+            self.visit_expr(&mut else_if.block);
+        }
+
+        if let Some(else_branch) = &mut if_expr.else_block {
+            self.visit_expr(else_branch);
         }
     }
 
@@ -112,17 +127,7 @@ pub trait AstWalker {
                 self.visit_expr(rhs);
             }
             ExprKind::If(if_expr) => {
-                self.visit_expr(&mut if_expr.condition);
-                self.visit_expr(&mut if_expr.then_block);
-
-                for else_if in &mut if_expr.else_ifs {
-                    self.visit_expr(&mut else_if.condition);
-                    self.visit_expr(&mut else_if.block);
-                }
-
-                if let Some(else_branch) = &mut if_expr.else_block {
-                    self.visit_expr(else_branch);
-                }
+                self.visit_if(if_expr);
             }
             ExprKind::Block(block) => self.visit_block(block),
             ExprKind::Call(func, args) => {

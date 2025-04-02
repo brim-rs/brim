@@ -16,7 +16,7 @@ use crate::{
 };
 use brim_ast::{
     ItemId,
-    expr::{BinOpKind, Expr, ExprKind, MatchArm},
+    expr::{BinOpKind, Expr, ExprKind, IfExpr, MatchArm},
     item::{
         Block, Enum, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, ImportsKind, Item,
         ItemKind, Struct, TypeAlias, TypeAliasValue,
@@ -447,6 +447,7 @@ impl<'a> Transformer<'a> {
                     ident: le.ident,
                     value: le.value.map(|expr| self.transform_expr(expr).0),
                 },
+                StmtKind::If(if_expr) => HirStmtKind::If(self.transform_expr(if_expr).0),
             },
         }
     }
@@ -543,7 +544,6 @@ impl<'a> Transformer<'a> {
                     Box::new(self.transform_expr(*lhs).0),
                     Box::new(self.transform_expr(*rhs).0),
                 ),
-                // ExprKind::If(if_expr) => self.transform_if_expr(if_expr),
                 ExprKind::Block(block) => HirExprKind::Block(self.transform_block(block)),
                 ExprKind::Call(expr, args) => HirExprKind::Call(
                     Box::new(self.transform_expr(*expr).0),
@@ -552,25 +552,7 @@ impl<'a> Transformer<'a> {
                         .collect(),
                     vec![],
                 ),
-                ExprKind::If(if_expr) => HirExprKind::If(HirIfExpr {
-                    span: if_expr.span,
-                    condition: Box::new(self.transform_expr(*if_expr.condition).0),
-                    then_block: Box::new(self.transform_expr(*if_expr.then_block).0),
-                    else_block: if let Some(else_block) = if_expr.else_block {
-                        Some(Box::new(self.transform_expr(*else_block).0))
-                    } else {
-                        None
-                    },
-                    else_ifs: if_expr
-                        .else_ifs
-                        .iter()
-                        .map(|branch| HirConditionBranch {
-                            condition: Box::new(self.transform_expr(*branch.condition.clone()).0),
-                            block: Box::new(self.transform_expr(*branch.block.clone()).0),
-                        })
-                        .collect(),
-                }),
-                // HirExprKind::Literal(self.transform_comptime_expr(*expr).as_lit().clone())
+                ExprKind::If(if_expr) => HirExprKind::If(self.transform_if_expr(if_expr)),
                 ExprKind::Comptime(expr) => HirExprKind::Comptime(ComptimeValue::Expr(Box::new(
                     self.transform_expr(*expr).0,
                 ))),
@@ -673,6 +655,27 @@ impl<'a> Transformer<'a> {
         }
 
         (expr.clone(), id)
+    }
+
+    pub fn transform_if_expr(&mut self, if_expr: IfExpr) -> HirIfExpr {
+        HirIfExpr {
+            span: if_expr.span,
+            condition: Box::new(self.transform_expr(*if_expr.condition).0),
+            then_block: Box::new(self.transform_expr(*if_expr.then_block).0),
+            else_block: if let Some(else_block) = if_expr.else_block {
+                Some(Box::new(self.transform_expr(*else_block).0))
+            } else {
+                None
+            },
+            else_ifs: if_expr
+                .else_ifs
+                .iter()
+                .map(|branch| HirConditionBranch {
+                    condition: Box::new(self.transform_expr(*branch.condition.clone()).0),
+                    block: Box::new(self.transform_expr(*branch.block.clone()).0),
+                })
+                .collect(),
+        }
     }
 
     pub fn transform_generic_arguments(&mut self, generics: GenericArgs) -> HirGenericArgs {

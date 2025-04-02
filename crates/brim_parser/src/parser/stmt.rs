@@ -4,7 +4,7 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Let,
+    If, Let,
     item::Block,
     stmts::{Let, Stmt, StmtKind},
     token::{Delimiter, Orientation, TokenKind},
@@ -47,6 +47,11 @@ impl Parser {
             let stmt = self.parse_let()?;
 
             Ok(StmtKind::Let(stmt))
+        } else if self.current().is_keyword(If) {
+            self.advance();
+            let if_stmt = self.parse_if()?;
+
+            Ok(StmtKind::If(if_stmt))
         } else {
             let expr = self.parse_expr()?;
 

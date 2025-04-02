@@ -29,10 +29,8 @@ impl CppCodegen {
     }
 
     fn generate_expr_kind(&mut self, expr: HirExpr) -> String {
-        self.inside_expr = true;
         let code = match expr.kind {
             HirExprKind::Block(block) => {
-                self.inside_expr = false;
                 let mut code = String::new();
                 for stmt in block.stmts {
                     let tabs = "  ".repeat(self.code.indent);
@@ -43,7 +41,7 @@ impl CppCodegen {
             HirExprKind::Return(expr) => {
                 let expr_code = self.generate_expr(*expr);
 
-                if let Some(id) = self.inside_if {
+                if let Some(id) = self.is_if_an_expr {
                     format!("temp_{} = {};", id, expr_code)
                 } else {
                     format!("return {};", expr_code)
@@ -74,7 +72,7 @@ impl CppCodegen {
                 let expr_code = self.generate_expr(*expr);
                 format!("{}.{}", expr_code, field)
             }
-            HirExprKind::If(ref if_stmt) => self.generate_if_expr(if_stmt.clone(), expr),
+            HirExprKind::If(ref if_stmt) => self.generate_if_expr(if_stmt.clone(), Some(expr)),
             HirExprKind::Array(exprs) => self.generate_array_expr(exprs),
             HirExprKind::StructConstructor(str) => self.generate_struct_constructor(str),
             HirExprKind::Type(ty) => self.generate_ty(ty),
@@ -136,7 +134,6 @@ impl CppCodegen {
             },
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         };
-        self.inside_expr = false;
 
         code
     }
@@ -168,25 +165,19 @@ impl CppCodegen {
         )
     }
 
-    fn set_inside_if(&mut self, id: ItemId) {
-        if !self.inside_expr {
-            self.inside_if = Some(id.as_usize());
-        }
-    }
-
-    fn generate_if_expr(&mut self, if_stmt: HirIfExpr, expr: HirExpr) -> String {
-        let id = expr.id.as_usize();
+    pub fn generate_if_expr(&mut self, if_stmt: HirIfExpr, expr: Option<HirExpr>) -> String {
         let condition = self.generate_expr(*if_stmt.condition);
-        self.set_inside_if(expr.id);
+
+        if let Some(expr) = expr.clone() {
+            self.is_if_an_expr = Some(expr.id.as_usize());
+        }
+
         let then_block = self.generate_expr(*if_stmt.then_block.clone());
-        self.inside_if = None;
 
         let mut else_ifs = String::new();
         for branch in &if_stmt.else_ifs {
             let branch_condition = self.generate_expr(*branch.condition.clone());
-            self.set_inside_if(expr.id);
             let branch_block = self.generate_expr(*branch.block.clone());
-            self.inside_if = None;
             write!(
                 else_ifs,
                 " else if ({}) {{ {} }}",
@@ -196,11 +187,7 @@ impl CppCodegen {
         }
 
         let else_block = if let Some(else_block) = if_stmt.else_block {
-            self.set_inside_if(expr.id);
-            let temp = format!(" else {{ {} }}", self.generate_expr(*else_block));
-            self.inside_if = None;
-
-            temp
+            format!(" else {{ {} }}", self.generate_expr(*else_block))
         } else {
             String::new()
         };
@@ -209,18 +196,21 @@ impl CppCodegen {
             condition, then_block, else_ifs, else_block,
         );
 
-        if !self.inside_expr {
+        let val = if let Some(expr) = expr {
             let temp_value = format!("{} temp_{};", self.generate_ty(expr.ty), expr.id.as_usize());
 
             format!(
                 "({{ {} \n {}; {} }});",
                 temp_value,
                 base_if,
-                format!("temp_{};", id)
+                format!("temp_{};", expr.id.as_usize())
             )
         } else {
             base_if
-        }
+        };
+        self.is_if_an_expr = None;
+
+        val
     }
 
     fn generate_array_expr(&mut self, exprs: Vec<HirExpr>) -> String {
