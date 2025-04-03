@@ -446,4 +446,11 @@ impl HirTyKind {
             _ => None,
         }
     }
+
+    pub fn is_ref(&self) -> bool {
+        match self {
+            HirTyKind::Ref(_, _) => true,
+            _ => false,
+        }
+    }
 }

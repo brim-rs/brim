@@ -482,9 +482,7 @@ impl<'a> Transformer<'a> {
                 ExprKind::Unary(op, expr) => {
                     HirExprKind::Unary(op, Box::new(self.transform_expr(*expr).0))
                 }
-                ExprKind::Field(expr, ident) => {
-                    HirExprKind::Field(Box::new(self.transform_expr(*expr).0), ident)
-                }
+                ExprKind::Field(idents) => HirExprKind::Field(idents),
                 ExprKind::Index(expr, index) => HirExprKind::Index(
                     Box::new(self.transform_expr(*expr).0),
                     Box::new(self.transform_expr(*index).0),

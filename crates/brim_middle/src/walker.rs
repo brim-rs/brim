@@ -113,7 +113,7 @@ pub trait AstWalker {
                 self.visit_expr(rhs);
             }
             ExprKind::Unary(_, operand) => self.visit_expr(operand),
-            ExprKind::Field(base, _) => self.visit_expr(base),
+            ExprKind::Field(idents) => {}
             ExprKind::Index(base, index) => {
                 self.visit_expr(base);
                 self.visit_expr(index);

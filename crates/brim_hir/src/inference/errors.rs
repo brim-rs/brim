@@ -66,3 +66,20 @@ pub struct UnwrapNonOptional {
     pub span: (Span, usize),
     pub ty: HirTyKind,
 }
+
+#[derive(Diagnostic)]
+#[error("cannot reference to a reference type `{ty}`")]
+pub struct CannotReferenceToRef {
+    #[error]
+    pub span: (Span, usize),
+    pub ty: HirTyKind,
+}
+
+#[derive(Diagnostic)]
+#[error("no field `{field}` found in type `{ty}`")]
+pub struct NoField {
+    #[error]
+    pub span: (Span, usize),
+    pub field: String,
+    pub ty: HirTyKind,
+}

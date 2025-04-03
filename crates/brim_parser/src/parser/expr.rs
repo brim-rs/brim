@@ -146,16 +146,6 @@ impl Parser {
 
         loop {
             match self.current().kind {
-                TokenKind::Dot => {
-                    self.advance();
-                    let ident = self.parse_ident()?;
-                    primary = self.new_expr(
-                        primary.span.to(ident.span),
-                        ExprKind::Field(Box::new(primary), ident),
-                    );
-
-                    debug!("Parsed field access expression");
-                }
                 TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
                     self.advance();
                     let index = self.parse_expr()?;
@@ -357,66 +347,6 @@ impl Parser {
 
                 Ok(self.new_expr(self.prev().span, ExprKind::Literal(lit)))
             }
-            TokenKind::Delimiter(Delimiter::Paren, Orientation::Open) => {
-                debug!("Found parenthesized expression");
-
-                self.expect_oparen()?;
-                let expr = self.parse_expr()?;
-                self.expect_cparen()?;
-
-                Ok(self.new_expr(expr.span, ExprKind::Paren(Box::new(expr))))
-            }
-            TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
-                let span_start = self.current().span;
-
-                if let Some(ty) = self.try_parse_as_array_type(span_start)? {
-                    return Ok(self.new_expr(ty.span, ExprKind::Type(Box::new(ty))));
-                }
-
-                self.advance();
-                let mut elements = Vec::new();
-                while !self.is_paren(Orientation::Close) {
-                    elements.push(self.parse_expr()?);
-                    if !self.eat(TokenKind::Comma) {
-                        break;
-                    }
-                }
-                self.expect_cbracket()?;
-
-                debug!("Parsed array expression");
-                Ok(self.new_expr(self.current().span, ExprKind::Array(elements)))
-            }
-            TokenKind::BinOp(BinOpToken::And) | TokenKind::BinOp(BinOpToken::Star) => {
-                let span_start = self.current().span;
-
-                if let Some(ty) = self.parse_ty_without_ident()? {
-                    return Ok(self.new_expr(ty.span, ExprKind::Type(Box::new(ty))));
-                }
-
-                box_diag!(UnexpectedToken {
-                    found: self.current().kind,
-                    span: (self.current().span, self.file),
-                })
-            }
-            TokenKind::At => {
-                let span = self.current().span;
-                self.advance();
-
-                let ident = self.parse_ident()?;
-
-                self.expect_oparen()?;
-                let mut args = Vec::new();
-                while !self.is_paren(Orientation::Close) {
-                    args.push(self.parse_expr()?);
-                    if !self.eat(TokenKind::Comma) {
-                        break;
-                    }
-                }
-                self.expect_cparen()?;
-
-                debug!("Parsed builtin function with name: {}", ident);
-                Ok(self.new_expr(span.to(self.prev().span), ExprKind::Builtin(ident, args)))
-            }
             TokenKind::Ident(x) => {
                 if self.eat_keyword(ptok!(Return)) {
                     let span = self.current().span;
@@ -448,7 +378,7 @@ impl Parser {
                     let ident = self.parse_ident()?;
 
                     if self.is_paren(Orientation::Open) {
-                        self.advance();
+                        self.expect_oparen()?;
 
                         let mut args = Vec::new();
                         while !self.is_paren(Orientation::Close) {
@@ -554,32 +484,99 @@ impl Parser {
                                 }
                             }
 
-                            self.expect_oparen()?;
-                            let mut args = vec![];
-                            while !self.is_paren(Orientation::Close) {
-                                args.push(self.parse_expr()?);
-                                if !self.eat(TokenKind::Comma) {
-                                    break;
+                            if self.is_paren(Orientation::Open) {
+                                self.expect_oparen()?;
+                                let mut args = vec![];
+                                while !self.is_paren(Orientation::Close) {
+                                    args.push(self.parse_expr()?);
+                                    if !self.eat(TokenKind::Comma) {
+                                        break;
+                                    }
                                 }
-                            }
-                            self.expect_cparen()?;
+                                self.expect_cparen()?;
 
-                            let call_span = span.to(self.prev().span);
-                            let ex = ExprKind::Call(
-                                Box::new(
-                                    self.new_expr(idents[0].span, ExprKind::Var(idents[0].clone())),
-                                ),
-                                args,
-                            );
-                            let call_expr = self.new_expr(call_span, ex);
-                            Ok(self
-                                .new_expr(span, ExprKind::MethodCall(idents, Box::new(call_expr))))
+                                let call_span = span.to(self.prev().span);
+                                let ex = ExprKind::Call(
+                                    Box::new(self.new_expr(
+                                        idents[0].span,
+                                        ExprKind::Var(idents[0].clone()),
+                                    )),
+                                    args,
+                                );
+                                let call_expr = self.new_expr(call_span, ex);
+                                Ok(self.new_expr(
+                                    span,
+                                    ExprKind::MethodCall(idents, Box::new(call_expr)),
+                                ))
+                            } else {
+                                Ok(self.new_expr(span, ExprKind::Field(idents)))
+                            }
                         } else {
                             debug!("Parsed variable expression: {}", ident);
                             Ok(self.new_expr(span, ExprKind::Var(ident)))
                         }
                     }
                 }
+            }
+            TokenKind::Delimiter(Delimiter::Paren, Orientation::Open) => {
+                debug!("Found parenthesized expression");
+
+                self.expect_oparen()?;
+                let expr = self.parse_expr()?;
+                self.expect_cparen()?;
+
+                Ok(self.new_expr(expr.span, ExprKind::Paren(Box::new(expr))))
+            }
+            TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
+                let span_start = self.current().span;
+
+                if let Some(ty) = self.try_parse_as_array_type(span_start)? {
+                    return Ok(self.new_expr(ty.span, ExprKind::Type(Box::new(ty))));
+                }
+
+                self.advance();
+                let mut elements = Vec::new();
+                while !self.is_paren(Orientation::Close) {
+                    elements.push(self.parse_expr()?);
+                    if !self.eat(TokenKind::Comma) {
+                        break;
+                    }
+                }
+                self.expect_cbracket()?;
+
+                debug!("Parsed array expression");
+                Ok(self.new_expr(self.current().span, ExprKind::Array(elements)))
+            }
+            TokenKind::BinOp(BinOpToken::And) | TokenKind::BinOp(BinOpToken::Star) => {
+                let span_start = self.current().span;
+
+                if let Some(ty) = self.parse_ty_without_ident()? {
+                    return Ok(self.new_expr(ty.span, ExprKind::Type(Box::new(ty))));
+                }
+
+                box_diag!(UnexpectedToken {
+                    found: self.current().kind,
+                    span: (self.current().span, self.file),
+                })
+            }
+            TokenKind::At => {
+                let span = self.current().span;
+                self.advance();
+
+                let ident = self.parse_ident()?;
+
+                self.expect_oparen()?;
+                let mut args = Vec::new();
+                while !self.is_paren(Orientation::Close) {
+                    args.push(self.parse_expr()?);
+                    if !self.eat(TokenKind::Comma) {
+                        break;
+                    }
+                }
+                self.expect_cparen()?;
+
+                debug!("Parsed builtin function with name: {}", ident);
+                Ok(self.new_expr(span.to(self.prev().span), ExprKind::Builtin(ident, args)))
             }
             _ => {
                 box_diag!(UnexpectedToken {
@@ -683,6 +680,7 @@ impl Parser {
             TokenKind::BinOp(BinOpToken::Minus) => Some(UnaryOp::Minus),
             TokenKind::Bang => Some(UnaryOp::Not),
             TokenKind::BinOp(BinOpToken::Star) => Some(UnaryOp::Deref),
+            TokenKind::BinOp(BinOpToken::And) => Some(UnaryOp::Ref),
             TokenKind::Ident(ident) if ident == Try => Some(UnaryOp::Try),
             _ => None,
         }

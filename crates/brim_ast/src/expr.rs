@@ -33,7 +33,7 @@ pub enum ExprKind {
     /// `try x()`, `!x`
     Unary(UnaryOp, Box<Expr>),
     /// `x.name`
-    Field(Box<Expr>, Ident),
+    Field(Vec<Ident>),
     /// `x[0]`
     Index(Box<Expr>, Box<Expr>),
     /// `x.foo()`
@@ -108,6 +108,8 @@ pub enum UnaryOp {
     Deref,
     /// `try x()`
     Try,
+    /// `&x`
+    Ref,
 }
 
 impl Display for UnaryOp {
@@ -117,6 +119,7 @@ impl Display for UnaryOp {
             UnaryOp::Not => write!(f, "! (logical negation)"),
             UnaryOp::Deref => write!(f, "* (dereference)"),
             UnaryOp::Try => write!(f, "try (try operator)"),
+            UnaryOp::Ref => write!(f, "& (reference)"),
         }
     }
 }

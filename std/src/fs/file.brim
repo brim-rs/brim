@@ -1,5 +1,6 @@
-use { HANDLE, DWORD, OVERLAPPED, OVERLAPPED_0, OVERLAPPED_0_0 } from "../os/windows.brim"
+use { HANDLE, DWORD, OVERLAPPED, OVERLAPPED_0, OVERLAPPED_0_0, BOOL } from "../os/windows.brim"
 use { IoError } from "../io/error.brim";
+use { WriteFile } from "../os/windows/kernel32.brim";
 
 pub type HandleTy = match @os() {
     "windows" => HANDLE,
@@ -12,8 +13,9 @@ pub struct Handle {
     inner: HandleTy
 
     fn write(self: &Handle, data: &[u8], offset: u64?) usize!IoError {
-        let overlapped = if offset {
-            return OVERLAPPED {
+        let bytes_written: DWORD = 0;
+        let overlapped: OVERLAPPED? = if offset {
+            return @some(OVERLAPPED {
                 .Internal = 0,
                 .InternalHigh = 0,
                 .Anonymous = OVERLAPPED_0 {
@@ -23,10 +25,12 @@ pub struct Handle {
                     },
                 },
                 .hEvent = @none(),
-            }
+            })
         } else {
-            // Write data at current position
+            return @none();
         }
+
+        if WriteFile(self.inner, data, data.len, &bytes_written, overlapped) == 0 {}
     }
 }
 

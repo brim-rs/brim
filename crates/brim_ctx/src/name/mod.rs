@@ -283,6 +283,116 @@ impl<'a> NameResolver<'a> {
 }
 
 impl<'a> AstWalker for NameResolver<'a> {
+    fn visit_let(&mut self, let_stmt: &mut Let) {
+        let name = let_stmt.ident.to_string();
+
+        self.declare_variable(&name, VariableInfo {
+            id: let_stmt.id,
+            is_const: if let Some(ty) = &let_stmt.ty {
+                ty.is_const()
+            } else {
+                false
+            },
+            span: let_stmt.span,
+        });
+
+        self.validate_var_name(&name, let_stmt.ident.span);
+
+        if let Some(ty) = &mut let_stmt.ty {
+            self.resolve_type(ty.clone());
+        }
+
+        if let Some(expr) = &mut let_stmt.value {
+            self.walk_expr(expr);
+        }
+    }
+
+    fn visit_block(&mut self, block: &mut Block) {
+        self.scopes.push_scope(self.file, self.inside_comptime);
+
+        for stmt in block.stmts.iter_mut() {
+            self.visit_stmt(stmt);
+        }
+
+        self.scopes.pop_scope();
+    }
+
+    fn visit_struct(&mut self, str: &mut Struct) {
+        let s = self
+            .compiled
+            .symbols
+            .resolve(&str.ident.to_string(), self.file);
+
+        self.set_id(s);
+
+        for generics in str.generics.params.clone() {
+            self.generics.push_generic(generics);
+        }
+
+        for field in &mut str.fields {
+            self.resolve_type(field.ty.clone());
+        }
+
+        for item in &mut str.items {
+            self.visit_item(item);
+        }
+
+        self.generics.clear_generics();
+        self.reset_id();
+    }
+
+    fn visit_type_alias(&mut self, ta: &mut TypeAlias) {
+        match &mut ta.ty {
+            TypeAliasValue::Const(expr) => {
+                self.walk_expr(expr);
+            }
+            TypeAliasValue::Ty(ty) => {
+                self.resolve_type(ty.clone());
+            }
+            _ => {}
+        }
+    }
+
+    fn visit_fn(&mut self, func: &mut FnDecl) {
+        let name = func.sig.name.to_string();
+
+        let sym = self.compiled.symbols.resolve(&name, self.file);
+        self.set_id(sym);
+
+        for generic in func.generics.params.clone() {
+            self.generics.push_generic(generic);
+        }
+        self.scopes = ScopeManager::new(self.file);
+
+        let camel = name.to_case(Case::Camel);
+
+        if name != camel && !self.external {
+            self.ctx.emit_lint(self.lints.function_not_camel_case(
+                name.to_string(),
+                camel,
+                (func.sig.name.span, self.file),
+            ));
+        }
+
+        for param in &func.sig.params {
+            self.declare_param(&param.name.to_string(), VariableInfo {
+                id: param.id,
+                is_const: false,
+                span: param.span,
+            });
+
+            self.validate_var_name(&param.name.to_string(), param.name.span);
+            self.resolve_type(param.ty.clone());
+        }
+
+        if let Some(body) = &mut func.body {
+            self.visit_block(body);
+        }
+
+        self.generics.clear_generics();
+        self.reset_id();
+    }
+
     fn walk_item(&mut self, item: &mut Item) {
         match &mut item.kind {
             ItemKind::Fn(func) => self.visit_fn(func),
@@ -329,116 +439,6 @@ impl<'a> AstWalker for NameResolver<'a> {
         }
     }
 
-    fn visit_struct(&mut self, str: &mut Struct) {
-        let s = self
-            .compiled
-            .symbols
-            .resolve(&str.ident.to_string(), self.file);
-
-        self.set_id(s);
-
-        for generics in str.generics.params.clone() {
-            self.generics.push_generic(generics);
-        }
-
-        for field in &mut str.fields {
-            self.resolve_type(field.ty.clone());
-        }
-
-        for item in &mut str.items {
-            self.visit_item(item);
-        }
-
-        self.generics.clear_generics();
-        self.reset_id();
-    }
-
-    fn visit_let(&mut self, let_stmt: &mut Let) {
-        let name = let_stmt.ident.to_string();
-
-        self.declare_variable(&name, VariableInfo {
-            id: let_stmt.id,
-            is_const: if let Some(ty) = &let_stmt.ty {
-                ty.is_const()
-            } else {
-                false
-            },
-            span: let_stmt.span,
-        });
-
-        self.validate_var_name(&name, let_stmt.ident.span);
-
-        if let Some(ty) = &mut let_stmt.ty {
-            self.resolve_type(ty.clone());
-        }
-
-        if let Some(expr) = &mut let_stmt.value {
-            self.walk_expr(expr);
-        }
-    }
-
-    fn visit_type_alias(&mut self, ta: &mut TypeAlias) {
-        match &mut ta.ty {
-            TypeAliasValue::Const(expr) => {
-                self.walk_expr(expr);
-            }
-            TypeAliasValue::Ty(ty) => {
-                self.resolve_type(ty.clone());
-            }
-            _ => {}
-        }
-    }
-
-    fn visit_block(&mut self, block: &mut Block) {
-        self.scopes.push_scope(self.file, self.inside_comptime);
-
-        for stmt in block.stmts.iter_mut() {
-            self.visit_stmt(stmt);
-        }
-
-        self.scopes.pop_scope();
-    }
-
-    fn visit_fn(&mut self, func: &mut FnDecl) {
-        let name = func.sig.name.to_string();
-
-        let sym = self.compiled.symbols.resolve(&name, self.file);
-        self.set_id(sym);
-
-        for generic in func.generics.params.clone() {
-            self.generics.push_generic(generic);
-        }
-        self.scopes = ScopeManager::new(self.file);
-
-        let camel = name.to_case(Case::Camel);
-
-        if name != camel && !self.external {
-            self.ctx.emit_lint(self.lints.function_not_camel_case(
-                name.to_string(),
-                camel,
-                (func.sig.name.span, self.file),
-            ));
-        }
-
-        for param in &func.sig.params {
-            self.declare_param(&param.name.to_string(), VariableInfo {
-                id: param.id,
-                is_const: false,
-                span: param.span,
-            });
-
-            self.validate_var_name(&param.name.to_string(), param.name.span);
-            self.resolve_type(param.ty.clone());
-        }
-
-        if let Some(body) = &mut func.body {
-            self.visit_block(body);
-        }
-
-        self.generics.clear_generics();
-        self.reset_id();
-    }
-
     fn walk_expr(&mut self, expr: &mut Expr) {
         match &mut expr.kind {
             ExprKind::Binary(lhs, _, rhs) => {
@@ -446,8 +446,8 @@ impl<'a> AstWalker for NameResolver<'a> {
                 self.walk_expr(rhs);
             }
             ExprKind::Unary(_, operand) => self.walk_expr(operand),
-            ExprKind::Field(base, _) => {
-                self.walk_expr(base);
+            ExprKind::Field(idents) => {
+                self.resolve_variable(idents.first().unwrap());
             }
             ExprKind::Index(base, index) => {
                 self.walk_expr(base);

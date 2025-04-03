@@ -6,8 +6,8 @@ use crate::{
     expr::{HirExpr, HirExprKind, HirIfExpr},
     inference::{
         errors::{
-            CannotApplyBinary, CannotApplyUnary, CannotCompare, InvalidFunctionArgCount,
-            OrelseExpectedOption, UnwrapNonOptional,
+            CannotApplyBinary, CannotApplyUnary, CannotCompare, CannotReferenceToRef,
+            InvalidFunctionArgCount, NoField, OrelseExpectedOption, UnwrapNonOptional,
         },
         scope::{TypeInfo, TypeScopeManager},
     },
@@ -24,7 +24,7 @@ use brim_ast::{
     expr::{BinOpKind, UnaryOp},
     item::{FunctionContext, Ident},
     token::{Lit, LitKind},
-    ty::PrimitiveType,
+    ty::{Mutable, PrimitiveType},
 };
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{ModuleId, temp_diag::TemporaryDiagnosticContext};
@@ -153,7 +153,10 @@ impl<'a> TypeInference<'a> {
 
                 HirTyKind::Some(resolved_inner)
             }
-            HirTyKind::Primitive(_) | HirTyKind::Placeholder => ty.clone(),
+            HirTyKind::Primitive(_)
+            | HirTyKind::Placeholder
+            | HirTyKind::None
+            | HirTyKind::Err(_) => ty.clone(),
             _ => todo!("missing implementation for {:?}", ty),
         }
     }
@@ -375,6 +378,20 @@ impl<'a> TypeInference<'a> {
                         }
                     }
                     (UnaryOp::Not, _) => &HirTyKind::Primitive(PrimitiveType::Bool),
+                    (UnaryOp::Ref, ty) => {
+                        if !ty.is_ref() {
+                            if ty.is_mutable() {
+                                &HirTyKind::Ref(Box::new(ty.clone()), Mutable::Yes)
+                            } else {
+                                &HirTyKind::Ref(Box::new(ty.clone()), Mutable::No)
+                            }
+                        } else {
+                            &self.ret_with_error(CannotReferenceToRef {
+                                span: (expr.span.clone(), self.current_mod.as_usize()),
+                                ty: ty.clone(),
+                            })
+                        }
+                    }
                 }
             }
             HirExprKind::Block(block) => &{
@@ -396,7 +413,6 @@ impl<'a> TypeInference<'a> {
                 self.infer_expr(lhs);
                 self.infer_expr(rhs);
 
-                // The generics will be inferred later, so we can't infer the type yet.
                 self.assign_generic(lhs);
                 self.assign_generic(rhs);
 
@@ -745,6 +761,26 @@ impl<'a> TypeInference<'a> {
                     })),
                 }
             }
+            HirExprKind::Field(idents) => {
+                let idents_clone = idents.clone();
+                let field_ty = self.resolve_field_from_idents(idents);
+                *idents = idents_clone;
+
+                if let Some(field_type) = field_ty {
+                    expr.ty = field_type;
+
+                    self.hir
+                        .hir_items
+                        .insert(expr.id, StoredHirItem::Expr(expr.clone()));
+
+                    self.hir.update_builtins(expr.clone());
+
+                    &expr.ty
+                } else {
+                    expr.ty = HirTyKind::err();
+                    &expr.ty
+                }
+            }
             HirExprKind::Dummy => &expr.ty.clone(),
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
@@ -758,11 +794,85 @@ impl<'a> TypeInference<'a> {
             }
         }
 
+        expr.ty = self.resolve_type_alias(&expr.ty);
+
         self.hir
             .hir_items
             .insert(expr.id, StoredHirItem::Expr(expr.clone()));
 
         self.hir.update_builtins(expr.clone());
+    }
+
+    pub fn resolve_field_from_idents(&mut self, idents: &mut Vec<Ident>) -> Option<HirTyKind> {
+        if idents.is_empty() {
+            return None;
+        }
+
+        let first = idents.first().unwrap().to_string();
+        let var = self.scope_manager.resolve_variable(&first).cloned();
+
+        if let Some(var) = var {
+            idents.remove(0);
+
+            if idents.is_empty() {
+                return Some(var.ty);
+            }
+
+            return self.resolve_field_access(var.ty, idents);
+        } else {
+            let error_span = idents.first().unwrap().span;
+            self.temp.emit_impl(NoField {
+                span: (error_span, self.current_mod.as_usize()),
+                field: first,
+                ty: HirTyKind::err(),
+            });
+
+            None
+        }
+    }
+
+    fn resolve_field_access(
+        &mut self,
+        ty: HirTyKind,
+        idents: &mut Vec<Ident>,
+    ) -> Option<HirTyKind> {
+        if idents.is_empty() {
+            return Some(ty);
+        }
+        let current_ident = idents.first().unwrap().clone();
+        let error_span = current_ident.span;
+
+        if let Some(type_ident) = ty.is_ident() {
+            let type_name = type_ident.to_string();
+
+            let sym = self
+                .compiled
+                .resolve_symbol(&type_name, self.current_mod.as_usize());
+
+            if let Some(sym) = sym {
+                if let Some(struct_data) = sym.as_struct() {
+                    for field in &struct_data.fields {
+                        if field.ident == current_ident {
+                            idents.remove(0);
+
+                            if idents.is_empty() {
+                                return Some(field.ty.clone());
+                            }
+
+                            return self.resolve_field_access(field.ty.clone(), idents);
+                        }
+                    }
+                }
+            }
+        }
+
+        self.temp.emit_impl(NoField {
+            span: (error_span, self.current_mod.as_usize()),
+            field: current_ident.to_string(),
+            ty: ty.clone(),
+        });
+
+        None
     }
 
     pub fn infer_if_expr(&mut self, if_expr: &mut HirIfExpr) -> HirTyKind {
@@ -1002,7 +1112,8 @@ impl<'a> TypeInference<'a> {
 
         let mut ty = fn_def.sig.return_type.clone();
         self.replace_generics_recursive(&mut ty, &generic_types);
-        ty
+
+        self.resolve_type_alias(&ty)
     }
 
     pub fn try_promote_type(&self, source_ty: &mut HirTyKind, target_ty: &HirTyKind) -> bool {
@@ -1063,6 +1174,12 @@ impl<'a> TypeInference<'a> {
             HirTyKind::Result(ok, err) => {
                 self.replace_generics_recursive(ok, generic_types);
                 self.replace_generics_recursive(err, generic_types);
+            }
+            HirTyKind::Option(inner) => {
+                self.replace_generics_recursive(inner, generic_types);
+            }
+            HirTyKind::Some(inner) => {
+                self.replace_generics_recursive(inner, generic_types);
             }
 
             HirTyKind::Primitive(_) | HirTyKind::Placeholder => {}

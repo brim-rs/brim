@@ -62,7 +62,7 @@ pub enum HirExprKind {
     /// Unary operations.
     Unary(UnaryOp, Box<HirExpr>),
     /// Field access: `x.name`.
-    Field(Box<HirExpr>, Ident),
+    Field(Vec<Ident>),
     /// Array indexing: `x[0]`.
     Index(Box<HirExpr>, Box<HirExpr>),
     /// Literal values like numbers or strings.

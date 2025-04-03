@@ -68,9 +68,15 @@ impl CppCodegen {
                 let index_code = self.generate_expr(*index);
                 format!("{}[{}]", expr_code, index_code)
             }
-            HirExprKind::Field(expr, field) => {
-                let expr_code = self.generate_expr(*expr);
-                format!("{}.{}", expr_code, field)
+            HirExprKind::Field(idents) => {
+                format!(
+                    "brim_{}",
+                    idents
+                        .iter()
+                        .map(|id| format!("{}", id))
+                        .collect::<Vec<String>>()
+                        .join(".")
+                )
             }
             HirExprKind::If(ref if_stmt) => self.generate_if_expr(if_stmt.clone(), Some(expr)),
             HirExprKind::Array(exprs) => self.generate_array_expr(exprs),
