@@ -93,6 +93,7 @@ impl CppCodegen {
                     UnaryOp::Minus => format!("-{}", expr_code),
                     UnaryOp::Not => format!("!{}", expr_code),
                     UnaryOp::Deref => format!("*{}", expr_code),
+                    UnaryOp::Ref => format!("&{}", expr_code),
                     _ => unimplemented!(),
                 }
             }

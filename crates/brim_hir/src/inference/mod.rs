@@ -291,19 +291,30 @@ impl<'a> TypeInference<'a> {
     fn infer_stmt(&mut self, stmt: &mut HirStmt) {
         match &mut stmt.kind {
             HirStmtKind::Expr(expr) => self.infer_expr(expr),
-            HirStmtKind::Let { ty, value, ident } => {
+            HirStmtKind::Let {
+                ty: let_ty,
+                value,
+                ident,
+            } => {
                 if let Some(value) = value {
                     self.infer_expr(value);
 
-                    if let None = ty {
-                        ty.replace(value.ty.clone());
+                    if let None = let_ty {
+                        let_ty.replace(value.ty.clone());
                     }
                 }
+                let mut ty = let_ty.clone().unwrap();
+
+                ty = self.update_generic(ty);
+                if let Some(val) = value {
+                    self.try_promote_type(&mut val.ty, &ty, true);
+                }
+                let_ty.replace(ty.clone());
 
                 self.scope_manager.declare_variable(
                     ident.to_string(),
                     TypeInfo {
-                        ty: ty.clone().unwrap(),
+                        ty,
                         span: stmt.span.clone(),
                     },
                     true,
@@ -572,7 +583,7 @@ impl<'a> TypeInference<'a> {
                     } else {
                         let field_ty = str_field.ty.clone();
 
-                        self.try_promote_type(&mut expr.ty, &field_ty);
+                        self.try_promote_type(&mut expr.ty, &field_ty, false);
 
                         hir_struct
                             .field_types
@@ -864,6 +875,10 @@ impl<'a> TypeInference<'a> {
                     }
                 }
             }
+        } else if ty.is_array_like() {
+            if current_ident.to_string() == "len" {
+                return Some(HirTyKind::Primitive(PrimitiveType::Usize));
+            }
         }
 
         self.temp.emit_impl(NoField {
@@ -1099,7 +1114,7 @@ impl<'a> TypeInference<'a> {
             } else {
                 let param_ty = fn_param.ty.kind.clone();
 
-                self.try_promote_type(&mut arg.ty, &param_ty);
+                self.try_promote_type(&mut arg.ty, &param_ty, false);
 
                 params.push(HirCallParam {
                     span: fn_param.span,
@@ -1116,7 +1131,12 @@ impl<'a> TypeInference<'a> {
         self.resolve_type_alias(&ty)
     }
 
-    pub fn try_promote_type(&self, source_ty: &mut HirTyKind, target_ty: &HirTyKind) -> bool {
+    pub fn try_promote_type(
+        &self,
+        source_ty: &mut HirTyKind,
+        target_ty: &HirTyKind,
+        is_let_stmt: bool,
+    ) -> bool {
         if *source_ty == *target_ty {
             return true;
         }
@@ -1124,7 +1144,10 @@ impl<'a> TypeInference<'a> {
         if let (HirTyKind::Primitive(source_prim), HirTyKind::Primitive(target_prim)) =
             (source_ty.clone(), target_ty)
         {
-            if let Some(promoted) = PrimitiveType::promote_type(&source_prim, target_prim) {
+            if is_let_stmt && PrimitiveType::can_initialize_with_type(&source_prim, target_prim) {
+                *source_ty = HirTyKind::Primitive(target_prim.clone());
+                return true;
+            } else if let Some(promoted) = PrimitiveType::promote_type(&source_prim, target_prim) {
                 *source_ty = HirTyKind::Primitive(promoted);
                 return true;
             }

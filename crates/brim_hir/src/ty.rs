@@ -453,4 +453,14 @@ impl HirTyKind {
             _ => false,
         }
     }
+
+    pub fn is_array_like(&self) -> bool {
+        match self {
+            HirTyKind::Array(_, _) | HirTyKind::Vec(_) => true,
+            HirTyKind::Ptr(ty, _) | HirTyKind::Ref(ty, _) | HirTyKind::Mut(ty) => {
+                ty.is_array_like()
+            }
+            _ => false,
+        }
+    }
 }

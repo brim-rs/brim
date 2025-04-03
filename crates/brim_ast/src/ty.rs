@@ -2,6 +2,7 @@ use crate::{
     ItemId,
     expr::Expr,
     item::{GenericArgs, Ident},
+    ty::PrimitiveType::{I8, I16, I32, I64, Isize, U8, U16, U32, U64, Usize},
 };
 use brim_diagnostics::ErrorEmitted;
 use brim_span::span::Span;
@@ -216,6 +217,25 @@ impl PrimitiveType {
 
             // Default case
             _ => None,
+        }
+    }
+
+    pub fn can_initialize_with_type(source_ty: &PrimitiveType, target_ty: &PrimitiveType) -> bool {
+        use PrimitiveType::*;
+
+        match (source_ty, target_ty) {
+            (I32, U8) => true,
+            (I32, U16) => true,
+            (I32, U32) => true,
+            (I32, U64) => true,
+            (I32, Usize) => true,
+
+            (I8, U8) => true,
+            (I16, U16) => true,
+            (I64, U64) => true,
+            (Isize, Usize) => true,
+
+            _ => PrimitiveType::promote_type(source_ty, target_ty).is_some(),
         }
     }
 }
