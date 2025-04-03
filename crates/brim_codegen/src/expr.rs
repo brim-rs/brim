@@ -69,14 +69,20 @@ impl CppCodegen {
                 format!("{}[{}]", expr_code, index_code)
             }
             HirExprKind::Field(idents) => {
-                format!(
-                    "brim_{}",
-                    idents
-                        .iter()
-                        .map(|id| format!("{}", id))
-                        .collect::<Vec<String>>()
-                        .join(".")
-                )
+                let mut vals = idents
+                    .iter()
+                    .map(|id| format!("{}", id))
+                    .collect::<Vec<String>>();
+                if let Some(last) = idents.last() {
+                    let last = last.clone();
+
+                    if last.to_string() == "len" {
+                        vals.pop();
+                        vals.push("size()".to_string());
+                    }
+                };
+
+                format!("brim_{}", vals.join("."),)
             }
             HirExprKind::If(ref if_stmt) => self.generate_if_expr(if_stmt.clone(), Some(expr)),
             HirExprKind::Array(exprs) => self.generate_array_expr(exprs),
