@@ -24,10 +24,7 @@ pub fn main() {
     // and only then we can perform standard cast to u32
     //let xy = @cast(@anyCast(val, i32), u32);
 
-    let val = optionTest(@none());
-    let y = if val == "None" {
-        return 42;
-    } else {
-        return 0;
-    };
+    let val = getStdErr();
+
+    val.write(&b"dwadawd");
 };

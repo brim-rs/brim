@@ -125,6 +125,9 @@ impl TypeChecker {
             HirExprKind::Unwrap(expr) => {
                 self.check_expr(*expr);
             }
+            HirExprKind::Unary(op, operand) => {
+                self.check_expr(*operand);
+            }
             HirExprKind::Var(_) | HirExprKind::Literal(_) | HirExprKind::Dummy => {}
             _ => todo!("missing implementation for {:?}", expr),
         }

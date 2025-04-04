@@ -5,9 +5,9 @@ extern "C" {
 
     fn WriteFile(
         hFile: HANDLE,
-        lpBuffer: *u8,
+        lpBuffer: *[u8],
         nNumberOfBytesToWrite: DWORD,
         lpNumberOfBytesWritten: *mut DWORD,
-        lpOverlapped: *mut OVERLAPPED
+        lpOverlapped: OVERLAPPED?
     ) BOOL;
 }

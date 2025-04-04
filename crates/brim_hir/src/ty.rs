@@ -119,6 +119,7 @@ impl HirTyKind {
             (HirTyKind::Array(ty1, len1), HirTyKind::Array(ty2, len2)) => {
                 ty1.simple_eq(ty2) && len1 == len2
             }
+            (HirTyKind::Array(ty1, None), HirTyKind::Array(ty2, _)) => ty1.simple_eq(ty2),
             (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.simple_eq(ty2),
             (HirTyKind::Primitive(p1), HirTyKind::Primitive(p2)) => p1 == p2,
 
@@ -175,14 +176,12 @@ impl HirTyKind {
 
             (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1.simple_eq(ty2),
 
-            (
-                HirTyKind::Mut(ty1)
-                | HirTyKind::Ref(ty1, Mutable::Yes)
-                | HirTyKind::Ptr(ty1, Mutable::Yes),
-                _,
-            ) => false,
+            (HirTyKind::Array(ty1, _), HirTyKind::Vec(ty2)) => ty1.simple_eq(ty2),
+            (HirTyKind::Vec(ty1), HirTyKind::Array(ty2, _)) => ty1.simple_eq(ty2),
 
             (HirTyKind::Array(ty1, None), HirTyKind::Array(ty2, None)) => ty1.simple_eq(ty2),
+            (HirTyKind::Array(ty1, None), HirTyKind::Array(ty2, _)) => ty1.simple_eq(ty2),
+            (HirTyKind::Array(ty1, _), HirTyKind::Array(ty2, None)) => ty1.simple_eq(ty2),
 
             (HirTyKind::Array(ty1, len1), HirTyKind::Array(ty2, len2)) => {
                 ty1.simple_eq(ty2) && len1 == len2

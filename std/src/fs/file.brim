@@ -30,7 +30,7 @@ pub struct Handle {
             return @none();
         }
 
-        if WriteFile(self.inner, data, data.len, &bytes_written, overlapped) == 0 {}
+        if WriteFile(self.inner, &data, data.len, &bytes_written, overlapped) == 0 {}
     }
 }
 

@@ -390,17 +390,10 @@ impl<'a> TypeInference<'a> {
                     }
                     (UnaryOp::Not, _) => &HirTyKind::Primitive(PrimitiveType::Bool),
                     (UnaryOp::Ref, ty) => {
-                        if !ty.is_ref() {
-                            if ty.is_mutable() {
-                                &HirTyKind::Ref(Box::new(ty.clone()), Mutable::Yes)
-                            } else {
-                                &HirTyKind::Ref(Box::new(ty.clone()), Mutable::No)
-                            }
+                        if ty.is_mutable() {
+                            &HirTyKind::Ref(Box::new(ty.clone()), Mutable::Yes)
                         } else {
-                            &self.ret_with_error(CannotReferenceToRef {
-                                span: (expr.span.clone(), self.current_mod.as_usize()),
-                                ty: ty.clone(),
-                            })
+                            &HirTyKind::Ref(Box::new(ty.clone()), Mutable::No)
                         }
                     }
                 }
@@ -640,10 +633,9 @@ impl<'a> TypeInference<'a> {
             HirExprKind::Literal(lit) => match lit.kind {
                 LitKind::Str => &HirTyKind::Primitive(PrimitiveType::String),
                 LitKind::Byte => &HirTyKind::Primitive(PrimitiveType::U8),
-                LitKind::ByteStr => &HirTyKind::Array(
-                    Box::new(HirTyKind::Primitive(PrimitiveType::U8)),
-                    Some(lit.symbol.to_string().len()),
-                ),
+                LitKind::ByteStr => {
+                    &HirTyKind::Vec(Box::new(HirTyKind::Primitive(PrimitiveType::U8)))
+                }
                 LitKind::Char => &HirTyKind::Primitive(PrimitiveType::Char),
                 LitKind::Bool => &HirTyKind::Primitive(PrimitiveType::Bool),
                 LitKind::Integer => &self.ty_with_suffix(lit, PrimitiveType::I32),
