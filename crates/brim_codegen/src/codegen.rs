@@ -31,7 +31,6 @@ pub struct CppCodegen {
     pub compiled: CompiledModules,
     pub parent_item: Option<(Ident, HirGenerics)>,
     pub items_order: HashMap<ModuleId, Vec<ItemId>>,
-    pub is_if_an_expr: Option<usize>,
 }
 
 #[derive(Debug)]
@@ -192,7 +191,6 @@ impl CppCodegen {
             compiled,
             parent_item: None,
             items_order: sorted_modules,
-            is_if_an_expr: None,
         }
     }
 

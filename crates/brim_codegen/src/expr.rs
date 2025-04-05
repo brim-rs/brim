@@ -6,7 +6,7 @@ use brim_ast::{
 };
 use brim_hir::{
     builtin::get_builtin_function,
-    expr::{HirExpr, HirExprKind, HirIfExpr, HirStructConstructor},
+    expr::{HirExpr, HirExprKind, HirIfStmt, HirStructConstructor},
     ty::HirTyKind,
 };
 use brim_span::span::Span;
@@ -80,7 +80,7 @@ impl CppCodegen {
 
                 format!("brim_{}", vals.join("."),)
             }
-            HirExprKind::If(ref if_stmt) => self.generate_if_expr(if_stmt.clone(), Some(expr)),
+            HirExprKind::If(ref if_stmt) => self.generate_if_stmt(if_stmt.clone()),
             HirExprKind::Array(exprs) => self.generate_array_expr(exprs),
             HirExprKind::StructConstructor(str) => self.generate_struct_constructor(str),
             HirExprKind::Type(ty) => self.generate_ty(ty),
@@ -174,13 +174,8 @@ impl CppCodegen {
         )
     }
 
-    pub fn generate_if_expr(&mut self, if_stmt: HirIfExpr, expr: Option<HirExpr>) -> String {
+    pub fn generate_if_stmt(&mut self, if_stmt: HirIfStmt) -> String {
         let condition = self.generate_expr(*if_stmt.condition);
-
-        if let Some(expr) = expr.clone() {
-            self.is_if_an_expr = Some(expr.id.as_usize());
-        }
-
         let then_block = self.generate_expr(*if_stmt.then_block.clone());
 
         let mut else_ifs = String::new();
@@ -200,19 +195,11 @@ impl CppCodegen {
         } else {
             String::new()
         };
-        let base_if = format!(
+
+        format!(
             "if ({}) {{ {} }}{}{}",
             condition, then_block, else_ifs, else_block,
-        );
-
-        let val = if let Some(expr) = expr {
-            format!("[&] {{ {} }}();", base_if,)
-        } else {
-            base_if
-        };
-        self.is_if_an_expr = None;
-
-        val
+        )
     }
 
     fn generate_array_expr(&mut self, exprs: Vec<HirExpr>) -> String {

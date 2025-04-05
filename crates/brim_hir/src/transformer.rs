@@ -3,7 +3,7 @@ use crate::{
     builtin::get_builtin_function,
     comptime::{ComptimeReturnValue, errors::ComptimeExprExpectedTy},
     expr::{
-        ComptimeValue, HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfExpr, HirMatchArm,
+        ComptimeValue, HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfStmt, HirMatchArm,
         HirStructConstructor,
     },
     items::{
@@ -16,12 +16,12 @@ use crate::{
 };
 use brim_ast::{
     ItemId,
-    expr::{BinOpKind, Expr, ExprKind, IfExpr, MatchArm},
+    expr::{BinOpKind, Expr, ExprKind, MatchArm},
     item::{
         Block, Enum, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, ImportsKind, Item,
         ItemKind, Struct, TypeAlias, TypeAliasValue,
     },
-    stmts::{Stmt, StmtKind},
+    stmts::{IfStmt, Stmt, StmtKind},
     token::{AssignOpToken, Lit, LitKind},
     ty::{PrimitiveType, Ty, TyKind},
 };
@@ -447,7 +447,7 @@ impl<'a> Transformer<'a> {
                     ident: le.ident,
                     value: le.value.map(|expr| self.transform_expr(expr).0),
                 },
-                StmtKind::If(if_expr) => HirStmtKind::If(self.transform_expr(if_expr).0),
+                StmtKind::If(if_expr) => HirStmtKind::If(self.transform_if_stmt(if_expr)),
             },
         }
     }
@@ -550,7 +550,6 @@ impl<'a> Transformer<'a> {
                         .collect(),
                     vec![],
                 ),
-                ExprKind::If(if_expr) => HirExprKind::If(self.transform_if_expr(if_expr)),
                 ExprKind::Comptime(expr) => HirExprKind::Comptime(ComptimeValue::Expr(Box::new(
                     self.transform_expr(*expr).0,
                 ))),
@@ -636,6 +635,11 @@ impl<'a> Transformer<'a> {
                 ExprKind::Unwrap(expr) => {
                     HirExprKind::Unwrap(Box::new(self.transform_expr(*expr).0))
                 }
+                ExprKind::Ternary(cond, then_expr, else_expr) => HirExprKind::Ternary(
+                    Box::new(self.transform_expr(*cond).0),
+                    Box::new(self.transform_expr(*then_expr).0),
+                    Box::new(self.transform_expr(*else_expr).0),
+                )
             },
             ty,
         };
@@ -655,8 +659,8 @@ impl<'a> Transformer<'a> {
         (expr.clone(), id)
     }
 
-    pub fn transform_if_expr(&mut self, if_expr: IfExpr) -> HirIfExpr {
-        HirIfExpr {
+    pub fn transform_if_stmt(&mut self, if_expr: IfStmt) -> HirIfStmt {
+        HirIfStmt {
             span: if_expr.span,
             condition: Box::new(self.transform_expr(*if_expr.condition).0),
             then_block: Box::new(self.transform_expr(*if_expr.then_block).0),

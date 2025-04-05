@@ -15,11 +15,7 @@ impl CppCodegen {
                     format!("{} brim_{};", ty, ident.to_string())
                 }
             }
-            HirStmtKind::If(if_expr) => {
-                let if_expr = if_expr.as_if().clone();
-
-                self.generate_if_expr(if_expr, None)
-            }
+            HirStmtKind::If(if_expr) => self.generate_if_stmt(if_expr),
         }
     }
 }

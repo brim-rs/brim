@@ -482,19 +482,6 @@ impl<'a> AstWalker for NameResolver<'a> {
                 self.walk_expr(lhs);
                 self.walk_expr(rhs);
             }
-            ExprKind::If(if_expr) => {
-                self.walk_expr(&mut if_expr.condition);
-                self.walk_expr(&mut if_expr.then_block);
-
-                for else_if in &mut if_expr.else_ifs {
-                    self.walk_expr(&mut else_if.condition);
-                    self.walk_expr(&mut else_if.block);
-                }
-
-                if let Some(else_branch) = &mut if_expr.else_block {
-                    self.walk_expr(else_branch);
-                }
-            }
             ExprKind::Block(block) => self.visit_block(block),
             ExprKind::Call(func, args) => {
                 let name = func.as_ident().unwrap().to_string();
@@ -634,6 +621,11 @@ impl<'a> AstWalker for NameResolver<'a> {
             }
             ExprKind::Unwrap(expr) => {
                 self.walk_expr(expr);
+            }
+            ExprKind::Ternary(cond, then, else_) => {
+                self.walk_expr(cond);
+                self.walk_expr(then);
+                self.walk_expr(else_);
             }
         }
     }

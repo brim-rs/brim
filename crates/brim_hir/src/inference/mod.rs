@@ -3,7 +3,7 @@ pub mod scope;
 
 use crate::{
     CompiledModules,
-    expr::{HirExpr, HirExprKind, HirIfExpr},
+    expr::{HirExpr, HirExprKind, HirIfStmt},
     inference::{
         errors::{
             CannotApplyBinary, CannotApplyUnary, CannotCompare, CannotReferenceToRef,
@@ -317,8 +317,8 @@ impl<'a> TypeInference<'a> {
                     true,
                 );
             }
-            HirStmtKind::If(if_expr) => {
-                self.infer_expr(if_expr);
+            HirStmtKind::If(if_stmt) => {
+                self.infer_if_expr(if_stmt);
             }
         }
 
@@ -640,7 +640,7 @@ impl<'a> TypeInference<'a> {
                 LitKind::CStr => todo!("CStr"),
                 _ => unreachable!("literal error: {:#?}", lit),
             },
-            HirExprKind::If(if_expr) => &self.infer_if_expr(if_expr),
+            HirExprKind::If(if_stmt) => &self.infer_if_expr(if_stmt),
             HirExprKind::Builtin(_, args) => {
                 for arg in args {
                     self.infer_expr(arg);
@@ -879,20 +879,20 @@ impl<'a> TypeInference<'a> {
         None
     }
 
-    pub fn infer_if_expr(&mut self, if_expr: &mut HirIfExpr) -> HirTyKind {
-        self.infer_expr(&mut if_expr.condition);
-        self.infer_expr(&mut if_expr.then_block);
+    pub fn infer_if_expr(&mut self, if_stmt: &mut HirIfStmt) -> HirTyKind {
+        self.infer_expr(&mut if_stmt.condition);
+        self.infer_expr(&mut if_stmt.then_block);
 
-        if let Some(else_block) = &mut if_expr.else_block {
+        if let Some(else_block) = &mut if_stmt.else_block {
             self.infer_expr(else_block);
         }
 
-        for branch in &mut if_expr.else_ifs {
+        for branch in &mut if_stmt.else_ifs {
             self.infer_expr(&mut branch.condition);
             self.infer_expr(&mut branch.block);
         }
 
-        if_expr.then_block.ty.clone()
+        if_stmt.then_block.ty.clone()
     }
 
     pub fn resolve_method_from_idents(

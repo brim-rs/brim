@@ -1,9 +1,4 @@
-use crate::{
-    ItemId,
-    expr::{Expr, IfExpr},
-    item::Ident,
-    ty::Ty,
-};
+use crate::{ItemId, expr::Expr, item::Ident, ty::Ty};
 use brim_span::span::Span;
 
 #[derive(Clone, Debug)]
@@ -14,10 +9,26 @@ pub struct Stmt {
 }
 
 #[derive(Clone, Debug)]
+pub struct IfStmt {
+    pub span: Span,
+    pub condition: Box<Expr>,
+    pub then_block: Box<Expr>,
+    pub else_block: Option<Box<Expr>>,
+    pub else_ifs: Vec<ConditionBranch>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ConditionBranch {
+    pub span: Span,
+    pub condition: Box<Expr>,
+    pub block: Box<Expr>,
+}
+
+#[derive(Clone, Debug)]
 pub enum StmtKind {
     Let(Let),
     Expr(Expr),
-    If(Expr),
+    If(IfStmt),
 }
 
 #[derive(Clone, Debug)]

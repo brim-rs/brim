@@ -1,4 +1,4 @@
-use super::errors::ExpectedStringLiteralError;
+use super::errors::{ExpectedStringLiteralError, IfAsExpressionError};
 use crate::{
     parser::{
         PResult, PToken, PTokenKind, Parser, ParsingContext,
@@ -12,10 +12,9 @@ use crate::{
 };
 use brim_ast::{
     Comptime, Const, Else, If, Match, Return, Try,
-    expr::{
-        BinOpAssociativity, BinOpKind, ConditionBranch, Expr, ExprKind, IfExpr, MatchArm, UnaryOp,
-    },
+    expr::{BinOpAssociativity, BinOpKind, Expr, ExprKind, MatchArm, UnaryOp},
     item::Ident,
+    stmts::{ConditionBranch, IfStmt, StmtKind},
     token::{BinOpToken, Delimiter, Lit, LitKind, Orientation, TokenKind},
     ty::{Ty, TyKind},
 };
@@ -354,7 +353,9 @@ impl Parser {
 
                     Ok(self.new_expr(span.to(expr.span), ExprKind::Return(Box::new(expr))))
                 } else if self.eat_keyword(ptok!(If)) {
-                    self.parse_if()
+                    box_diag!(IfAsExpressionError {
+                        span: (self.current().span, self.file),
+                    })
                 } else if self.eat_keyword(ptok!(Comptime)) {
                     let block = self.parse_block(true)?;
                     let expr = self.new_expr(block.span, ExprKind::Block(block));
@@ -583,7 +584,7 @@ impl Parser {
         }
     }
 
-    pub fn parse_if(&mut self) -> PResult<Expr> {
+    pub fn parse_if(&mut self) -> PResult<StmtKind> {
         self.parsing_ctx = ParsingContext::IfStatement;
         let span = self.prev().span;
         let condition = self.parse_expr()?;
@@ -636,16 +637,13 @@ impl Parser {
 
         self.parsing_ctx = ParsingContext::Normal;
         debug!("Parsed if expression");
-        Ok(self.new_expr(
+        Ok(StmtKind::If(IfStmt {
             span,
-            ExprKind::If(IfExpr {
-                span,
-                condition: Box::new(condition),
-                then_block: Box::new(then_block),
-                else_block: else_block.map(Box::new),
-                else_ifs,
-            }),
-        ))
+            condition: Box::new(condition),
+            then_block: Box::new(then_block),
+            else_block: else_block.map(Box::new),
+            else_ifs,
+        }))
     }
 
     fn peek_unary_op(&mut self) -> Option<UnaryOp> {

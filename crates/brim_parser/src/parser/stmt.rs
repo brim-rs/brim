@@ -49,9 +49,8 @@ impl Parser {
             Ok(StmtKind::Let(stmt))
         } else if self.current().is_keyword(If) {
             self.advance();
-            let if_stmt = self.parse_if()?;
 
-            Ok(StmtKind::If(if_stmt))
+            Ok(self.parse_if()?)
         } else {
             let expr = self.parse_expr()?;
 

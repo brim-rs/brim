@@ -44,7 +44,7 @@ impl HirExpr {
         }
     }
 
-    pub fn as_if(&self) -> &HirIfExpr {
+    pub fn as_if(&self) -> &HirIfStmt {
         match &self.kind {
             HirExprKind::If(if_expr) => if_expr,
             _ => panic!("Expected if expression"),
@@ -72,7 +72,7 @@ pub enum HirExprKind {
     /// Assignment.
     Assign(Box<HirExpr>, Box<HirExpr>),
     /// Conditionals desugared into a single structure.
-    If(HirIfExpr),
+    If(HirIfStmt),
     /// Function calls.
     Call(Box<HirExpr>, Vec<HirExpr>, Vec<HirCallParam>),
     /// Block of statements or expressions.
@@ -97,6 +97,8 @@ pub enum HirExprKind {
     MethodCall(Vec<Ident>, Box<HirExpr>),
     /// Unwrap an option.
     Unwrap(Box<HirExpr>),
+    /// Ternary operator.
+    Ternary(Box<HirExpr>, Box<HirExpr>, Box<HirExpr>),
 
     Dummy,
 }
@@ -141,7 +143,7 @@ pub struct HirStructConstructor {
 }
 
 #[derive(Clone, Debug)]
-pub struct HirIfExpr {
+pub struct HirIfStmt {
     pub span: Span,
     pub condition: Box<HirExpr>,
     pub then_block: Box<HirExpr>,

@@ -1,5 +1,5 @@
 use crate::{
-    expr::{HirExpr, HirIfExpr},
+    expr::{HirExpr, HirIfStmt},
     ty::HirTyKind,
 };
 use brim_ast::{ItemId, item::Ident};
@@ -34,5 +34,5 @@ pub enum HirStmtKind {
     /// An expression statement.
     Expr(HirExpr),
     /// An if statement.
-    If(HirExpr),
+    If(HirIfStmt),
 }

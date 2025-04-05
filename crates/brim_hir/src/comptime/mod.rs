@@ -188,7 +188,7 @@ impl<'a> Evaluator<'a> {
                         });
                 }
                 HirStmtKind::If(if_expr) => {
-                    self.eval_expr(if_expr);
+                    todo!()
                 }
             };
         }

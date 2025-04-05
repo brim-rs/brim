@@ -190,3 +190,10 @@ pub struct ExpectedStringLiteralError {
     #[error]
     pub span: (Span, usize),
 }
+
+#[derive(Diagnostic)]
+#[error("if are not allowed as an expression. use ternary operator instead.")]
+pub struct IfAsExpressionError {
+    #[error]
+    pub span: (Span, usize),
+}

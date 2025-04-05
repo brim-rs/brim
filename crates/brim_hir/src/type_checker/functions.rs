@@ -44,7 +44,20 @@ impl TypeChecker {
 
     pub fn check_stmt(&mut self, stmt: HirStmt) {
         match stmt.kind {
-            HirStmtKind::Expr(expr) | HirStmtKind::If(expr) => self.check_expr(expr),
+            HirStmtKind::Expr(expr) => self.check_expr(expr),
+            HirStmtKind::If(if_stmt) => {
+                self.check_expr(*if_stmt.condition);
+                self.check_expr(*if_stmt.then_block);
+
+                if let Some(else_block) = if_stmt.else_block {
+                    self.check_expr(*else_block);
+                }
+
+                for branch in if_stmt.else_ifs {
+                    self.check_expr(*branch.condition);
+                    self.check_expr(*branch.block);
+                }
+            }
             HirStmtKind::Let { ty, value, ident } => {
                 let ty = ty.unwrap();
 

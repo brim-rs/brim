@@ -1,10 +1,10 @@
 use brim_ast::{
-    expr::{Expr, ExprKind, IfExpr, MatchArm},
+    expr::{Expr, ExprKind, MatchArm},
     item::{
         Block, FnDecl, FnReturnType, FnSignature, GenericArgs, Generics, Ident, Item, ItemKind,
         Struct, TypeAlias, Use,
     },
-    stmts::{Let, Stmt, StmtKind},
+    stmts::{IfStmt, Let, Stmt, StmtKind},
     ty::Ty,
 };
 use indexmap::IndexMap;
@@ -88,11 +88,11 @@ pub trait AstWalker {
         match &mut stmt.kind {
             StmtKind::Let(let_stmt) => self.visit_let(let_stmt),
             StmtKind::Expr(expr) => self.visit_expr(expr),
-            StmtKind::If(if_expr) => self.visit_expr(if_expr),
+            StmtKind::If(stmt) => self.visit_if(stmt),
         }
     }
 
-    fn visit_if(&mut self, if_expr: &mut IfExpr) {
+    fn visit_if(&mut self, if_expr: &mut IfStmt) {
         self.visit_expr(&mut if_expr.condition);
         self.visit_expr(&mut if_expr.then_block);
 
@@ -125,9 +125,6 @@ pub trait AstWalker {
             ExprKind::AssignOp(lhs, _, rhs) | ExprKind::Assign(lhs, rhs) => {
                 self.visit_expr(lhs);
                 self.visit_expr(rhs);
-            }
-            ExprKind::If(if_expr) => {
-                self.visit_if(if_expr);
             }
             ExprKind::Block(block) => self.visit_block(block),
             ExprKind::Call(func, args) => {
@@ -172,6 +169,11 @@ pub trait AstWalker {
             }
             ExprKind::Unwrap(expr) => {
                 self.visit_expr(expr);
+            }
+            ExprKind::Ternary(cond, then, else_) => {
+                self.visit_expr(cond);
+                self.visit_expr(then);
+                self.visit_expr(else_);
             }
         }
     }
