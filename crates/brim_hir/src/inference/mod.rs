@@ -113,9 +113,6 @@ impl<'a> TypeInference<'a> {
                 HirTyKind::Ptr(Box::new(self.resolve_type_alias(inner)), m.clone())
             }
             HirTyKind::Mut(inner) => HirTyKind::Mut(Box::new(self.resolve_type_alias(inner))),
-            HirTyKind::Array(inner, size) => {
-                HirTyKind::Array(Box::new(self.resolve_type_alias(inner)), size.clone())
-            }
             HirTyKind::Vec(inner) => HirTyKind::Vec(Box::new(self.resolve_type_alias(inner))),
             HirTyKind::Ident {
                 ident,
@@ -867,7 +864,7 @@ impl<'a> TypeInference<'a> {
                     }
                 }
             }
-        } else if ty.is_array_like() {
+        } else if ty.is_vector() {
             if current_ident.to_string() == "len" {
                 return Some(HirTyKind::Primitive(PrimitiveType::Usize));
             }
@@ -1161,9 +1158,6 @@ impl<'a> TypeInference<'a> {
                 self.replace_generics_recursive(inner, generic_types);
             }
             HirTyKind::Mut(inner) => {
-                self.replace_generics_recursive(inner, generic_types);
-            }
-            HirTyKind::Array(inner, _) => {
                 self.replace_generics_recursive(inner, generic_types);
             }
             HirTyKind::Vec(inner) => {

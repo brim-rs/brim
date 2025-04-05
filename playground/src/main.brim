@@ -26,5 +26,5 @@ pub fn main() {
 
     let val = getStdErr();
 
-    val.write(&b"dwadawd");
+    val.write(b"dwadawd");
 };

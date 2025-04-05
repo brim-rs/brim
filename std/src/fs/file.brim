@@ -12,10 +12,10 @@ pub type HandleTy = match @os() {
 pub struct Handle {
     inner: HandleTy
 
-    fn write(self: &Handle, data: &[u8], offset: u64?) usize!IoError {
+    fn write(self: &Handle, data: u8[], offset: u64?) usize!IoError {
         let bytes_written: DWORD = 0;
-        let overlapped: OVERLAPPED? = if offset {
-            return @some(OVERLAPPED {
+        let overlapped: *OVERLAPPED? = if offset {
+            return @some(&OVERLAPPED {
                 .Internal = 0,
                 .InternalHigh = 0,
                 .Anonymous = OVERLAPPED_0 {
@@ -37,7 +37,7 @@ pub struct Handle {
 pub struct File {
     handle: Handle,
 
-    fn write(self: &File, data: &[u8]) usize!IoError {
+    fn write(self: &File, data: u8[]) usize!IoError {
         return self.handle.write(data, @none());
     }
 }

@@ -530,10 +530,6 @@ impl Parser {
             TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
                 let span_start = self.current().span;
 
-                if let Some(ty) = self.try_parse_as_array_type(span_start)? {
-                    return Ok(self.new_expr(ty.span, ExprKind::Type(Box::new(ty))));
-                }
-
                 self.advance();
                 let mut elements = Vec::new();
                 while !self.is_paren(Orientation::Close) {
@@ -585,29 +581,6 @@ impl Parser {
                 })
             }
         }
-    }
-
-    fn try_parse_as_array_type(&mut self, span_start: Span) -> PResult<Option<Ty>> {
-        let pos = self.save_pos();
-
-        self.advance();
-
-        if let Ok(len_expr) = self.parse_expr() {
-            if self.eat(TokenKind::Semicolon) {
-                if let Ok(elem_ty) = self.parse_type() {
-                    if self.eat(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close)) {
-                        return Ok(Some(Ty {
-                            span: span_start.to(self.prev().span),
-                            kind: TyKind::Array(Box::new(elem_ty), Some(len_expr)),
-                            id: self.new_id(),
-                        }));
-                    }
-                }
-            }
-        }
-
-        self.restore_pos(pos);
-        Ok(None)
     }
 
     pub fn parse_if(&mut self) -> PResult<Expr> {

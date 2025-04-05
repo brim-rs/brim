@@ -41,11 +41,7 @@ impl CppCodegen {
             HirExprKind::Return(expr) => {
                 let expr_code = self.generate_expr(*expr);
 
-                if let Some(id) = self.is_if_an_expr {
-                    format!("temp_{} = {};", id, expr_code)
-                } else {
-                    format!("return {};", expr_code)
-                }
+                format!("return {};", expr_code)
             }
             HirExprKind::Binary(lhs, op, rhs) => {
                 let lhs_code = self.generate_expr(*lhs);
@@ -210,14 +206,7 @@ impl CppCodegen {
         );
 
         let val = if let Some(expr) = expr {
-            let temp_value = format!("{} temp_{};", self.generate_ty(expr.ty), expr.id.as_usize());
-
-            format!(
-                "({{ {} \n {}; {} }});",
-                temp_value,
-                base_if,
-                format!("temp_{};", expr.id.as_usize())
-            )
+            format!("[&] {{ {} }}();", base_if,)
         } else {
             base_if
         };
@@ -324,7 +313,7 @@ impl CppCodegen {
                 lit.symbol
                     .to_string()
                     .chars()
-                    .map(|b| format!("\"{}\"", b))
+                    .map(|b| format!("\'{}\'", b))
                     .collect::<Vec<_>>()
                     .join(", ")
             ),

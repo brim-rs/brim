@@ -24,8 +24,6 @@ pub enum HirTyKind {
     Ptr(Box<HirTyKind>, Mutable),
     /// Mut type eg. `mut T` (brim) -> `T` (C++)
     Mut(Box<HirTyKind>),
-    /// Array type eg. `[T; N]` (brim) -> `T[N]` (C++)
-    Array(Box<HirTyKind>, Option<usize>),
     /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim
     /// is the same as array in C++.
     Vec(Box<HirTyKind>),
@@ -71,16 +69,6 @@ impl Display for HirTyKind {
                 write!(f, "*{}{}", const_str, ty)
             }
             HirTyKind::Mut(ty) => write!(f, "mut {}", ty),
-            HirTyKind::Array(ty, len) => write!(
-                f,
-                "[{}{}]",
-                ty,
-                if let Some(len) = len {
-                    format!("; {}", len)
-                } else {
-                    String::new()
-                }
-            ),
             HirTyKind::Vec(ty) => write!(f, "{}[]", ty),
             HirTyKind::Primitive(p) => write!(f, "{}", p),
             HirTyKind::Ident {
@@ -111,19 +99,37 @@ impl HirTyKind {
     pub fn simple_eq(&self, other: &Self) -> bool {
         match (self, other) {
             (HirTyKind::Primitive(PrimitiveType::Any), _) => true,
-            (HirTyKind::Ref(ty1, _), HirTyKind::Ref(ty2, _)) => ty1.simple_eq(ty2),
-            (HirTyKind::Ptr(ty1, _), HirTyKind::Ptr(ty2, _)) => ty1.simple_eq(ty2),
-            (HirTyKind::Ref(ty1, _) | HirTyKind::Ptr(ty1, _), ty2) => ty1.simple_eq(ty2),
+
+            (HirTyKind::Ref(ty1, Mutable::No), HirTyKind::Ref(ty2, Mutable::Yes)) => {
+                ty1.simple_eq(ty2)
+            }
+
+            (HirTyKind::Ref(ty1, mutability1), HirTyKind::Ref(ty2, mutability2)) => {
+                ty1.simple_eq(ty2) && mutability1 == mutability2
+            }
+
+            (HirTyKind::Ref(_, _), _) => false,
+            (_, HirTyKind::Ref(_, _)) => false,
+
+            (HirTyKind::Ptr(ty1, Mutable::No), HirTyKind::Ptr(ty2, Mutable::Yes)) => {
+                ty1.simple_eq(ty2)
+            }
+
+            (HirTyKind::Ptr(ty1, mutability1), HirTyKind::Ptr(ty2, mutability2)) => {
+                ty1.simple_eq(ty2) && mutability1 == mutability2
+            }
+
+            (HirTyKind::Ptr(_, _), _) => false,
+            (_, HirTyKind::Ptr(_, _)) => false,
+
             (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1.simple_eq(ty2),
             (HirTyKind::Mut(ty1), ty2) => ty1.simple_eq(ty2),
-            (HirTyKind::Array(ty1, len1), HirTyKind::Array(ty2, len2)) => {
-                ty1.simple_eq(ty2) && len1 == len2
-            }
-            (HirTyKind::Array(ty1, None), HirTyKind::Array(ty2, _)) => ty1.simple_eq(ty2),
+            (ty1, HirTyKind::Mut(ty2)) => ty1.simple_eq(ty2),
+
             (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.simple_eq(ty2),
+
             (HirTyKind::Primitive(p1), HirTyKind::Primitive(p2)) => p1 == p2,
 
-            // Result-related matches
             (HirTyKind::Result(ok1, err1), HirTyKind::Result(ok2, err2)) => {
                 ok1.simple_eq(ok2) && err1.simple_eq(err2)
             }
@@ -136,7 +142,6 @@ impl HirTyKind {
             (HirTyKind::ResultOk(ok1), HirTyKind::Result(ok2, _)) => ok1.simple_eq(ok2),
             (HirTyKind::ResultErr(err1), HirTyKind::Result(_, err2)) => err1.simple_eq(err2),
 
-            // Option-related matches
             (HirTyKind::Option(ty1), HirTyKind::Option(ty2)) => ty1.simple_eq(ty2),
             (HirTyKind::Some(val1), HirTyKind::Some(val2)) => val1.simple_eq(val2),
             (HirTyKind::None, HirTyKind::None) => true,
@@ -151,16 +156,18 @@ impl HirTyKind {
                 HirTyKind::Ident {
                     ident: id1,
                     generics: gen1,
-                    is_generic: is_generic1,
+                    is_generic: g1,
                 },
                 HirTyKind::Ident {
                     ident: id2,
                     generics: gen2,
-                    is_generic: is_generic2,
+                    is_generic: g2,
                 },
-            ) => id1.to_string() == id2.to_string() && gen1 == gen2 && is_generic1 == is_generic2,
+            ) => id1.to_string() == id2.to_string() && gen1 == gen2 && g1 == g2,
+
             (HirTyKind::Err(diag1), HirTyKind::Err(diag2)) => diag1 == diag2,
             (HirTyKind::Placeholder, HirTyKind::Placeholder) => true,
+
             _ => false,
         }
     }
@@ -169,36 +176,27 @@ impl HirTyKind {
         match (param, self) {
             (HirTyKind::Primitive(PrimitiveType::Any), _) => true,
 
-            (
-                HirTyKind::Ref(ty1, mutability1) | HirTyKind::Ptr(ty1, mutability1),
-                HirTyKind::Ref(ty2, mutability2) | HirTyKind::Ptr(ty2, mutability2),
-            ) => ty1.simple_eq(ty2) && mutability1 == mutability2,
+            (HirTyKind::Ptr(ptr, _), HirTyKind::Ref(ref_ty, _)) => ptr.simple_eq(ref_ty),
+            (HirTyKind::Ptr(param_ty, mp), HirTyKind::Ptr(arg_ty, ma)) => {
+                param_ty.simple_eq(arg_ty) && (*mp == *ma || *mp == Mutable::No)
+            }
+            (HirTyKind::Ptr(_, _), _) => false,
 
             (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1.simple_eq(ty2),
-
-            (HirTyKind::Array(ty1, _), HirTyKind::Vec(ty2)) => ty1.simple_eq(ty2),
-            (HirTyKind::Vec(ty1), HirTyKind::Array(ty2, _)) => ty1.simple_eq(ty2),
-
-            (HirTyKind::Array(ty1, None), HirTyKind::Array(ty2, None)) => ty1.simple_eq(ty2),
-            (HirTyKind::Array(ty1, None), HirTyKind::Array(ty2, _)) => ty1.simple_eq(ty2),
-            (HirTyKind::Array(ty1, _), HirTyKind::Array(ty2, None)) => ty1.simple_eq(ty2),
-
-            (HirTyKind::Array(ty1, len1), HirTyKind::Array(ty2, len2)) => {
-                ty1.simple_eq(ty2) && len1 == len2
-            }
 
             (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.simple_eq(ty2),
 
             (HirTyKind::Primitive(p1), HirTyKind::Primitive(p2)) => p1 == p2,
 
-            // Result-related matches
-            (HirTyKind::ResultOk(ty1), HirTyKind::ResultOk(ty2)) => ty1.simple_eq(ty2),
-            (HirTyKind::ResultErr(ty1), HirTyKind::ResultErr(ty2)) => ty1.simple_eq(ty2),
             (HirTyKind::Result(ok1, err1), HirTyKind::Result(ok2, err2)) => {
                 ok1.can_be_an_arg_for_param(ok2) && err1.can_be_an_arg_for_param(err2)
             }
-            (HirTyKind::ResultOk(_), HirTyKind::ResultErr(_)) => false,
-            (HirTyKind::ResultErr(_), HirTyKind::ResultOk(_)) => false,
+            (HirTyKind::ResultOk(ty1), HirTyKind::ResultOk(ty2)) => {
+                ty1.can_be_an_arg_for_param(ty2)
+            }
+            (HirTyKind::ResultErr(ty1), HirTyKind::ResultErr(ty2)) => {
+                ty1.can_be_an_arg_for_param(ty2)
+            }
             (HirTyKind::Result(ok1, _), HirTyKind::ResultOk(ok2)) => {
                 ok1.can_be_an_arg_for_param(ok2)
             }
@@ -212,7 +210,6 @@ impl HirTyKind {
                 err1.can_be_an_arg_for_param(err2)
             }
 
-            // Option-related matches
             (HirTyKind::Option(ty1), HirTyKind::Option(ty2)) => ty1.can_be_an_arg_for_param(ty2),
             (HirTyKind::Some(val1), HirTyKind::Some(val2)) => val1.can_be_an_arg_for_param(val2),
             (HirTyKind::None, HirTyKind::None) => true,
@@ -227,14 +224,14 @@ impl HirTyKind {
                 HirTyKind::Ident {
                     ident: id1,
                     generics: gen1,
-                    is_generic: is_gen1,
+                    is_generic: g1,
                 },
                 HirTyKind::Ident {
                     ident: id2,
                     generics: gen2,
-                    is_generic: is_gen2,
+                    is_generic: g2,
                 },
-            ) => id1.to_string() == id2.to_string() && gen1 == gen2 && is_gen1 == is_gen2,
+            ) => id1.to_string() == id2.to_string() && gen1 == gen2 && g1 == g2,
 
             (HirTyKind::Err(_), _) | (_, HirTyKind::Err(_)) => false,
             (HirTyKind::Placeholder, _) | (_, HirTyKind::Placeholder) => false,
@@ -246,58 +243,46 @@ impl HirTyKind {
     pub fn can_be_initialized_with(&self, other: &HirTyKind) -> bool {
         match (self, other) {
             (HirTyKind::Primitive(PrimitiveType::Any), _) => true,
-            (HirTyKind::Ref(ty1, _), ty2) => ty1.can_be_initialized_with(ty2),
-            (HirTyKind::Ptr(ty1, _), ty2) => ty1.can_be_initialized_with(ty2),
-            (HirTyKind::Mut(ty1), ty2) => ty1.as_ref().can_be_initialized_with(ty2),
-            (ty1, HirTyKind::Mut(ty2)) => ty1.can_be_initialized_with(ty2.as_ref()),
-            (HirTyKind::Array(ty1, _), HirTyKind::Array(ty2, _)) => {
-                ty1.can_be_initialized_with(ty2)
+
+            (HirTyKind::Ptr(ty1, _), HirTyKind::Ref(ty2, _)) => ty1.simple_eq(ty2),
+
+            (HirTyKind::Ptr(ty1, m), HirTyKind::Ptr(ty2, m1)) => {
+                ty1.simple_eq(ty2) && (*m == *m1 || *m == Mutable::No)
             }
+            (HirTyKind::Ptr(_, Mutable::Yes), _) => false,
+
+            (HirTyKind::Mut(ty1), ty2) => ty1.can_be_initialized_with(ty2),
+            (ty1, HirTyKind::Mut(ty2)) => ty1.can_be_initialized_with(ty2),
+
             (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.can_be_initialized_with(ty2),
+
             (HirTyKind::Primitive(p1), HirTyKind::Primitive(p2)) => p1 == p2,
+
+            (HirTyKind::Result(ok1, err1), HirTyKind::Result(ok2, err2)) => {
+                ok1.can_be_initialized_with(ok2) && err1.can_be_initialized_with(err2)
+            }
+            (HirTyKind::Option(ty1), HirTyKind::Option(ty2)) => ty1.can_be_initialized_with(ty2),
+            (HirTyKind::Some(val1), HirTyKind::Some(val2)) => val1.can_be_initialized_with(val2),
+            (HirTyKind::None, HirTyKind::None) => true,
+            (HirTyKind::Option(val1), HirTyKind::Some(val2)) => val1.can_be_initialized_with(val2),
+            (HirTyKind::Some(val1), HirTyKind::Option(val2)) => val1.can_be_initialized_with(val2),
+            (HirTyKind::Option(_), HirTyKind::None) => true,
+            (HirTyKind::None, HirTyKind::Option(_)) => true,
+            (HirTyKind::Some(_), HirTyKind::None) => false,
+            (HirTyKind::None, HirTyKind::Some(_)) => false,
+
             (
                 HirTyKind::Ident {
                     ident: id1,
                     generics: gen1,
-                    is_generic: is_gen1,
+                    is_generic: g1,
                 },
                 HirTyKind::Ident {
                     ident: id2,
                     generics: gen2,
-                    is_generic: is_gen2,
+                    is_generic: g2,
                 },
-            ) => id1.to_string() == id2.to_string() && gen1 == gen2 && is_gen1 == is_gen2,
-
-            // Result-related matches
-            (HirTyKind::Result(ok1, err1), HirTyKind::Result(ok2, err2)) => {
-                ok1.can_be_initialized_with(ok2) && err1.can_be_initialized_with(err2)
-            }
-            (HirTyKind::ResultOk(ok1), HirTyKind::ResultOk(ok2)) => {
-                ok1.can_be_initialized_with(ok2)
-            }
-            (HirTyKind::ResultErr(err1), HirTyKind::ResultErr(err2)) => {
-                err1.can_be_initialized_with(err2)
-            }
-            (HirTyKind::ResultOk(_), HirTyKind::ResultErr(_)) => false,
-            (HirTyKind::ResultErr(_), HirTyKind::ResultOk(_)) => false,
-            (HirTyKind::Result(ok, _), HirTyKind::ResultOk(ok1)) => ok.can_be_initialized_with(ok1),
-            (HirTyKind::Result(_, err), HirTyKind::ResultErr(err1)) => {
-                err.can_be_initialized_with(err1)
-            }
-            (HirTyKind::ResultOk(ok), HirTyKind::Result(ok1, _)) => ok.can_be_initialized_with(ok1),
-            (HirTyKind::ResultErr(err), HirTyKind::Result(_, err1)) => {
-                err.can_be_initialized_with(err1)
-            }
-
-            (HirTyKind::Option(ty1), HirTyKind::Option(ty2)) => ty1.can_be_initialized_with(ty2),
-            (HirTyKind::Some(val1), HirTyKind::Some(val2)) => val1.can_be_initialized_with(val2),
-            (HirTyKind::None, HirTyKind::None) => true,
-            (HirTyKind::Some(_), HirTyKind::None) => false,
-            (HirTyKind::None, HirTyKind::Some(_)) => false,
-            (HirTyKind::Option(val), HirTyKind::Some(val1)) => val.can_be_initialized_with(val1),
-            (HirTyKind::Some(val), HirTyKind::Option(val1)) => val.can_be_initialized_with(val1),
-            (HirTyKind::Option(_), HirTyKind::None) => true,
-            (HirTyKind::None, HirTyKind::Option(_)) => true,
+            ) => id1.to_string() == id2.to_string() && gen1 == gen2 && g1 == g2,
 
             (HirTyKind::Err(_), _) | (_, HirTyKind::Err(_)) => false,
             (HirTyKind::Placeholder, _) | (_, HirTyKind::Placeholder) => false,
@@ -360,10 +345,6 @@ impl HirTyKind {
     pub fn can_be_logically_compared_to(&self, other: &HirTyKind) -> bool {
         match (self, other) {
             (HirTyKind::Primitive(_), HirTyKind::Primitive(_)) => true,
-            // TODO: depends if the length changes the type
-            (HirTyKind::Array(ty1, _), HirTyKind::Array(ty2, _)) => {
-                ty1.can_be_logically_compared_to(&ty2)
-            }
             (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1.can_be_logically_compared_to(&ty2),
             (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.can_be_logically_compared_to(&ty2),
             _ => false,
@@ -397,10 +378,7 @@ impl HirTyKind {
     /// Basically if type from type declaration can be directly used as an inferred type
     pub fn can_be_directly_used(&self) -> bool {
         match self {
-            HirTyKind::Primitive(_)
-            | HirTyKind::Array(_, _)
-            | HirTyKind::Ptr(_, _)
-            | HirTyKind::Ref(_, _) => true,
+            HirTyKind::Primitive(_) | HirTyKind::Ptr(_, _) | HirTyKind::Ref(_, _) => true,
             _ => false,
         }
     }
@@ -453,12 +431,10 @@ impl HirTyKind {
         }
     }
 
-    pub fn is_array_like(&self) -> bool {
+    pub fn is_vector(&self) -> bool {
         match self {
-            HirTyKind::Array(_, _) | HirTyKind::Vec(_) => true,
-            HirTyKind::Ptr(ty, _) | HirTyKind::Ref(ty, _) | HirTyKind::Mut(ty) => {
-                ty.is_array_like()
-            }
+            HirTyKind::Vec(_) => true,
+            HirTyKind::Ptr(ty, _) | HirTyKind::Ref(ty, _) | HirTyKind::Mut(ty) => ty.is_vector(),
             _ => false,
         }
     }

@@ -172,7 +172,6 @@ impl CppCodegen {
                 "vector",
                 "cstdint",
                 "expected",
-                "array",
                 "any",
                 "source_location",
                 "cstdlib",

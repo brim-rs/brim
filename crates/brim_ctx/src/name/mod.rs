@@ -200,9 +200,7 @@ impl<'a> NameResolver<'a> {
 
     fn resolve_type(&mut self, ty: Ty) {
         match &ty.kind {
-            TyKind::Ref(ty, _) | TyKind::Ptr(ty, _) | TyKind::Array(ty, _) => {
-                self.resolve_type(*ty.clone())
-            }
+            TyKind::Ref(ty, _) | TyKind::Ptr(ty, _) => self.resolve_type(*ty.clone()),
             TyKind::Mut(ty) | TyKind::Vec(ty) => self.resolve_type(*ty.clone()),
             TyKind::Result(ok, err) => {
                 self.resolve_type(*ok.clone());
