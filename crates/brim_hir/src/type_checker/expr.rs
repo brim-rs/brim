@@ -11,7 +11,7 @@ use crate::{
 };
 use brim_ast::ty::PrimitiveType;
 
-use super::errors::CannotInitializeWithVoid;
+use super::errors::{CannotInitializeWithVoid, TernaryTypeMismatch};
 
 impl TypeChecker {
     pub fn check_expr(&mut self, expr: HirExpr) {
@@ -127,6 +127,19 @@ impl TypeChecker {
             }
             HirExprKind::Unary(op, operand) => {
                 self.check_expr(*operand);
+            }
+            HirExprKind::Ternary(cond, then, else_) => {
+                self.check_expr(*cond);
+                self.check_expr(*then.clone());
+                self.check_expr(*else_.clone());
+
+                if then.ty != else_.ty {
+                    self.ctx.emit_impl(TernaryTypeMismatch {
+                        span: (then.span.to(else_.span), self.mod_id),
+                        then_ty: then.ty.clone(),
+                        else_ty: else_.ty.clone(),
+                    });
+                }
             }
             HirExprKind::Var(_) | HirExprKind::Literal(_) | HirExprKind::Dummy => {}
             _ => todo!("missing implementation for {:?}", expr),

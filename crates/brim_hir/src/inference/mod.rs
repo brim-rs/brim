@@ -782,6 +782,13 @@ impl<'a> TypeInference<'a> {
                 }
             }
             HirExprKind::Dummy => &expr.ty.clone(),
+            HirExprKind::Ternary(cond, then_expr, else_expr) => {
+                self.infer_expr(cond);
+                self.infer_expr(then_expr);
+                self.infer_expr(else_expr);
+
+                &then_expr.ty
+            }
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
 

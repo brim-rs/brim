@@ -197,3 +197,10 @@ pub struct IfAsExpressionError {
     #[error]
     pub span: (Span, usize),
 }
+
+#[derive(Diagnostic)]
+#[error("expected `:` in a ternary operator.")]
+pub struct ExpectedColonInTernaryError {
+    #[error]
+    pub span: (Span, usize),
+}

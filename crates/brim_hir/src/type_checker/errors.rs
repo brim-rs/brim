@@ -75,3 +75,14 @@ pub struct CannotInitializeWithVoid {
     #[error]
     pub span: (Span, usize),
 }
+
+#[derive(Diagnostic)]
+#[error(
+    "then and else arms of a ternary operator must have the same type. they are `{then_ty}` and `{else_ty}`"
+)]
+pub struct TernaryTypeMismatch {
+    #[error]
+    pub span: (Span, usize),
+    pub then_ty: HirTyKind,
+    pub else_ty: HirTyKind,
+}

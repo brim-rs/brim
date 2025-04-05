@@ -1,4 +1,4 @@
-use super::errors::{ExpectedStringLiteralError, IfAsExpressionError};
+use super::errors::{ExpectedColonInTernaryError, ExpectedStringLiteralError, IfAsExpressionError};
 use crate::{
     parser::{
         PResult, PToken, PTokenKind, Parser, ParsingContext,
@@ -29,7 +29,7 @@ impl Parser {
     }
 
     fn parse_assignment_expr(&mut self) -> PResult<Expr> {
-        let expr = self.parse_binary_expression()?;
+        let expr = self.parse_ternary_expr()?;
 
         if let Some(op) = self.current().is_compound_assign() {
             debug!("Found compound assignment operator: {:?}", op);
@@ -54,6 +54,37 @@ impl Parser {
         }
 
         Ok(expr)
+    }
+
+    fn parse_ternary_expr(&mut self) -> PResult<Expr> {
+        let condition = self.parse_binary_expression()?;
+
+        if self.current().kind == TokenKind::QuestionMark {
+            debug!("Found ternary operator");
+            self.advance();
+
+            let true_expr = self.parse_expr()?;
+
+            if self.current().kind == TokenKind::Colon {
+                self.advance();
+                let false_expr = self.parse_assignment_expr()?;
+
+                return Ok(self.new_expr(
+                    condition.span.to(false_expr.span),
+                    ExprKind::Ternary(
+                        Box::new(condition),
+                        Box::new(true_expr),
+                        Box::new(false_expr),
+                    ),
+                ));
+            } else {
+                box_diag!(ExpectedColonInTernaryError {
+                    span: (self.current().span, self.file),
+                })
+            }
+        }
+
+        Ok(condition)
     }
 
     pub fn parse_binary_expression(&mut self) -> PResult<Expr> {
@@ -156,186 +187,18 @@ impl Parser {
 
                     debug!("Parsed index expression");
                 }
-                TokenKind::QuestionMark => {
+                TokenKind::Bang => {
                     self.advance();
-
                     primary = self.new_expr(
                         primary.span.to(self.prev().span),
                         ExprKind::Unwrap(Box::new(primary)),
-                    )
+                    );
                 }
                 _ => break,
             }
         }
 
         Ok(primary)
-    }
-
-    pub fn validate_suffix(&mut self, lit: Lit) -> PResult<()> {
-        if let Some(sym) = lit.suffix {
-            let suffix = sym.to_string();
-            let span = sym.span;
-
-            // Integer can be turned into a float but not the other way around
-            let valid_suffixes = match lit.kind {
-                LitKind::Integer => vec![
-                    "u8", "u16", "u32", "u64", "usize", "i8", "i16", "i32", "i64", "isize", "f32",
-                    "f64",
-                ],
-                LitKind::Float => vec!["f32", "f64"],
-                _ => vec![],
-            };
-            let msg = if valid_suffixes.is_empty() {
-                "This literal doesn't expect any suffix".to_string()
-            } else {
-                format!(
-                    "This literal expects one of the following suffixes: {}",
-                    valid_suffixes.join(", ")
-                )
-            };
-
-            // This means that the suffix is not expected in the literal
-            if valid_suffixes.is_empty() {
-                self.emit(UnexpectedLiteralSuffix {
-                    lit,
-                    span: (span, self.file),
-                    note: msg,
-                });
-            } else if !valid_suffixes.contains(&suffix.as_str()) {
-                self.emit(InvalidLiteralSuffix {
-                    lit,
-                    span: (span, self.file),
-                    note: msg,
-                });
-            }
-        }
-
-        Ok(())
-    }
-
-    fn expect_fat_arrow(&mut self) -> PResult<()> {
-        if !self.eat(TokenKind::FatArrow) {
-            box_diag!(MissingFatArrowError {
-                found: self.current().kind,
-                span: (self.current().span, self.file),
-            });
-        }
-
-        Ok(())
-    }
-
-    fn parse_match_expression(&mut self) -> PResult<Expr> {
-        if !self.eat_keyword(ptok!(Match)) {
-            box_diag!(UnexpectedTokenInMatch {
-                found: self.current().kind,
-                span: (self.current().span, self.file),
-            });
-        }
-
-        let start_span = self.prev().span;
-        let subject_expr = self.parse_expr()?;
-
-        if !self.is_brace(Orientation::Open) {
-            self.dcx.emit_impl(UnexpectedTokenInMatch {
-                found: self.current().kind,
-                span: (self.current().span, self.file),
-            });
-        } else {
-            self.advance();
-        }
-
-        let mut match_arms = Vec::new();
-        let mut has_else_arm = false;
-
-        while !self.is_brace(Orientation::Close) {
-            if self.eat_keyword(ptok!(Else)) {
-                if has_else_arm {
-                    box_diag!(MultipleElseArmsError {
-                        span: (self.prev().span, self.file),
-                    });
-                }
-
-                self.expect_fat_arrow()?;
-                let else_arm = self.parse_else_arm()?;
-                match_arms.push(else_arm);
-                has_else_arm = true;
-                break;
-            }
-
-            let arm = self.parse_match_arm()?;
-            match_arms.push(arm);
-
-            self.eat_possible(TokenKind::Comma);
-
-            if has_else_arm {
-                break;
-            }
-        }
-
-        if !self.is_brace(Orientation::Close) {
-            self.dcx.emit_impl(UnexpectedTokenInMatch {
-                found: self.current().kind,
-                span: (self.current().span, self.file),
-            });
-        } else {
-            self.advance();
-        }
-
-        if match_arms.is_empty() {
-            box_diag!(EmptyMatchExpressionError {
-                span: (start_span, self.file),
-            });
-        }
-
-        Ok(self.new_expr(
-            start_span.to(self.prev().span),
-            ExprKind::Match(Box::new(subject_expr), match_arms),
-        ))
-    }
-
-    fn parse_match_arm(&mut self) -> PResult<MatchArm> {
-        let pattern = self.parse_expr()?;
-
-        self.expect_fat_arrow()?;
-        let arm_expr = self.parse_expr_or_block()?;
-
-        self.eat_possible(TokenKind::Comma);
-
-        Ok(MatchArm::Case(pattern, arm_expr))
-    }
-
-    fn parse_else_arm(&mut self) -> PResult<MatchArm> {
-        let else_expr = self.parse_expr_or_block()?;
-
-        Ok(MatchArm::Else(else_expr))
-    }
-
-    fn parse_expr_or_block(&mut self) -> PResult<Expr> {
-        if self.is_brace(Orientation::Open) {
-            self.advance();
-            let block = self.parse_block(true)?;
-            Ok(self.new_expr(block.span, ExprKind::Block(block)))
-        } else {
-            self.parse_expr()
-        }
-    }
-
-    pub fn expect_str_literal(&mut self) -> PResult<String> {
-        match self.current().kind {
-            TokenKind::Literal(lit) => match lit.kind {
-                LitKind::Str => {
-                    self.advance();
-
-                    Ok(lit.symbol.to_string())
-                }
-                _ => box_diag!(ExpectedStringLiteralError {
-                    span: (self.current().span, self.file)
-                }),
-            },
-            _ => box_diag!(ExpectedStringLiteralError {
-                span: (self.current().span, self.file)
-            }),
-        }
     }
 
     pub fn parse_primary_expr(&mut self) -> PResult<Expr> {
@@ -581,6 +444,173 @@ impl Parser {
                     span: (self.current().span, self.file),
                 })
             }
+        }
+    }
+
+    pub fn validate_suffix(&mut self, lit: Lit) -> PResult<()> {
+        if let Some(sym) = lit.suffix {
+            let suffix = sym.to_string();
+            let span = sym.span;
+
+            // Integer can be turned into a float but not the other way around
+            let valid_suffixes = match lit.kind {
+                LitKind::Integer => vec![
+                    "u8", "u16", "u32", "u64", "usize", "i8", "i16", "i32", "i64", "isize", "f32",
+                    "f64",
+                ],
+                LitKind::Float => vec!["f32", "f64"],
+                _ => vec![],
+            };
+            let msg = if valid_suffixes.is_empty() {
+                "This literal doesn't expect any suffix".to_string()
+            } else {
+                format!(
+                    "This literal expects one of the following suffixes: {}",
+                    valid_suffixes.join(", ")
+                )
+            };
+
+            // This means that the suffix is not expected in the literal
+            if valid_suffixes.is_empty() {
+                self.emit(UnexpectedLiteralSuffix {
+                    lit,
+                    span: (span, self.file),
+                    note: msg,
+                });
+            } else if !valid_suffixes.contains(&suffix.as_str()) {
+                self.emit(InvalidLiteralSuffix {
+                    lit,
+                    span: (span, self.file),
+                    note: msg,
+                });
+            }
+        }
+
+        Ok(())
+    }
+
+    fn expect_fat_arrow(&mut self) -> PResult<()> {
+        if !self.eat(TokenKind::FatArrow) {
+            box_diag!(MissingFatArrowError {
+                found: self.current().kind,
+                span: (self.current().span, self.file),
+            });
+        }
+
+        Ok(())
+    }
+
+    fn parse_match_expression(&mut self) -> PResult<Expr> {
+        if !self.eat_keyword(ptok!(Match)) {
+            box_diag!(UnexpectedTokenInMatch {
+                found: self.current().kind,
+                span: (self.current().span, self.file),
+            });
+        }
+
+        let start_span = self.prev().span;
+        let subject_expr = self.parse_expr()?;
+
+        if !self.is_brace(Orientation::Open) {
+            self.dcx.emit_impl(UnexpectedTokenInMatch {
+                found: self.current().kind,
+                span: (self.current().span, self.file),
+            });
+        } else {
+            self.advance();
+        }
+
+        let mut match_arms = Vec::new();
+        let mut has_else_arm = false;
+
+        while !self.is_brace(Orientation::Close) {
+            if self.eat_keyword(ptok!(Else)) {
+                if has_else_arm {
+                    box_diag!(MultipleElseArmsError {
+                        span: (self.prev().span, self.file),
+                    });
+                }
+
+                self.expect_fat_arrow()?;
+                let else_arm = self.parse_else_arm()?;
+                match_arms.push(else_arm);
+                has_else_arm = true;
+                break;
+            }
+
+            let arm = self.parse_match_arm()?;
+            match_arms.push(arm);
+
+            self.eat_possible(TokenKind::Comma);
+
+            if has_else_arm {
+                break;
+            }
+        }
+
+        if !self.is_brace(Orientation::Close) {
+            self.dcx.emit_impl(UnexpectedTokenInMatch {
+                found: self.current().kind,
+                span: (self.current().span, self.file),
+            });
+        } else {
+            self.advance();
+        }
+
+        if match_arms.is_empty() {
+            box_diag!(EmptyMatchExpressionError {
+                span: (start_span, self.file),
+            });
+        }
+
+        Ok(self.new_expr(
+            start_span.to(self.prev().span),
+            ExprKind::Match(Box::new(subject_expr), match_arms),
+        ))
+    }
+
+    fn parse_match_arm(&mut self) -> PResult<MatchArm> {
+        let pattern = self.parse_expr()?;
+
+        self.expect_fat_arrow()?;
+        let arm_expr = self.parse_expr_or_block()?;
+
+        self.eat_possible(TokenKind::Comma);
+
+        Ok(MatchArm::Case(pattern, arm_expr))
+    }
+
+    fn parse_else_arm(&mut self) -> PResult<MatchArm> {
+        let else_expr = self.parse_expr_or_block()?;
+
+        Ok(MatchArm::Else(else_expr))
+    }
+
+    fn parse_expr_or_block(&mut self) -> PResult<Expr> {
+        if self.is_brace(Orientation::Open) {
+            self.advance();
+            let block = self.parse_block(true)?;
+            Ok(self.new_expr(block.span, ExprKind::Block(block)))
+        } else {
+            self.parse_expr()
+        }
+    }
+
+    pub fn expect_str_literal(&mut self) -> PResult<String> {
+        match self.current().kind {
+            TokenKind::Literal(lit) => match lit.kind {
+                LitKind::Str => {
+                    self.advance();
+
+                    Ok(lit.symbol.to_string())
+                }
+                _ => box_diag!(ExpectedStringLiteralError {
+                    span: (self.current().span, self.file)
+                }),
+            },
+            _ => box_diag!(ExpectedStringLiteralError {
+                span: (self.current().span, self.file)
+            }),
         }
     }
 

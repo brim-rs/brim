@@ -5,7 +5,7 @@ extern "C" {
 
     fn WriteFile(
         hFile: HANDLE,
-        lpBuffer: *u8[],
+        lpBuffer: *const u8,
         nNumberOfBytesToWrite: DWORD,
         lpNumberOfBytesWritten: *DWORD?,
         lpOverlapped: *OVERLAPPED?

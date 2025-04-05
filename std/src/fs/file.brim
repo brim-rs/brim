@@ -20,11 +20,11 @@ pub struct Handle {
                 .InternalHigh = 0,
                 .Anonymous = OVERLAPPED_0 {
                     .Anonymous = OVERLAPPED_0_0 {
-                        .Offset = @cast(offset?, DWORD),
-                        .OffsetHigh = @cast((offset? >> 32), DWORD),
+                        .Offset = @cast(offset!, DWORD),
+                        .OffsetHigh = @cast((offset! >> 32), DWORD),
                     },
                 },
-                .hEvent = @none(),
+                .hEvent = @none()
             }) : @none();
 
         if WriteFile(self.inner, &data, data.len, &bytes_written, overlapped) == 0 {}
