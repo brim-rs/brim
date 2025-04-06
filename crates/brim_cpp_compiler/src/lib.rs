@@ -293,6 +293,7 @@ impl CppBuild {
         } else {
             "-w"
         });
+        self.add_flag("-Waddress-of-temporary");
         self
     }
 

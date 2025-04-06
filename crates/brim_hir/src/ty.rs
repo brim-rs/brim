@@ -24,6 +24,8 @@ pub enum HirTyKind {
     Ptr(Box<HirTyKind>, Mutable),
     /// Mut type eg. `mut T` (brim) -> `T` (C++)
     Mut(Box<HirTyKind>),
+    /// Const type eg. `const T` (brim) -> `const T` (C++)
+    Const(Box<HirTyKind>),
     /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim
     /// is the same as array in C++.
     Vec(Box<HirTyKind>),
@@ -69,6 +71,7 @@ impl Display for HirTyKind {
                 write!(f, "*{}{}", const_str, ty)
             }
             HirTyKind::Mut(ty) => write!(f, "mut {}", ty),
+            HirTyKind::Const(ty) => write!(f, "const {}", ty),
             HirTyKind::Vec(ty) => write!(f, "{}[]", ty),
             HirTyKind::Primitive(p) => write!(f, "{}", p),
             HirTyKind::Ident {
@@ -145,8 +148,8 @@ impl HirTyKind {
             (HirTyKind::Option(ty1), HirTyKind::Option(ty2)) => ty1.simple_eq(ty2),
             (HirTyKind::Some(val1), HirTyKind::Some(val2)) => val1.simple_eq(val2),
             (HirTyKind::None, HirTyKind::None) => true,
-            (HirTyKind::Some(_), HirTyKind::None) => false,
-            (HirTyKind::None, HirTyKind::Some(_)) => false,
+            (HirTyKind::Some(_), HirTyKind::None) => true,
+            (HirTyKind::None, HirTyKind::Some(_)) => true,
             (HirTyKind::Option(val1), HirTyKind::Some(val2)) => val1.simple_eq(val2),
             (HirTyKind::Some(val1), HirTyKind::Option(val2)) => val1.simple_eq(val2),
             (HirTyKind::Option(_), HirTyKind::None) => true,
@@ -181,10 +184,13 @@ impl HirTyKind {
                 param_ty.simple_eq(arg_ty) && (*mp == *ma || *mp == Mutable::No)
             }
             (HirTyKind::Ptr(_, _), _) => false,
+            (HirTyKind::Const(ty1), HirTyKind::Const(ty2)) => ty1.simple_eq(ty2),
+            (HirTyKind::Const(ty1), ty2) => ty1.simple_eq(ty2),
+            (ty1, HirTyKind::Const(ty2)) => ty1.simple_eq(ty2),
 
             (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1.simple_eq(ty2),
 
-            (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.simple_eq(ty2),
+            (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.can_be_an_arg_for_param(ty2),
 
             (HirTyKind::Primitive(p1), HirTyKind::Primitive(p2)) => p1 == p2,
 

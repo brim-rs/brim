@@ -48,6 +48,8 @@ pub enum TyKind {
     Ptr(Box<Ty>, Mutable),
     /// Mutable type eg. `mut T` (brim) -> `T` (C++)
     Mut(Box<Ty>),
+    /// Const type eg. `const T` (brim) -> `const T` (C++)
+    Const(Box<Ty>),
     /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim
     /// is the same as array in C++.
     Vec(Box<Ty>),

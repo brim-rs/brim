@@ -113,6 +113,7 @@ impl<'a> TypeInference<'a> {
                 HirTyKind::Ptr(Box::new(self.resolve_type_alias(inner)), m.clone())
             }
             HirTyKind::Mut(inner) => HirTyKind::Mut(Box::new(self.resolve_type_alias(inner))),
+            HirTyKind::Const(inner) => HirTyKind::Const(Box::new(self.resolve_type_alias(inner))),
             HirTyKind::Vec(inner) => HirTyKind::Vec(Box::new(self.resolve_type_alias(inner))),
             HirTyKind::Ident {
                 ident,
@@ -1165,6 +1166,9 @@ impl<'a> TypeInference<'a> {
                 self.replace_generics_recursive(inner, generic_types);
             }
             HirTyKind::Mut(inner) => {
+                self.replace_generics_recursive(inner, generic_types);
+            }
+            HirTyKind::Const(inner) => {
                 self.replace_generics_recursive(inner, generic_types);
             }
             HirTyKind::Vec(inner) => {

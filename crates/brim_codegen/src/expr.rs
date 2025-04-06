@@ -141,6 +141,13 @@ impl CppCodegen {
                 HirTyKind::None => "std::nullopt".to_string(),
                 _ => unreachable!(),
             },
+            HirExprKind::Ternary(cond, then_block, else_block) => {
+                let cond_code = self.generate_expr(*cond);
+                let then_code = self.generate_expr(*then_block);
+                let else_code = self.generate_expr(*else_block);
+
+                format!("({} ? {} : {})", cond_code, then_code, else_code)
+            }
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         };
 

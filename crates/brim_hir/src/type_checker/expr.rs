@@ -45,6 +45,7 @@ impl TypeChecker {
                 let ident = func.as_ident().unwrap().to_string();
 
                 for (arg_expr, param) in args.iter().zip(call_params) {
+                    println!("{:#?} -> {:#?}", arg_expr.ty, param.ty);
                     if !arg_expr.ty.can_be_an_arg_for_param(&param.ty) {
                         self.ctx.emit_impl(FunctionParameterTypeMismatch {
                             span: (arg_expr.span, self.mod_id),
@@ -133,7 +134,7 @@ impl TypeChecker {
                 self.check_expr(*then.clone());
                 self.check_expr(*else_.clone());
 
-                if then.ty != else_.ty {
+                if !then.ty.simple_eq(&else_.ty) {
                     self.ctx.emit_impl(TernaryTypeMismatch {
                         span: (then.span.to(else_.span), self.mod_id),
                         then_ty: then.ty.clone(),

@@ -3,7 +3,7 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Mut, Type,
+    Const, Mut, Type,
     expr::{Expr, ExprKind},
     item::{Block, Ident, ItemKind, TypeAlias, TypeAliasValue},
     stmts::{Stmt, StmtKind},
@@ -35,6 +35,10 @@ impl Parser {
             self.eat_keyword(ptok!(Mut));
             let inner_ty = self.parse_type_core()?;
             TyKind::Mut(Box::new(inner_ty))
+        } else if self.current().is_keyword(Const) {
+            self.eat_keyword(ptok!(Const));
+            let inner_ty = self.parse_type_core()?;
+            TyKind::Const(Box::new(inner_ty))
         } else {
             let ident = self.parse_ident()?;
 

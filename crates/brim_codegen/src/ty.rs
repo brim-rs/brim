@@ -68,6 +68,11 @@ impl CppCodegen {
                 format!("{}", ty)
             }
 
+            HirTyKind::Const(ty) => {
+                let ty = self.generate_ty(*ty);
+                format!("const {}", ty)
+            }
+
             HirTyKind::Result(ok, err) => {
                 let ok = self.generate_ty(*ok);
                 let err = self.generate_ty(*err);
