@@ -5,6 +5,7 @@ use brim_ast::{
     token::{Lit, LitKind},
 };
 use brim_hir::{
+    Codegen,
     builtin::get_builtin_function,
     expr::{HirExpr, HirExprKind, HirIfStmt, HirStructConstructor},
     ty::HirTyKind,
@@ -71,10 +72,14 @@ impl CppCodegen {
                     .collect::<Vec<String>>();
                 if let Some(last) = idents.last() {
                     let last = last.clone();
+                    vals.pop();
 
                     if last.to_string() == "len" {
-                        vals.pop();
                         vals.push("size()".to_string());
+                    }
+
+                    if last.to_string() == "ptr" {
+                        vals.push("data()".to_string());
                     }
                 };
 
