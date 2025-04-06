@@ -440,7 +440,10 @@ impl HirTyKind {
     pub fn is_vector(&self) -> bool {
         match self {
             HirTyKind::Vec(_) => true,
-            HirTyKind::Ptr(ty, _) | HirTyKind::Ref(ty, _) | HirTyKind::Mut(ty) => ty.is_vector(),
+            HirTyKind::Ptr(ty, _)
+            | HirTyKind::Ref(ty, _)
+            | HirTyKind::Const(ty)
+            | HirTyKind::Mut(ty) => ty.is_vector(),
             _ => false,
         }
     }

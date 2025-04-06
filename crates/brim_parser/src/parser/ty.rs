@@ -67,16 +67,80 @@ impl Parser {
             .current()
             .is_delimiter(Delimiter::Bracket, Orientation::Open)
             && self
-                .next()
-                .is_delimiter(Delimiter::Bracket, Orientation::Close)
+            .next()
+            .is_delimiter(Delimiter::Bracket, Orientation::Close)
         {
             self.expect_obracket()?;
             self.expect_cbracket()?;
-            ty = Ty {
-                span,
-                kind: TyKind::Vec(Box::new(ty)),
-                id: self.new_id(),
-            };
+
+            // Apply the vector modifier with consideration for type modifiers
+            match ty.kind {
+                // For const types, we want const(T[]) not (const T)[]
+                TyKind::Const(inner_ty) => {
+                    let element_ty = *inner_ty;
+                    ty = Ty {
+                        span,
+                        kind: TyKind::Const(Box::new(Ty {
+                            span: element_ty.span,
+                            kind: TyKind::Vec(Box::new(element_ty)),
+                            id: self.new_id(),
+                        })),
+                        id: self.new_id(),
+                    };
+                },
+                // For mut types, we want mut(T[]) not (mut T)[]
+                TyKind::Mut(inner_ty) => {
+                    let element_ty = *inner_ty;
+                    ty = Ty {
+                        span,
+                        kind: TyKind::Mut(Box::new(Ty {
+                            span: element_ty.span,
+                            kind: TyKind::Vec(Box::new(element_ty)),
+                            id: self.new_id(),
+                        })),
+                        id: self.new_id(),
+                    };
+                },
+                // For ref types, apply vec to the inner type: &(T[]) not (&T)[]
+                TyKind::Ref(inner_ty, mutability) => {
+                    let element_ty = *inner_ty;
+                    ty = Ty {
+                        span,
+                        kind: TyKind::Ref(
+                            Box::new(Ty {
+                                span: element_ty.span,
+                                kind: TyKind::Vec(Box::new(element_ty)),
+                                id: self.new_id(),
+                            }),
+                            mutability
+                        ),
+                        id: self.new_id(),
+                    };
+                },
+                // For ptr types, apply vec to the inner type: *(T[]) not (*T)[]
+                TyKind::Ptr(inner_ty, mutability) => {
+                    let element_ty = *inner_ty;
+                    ty = Ty {
+                        span,
+                        kind: TyKind::Ptr(
+                            Box::new(Ty {
+                                span: element_ty.span,
+                                kind: TyKind::Vec(Box::new(element_ty)),
+                                id: self.new_id(),
+                            }),
+                            mutability
+                        ),
+                        id: self.new_id(),
+                    };
+                },
+                _ => {
+                    ty = Ty {
+                        span,
+                        kind: TyKind::Vec(Box::new(ty)),
+                        id: self.new_id(),
+                    };
+                }
+            }
         }
 
         // Handle Result type
