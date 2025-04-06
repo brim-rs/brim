@@ -872,9 +872,20 @@ impl<'a> TypeInference<'a> {
                     }
                 }
             }
-        } else if ty.is_vector() {
+        } else if let Some(new_ty) = ty.is_vector() {
             if current_ident.to_string() == "len" {
                 return Some(HirTyKind::Primitive(PrimitiveType::Usize));
+            }
+
+            if current_ident.to_string() == "ptr" {
+                return if ty.is_const_vector() {
+                    Some(HirTyKind::Ptr(
+                        Box::from(HirTyKind::Const(Box::new(new_ty.clone()))),
+                        Mutable::No,
+                    ))
+                } else {
+                    Some(HirTyKind::Ptr(Box::new(new_ty.clone()), Mutable::Yes))
+                };
             }
         }
 

@@ -179,16 +179,17 @@ impl HirTyKind {
         match (param, self) {
             (HirTyKind::Primitive(PrimitiveType::Any), _) => true,
 
-            (HirTyKind::Ptr(ptr, _), HirTyKind::Ref(ref_ty, _)) => ptr.simple_eq(ref_ty),
-            (HirTyKind::Ptr(param_ty, mp), HirTyKind::Ptr(arg_ty, ma)) => {
-                param_ty.simple_eq(arg_ty) && (*mp == *ma || *mp == Mutable::No)
+            (HirTyKind::Ptr(param_ty, mp), HirTyKind::Ref(arg_ty, ma)) => {
+                param_ty.can_be_an_arg_for_param(arg_ty) && *mp == *ma
             }
-            (HirTyKind::Ptr(_, _), _) => false,
-            (HirTyKind::Const(ty1), HirTyKind::Const(ty2)) => ty1.simple_eq(ty2),
-            (HirTyKind::Const(ty1), ty2) => ty1.simple_eq(ty2),
-            (ty1, HirTyKind::Const(ty2)) => ty1.simple_eq(ty2),
+            (HirTyKind::Ptr(param_ty, mp), HirTyKind::Ptr(arg_ty, ma)) => {
+                param_ty.can_be_an_arg_for_param(arg_ty) && *mp == *ma
+            }
+            (HirTyKind::Const(ty1), HirTyKind::Const(ty2)) => ty1.can_be_an_arg_for_param(ty2),
+            (HirTyKind::Const(ty1), ty2) => ty1.can_be_an_arg_for_param(ty2),
+            (ty1, HirTyKind::Const(ty2)) => ty1.can_be_an_arg_for_param(ty2),
 
-            (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1.simple_eq(ty2),
+            (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1.can_be_an_arg_for_param(ty2),
 
             (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.can_be_an_arg_for_param(ty2),
 
@@ -218,10 +219,10 @@ impl HirTyKind {
 
             (HirTyKind::Option(ty1), HirTyKind::Option(ty2)) => ty1.can_be_an_arg_for_param(ty2),
             (HirTyKind::Some(val1), HirTyKind::Some(val2)) => val1.can_be_an_arg_for_param(val2),
+            (HirTyKind::Option(val1), HirTyKind::Some(val2)) => val2.can_be_an_arg_for_param(val1),
             (HirTyKind::None, HirTyKind::None) => true,
             (HirTyKind::Some(_), HirTyKind::None) => false,
             (HirTyKind::None, HirTyKind::Some(_)) => false,
-            (HirTyKind::Option(val1), HirTyKind::Some(val2)) => val1.can_be_an_arg_for_param(val2),
             (HirTyKind::Some(val1), HirTyKind::Option(val2)) => val1.can_be_an_arg_for_param(val2),
             (HirTyKind::Option(_), HirTyKind::None) => true,
             (HirTyKind::None, HirTyKind::Option(_)) => true,
@@ -437,13 +438,23 @@ impl HirTyKind {
         }
     }
 
-    pub fn is_vector(&self) -> bool {
+    pub fn is_vector(&self) -> Option<HirTyKind> {
         match self {
-            HirTyKind::Vec(_) => true,
+            HirTyKind::Vec(ty) => Some(*ty.clone()),
             HirTyKind::Ptr(ty, _)
             | HirTyKind::Ref(ty, _)
             | HirTyKind::Const(ty)
             | HirTyKind::Mut(ty) => ty.is_vector(),
+            _ => None,
+        }
+    }
+
+    pub fn is_const_vector(&self) -> bool {
+        match self {
+            HirTyKind::Ptr(ty, mutable) | HirTyKind::Ref(ty, mutable) => {
+                ty.is_vector().is_some() && mutable == &Mutable::Yes
+            }
+            HirTyKind::Const(ty) => ty.is_vector().is_some(),
             _ => false,
         }
     }
