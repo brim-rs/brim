@@ -1,6 +1,6 @@
 mod windows::kernel32;
 
-pub type HANDLE = any;
+pub type HANDLE = *void;
 pub type DWORD = u32;
 pub type BOOL = i32;
 

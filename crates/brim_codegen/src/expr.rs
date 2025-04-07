@@ -72,18 +72,19 @@ impl CppCodegen {
                     .collect::<Vec<String>>();
                 if let Some(last) = idents.last() {
                     let last = last.clone();
-                    vals.pop();
 
                     if last.to_string() == "len" {
+                        vals.pop();
                         vals.push("size()".to_string());
                     }
 
                     if last.to_string() == "ptr" {
+                        vals.pop();
                         vals.push("data()".to_string());
                     }
                 };
 
-                format!("brim_{}", vals.join("."),)
+                format!("brim_{}", vals.join("."))
             }
             HirExprKind::If(ref if_stmt) => self.generate_if_stmt(if_stmt.clone()),
             HirExprKind::Array(exprs) => self.generate_array_expr(exprs),
@@ -296,7 +297,13 @@ impl CppCodegen {
     pub fn generate_lit(&mut self, lit: Lit, expr_ty: HirTyKind) -> String {
         match lit.kind {
             LitKind::Integer | LitKind::Float => {
-                if let Some(suffix) = lit.suffix {
+                if let HirTyKind::Placeholder = expr_ty {
+                    if let Some(suffix) = lit.suffix {
+                        format!("{}{}", lit.symbol, self.generate_suffix(suffix.to_string()))
+                    } else {
+                        lit.symbol.to_string()
+                    }
+                } else if let Some(suffix) = lit.suffix {
                     format!(
                         "{}({}{})",
                         self.generate_ty(expr_ty),
