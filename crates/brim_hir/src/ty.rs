@@ -418,7 +418,7 @@ impl HirTyKind {
 
     pub fn is_option(&self) -> Option<HirTyKind> {
         match self {
-            HirTyKind::Option(ty) => Some(*ty.clone()),
+            HirTyKind::Option(ty) | HirTyKind::Const(ty) => Some(*ty.clone()),
             _ => None,
         }
     }

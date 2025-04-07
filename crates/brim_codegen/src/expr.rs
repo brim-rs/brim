@@ -95,12 +95,23 @@ impl CppCodegen {
                 format!("{} = {};", lhs_code, rhs_code)
             }
             HirExprKind::Unary(op, expr) => {
-                let expr_code = self.generate_expr(*expr);
+                let expr_code = self.generate_expr(*expr.clone());
                 match op {
                     UnaryOp::Minus => format!("-{}", expr_code),
                     UnaryOp::Not => format!("!{}", expr_code),
                     UnaryOp::Deref => format!("*{}", expr_code),
-                    UnaryOp::Ref => format!("&{}", expr_code),
+                    UnaryOp::Ref => {
+                        if let Some(opt) = expr.ty.is_option() {
+                            format!(
+                                "({}.has_value() ? std::optional<{}*>(&{}.value()) : std::nullopt)",
+                                expr_code,
+                                self.generate_ty(opt.clone()),
+                                expr_code
+                            )
+                        } else {
+                            format!("&{}", expr_code)
+                        }
+                    }
                     _ => unimplemented!(),
                 }
             }

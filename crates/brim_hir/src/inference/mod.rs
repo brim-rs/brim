@@ -397,10 +397,18 @@ impl<'a> TypeInference<'a> {
                             });
                         }
 
-                        if ty.is_mutable() {
-                            &HirTyKind::Ref(Box::new(ty.clone()), Mutable::Yes)
+                        if let Some(opt) = ty.is_option() {
+                            &HirTyKind::Option(Box::new(if ty.is_mutable() {
+                                HirTyKind::Ptr(Box::new(opt), Mutable::Yes)
+                            } else {
+                                HirTyKind::Ptr(Box::new(opt), Mutable::No)
+                            }))
                         } else {
-                            &HirTyKind::Ref(Box::new(ty.clone()), Mutable::No)
+                            if ty.is_mutable() {
+                                &HirTyKind::Ptr(Box::new(ty.clone()), Mutable::Yes)
+                            } else {
+                                &HirTyKind::Ptr(Box::new(ty.clone()), Mutable::No)
+                            }
                         }
                     }
                 }

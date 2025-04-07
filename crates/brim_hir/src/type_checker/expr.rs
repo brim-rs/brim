@@ -45,7 +45,9 @@ impl TypeChecker {
                 let ident = func.as_ident().unwrap().to_string();
 
                 for (arg_expr, param) in args.iter().zip(call_params) {
+                    self.check_expr(arg_expr.clone());
                     if !arg_expr.ty.can_be_an_arg_for_param(&param.ty) {
+                        println!("{:#?} {:#?}", arg_expr.ty, param.ty);
                         self.ctx.emit_impl(FunctionParameterTypeMismatch {
                             span: (arg_expr.span, self.mod_id),
                             name: ident.clone(),
@@ -143,7 +145,10 @@ impl TypeChecker {
                     });
                 }
             }
-            HirExprKind::Var(_) | HirExprKind::Literal(_) | HirExprKind::Dummy => {}
+            HirExprKind::Var(_)
+            | HirExprKind::Literal(_)
+            | HirExprKind::Field(_)
+            | HirExprKind::Dummy => {}
             _ => todo!("missing implementation for {:?}", expr),
         }
     }

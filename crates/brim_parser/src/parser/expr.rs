@@ -157,13 +157,14 @@ impl Parser {
     }
 
     fn parse_unary_expr(&mut self) -> PResult<Expr> {
+        let span = self.current().span;
         if let Some(op) = self.peek_unary_op() {
             debug!("Found unary operator: {:?}", op);
 
             self.advance();
             let operand = self.parse_unary_expr()?;
             return Ok(self.new_expr(
-                self.current().span.to(operand.span),
+                span.to(operand.span),
                 ExprKind::Unary(op, Box::new(operand)),
             ));
         }

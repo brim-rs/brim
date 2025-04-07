@@ -14,8 +14,8 @@ pub struct Handle {
 
     fn write(self: &Handle, data: const u8[], offset: u64?) usize!IoError {
         let bytes_written: DWORD = 0;
-        let overlapped: *OVERLAPPED? = offset ?
-             @some(&OVERLAPPED {
+        let overlapped: OVERLAPPED? = offset ?
+             @some(OVERLAPPED {
                 .Internal = 0,
                 .InternalHigh = 0,
                 .Anonymous = OVERLAPPED_0 {
@@ -27,7 +27,7 @@ pub struct Handle {
                 .hEvent = @none()
             }) : @none();
 
-        if WriteFile(self.inner, data.ptr, data.len, @some(&bytes_written), overlapped) == 0 {}
+        if WriteFile(self.inner, data.ptr, data.len, @some(&bytes_written), &overlapped) == 0 {}
 
         return bytes_written;
     }
