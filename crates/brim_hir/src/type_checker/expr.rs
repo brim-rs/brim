@@ -52,15 +52,18 @@ impl TypeChecker {
                     }
                 }
             }
-            HirExprKind::Return(expr) => {
+            HirExprKind::Return(mut expr) => {
                 let func = self.current_fn();
                 let ret_ty = &func.sig.return_type;
+                let expr_ty = &mut expr.ty;
 
-                if !ret_ty.simple_eq(&expr.ty) {
+                HirTyKind::try_promote_type(expr_ty, &func.sig.return_type, false);
+
+                if !ret_ty.simple_eq(expr_ty) {
                     self.ctx.emit_impl(FunctionReturnTypeMismatch {
                         span: (expr.span, self.mod_id),
                         expected: ret_ty.clone(),
-                        found: expr.ty.clone(),
+                        found: expr_ty.clone(),
                         name: func.sig.name.to_string(),
                     });
                 }

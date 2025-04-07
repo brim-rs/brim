@@ -29,7 +29,7 @@ pub struct Handle {
 
         if WriteFile(self.inner, data.ptr, data.len, @some(&bytes_written), &overlapped) == 0 {}
 
-        return bytes_written;
+        return @ok(bytes_written);
     }
 }
 

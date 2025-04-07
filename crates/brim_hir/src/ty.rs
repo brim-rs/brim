@@ -458,4 +458,189 @@ impl HirTyKind {
             _ => false,
         }
     }
+
+    pub fn try_promote_type(
+        source_ty: &mut HirTyKind,
+        target_ty: &HirTyKind,
+        is_let_stmt: bool,
+    ) -> bool {
+        if *source_ty == *target_ty {
+            return true;
+        }
+
+        match (source_ty.clone(), target_ty) {
+            (HirTyKind::Primitive(source_prim), HirTyKind::Primitive(target_prim)) => {
+                if is_let_stmt && PrimitiveType::can_initialize_with_type(&source_prim, target_prim)
+                {
+                    *source_ty = HirTyKind::Primitive(target_prim.clone());
+                    return true;
+                } else if let Some(promoted) =
+                    PrimitiveType::promote_type(&source_prim, target_prim)
+                {
+                    *source_ty = HirTyKind::Primitive(promoted);
+                    return true;
+                }
+            }
+
+            (
+                HirTyKind::Ref(source_inner, source_mut),
+                HirTyKind::Ref(target_inner, target_mut),
+            ) => {
+                if source_mut == *target_mut {
+                    let mut_clone = source_mut.clone(); // Clone the mutability
+                    return HirTyKind::try_promote_wrapped_type(
+                        source_ty,
+                        &source_inner,
+                        target_inner,
+                        is_let_stmt,
+                        move |inner| HirTyKind::Ref(Box::new(inner), mut_clone),
+                    );
+                }
+            }
+
+            (
+                HirTyKind::Ptr(source_inner, source_mut),
+                HirTyKind::Ptr(target_inner, target_mut),
+            ) => {
+                if source_mut == *target_mut {
+                    let mut_clone = source_mut.clone(); // Clone the mutability
+                    return HirTyKind::try_promote_wrapped_type(
+                        source_ty,
+                        &source_inner,
+                        target_inner,
+                        is_let_stmt,
+                        move |inner| HirTyKind::Ptr(Box::new(inner), mut_clone),
+                    );
+                }
+            }
+
+            (HirTyKind::Mut(source_inner), HirTyKind::Mut(target_inner)) => {
+                return HirTyKind::try_promote_wrapped_type(
+                    source_ty,
+                    &source_inner,
+                    target_inner,
+                    is_let_stmt,
+                    |inner| HirTyKind::Mut(Box::new(inner)),
+                );
+            }
+
+            (HirTyKind::Const(source_inner), HirTyKind::Const(target_inner)) => {
+                return HirTyKind::try_promote_wrapped_type(
+                    source_ty,
+                    &source_inner,
+                    target_inner,
+                    is_let_stmt,
+                    |inner| HirTyKind::Const(Box::new(inner)),
+                );
+            }
+
+            (HirTyKind::Vec(source_inner), HirTyKind::Vec(target_inner)) => {
+                return HirTyKind::try_promote_wrapped_type(
+                    source_ty,
+                    &source_inner,
+                    target_inner,
+                    is_let_stmt,
+                    |inner| HirTyKind::Vec(Box::new(inner)),
+                );
+            }
+
+            (
+                HirTyKind::Result(source_ok, source_err),
+                HirTyKind::Result(target_ok, target_err),
+            ) => {
+                let mut new_ok = (*source_ok).clone();
+                let mut new_err = (*source_err).clone();
+                let ok_promoted = HirTyKind::try_promote_type(&mut new_ok, target_ok, is_let_stmt);
+                let err_promoted =
+                    HirTyKind::try_promote_type(&mut new_err, target_err, is_let_stmt);
+
+                if ok_promoted || err_promoted {
+                    *source_ty = HirTyKind::Result(Box::new(new_ok), Box::new(new_err));
+                    return true;
+                }
+            }
+
+            (HirTyKind::ResultOk(source_inner), HirTyKind::Result(ok, err)) => {
+                return HirTyKind::try_promote_wrapped_type(
+                    source_ty,
+                    &source_inner,
+                    ok,
+                    is_let_stmt,
+                    |inner| HirTyKind::ResultOk(Box::new(inner)),
+                );
+            }
+
+            (HirTyKind::ResultErr(source_err), HirTyKind::Result(ok, err)) => {
+                return HirTyKind::try_promote_wrapped_type(
+                    source_ty,
+                    &source_err,
+                    err,
+                    is_let_stmt,
+                    |inner| HirTyKind::ResultErr(Box::new(inner)),
+                );
+            }
+
+            (HirTyKind::Option(source_inner), HirTyKind::Option(target_inner)) => {
+                return HirTyKind::try_promote_wrapped_type(
+                    source_ty,
+                    &source_inner,
+                    target_inner,
+                    is_let_stmt,
+                    |inner| HirTyKind::Option(Box::new(inner)),
+                );
+            }
+
+            (HirTyKind::Some(source_inner), HirTyKind::Some(target_inner)) => {
+                return HirTyKind::try_promote_wrapped_type(
+                    source_ty,
+                    &source_inner,
+                    target_inner,
+                    is_let_stmt,
+                    |inner| HirTyKind::Some(Box::new(inner)),
+                );
+            }
+
+            (HirTyKind::ResultOk(source_inner), HirTyKind::ResultOk(target_inner)) => {
+                return HirTyKind::try_promote_wrapped_type(
+                    source_ty,
+                    &source_inner,
+                    target_inner,
+                    is_let_stmt,
+                    |inner| HirTyKind::ResultOk(Box::new(inner)),
+                );
+            }
+
+            (HirTyKind::ResultErr(source_inner), HirTyKind::ResultErr(target_inner)) => {
+                return HirTyKind::try_promote_wrapped_type(
+                    source_ty,
+                    &source_inner,
+                    target_inner,
+                    is_let_stmt,
+                    |inner| HirTyKind::ResultErr(Box::new(inner)),
+                );
+            }
+
+            _ => {}
+        }
+
+        false
+    }
+
+    fn try_promote_wrapped_type<F>(
+        source_ty: &mut HirTyKind,
+        source_inner: &Box<HirTyKind>,
+        target_inner: &Box<HirTyKind>,
+        is_let_stmt: bool,
+        wrapper_constructor: F,
+    ) -> bool
+    where
+        F: FnOnce(HirTyKind) -> HirTyKind,
+    {
+        let mut inner_source = (**source_inner).clone();
+        if HirTyKind::try_promote_type(&mut inner_source, target_inner, is_let_stmt) {
+            *source_ty = wrapper_constructor(inner_source);
+            return true;
+        }
+        false
+    }
 }
