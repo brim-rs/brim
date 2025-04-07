@@ -18,11 +18,9 @@ impl TypeChecker {
         if let Some(body) = func.body {
             let body = self.hir.get_expr(body);
 
-            self.is_current_block_fn = true;
             self.current_fn = Some(func.clone());
             self.check_expr(body.clone());
             self.current_fn = None;
-            self.is_current_block_fn = false;
 
             if let None = &self.ty_returned_from_fn {
                 if !func.sig.return_type.can_be_ignored() {
