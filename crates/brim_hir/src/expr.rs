@@ -107,6 +107,19 @@ impl HirExprKind {
     pub fn dummy() -> Self {
         HirExprKind::Var(Ident::dummy())
     }
+
+    pub fn is_lvalue(&self) -> bool {
+        match self {
+            HirExprKind::Var(_) => true,
+            HirExprKind::Field(_) => true,
+            HirExprKind::Index(_, _) => true,
+            HirExprKind::StaticAccess(_, _) => true,
+
+            HirExprKind::Unary(UnaryOp::Deref, _) => true,
+
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

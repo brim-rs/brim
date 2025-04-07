@@ -83,3 +83,12 @@ pub struct NoField {
     pub field: String,
     pub ty: HirTyKind,
 }
+
+#[derive(Diagnostic)]
+#[error("cannot take the address of an rvalue; the '&' operator can only be applied to lvalues")]
+pub struct AddressOfRvalue {
+    #[error("this expression is a temporary and has no address")]
+    pub expr_span: (Span, usize),
+    #[note]
+    pub note: String,
+}

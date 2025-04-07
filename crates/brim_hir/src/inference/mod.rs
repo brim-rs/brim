@@ -6,8 +6,9 @@ use crate::{
     expr::{HirExpr, HirExprKind, HirIfStmt},
     inference::{
         errors::{
-            CannotApplyBinary, CannotApplyUnary, CannotCompare, CannotReferenceToRef,
-            InvalidFunctionArgCount, NoField, OrelseExpectedOption, UnwrapNonOptional,
+            AddressOfRvalue, CannotApplyBinary, CannotApplyUnary, CannotCompare,
+            CannotReferenceToRef, InvalidFunctionArgCount, NoField, OrelseExpectedOption,
+            UnwrapNonOptional,
         },
         scope::{TypeInfo, TypeScopeManager},
     },
@@ -388,6 +389,14 @@ impl<'a> TypeInference<'a> {
                     }
                     (UnaryOp::Not, _) => &HirTyKind::Primitive(PrimitiveType::Bool),
                     (UnaryOp::Ref, ty) => {
+                        if !operand.kind.is_lvalue() {
+                            self.ret_with_error(AddressOfRvalue {
+                                expr_span: (expr.span.clone(), self.current_mod.as_usize()),
+                                note: "only variables, array elements, or dereferenced pointers have an address — consider storing the value in a variable first"
+                                    .to_string(),
+                            });
+                        }
+
                         if ty.is_mutable() {
                             &HirTyKind::Ref(Box::new(ty.clone()), Mutable::Yes)
                         } else {
