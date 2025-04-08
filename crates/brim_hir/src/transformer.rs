@@ -53,8 +53,8 @@ pub struct HirModuleMap {
     pub modules: Vec<HirModule>,
     pub hir_items: HashMap<ItemId, StoredHirItem>,
     pub expanded_by_builtins: HashMap<ItemId, String>,
-    pub symbols: SymbolTable,
     pub builtin_args: HashMap<ItemId, Vec<HirExpr>>,
+    pub symbols: SymbolTable,
 }
 
 impl HirModuleMap {
@@ -639,7 +639,7 @@ impl<'a> Transformer<'a> {
                     Box::new(self.transform_expr(*cond).0),
                     Box::new(self.transform_expr(*then_expr).0),
                     Box::new(self.transform_expr(*else_expr).0),
-                )
+                ),
             },
             ty,
         };
@@ -652,8 +652,8 @@ impl<'a> Transformer<'a> {
 
         self.map.insert_hir_expr(id, expr.clone());
         if let Some(fn_name) = fn_name {
-            self.map.expanded_by_builtins.insert(id, fn_name);
-            self.map.builtin_args.insert(id, builtin_params);
+            self.compiled.expanded_by_builtins.insert(id, fn_name);
+            self.compiled.builtin_args.insert(id, builtin_params);
         }
 
         (expr.clone(), id)

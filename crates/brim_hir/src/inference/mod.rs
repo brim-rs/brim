@@ -3,6 +3,7 @@ pub mod scope;
 
 use crate::{
     CompiledModules,
+    builtin::get_builtin_function,
     expr::{HirExpr, HirExprKind, HirIfStmt},
     inference::{
         errors::{
@@ -369,6 +370,19 @@ impl<'a> TypeInference<'a> {
     }
 
     fn infer_expr(&mut self, expr: &mut HirExpr) {
+        if let Some(builtin) = self.compiled.expanded_by_builtins.get(&expr.id).cloned() {
+            let mut new = vec![];
+            if let Some(params) = &mut self.compiled.builtin_args.get(&expr.id).cloned() {
+                for param in params.iter_mut() {
+                    self.infer_expr(param);
+
+                    new.push(param.clone());
+                }
+            }
+
+            self.compiled.builtin_args.insert(expr.id, new);
+        }
+
         let kind = match &mut expr.kind {
             HirExprKind::Unary(op, operand) => {
                 self.infer_expr(operand);
@@ -676,7 +690,12 @@ impl<'a> TypeInference<'a> {
 
                 &HirTyKind::Placeholder
             }
-            HirExprKind::Type(ty) => &self.resolve_type_alias(&ty),
+            HirExprKind::Type(ty) => {
+                let resolved = self.resolve_type_alias(&ty);
+
+                *ty = resolved.clone();
+                ty
+            }
             HirExprKind::Assign(lhs, rhs) => {
                 self.infer_expr(lhs);
                 self.infer_expr(rhs);

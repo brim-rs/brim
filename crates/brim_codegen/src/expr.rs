@@ -16,10 +16,10 @@ use std::fmt::Write;
 
 impl CppCodegen {
     pub fn generate_expr(&mut self, expr: HirExpr) -> String {
-        if let Some(fn_name) = self.hir().expanded_by_builtins.get(&expr.id).cloned() {
+        if let Some(fn_name) = self.compiled.expanded_by_builtins.get(&expr.id).cloned() {
             let func = get_builtin_function(&fn_name).unwrap();
-            self.hir_mut().expanded_by_builtins.remove(&expr.id);
-            let params = &mut self.hir().builtin_args.get(&expr.id).unwrap().clone();
+            self.compiled.expanded_by_builtins.remove(&expr.id);
+            let params = &mut self.compiled.builtin_args.get(&expr.id).unwrap().clone();
 
             if let Some(codegen) = func.codegen {
                 let string = (codegen)(self, params);

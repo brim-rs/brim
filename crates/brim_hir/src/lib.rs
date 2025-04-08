@@ -51,6 +51,8 @@ pub struct CompiledModules {
     pub assigned_paths: HashMap<ItemId, ItemId>,
     // tracks which items use which other items
     pub item_relations: HashMap<GlobalSymbol, Vec<GlobalSymbol>>,
+    pub expanded_by_builtins: HashMap<ItemId, String>,
+    pub builtin_args: HashMap<ItemId, Vec<HirExpr>>,
 }
 
 impl CompiledModules {
@@ -61,6 +63,8 @@ impl CompiledModules {
             items: HashMap::new(),
             assigned_paths: HashMap::new(),
             item_relations: HashMap::new(),
+            expanded_by_builtins: HashMap::new(),
+            builtin_args: HashMap::new(),
         }
     }
 
