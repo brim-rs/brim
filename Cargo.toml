@@ -1,76 +1,71 @@
 [workspace]
 members = [
-    "cli",
-    "crates/brim_config",
-    "crates/brim_cpp_compiler",
-    "crates/brim_fs",
-    "crates/brim_shell",
-    "crates/brim_diagnostics/lib",
-    "crates/brim_diagnostics/playground",
-    "crates/brim_lexer",
-    "crates/brim",
-    "crates/brim_span",
-    "crates/brim_span",
-    "crates/brim_parser",
-    "crates/brim_ast",
-    "crates/brim_index",
-    "crates/brim_diag_macro",
-    "crates/brim_symbols_macro",
-    "crates/brim_ctx",
-    "crates/brim_hir",
-    "crates/brim_codegen",
-    "crates/brim_middle",
+  "cli",
+  "crates/brim",
+  "crates/brim_ast",
+  "crates/brim_codegen",
+  "crates/brim_config",
+  "crates/brim_cpp_compiler",
+  "crates/brim_ctx",
+  "crates/brim_diag_macro",
+  "crates/brim_diagnostics/lib",
+  "crates/brim_diagnostics/playground",
+  "crates/brim_fs",
+  "crates/brim_hir",
+  "crates/brim_index",
+  "crates/brim_lexer",
+  "crates/brim_middle",
+  "crates/brim_parser",
+  "crates/brim_shell",
+  "crates/brim_span",
+  "crates/brim_span",
+  "crates/brim_symbols_macro",
 ]
 resolver = "1"
 
 [workspace.dependencies]
-
 # Core dependencies
-brim-shell = { path = "crates/brim_shell", version = "0.1.0" }
+brim = { path = "crates/brim", version = "0.1.0" }
+brim-ast = { path = "crates/brim_ast", version = "0.1.0" }
+brim-codegen = { path = "crates/brim_codegen", version = "0.1.0" }
 brim-config = { path = "crates/brim_config", version = "0.1.0" }
 brim-cpp-compiler = { path = "crates/brim_cpp_compiler", version = "0.1.0" }
-brim-fs = { path = "crates/brim_fs", version = "0.1.0" }
-brim-diagnostics = { path = "crates/brim_diagnostics/lib", version = "0.1.0" }
-brim-lexer = { path = "crates/brim_lexer", version = "0.1.0" }
-brim-span = { path = "crates/brim_span", version = "0.1.0" }
-brim = { path = "crates/brim", version = "0.1.0" }
-brim-parser = { path = "crates/brim_parser", version = "0.1.0" }
-brim-ast = { path = "crates/brim_ast", version = "0.1.0" }
-brim-index = { path = "crates/brim_index", version = "0.1.0" }
-brim-diag-macro = { path = "crates/brim_diag_macro", version = "0.1.0" }
-brim-symbols-macro = { path = "crates/brim_symbols_macro", version = "0.1.0" }
 brim-ctx = { path = "crates/brim_ctx", version = "0.1.0" }
+brim-diag-macro = { path = "crates/brim_diag_macro", version = "0.1.0" }
+brim-diagnostics = { path = "crates/brim_diagnostics/lib", version = "0.1.0" }
+brim-fs = { path = "crates/brim_fs", version = "0.1.0" }
 brim-hir = { path = "crates/brim_hir", version = "0.1.0" }
-brim-codegen = { path = "crates/brim_codegen", version = "0.1.0" }
+brim-index = { path = "crates/brim_index", version = "0.1.0" }
+brim-lexer = { path = "crates/brim_lexer", version = "0.1.0" }
 brim-middle = { path = "crates/brim_middle", version = "0.1.0" }
+brim-parser = { path = "crates/brim_parser", version = "0.1.0" }
+brim-shell = { path = "crates/brim_shell", version = "0.1.0" }
+brim-span = { path = "crates/brim_span", version = "0.1.0" }
+brim-symbols-macro = { path = "crates/brim_symbols_macro", version = "0.1.0" }
 
 # Other dependencies
+anstream = "0.6.18"
+anstyle = "1.0.10"
 anyhow = "1.0.97"
-colored = "3.0.0"
-thiserror = "2.0.12"
 backtrace = "0.3.74"
 clap = { version = "4.5.35", features = ["derive"] }
-anstyle = "1.0.10"
-toml = "0.8.20"
-serde = "1.0.219"
-indexmap = "2.9.0"
-anstream = "0.6.18"
-toml_edit = "0.22.24"
-url = "2.5.4"
-gethostname = "0.5.0"
-tracing = { version = "0.1.40", default-features = false, features = ["std"] }
-tracing-subscriber = { version = "0.3.18", features = [
-    "env-filter",
-    "chrono",
-    "time",
-] }
-termcolor = "1.4.1"
+colored = "3.0.0"
 convert_case = "0.7.1"
-lazy_static = "1.5.0"
 dirs = "6.0.0"
-terminal_size = "0.4.1"
-sysinfo = "0.33.1"
 fs-err = "3.1.0"
+gethostname = "0.5.0"
+indexmap = "2.9.0"
+lazy_static = "1.5.0"
+serde = "1.0.219"
+sysinfo = "0.33.1"
+termcolor = "1.4.1"
+terminal_size = "0.4.1"
+thiserror = "2.0.12"
+toml = "0.8.20"
+toml_edit = "0.22.24"
+tracing = { version = "0.1.40", default-features = false, features = ["std"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "chrono", "time"] }
+url = "2.5.4"
 
 # These clippy settings are copied from https://github.com/oxc-project/oxc/blob/main/Cargo.toml
 

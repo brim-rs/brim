@@ -5,14 +5,14 @@ edition = "2024"
 
 [dependencies]
 brim-ast = { workspace = true }
-brim-span = { workspace = true }
-brim-index = { workspace = true }
-brim-diagnostics = { workspace = true }
 brim-diag-macro = { workspace = true }
+brim-diagnostics = { workspace = true }
+brim-index = { workspace = true }
+brim-span = { workspace = true }
 clap = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-lazy_static = { workspace = true }
 indexmap = { workspace = true }
+lazy_static = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 tracing = { workspace = true }
 
 [lints]

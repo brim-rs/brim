@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-brim-diagnostics = { workspace = true }
-unindent = "0.2.4"
 anyhow = { workspace = true }
-termcolor = "1.4.1"
-colored = "3.0.0"
+brim-diagnostics = { workspace = true }
 brim-span = { workspace = true }
+colored = "3.0.0"
+termcolor = "1.4.1"
+unindent = "0.2.4"

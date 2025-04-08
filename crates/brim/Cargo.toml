@@ -4,21 +4,21 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-brim-diagnostics = { workspace = true }
-brim-span = { workspace = true }
-brim-config = { workspace = true }
-anyhow = { workspace = true }
-brim-shell = { workspace = true }
 anstream = { workspace = true }
-brim-fs = { workspace = true }
-tracing = { workspace = true }
-brim-lexer = { workspace = true }
+anyhow = { workspace = true }
 brim-ast = { workspace = true }
-brim-diag-macro = { workspace = true }
-brim-parser = { workspace = true }
+brim-config = { workspace = true }
 brim-ctx = { workspace = true }
+brim-diag-macro = { workspace = true }
+brim-diagnostics = { workspace = true }
+brim-fs = { workspace = true }
 brim-hir = { workspace = true }
+brim-lexer = { workspace = true }
 brim-middle = { workspace = true }
+brim-parser = { workspace = true }
+brim-shell = { workspace = true }
+brim-span = { workspace = true }
+tracing = { workspace = true }
 
 [features]
 snap = []

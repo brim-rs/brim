@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-unicode-width = "0.2.0"
 anstyle = { workspace = true }
 brim-span = { workspace = true }
+unicode-width = "0.2.0"

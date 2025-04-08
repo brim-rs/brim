@@ -14,11 +14,16 @@ ready:
     just doc
     git status
 
+fix:
+    cargo clippy --fix --allow-staged --no-deps
+    just fmt
+    git status
+
 check:
     cargo check --workspace --all-features --all-targets --locked
 
 lint:
-    cargo lint -- --deny warnings
+    cargo clippy --workspace --all-targets --all-features -- --deny warnings
 
 test:
     cargo test
@@ -35,11 +40,6 @@ doc:
 [windows]
 doc:
     $Env:RUSTDOCFLAGS='-D warnings'; cargo doc --no-deps --document-private-items
-
-fix:
-    cargo clippy --fix --allow-staged --no-deps
-    just fmt
-    git status
 
 run args='':
     cd playground; cargo run -p brim-cli run {{ args }}

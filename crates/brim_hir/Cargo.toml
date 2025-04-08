@@ -4,13 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-brim-span = { workspace = true }
 brim-ast = { workspace = true }
-brim-middle = { workspace = true }
-brim-diagnostics = { workspace = true }
-brim-diag-macro = { workspace = true }
-indexmap = { workspace = true }
 brim-config = { workspace = true }
+brim-diag-macro = { workspace = true }
+brim-diagnostics = { workspace = true }
+brim-middle = { workspace = true }
+brim-span = { workspace = true }
+indexmap = { workspace = true }
 
 [lints]
 workspace = true

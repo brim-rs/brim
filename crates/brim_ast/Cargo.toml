@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-brim-span = { workspace = true }
-brim-index = { workspace = true }
-indexmap = { workspace = true }
-brim-symbols-macro = { workspace = true }
-lazy_static = "1.5.0"
 brim-diagnostics = { workspace = true }
+brim-index = { workspace = true }
+brim-span = { workspace = true }
+brim-symbols-macro = { workspace = true }
+indexmap = { workspace = true }
+lazy_static = "1.5.0"

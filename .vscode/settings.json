@@ -1,7 +1,7 @@
 {
-    "files.associations": {
-        "type_traits": "cpp",
-        "any": "cpp",
-        "optional": "cpp"
-    }
+  "files.associations": {
+    "type_traits": "cpp",
+    "any": "cpp",
+    "optional": "cpp"
+  }
 }

@@ -5,10 +5,10 @@ edition = "2024"
 
 [dependencies]
 anyhow = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
 brim-config = { workspace = true }
-which = "7.0.2"
-tracing = { workspace = true }
-thiserror = { workspace = true }
 brim-shell = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 spinners = "4.1.1"
+thiserror = { workspace = true }
+tracing = { workspace = true }
+which = "7.0.2"
