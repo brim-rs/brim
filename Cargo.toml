@@ -1,25 +1,25 @@
 [workspace]
 members = [
-  "cli",
-  "crates/brim",
-  "crates/brim_ast",
-  "crates/brim_codegen",
-  "crates/brim_config",
-  "crates/brim_cpp_compiler",
-  "crates/brim_ctx",
-  "crates/brim_diag_macro",
-  "crates/brim_diagnostics/lib",
-  "crates/brim_diagnostics/playground",
-  "crates/brim_fs",
-  "crates/brim_hir",
-  "crates/brim_index",
-  "crates/brim_lexer",
-  "crates/brim_middle",
-  "crates/brim_parser",
-  "crates/brim_shell",
-  "crates/brim_span",
-  "crates/brim_span",
-  "crates/brim_symbols_macro",
+    "cli",
+    "crates/brim",
+    "crates/brim_ast",
+    "crates/brim_codegen",
+    "crates/brim_config",
+    "crates/brim_cpp_compiler",
+    "crates/brim_ctx",
+    "crates/brim_diag_macro",
+    "crates/brim_diagnostics/lib",
+    "crates/brim_diagnostics/playground",
+    "crates/brim_fs",
+    "crates/brim_hir",
+    "crates/brim_index",
+    "crates/brim_lexer",
+    "crates/brim_middle",
+    "crates/brim_parser",
+    "crates/brim_shell",
+    "crates/brim_span",
+    "crates/brim_span",
+    "crates/brim_symbols_macro",
 ]
 resolver = "1"
 
@@ -80,7 +80,8 @@ unused_unsafe = "warn"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
-# restriction
+
+# restriction lints
 dbg_macro = "warn"
 todo = "warn"
 unimplemented = "warn"
@@ -88,7 +89,7 @@ print_stdout = "warn"
 print_stderr = "warn"
 allow_attributes = "warn"
 clone_on_ref_ptr = "warn"
-self_named_module_files = "warn" # "-Wclippy::mod_module_files"
+self_named_module_files = "warn"
 empty_drop = "warn"
 empty_structs_with_brackets = "warn"
 exit = "warn"
@@ -103,7 +104,8 @@ infinite_loop = "warn"
 map_with_unused_argument_over_ranges = "warn"
 unused_result_ok = "warn"
 pathbuf_init_then_push = "warn"
-# pedantic
+
+# pedantic lints
 pedantic = { level = "warn", priority = -1 }
 struct_excessive_bools = "allow"
 too_many_lines = "allow"
@@ -112,10 +114,17 @@ wildcard_imports = "allow"
 doc_markdown = "allow"
 similar_names = "allow"
 fn_params_excessive_bools = "allow"
+
+# disabled lints
+unnecessary_to_owned = "allow"
+expect_used = "allow"
+
+# complexity lints
 complexity = { level = "warn", priority = -1 }
 too_many_arguments = "allow"
 non_std_lazy_statics = "allow"
-# nursery
+
+# nursery lints
 nursery = { level = "warn", priority = -1 }
 missing_const_for_fn = "allow"
 option_if_let_else = "allow"
@@ -134,7 +143,8 @@ unused_peekable = "warn"
 too_long_first_doc_paragraph = "warn"
 suspicious_operation_groupings = "warn"
 redundant_clone = "warn"
-# cargo
+
+# cargo-specific lints
 cargo = { level = "warn", priority = -1 }
 multiple_crate_versions = "allow"
 
