@@ -425,11 +425,22 @@ impl Parser {
                 self.advance();
 
                 let ident = self.parse_ident()?;
+                let str = ident.to_string();
 
                 self.expect_oparen()?;
                 let mut args = Vec::new();
                 while !self.is_paren(Orientation::Close) {
-                    args.push(self.parse_expr()?);
+                    if str == "anyCast" || str == "cast" {
+                        if args.len() == 1 {
+                            let ty = self.parse_type()?;
+                            args.push(self.new_expr(ty.span, ExprKind::Type(Box::new(ty))));
+                        } else {
+                            args.push(self.parse_expr()?);
+                        }
+                    } else {
+                        args.push(self.parse_expr()?);
+                    }
+
                     if !self.eat(TokenKind::Comma) {
                         break;
                     }

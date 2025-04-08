@@ -643,4 +643,15 @@ impl HirTyKind {
         }
         false
     }
+
+    pub fn is_void(&self) -> bool {
+        match self {
+            HirTyKind::Primitive(PrimitiveType::Void) => true,
+            HirTyKind::Ref(ty, _)
+            | HirTyKind::Ptr(ty, _)
+            | HirTyKind::Mut(ty)
+            | HirTyKind::Const(ty) => ty.is_void(),
+            _ => false,
+        }
+    }
 }

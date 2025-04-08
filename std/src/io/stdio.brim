@@ -6,7 +6,7 @@ pub fn getStdErrHandle() HandleTy {
         return GetStdHandle(@cast(-12, u32));
     }
 
-    return 2;
+    return @cast(2, *void);
 }
 
 pub fn getStdErr() File {

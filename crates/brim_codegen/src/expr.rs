@@ -3,6 +3,7 @@ use brim_ast::{
     ItemId,
     expr::{BinOpKind, UnaryOp},
     token::{Lit, LitKind},
+    ty::PrimitiveType,
 };
 use brim_hir::{
     Codegen,
@@ -297,7 +298,7 @@ impl CppCodegen {
     pub fn generate_lit(&mut self, lit: Lit, expr_ty: HirTyKind) -> String {
         match lit.kind {
             LitKind::Integer | LitKind::Float => {
-                if let HirTyKind::Placeholder = expr_ty {
+                if expr_ty.is_void() || expr_ty.is_placeholder() {
                     if let Some(suffix) = lit.suffix {
                         format!("{}{}", lit.symbol, self.generate_suffix(suffix.to_string()))
                     } else {
