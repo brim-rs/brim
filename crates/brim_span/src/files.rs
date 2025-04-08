@@ -115,12 +115,7 @@ pub struct SimpleFile {
 
 impl SimpleFile {
     pub fn new(name: PathBuf, source: String) -> SimpleFile {
-        SimpleFile {
-            name,
-            line_starts: line_starts(source.as_ref()).collect(),
-            source,
-            id: 0,
-        }
+        SimpleFile { name, line_starts: line_starts(source.as_ref()).collect(), source, id: 0 }
     }
 
     pub fn name(&self) -> &PathBuf {
@@ -141,10 +136,9 @@ impl SimpleFile {
                 .cloned()
                 .expect("failed despite previous check")),
             Ordering::Equal => Ok(self.source.len()),
-            Ordering::Greater => Err(Error::LineTooLarge {
-                given: line_index,
-                max: self.line_starts.len() - 1,
-            }),
+            Ordering::Greater => {
+                Err(Error::LineTooLarge { given: line_index, max: self.line_starts.len() - 1 })
+            }
         }
     }
 
@@ -166,10 +160,7 @@ impl<'a> Files<'a> for SimpleFile {
     }
 
     fn line_index(&self, (): (), byte_index: usize) -> Result<usize, Error> {
-        Ok(self
-            .line_starts
-            .binary_search(&byte_index)
-            .unwrap_or_else(|next_line| next_line - 1))
+        Ok(self.line_starts.binary_search(&byte_index).unwrap_or_else(|next_line| next_line - 1))
     }
 
     fn line_range(&self, (): (), line_index: usize) -> Result<Range<usize>, Error> {
@@ -197,10 +188,7 @@ pub struct SimpleFiles {
 impl SimpleFiles {
     /// Creates a new empty SimpleFiles collection
     pub fn new() -> Self {
-        Self {
-            files: Vec::new(),
-            next_id: 0,
-        }
+        Self { files: Vec::new(), next_id: 0 }
     }
 
     pub fn from_files(files: Vec<SimpleFile>) -> Self {
@@ -228,26 +216,17 @@ impl SimpleFiles {
 
     /// Retrieves a file by its ID
     pub fn get(&self, file_id: usize) -> Result<&SimpleFile, Error> {
-        self.files
-            .iter()
-            .find(|file| file.id == file_id)
-            .ok_or(Error::FileMissing)
+        self.files.iter().find(|file| file.id == file_id).ok_or(Error::FileMissing)
     }
 
     /// Retrieves a file by its name
     pub fn get_by_name(&self, name: &PathBuf) -> Result<&SimpleFile, Error> {
-        self.files
-            .iter()
-            .find(|file| file.name == *name)
-            .ok_or(Error::FileMissing)
+        self.files.iter().find(|file| file.name == *name).ok_or(Error::FileMissing)
     }
 
     /// Gets the index of a file by its name
     pub fn get_index_by_name(&self, name: &PathBuf) -> Result<usize, Error> {
-        self.files
-            .iter()
-            .position(|file| file.name == *name)
-            .ok_or(Error::FileMissing)
+        self.files.iter().position(|file| file.name == *name).ok_or(Error::FileMissing)
     }
 
     /// Updates an existing file
@@ -271,11 +250,8 @@ impl SimpleFiles {
 
     /// Removes a file by ID
     pub fn remove(&mut self, file_id: usize) -> Result<SimpleFile, Error> {
-        let position = self
-            .files
-            .iter()
-            .position(|file| file.id == file_id)
-            .ok_or(Error::FileMissing)?;
+        let position =
+            self.files.iter().position(|file| file.id == file_id).ok_or(Error::FileMissing)?;
         Ok(self.files.remove(position))
     }
 }
@@ -289,8 +265,8 @@ impl Iterator for SimpleFiles {
 }
 
 impl<'a> IntoIterator for &'a SimpleFiles {
-    type Item = &'a SimpleFile;
     type IntoIter = Iter<'a, SimpleFile>;
+    type Item = &'a SimpleFile;
 
     fn into_iter(self) -> Self::IntoIter {
         self.files.iter()
@@ -330,67 +306,37 @@ pub static GLOBAL_FILES: Lazy<Mutex<SimpleFiles>> = Lazy::new(|| Mutex::new(Simp
 
 // Global helper functions
 pub fn add_file(name: PathBuf, source: String) -> usize {
-    GLOBAL_FILES
-        .lock()
-        .expect("Failed to lock global files")
-        .add(name, source)
+    GLOBAL_FILES.lock().expect("Failed to lock global files").add(name, source)
 }
 
 pub fn get_file(file_id: usize) -> Result<SimpleFile, Error> {
-    GLOBAL_FILES
-        .lock()
-        .expect("Failed to lock global files")
-        .get(file_id)
-        .cloned()
+    GLOBAL_FILES.lock().expect("Failed to lock global files").get(file_id).cloned()
 }
 
 pub fn get_file_by_name(name: &PathBuf) -> Result<SimpleFile, Error> {
-    GLOBAL_FILES
-        .lock()
-        .expect("Failed to lock global files")
-        .get_by_name(name)
-        .cloned()
+    GLOBAL_FILES.lock().expect("Failed to lock global files").get_by_name(name).cloned()
 }
 
 pub fn get_index_by_name(name: &PathBuf) -> Result<usize, Error> {
-    GLOBAL_FILES
-        .lock()
-        .expect("Failed to lock global files")
-        .get_index_by_name(name)
+    GLOBAL_FILES.lock().expect("Failed to lock global files").get_index_by_name(name)
 }
 
 pub fn update_file(file_id: usize, name: PathBuf, source: String) {
-    GLOBAL_FILES
-        .lock()
-        .expect("Failed to lock global files")
-        .update(file_id, name, source)
+    GLOBAL_FILES.lock().expect("Failed to lock global files").update(file_id, name, source)
 }
 
 pub fn remove_file(file_id: usize) -> Result<SimpleFile, Error> {
-    GLOBAL_FILES
-        .lock()
-        .expect("Failed to lock global files")
-        .remove(file_id)
+    GLOBAL_FILES.lock().expect("Failed to lock global files").remove(file_id)
 }
 
 pub fn files() -> Vec<SimpleFile> {
-    GLOBAL_FILES
-        .lock()
-        .expect("Failed to lock global files")
-        .files
-        .clone()
+    GLOBAL_FILES.lock().expect("Failed to lock global files").files.clone()
 }
 
 pub fn get_path(file_id: usize) -> Result<PathBuf, Error> {
-    GLOBAL_FILES
-        .lock()
-        .expect("Failed to lock global files")
-        .name(file_id)
+    GLOBAL_FILES.lock().expect("Failed to lock global files").name(file_id)
 }
 
 pub fn get_id_by_name(name: &PathBuf) -> Result<usize, Error> {
-    GLOBAL_FILES
-        .lock()
-        .expect("Failed to lock global files")
-        .get_index_by_name(name)
+    GLOBAL_FILES.lock().expect("Failed to lock global files").get_index_by_name(name)
 }

@@ -26,10 +26,7 @@ pub struct AstValidator {
 
 impl AstValidator {
     pub fn new() -> Self {
-        Self {
-            ctx: TemporaryDiagnosticContext::new(),
-            current_file: 0,
-        }
+        Self { ctx: TemporaryDiagnosticContext::new(), current_file: 0 }
     }
 
     /// Validates AST in every module found in the module map.

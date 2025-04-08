@@ -89,9 +89,7 @@ impl TypeChecker {
             }
             HirExprKind::Assign(lhs, rhs) => {
                 if rhs.ty == HirTyKind::Primitive(PrimitiveType::Void) {
-                    self.ctx.emit_impl(CannotInitializeWithVoid {
-                        span: (rhs.span, self.mod_id),
-                    });
+                    self.ctx.emit_impl(CannotInitializeWithVoid { span: (rhs.span, self.mod_id) });
                 } else if lhs.ty != rhs.ty {
                     self.ctx.emit_impl(AssignMismatch {
                         span: (lhs.span.to(rhs.span), self.mod_id),

@@ -38,9 +38,7 @@ pub struct GenericsCtx {
 
 impl GenericsCtx {
     pub fn new() -> Self {
-        Self {
-            generics: Vec::new(),
-        }
+        Self { generics: Vec::new() }
     }
 
     pub fn push_generic(&mut self, generic: GenericParam) {
@@ -112,17 +110,11 @@ impl<'a> NameResolver<'a> {
     /// declare_param doesn't check for duplicates, because that is already handled by the
     /// [`AstValidator`](crate::validator::AstValidator)
     fn declare_param(&mut self, name: &str, info: VariableInfo) {
-        diag_opt!(
-            self.ctx,
-            self.scopes.declare_variable(name.to_string(), info, false)
-        )
+        diag_opt!(self.ctx, self.scopes.declare_variable(name.to_string(), info, false))
     }
 
     fn declare_variable(&mut self, name: &str, info: VariableInfo) {
-        diag_opt!(
-            self.ctx,
-            self.scopes.declare_variable(name.to_string(), info, true)
-        )
+        diag_opt!(self.ctx, self.scopes.declare_variable(name.to_string(), info, true))
     }
 
     // Check if a variable is declared in any accessible scope
@@ -159,8 +151,7 @@ impl<'a> NameResolver<'a> {
                             self.compiled.assign_path(expr_id, item.id)
                         }
                         _ => {
-                            self.ctx
-                                .emit_impl(InvalidReceiverForStaticAccess { span, name });
+                            self.ctx.emit_impl(InvalidReceiverForStaticAccess { span, name });
                         }
                     }
                 } else if idents.len() > 1 {
@@ -189,8 +180,7 @@ impl<'a> NameResolver<'a> {
             }
             None => {
                 if from_call {
-                    self.ctx
-                        .emit_impl(InvalidReceiverForStaticAccess { span, name });
+                    self.ctx.emit_impl(InvalidReceiverForStaticAccess { span, name });
                 } else {
                     self.ctx.emit_impl(InvalidPathAccess { span, name });
                 }
@@ -285,18 +275,11 @@ impl<'a> AstWalker for NameResolver<'a> {
     fn visit_let(&mut self, let_stmt: &mut Let) {
         let name = let_stmt.ident.to_string();
 
-        self.declare_variable(
-            &name,
-            VariableInfo {
-                id: let_stmt.id,
-                is_const: if let Some(ty) = &let_stmt.ty {
-                    ty.is_const()
-                } else {
-                    false
-                },
-                span: let_stmt.span,
-            },
-        );
+        self.declare_variable(&name, VariableInfo {
+            id: let_stmt.id,
+            is_const: if let Some(ty) = &let_stmt.ty { ty.is_const() } else { false },
+            span: let_stmt.span,
+        });
 
         self.validate_var_name(&name, let_stmt.ident.span);
 
@@ -320,10 +303,7 @@ impl<'a> AstWalker for NameResolver<'a> {
     }
 
     fn visit_struct(&mut self, str: &mut Struct) {
-        let s = self
-            .compiled
-            .symbols
-            .resolve(&str.ident.to_string(), self.file);
+        let s = self.compiled.symbols.resolve(&str.ident.to_string(), self.file);
 
         self.set_id(s);
 
@@ -376,14 +356,11 @@ impl<'a> AstWalker for NameResolver<'a> {
         }
 
         for param in &func.sig.params {
-            self.declare_param(
-                &param.name.to_string(),
-                VariableInfo {
-                    id: param.id,
-                    is_const: false,
-                    span: param.span,
-                },
-            );
+            self.declare_param(&param.name.to_string(), VariableInfo {
+                id: param.id,
+                is_const: false,
+                span: param.span,
+            });
 
             self.validate_var_name(&param.name.to_string(), param.name.span);
             self.resolve_type(param.ty.clone());
@@ -417,10 +394,7 @@ impl<'a> AstWalker for NameResolver<'a> {
             }
             ItemKind::Namespace(_) => unreachable!(),
             ItemKind::Enum(e) => {
-                let en = self
-                    .compiled
-                    .symbols
-                    .resolve(&e.ident.to_string(), self.file);
+                let en = self.compiled.symbols.resolve(&e.ident.to_string(), self.file);
 
                 self.set_id(en);
                 for generics in e.generics.params.clone() {
@@ -495,10 +469,8 @@ impl<'a> AstWalker for NameResolver<'a> {
                 let func_sym = self.compiled.symbols.resolve(&name, self.file);
 
                 if let None = func_sym {
-                    self.ctx.emit(Box::new(UndeclaredFunction {
-                        span: (func.span, self.file),
-                        name,
-                    }));
+                    self.ctx
+                        .emit(Box::new(UndeclaredFunction { span: (func.span, self.file), name }));
                 }
 
                 for arg in args {
@@ -520,10 +492,8 @@ impl<'a> AstWalker for NameResolver<'a> {
                 let func = BUILTIN_FUNCTIONS.get(&name);
 
                 if let None = func {
-                    self.ctx.emit(Box::new(UndeclaredFunction {
-                        span: (ident.span, self.file),
-                        name,
-                    }));
+                    self.ctx
+                        .emit(Box::new(UndeclaredFunction { span: (ident.span, self.file), name }));
                 }
 
                 for arg in args {
@@ -535,10 +505,8 @@ impl<'a> AstWalker for NameResolver<'a> {
                 let func_sym = self.compiled.symbols.resolve(&name, self.file);
 
                 if let None = func_sym {
-                    self.ctx.emit(Box::new(UndeclaredStruct {
-                        span: (ident.span, self.file),
-                        name,
-                    }));
+                    self.ctx
+                        .emit(Box::new(UndeclaredStruct { span: (ident.span, self.file), name }));
                 }
 
                 for (_, field) in fields {

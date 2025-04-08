@@ -12,18 +12,14 @@ pub struct ProjectResolver {
 
 impl ProjectResolver {
     pub fn new(base_path: impl Into<PathBuf>) -> Self {
-        Self {
-            base_path: base_path.into(),
-            loaded_configs: HashMap::new(),
-        }
+        Self { base_path: base_path.into(), loaded_configs: HashMap::new() }
     }
 
     pub fn resolve_project(&mut self) -> Result<Vec<String>> {
         let current_config = Config::get(&self.base_path, None)?;
         let project_name = current_config.project.name.clone();
 
-        self.loaded_configs
-            .insert(project_name.clone(), current_config);
+        self.loaded_configs.insert(project_name.clone(), current_config);
 
         let mut to_process = VecDeque::new();
         to_process.push_back(project_name.clone());
@@ -61,11 +57,7 @@ impl ProjectResolver {
     }
 
     pub fn get_configs(&self, order: &[String]) -> Vec<Config> {
-        order
-            .iter()
-            .filter_map(|name| self.loaded_configs.get(name))
-            .cloned()
-            .collect()
+        order.iter().filter_map(|name| self.loaded_configs.get(name)).cloned().collect()
     }
 }
 
@@ -109,13 +101,7 @@ fn resolve_build_order(
         Ok(())
     }
 
-    visit(
-        start_project,
-        configs,
-        &mut resolved,
-        &mut visited,
-        &mut temp_marks,
-    )?;
+    visit(start_project, configs, &mut resolved, &mut visited, &mut temp_marks)?;
 
     Ok(resolved)
 }

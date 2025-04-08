@@ -16,9 +16,7 @@ pub struct Lints {
 
 impl Lints {
     pub fn new() -> Self {
-        Self {
-            enabled_lints: HashMap::new(),
-        }
+        Self { enabled_lints: HashMap::new() }
     }
 
     pub fn enable(&mut self, name: &str) {

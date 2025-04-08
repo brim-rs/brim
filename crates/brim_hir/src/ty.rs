@@ -32,11 +32,7 @@ pub enum HirTyKind {
     /// Primitive type eg. `i32` (brim) -> `int32_t` (C++)
     Primitive(PrimitiveType),
     /// Any other type that can be enum, struct, type, etc.
-    Ident {
-        ident: Ident,
-        generics: HirGenericArgs,
-        is_generic: bool,
-    },
+    Ident { ident: Ident, generics: HirGenericArgs, is_generic: bool },
 
     /// Result type eg. `Result<T, E>` (brim) -> `std::expected<T, E>` (C++)
     Result(Box<HirTyKind>, Box<HirTyKind>),
@@ -74,9 +70,7 @@ impl Display for HirTyKind {
             HirTyKind::Const(ty) => write!(f, "const {}", ty),
             HirTyKind::Vec(ty) => write!(f, "{}[]", ty),
             HirTyKind::Primitive(p) => write!(f, "{}", p),
-            HirTyKind::Ident {
-                ident, generics, ..
-            } => {
+            HirTyKind::Ident { ident, generics, .. } => {
                 if generics.params.is_empty() {
                     write!(f, "{}", ident)
                 } else {
@@ -156,16 +150,8 @@ impl HirTyKind {
             (HirTyKind::None, HirTyKind::Option(_)) => true,
 
             (
-                HirTyKind::Ident {
-                    ident: id1,
-                    generics: gen1,
-                    is_generic: g1,
-                },
-                HirTyKind::Ident {
-                    ident: id2,
-                    generics: gen2,
-                    is_generic: g2,
-                },
+                HirTyKind::Ident { ident: id1, generics: gen1, is_generic: g1 },
+                HirTyKind::Ident { ident: id2, generics: gen2, is_generic: g2 },
             ) => id1.to_string() == id2.to_string() && gen1 == gen2 && g1 == g2,
 
             (HirTyKind::Err(diag1), HirTyKind::Err(diag2)) => diag1 == diag2,
@@ -228,16 +214,8 @@ impl HirTyKind {
             (HirTyKind::None, HirTyKind::Option(_)) => true,
 
             (
-                HirTyKind::Ident {
-                    ident: id1,
-                    generics: gen1,
-                    is_generic: g1,
-                },
-                HirTyKind::Ident {
-                    ident: id2,
-                    generics: gen2,
-                    is_generic: g2,
-                },
+                HirTyKind::Ident { ident: id1, generics: gen1, is_generic: g1 },
+                HirTyKind::Ident { ident: id2, generics: gen2, is_generic: g2 },
             ) => id1.to_string() == id2.to_string() && gen1 == gen2 && g1 == g2,
 
             (HirTyKind::Err(_), _) | (_, HirTyKind::Err(_)) => false,
@@ -279,16 +257,8 @@ impl HirTyKind {
             (HirTyKind::None, HirTyKind::Some(_)) => false,
 
             (
-                HirTyKind::Ident {
-                    ident: id1,
-                    generics: gen1,
-                    is_generic: g1,
-                },
-                HirTyKind::Ident {
-                    ident: id2,
-                    generics: gen2,
-                    is_generic: g2,
-                },
+                HirTyKind::Ident { ident: id1, generics: gen1, is_generic: g1 },
+                HirTyKind::Ident { ident: id2, generics: gen2, is_generic: g2 },
             ) => id1.to_string() == id2.to_string() && gen1 == gen2 && g1 == g2,
 
             (HirTyKind::Err(_), _) | (_, HirTyKind::Err(_)) => false,
@@ -373,9 +343,7 @@ impl HirTyKind {
 
     pub fn as_ident(&self) -> Option<(Ident, HirGenericArgs)> {
         match self {
-            HirTyKind::Ident {
-                ident, generics, ..
-            } => Some((ident.clone(), generics.clone())),
+            HirTyKind::Ident { ident, generics, .. } => Some((ident.clone(), generics.clone())),
             _ => None,
         }
     }

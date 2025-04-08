@@ -8,19 +8,25 @@ _default:
 
 ready:
     just fmt
-    just fix
+    just check
     just test
+    just lint
     just doc
     git status
 
 check:
-    cargo check --workspace --all-features --all-targets
+    cargo check --workspace --all-features --all-targets --locked
+
+lint:
+    cargo lint -- --deny warnings
 
 test:
     cargo test
 
 fmt:
+    cargo shear --fix
     cargo fmt --all
+    dprint fmt
 
 [unix]
 doc:
@@ -31,8 +37,9 @@ doc:
     $Env:RUSTDOCFLAGS='-D warnings'; cargo doc --no-deps --document-private-items
 
 fix:
-    cargo fix --allow-dirty
+    cargo clippy --fix --allow-staged --no-deps
     just fmt
+    git status
 
 run args='':
     cd playground; cargo run -p brim-cli run {{ args }}

@@ -34,22 +34,13 @@ pub struct VariableInfo {
 
 impl From<Param> for VariableInfo {
     fn from(param: Param) -> Self {
-        Self {
-            id: param.id,
-            is_const: param.ty.is_const(),
-            span: param.span,
-        }
+        Self { id: param.id, is_const: param.ty.is_const(), span: param.span }
     }
 }
 
 impl<'a> Scope {
     pub fn new(file: usize) -> Self {
-        Self {
-            variables: HashMap::new(),
-            parent: None,
-            file,
-            inside_comptime: false,
-        }
+        Self { variables: HashMap::new(), parent: None, file, inside_comptime: false }
     }
 
     pub fn new_child(parent: &Scope, file: usize, inside_comptime: bool) -> Self {
@@ -89,9 +80,7 @@ impl<'a> Scope {
         }
 
         // If not found, check parent scopes
-        self.parent
-            .as_ref()
-            .and_then(|parent| parent.resolve_variable(name))
+        self.parent.as_ref().and_then(|parent| parent.resolve_variable(name))
     }
 }
 
@@ -102,9 +91,7 @@ pub struct ScopeManager {
 
 impl<'a> ScopeManager {
     pub fn new(file: usize) -> Self {
-        Self {
-            scope_stack: vec![Scope::new(file)],
-        }
+        Self { scope_stack: vec![Scope::new(file)] }
     }
 
     pub fn push_scope(&mut self, file: usize, inside: bool) {
@@ -120,15 +107,11 @@ impl<'a> ScopeManager {
     }
 
     pub fn current_scope(&mut self) -> &mut Scope {
-        self.scope_stack
-            .last_mut()
-            .expect("Scope stack should never be empty")
+        self.scope_stack.last_mut().expect("Scope stack should never be empty")
     }
 
     pub fn resolve_variable(&self, name: &str) -> Option<(Scope, &VariableInfo)> {
-        self.scope_stack
-            .last()
-            .and_then(|scope| scope.resolve_variable(name))
+        self.scope_stack.last().and_then(|scope| scope.resolve_variable(name))
     }
 
     pub fn declare_variable(
@@ -137,7 +120,6 @@ impl<'a> ScopeManager {
         info: VariableInfo,
         check_duplicates: bool,
     ) -> OptionalDiag<'a> {
-        self.current_scope()
-            .declare_variable(name, info, check_duplicates)
+        self.current_scope().declare_variable(name, info, check_duplicates)
     }
 }

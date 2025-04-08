@@ -40,12 +40,7 @@ pub struct CompilerContext {
 
 impl CompilerContext {
     pub fn new(args: RunArgs, lints: &'static Lints) -> Self {
-        Self {
-            dcx: DiagnosticContext::new(),
-            emitted: vec![],
-            args,
-            lints,
-        }
+        Self { dcx: DiagnosticContext::new(), emitted: vec![], args, lints }
     }
 
     pub fn dcx(&mut self) -> &mut DiagnosticContext {
@@ -57,8 +52,7 @@ impl CompilerContext {
     }
 
     pub fn emit_diag(&mut self, diag: Diagnostic<usize>) -> ErrorEmitted {
-        self.dcx
-            .emit_inner(diag.clone(), &SimpleFiles::from_files(files()));
+        self.dcx.emit_inner(diag.clone(), &SimpleFiles::from_files(files()));
         self.emitted.push(diag);
 
         ErrorEmitted::new()
@@ -66,8 +60,7 @@ impl CompilerContext {
 
     pub fn emit_inner(&mut self, diag: Box<dyn ToDiagnostic>) -> ErrorEmitted {
         let diag_clone = diag.to_diagnostic();
-        self.dcx
-            .emit(&Box::new(diag), &SimpleFiles::from_files(files()));
+        self.dcx.emit(&Box::new(diag), &SimpleFiles::from_files(files()));
         self.emitted.push(diag_clone);
 
         ErrorEmitted::new()
@@ -100,21 +93,15 @@ impl CompilerContext {
         self.extend_temp(use_collector.ctx);
 
         for ((ident, id), symbols) in use_collector.namespaces.clone() {
-            simple.items.insert(
-                id.clone(),
-                Item {
-                    id: id.clone(),
-                    span: Span::DUMMY,
-                    ident: ident.clone(),
-                    kind: ItemKind::Namespace(
-                        symbols
-                            .iter()
-                            .map(|(k, v)| (k.clone(), v.clone().into_temp()))
-                            .collect(),
-                    ),
-                    vis: Visibility::from_bool(true, Span::DUMMY),
-                },
-            );
+            simple.items.insert(id.clone(), Item {
+                id: id.clone(),
+                span: Span::DUMMY,
+                ident: ident.clone(),
+                kind: ItemKind::Namespace(
+                    symbols.iter().map(|(k, v)| (k.clone(), v.clone().into_temp())).collect(),
+                ),
+                vis: Visibility::from_bool(true, Span::DUMMY),
+            });
         }
 
         let mut name_resolver = NameResolver::new(map.clone(), self.lints, compiled, simple);
@@ -148,15 +135,11 @@ impl CompilerContext {
     /// More to be added
     pub fn validate_main_function(&mut self, func: &HirFn, main: usize) {
         if func.sig.params.params.len() != 0 {
-            self.emit(MainFunctionParams {
-                span: (func.sig.params.span, main),
-            });
+            self.emit(MainFunctionParams { span: (func.sig.params.span, main) });
         }
 
         if func.sig.constant {
-            self.emit(MainFunctionConstant {
-                span: (func.sig.span, main),
-            });
+            self.emit(MainFunctionConstant { span: (func.sig.span, main) });
         }
     }
 

@@ -45,30 +45,19 @@ impl Parser {
             if let Some(primitive) = self.is_primitive(ident)? {
                 TyKind::Primitive(primitive)
             } else {
-                TyKind::Ident {
-                    ident,
-                    generics: self.parse_argument_generics()?,
-                }
+                TyKind::Ident { ident, generics: self.parse_argument_generics()? }
             }
         };
 
-        Ok(Ty {
-            span,
-            kind,
-            id: self.new_id(),
-        })
+        Ok(Ty { span, kind, id: self.new_id() })
     }
 
     fn apply_type_modifiers(&mut self, mut ty: Ty) -> PResult<Ty> {
         let span = ty.span;
 
         // Handle array/vector types
-        if self
-            .current()
-            .is_delimiter(Delimiter::Bracket, Orientation::Open)
-            && self
-                .next()
-                .is_delimiter(Delimiter::Bracket, Orientation::Close)
+        if self.current().is_delimiter(Delimiter::Bracket, Orientation::Open)
+            && self.next().is_delimiter(Delimiter::Bracket, Orientation::Close)
         {
             self.expect_obracket()?;
             self.expect_cbracket()?;
@@ -134,11 +123,7 @@ impl Parser {
                     };
                 }
                 _ => {
-                    ty = Ty {
-                        span,
-                        kind: TyKind::Vec(Box::new(ty)),
-                        id: self.new_id(),
-                    };
+                    ty = Ty { span, kind: TyKind::Vec(Box::new(ty)), id: self.new_id() };
                 }
             }
         }
@@ -157,11 +142,7 @@ impl Parser {
         // Handle Option type
         if self.current().kind == TokenKind::QuestionMark {
             self.eat(TokenKind::QuestionMark);
-            ty = Ty {
-                span,
-                kind: TyKind::Option(Box::new(ty)),
-                id: self.new_id(),
-            };
+            ty = Ty { span, kind: TyKind::Option(Box::new(ty)), id: self.new_id() };
         }
 
         Ok(ty)
@@ -207,11 +188,7 @@ impl Parser {
             }
         };
 
-        Ok(kind_opt.map(|kind| Ty {
-            span,
-            kind,
-            id: self.new_id(),
-        }))
+        Ok(kind_opt.map(|kind| Ty { span, kind, id: self.new_id() }))
     }
 
     // No longer need these methods, as they're now integrated into parse_type_core
@@ -271,14 +248,6 @@ impl Parser {
             TypeAliasValue::Ty(self.parse_type()?)
         };
 
-        Ok((
-            ident,
-            ItemKind::TypeAlias(TypeAlias {
-                span,
-                generics,
-                ident,
-                ty,
-            }),
-        ))
+        Ok((ident, ItemKind::TypeAlias(TypeAlias { span, generics, ident, ty })))
     }
 }

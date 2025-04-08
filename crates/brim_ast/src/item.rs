@@ -37,10 +37,7 @@ impl Ident {
     }
 
     pub fn dummy() -> Self {
-        Self {
-            name: Empty,
-            span: Span::initial(),
-        }
+        Self { name: Empty, span: Span::initial() }
     }
 }
 
@@ -64,11 +61,7 @@ pub struct Visibility {
 
 impl Visibility {
     pub fn from_bool(is_public: bool, span: Span) -> Self {
-        let kind = if is_public {
-            VisibilityKind::Public
-        } else {
-            VisibilityKind::Private
-        };
+        let kind = if is_public { VisibilityKind::Public } else { VisibilityKind::Private };
         Self { span, kind }
     }
 }

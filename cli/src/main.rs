@@ -38,11 +38,8 @@ fn main() -> Result<()> {
         }
     };
 
-    let color_choice = if args.get_flag("no-color") {
-        ColorChoice::Never
-    } else {
-        ColorChoice::Auto
-    };
+    let color_choice =
+        if args.get_flag("no-color") { ColorChoice::Never } else { ColorChoice::Auto };
     let shell = &mut Shell::new(color_choice);
     let dir = env::current_dir()?;
     let res = match cmd.0 {

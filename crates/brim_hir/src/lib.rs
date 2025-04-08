@@ -81,10 +81,9 @@ impl CompiledModules {
     }
 
     pub fn get_item(&self, item_id: ItemId) -> &HirItem {
-        self.items.get(&item_id).expect(&format!(
-            "tried to query an item with id: {:?}, but it doesn't exist",
-            item_id
-        ))
+        self.items
+            .get(&item_id)
+            .expect(&format!("tried to query an item with id: {:?}, but it doesn't exist", item_id))
     }
 
     pub fn assign_path(&mut self, item_id: ItemId, path: ItemId) {
@@ -94,18 +93,12 @@ impl CompiledModules {
     pub fn get_assigned_path(&self, item_id: ItemId) -> ItemId {
         self.assigned_paths
             .get(&item_id)
-            .expect(&format!(
-                "an assigned path with id: {:?} doesn't exist",
-                item_id
-            ))
+            .expect(&format!("an assigned path with id: {:?} doesn't exist", item_id))
             .clone()
     }
 
     pub fn add_item_relation(&mut self, item_id: GlobalSymbol, relation: GlobalSymbol) {
-        self.item_relations
-            .entry(item_id)
-            .or_insert_with(Vec::new)
-            .push(relation);
+        self.item_relations.entry(item_id).or_insert_with(Vec::new).push(relation);
     }
 
     pub fn get_item_relations(&self, item_id: GlobalSymbol) -> Option<&Vec<GlobalSymbol>> {

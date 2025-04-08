@@ -22,13 +22,7 @@ impl<'a> ImportResolver<'a> {
         compiled: CompiledModules,
         map: ModuleMap,
     ) -> Self {
-        Self {
-            ctx,
-            map,
-            temp_loader: BrimFileLoader,
-            sess,
-            compiled,
-        }
+        Self { ctx, map, temp_loader: BrimFileLoader, sess, compiled }
     }
 
     pub fn resolve(&mut self) -> Result<ModuleMap> {

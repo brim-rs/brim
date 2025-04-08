@@ -70,11 +70,7 @@ impl Compiler {
             return Err(CompilerError::NotFound(path));
         }
 
-        let mut compiler = Self {
-            path,
-            kind,
-            version: None,
-        };
+        let mut compiler = Self { path, kind, version: None };
 
         compiler.detect_capabilities()?;
         Ok(compiler)
@@ -87,10 +83,8 @@ impl Compiler {
             CompilerKind::Gcc | CompilerKind::Clang => "--version",
         };
 
-        let output = Command::new(&self.path)
-            .arg(version_flag)
-            .output()
-            .map_err(CompilerError::IoError)?;
+        let output =
+            Command::new(&self.path).arg(version_flag).output().map_err(CompilerError::IoError)?;
 
         if !output.status.success() {
             return Err(CompilerError::ValidationFailed(

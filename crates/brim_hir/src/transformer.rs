@@ -91,11 +91,7 @@ impl HirModuleMap {
     pub fn get_expr(&self, id: ItemId) -> &HirExpr {
         match self.get(id) {
             Some(StoredHirItem::Expr(expr)) => expr,
-            _ => panic!(
-                "Expected expr for ID {:?}, but found {:?}",
-                id,
-                self.get(id)
-            ),
+            _ => panic!("Expected expr for ID {:?}, but found {:?}", id, self.get(id)),
         }
     }
 
@@ -113,10 +109,11 @@ impl HirModuleMap {
     pub fn get_fn(&self, id: ModuleId, name: &str) -> Option<&HirFn> {
         self.get_module(id).and_then(|module| {
             module.items.iter().find_map(|item| match self.get(*item) {
-                Some(StoredHirItem::Item(HirItem {
-                    kind: HirItemKind::Fn(f),
-                    ..
-                })) if f.sig.name.to_string() == name.to_string() => Some(f),
+                Some(StoredHirItem::Item(HirItem { kind: HirItemKind::Fn(f), .. }))
+                    if f.sig.name.to_string() == name.to_string() =>
+                {
+                    Some(f)
+                }
                 _ => None,
             })
         })
@@ -272,8 +269,7 @@ impl<'a> Transformer<'a> {
             mod_id: self.current_mod_id,
         };
 
-        self.map
-            .insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
+        self.map.insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
         self.compiled.insert_item(item.clone());
 
         Some(item.id)
@@ -423,17 +419,9 @@ impl<'a> Transformer<'a> {
     }
 
     pub fn transform_block(&mut self, block: Block) -> HirBlock {
-        let stmts = block
-            .stmts
-            .iter()
-            .map(|stmt| self.transform_stmt(stmt.clone()))
-            .collect();
+        let stmts = block.stmts.iter().map(|stmt| self.transform_stmt(stmt.clone())).collect();
 
-        HirBlock {
-            id: block.id,
-            span: block.span,
-            stmts,
-        }
+        HirBlock { id: block.id, span: block.span, stmts }
     }
 
     pub fn transform_stmt(&mut self, stmt: Stmt) -> HirStmt {
@@ -454,9 +442,9 @@ impl<'a> Transformer<'a> {
 
     pub fn hir_generic_kind(&mut self, kind: GenericKind) -> HirGenericKind {
         match kind {
-            GenericKind::Type { default } => HirGenericKind::Type {
-                default: default.map(|ty| self.transform_ty(ty)),
-            },
+            GenericKind::Type { default } => {
+                HirGenericKind::Type { default: default.map(|ty| self.transform_ty(ty)) }
+            }
             GenericKind::NonType { ty, default } => HirGenericKind::Const {
                 ty: self.transform_ty(ty),
                 default: default.map(|expr| self.transform_comptime_expr(expr).as_lit().clone()),
@@ -545,19 +533,14 @@ impl<'a> Transformer<'a> {
                 ExprKind::Block(block) => HirExprKind::Block(self.transform_block(block)),
                 ExprKind::Call(expr, args) => HirExprKind::Call(
                     Box::new(self.transform_expr(*expr).0),
-                    args.iter()
-                        .map(|arg| self.transform_expr(arg.clone()).0)
-                        .collect(),
+                    args.iter().map(|arg| self.transform_expr(arg.clone()).0).collect(),
                     vec![],
                 ),
                 ExprKind::Comptime(expr) => HirExprKind::Comptime(ComptimeValue::Expr(Box::new(
                     self.transform_expr(*expr).0,
                 ))),
                 ExprKind::Array(items) => HirExprKind::Array(
-                    items
-                        .iter()
-                        .map(|item| self.transform_expr(item.clone()).0)
-                        .collect(),
+                    items.iter().map(|item| self.transform_expr(item.clone()).0).collect(),
                 ),
                 ExprKind::Builtin(name, args) => {
                     let func = get_builtin_function(&name.to_string());
@@ -643,11 +626,7 @@ impl<'a> Transformer<'a> {
             },
             ty,
         };
-        let id = if let Some(id) = overwrite_id {
-            id
-        } else {
-            expr.id
-        };
+        let id = if let Some(id) = overwrite_id { id } else { expr.id };
         expr.id = id;
 
         self.map.insert_hir_expr(id, expr.clone());

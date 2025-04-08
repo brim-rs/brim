@@ -57,10 +57,7 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
     let lints = Box::leak(lints);
     main_sess.measure_time = args.time;
 
-    main_sess.assert_type(
-        ProjectType::Bin,
-        "Can only use `run` command on binary projects",
-    )?;
+    main_sess.assert_type(ProjectType::Bin, "Can only use `run` command on binary projects")?;
 
     main_sess.measure_time(|main_sess| {
         let mut resolver = ProjectResolver::new(".");
@@ -157,11 +154,7 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
 
 pub fn bail_on_errors(len: usize) -> Result<()> {
     if len > 0 {
-        bail!(
-            "Compilation failed due to {} previous {}",
-            len,
-            plural(len, "error", "errors")
-        )
+        bail!("Compilation failed due to {} previous {}", len, plural(len, "error", "errors"))
     }
 
     Ok(())
@@ -178,10 +171,7 @@ pub fn compile_project(
     let shell = &mut Shell::new(c_choice);
     let opt_level = sess.config.build.level.clone();
 
-    shell.status(
-        "Compiling",
-        format!("{} in {} mode", project_name, opt_level),
-    )?;
+    shell.status("Compiling", format!("{} in {} mode", project_name, opt_level))?;
 
     let entry_file = sess.main_file()?;
     let mut parser = Parser::new(entry_file, sess.config.experimental.clone());
@@ -194,9 +184,7 @@ pub fn compile_project(
 
     let mut discover = ModuleDiscover::new(resolver_temp, sess);
 
-    discover
-        .map
-        .insert_or_update(get_path(entry_file)?, barrel.clone());
+    discover.map.insert_or_update(get_path(entry_file)?, barrel.clone());
     let mut visited = HashSet::new();
 
     let module_map = discover.create_module_map(&mut barrel, &mut visited)?;
@@ -222,9 +210,7 @@ pub fn compile_project(
         if let Some(func) = main_fn {
             comp.validate_main_function(func, entry_file);
         } else {
-            comp.emit(NoMainFunction {
-                file: main_mod.path.display().to_string(),
-            });
+            comp.emit(NoMainFunction { file: main_mod.path.display().to_string() });
         }
     }
 

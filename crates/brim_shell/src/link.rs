@@ -14,10 +14,6 @@ impl<'a> Link<'a> {
 
 impl fmt::Display for Link<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
-            self.url, self.text
-        )
+        write!(f, "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", self.url, self.text)
     }
 }

@@ -28,17 +28,9 @@ impl PrimitiveToken {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RawStrError {
-    InvalidStarter {
-        bad_char: char,
-    },
-    NoTerminator {
-        expected: u32,
-        found: u32,
-        possible_terminator_offset: Option<u32>,
-    },
-    TooManyDelimiters {
-        found: u32,
-    },
+    InvalidStarter { bad_char: char },
+    NoTerminator { expected: u32, found: u32, possible_terminator_offset: Option<u32> },
+    TooManyDelimiters { found: u32 },
 }
 
 #[cfg(debug_assertions)]
@@ -218,10 +210,7 @@ impl<'a> Cursor<'a> {
                 let literal_kind = self.number(c);
                 let suffix_start = self.pos_within_token();
                 self.eat_literal_suffix();
-                Literal {
-                    kind: literal_kind,
-                    suffix_start,
-                }
+                Literal { kind: literal_kind, suffix_start }
             }
 
             'b' => match self.first() {
@@ -232,10 +221,7 @@ impl<'a> Cursor<'a> {
                     if terminated {
                         self.eat_identifier();
                     }
-                    Literal {
-                        kind: Byte { terminated },
-                        suffix_start,
-                    }
+                    Literal { kind: Byte { terminated }, suffix_start }
                 }
                 '"' => {
                     self.bump();
@@ -244,10 +230,7 @@ impl<'a> Cursor<'a> {
                     if terminated {
                         self.eat_identifier();
                     }
-                    Literal {
-                        kind: ByteStr { terminated },
-                        suffix_start,
-                    }
+                    Literal { kind: ByteStr { terminated }, suffix_start }
                 }
                 _ => self.ident_or_unknown_prefix(),
             },
@@ -259,10 +242,7 @@ impl<'a> Cursor<'a> {
                 if terminated {
                     self.eat_identifier();
                 }
-                Literal {
-                    kind: LiteralKind::Str { terminated },
-                    suffix_start,
-                }
+                Literal { kind: LiteralKind::Str { terminated }, suffix_start }
             }
             '\'' => {
                 let terminated = self.single_quoted_string();
@@ -270,10 +250,7 @@ impl<'a> Cursor<'a> {
                 if terminated {
                     self.eat_identifier();
                 }
-                Literal {
-                    kind: LiteralKind::Char { terminated },
-                    suffix_start,
-                }
+                Literal { kind: LiteralKind::Char { terminated }, suffix_start }
             }
 
             c if is_identifier_start(c) => self.ident_or_unknown_prefix(),
@@ -281,10 +258,7 @@ impl<'a> Cursor<'a> {
             _ => Unknown,
         };
 
-        let token = PrimitiveToken {
-            kind: token_kind,
-            len: self.pos_within_token(),
-        };
+        let token = PrimitiveToken { kind: token_kind, len: self.pos_within_token() };
 
         self.reset_pos_within_token();
         token
@@ -298,30 +272,21 @@ impl<'a> Cursor<'a> {
                     base = Base::Binary;
                     self.bump();
                     if !self.eat_decimal_digits() {
-                        return Int {
-                            base,
-                            empty_int: true,
-                        };
+                        return Int { base, empty_int: true };
                     }
                 }
                 'o' => {
                     base = Base::Octal;
                     self.bump();
                     if !self.eat_decimal_digits() {
-                        return Int {
-                            base,
-                            empty_int: true,
-                        };
+                        return Int { base, empty_int: true };
                     }
                 }
                 'x' => {
                     base = Base::Hexadecimal;
                     self.bump();
                     if !self.eat_hexadecimal_digits() {
-                        return Int {
-                            base,
-                            empty_int: true,
-                        };
+                        return Int { base, empty_int: true };
                     }
                 }
                 '0'..='9' | '_' => {
@@ -331,10 +296,7 @@ impl<'a> Cursor<'a> {
                 '.' | 'e' | 'E' => {}
 
                 _ => {
-                    return Int {
-                        base,
-                        empty_int: false,
-                    };
+                    return Int { base, empty_int: false };
                 }
             }
         } else {
@@ -355,23 +317,14 @@ impl<'a> Cursor<'a> {
                         _ => (),
                     }
                 }
-                Float {
-                    base,
-                    empty_exponent,
-                }
+                Float { base, empty_exponent }
             }
             'e' | 'E' => {
                 self.bump();
                 let empty_exponent = !self.eat_float_exponent();
-                Float {
-                    base,
-                    empty_exponent,
-                }
+                Float { base, empty_exponent }
             }
-            _ => Int {
-                base,
-                empty_int: false,
-            },
+            _ => Int { base, empty_int: false },
         }
     }
 
@@ -515,9 +468,5 @@ pub fn tokens_no_whitespace(input: &str) -> impl Iterator<Item = PrimitiveToken>
 }
 
 pub fn tokens(input: &str, whitespace: bool) -> Vec<PrimitiveToken> {
-    if whitespace {
-        tokenize(input).collect()
-    } else {
-        tokens_no_whitespace(input).collect()
-    }
+    if whitespace { tokenize(input).collect() } else { tokens_no_whitespace(input).collect() }
 }

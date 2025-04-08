@@ -8,27 +8,15 @@ impl CppCodegen {
             HirTyKind::Primitive(prim) => self.transform_primitive(prim),
             HirTyKind::Ptr(ty, mutable) => {
                 let ty = self.generate_ty(*ty);
-                if mutable == Mutable::No {
-                    format!("{}*", ty)
-                } else {
-                    format!("const {}*", ty)
-                }
+                if mutable == Mutable::No { format!("{}*", ty) } else { format!("const {}*", ty) }
             }
 
             HirTyKind::Ref(ty, mutable) => {
                 let ty = self.generate_ty(*ty);
-                if mutable == Mutable::No {
-                    format!("{}&", ty)
-                } else {
-                    format!("const {}&", ty)
-                }
+                if mutable == Mutable::No { format!("{}&", ty) } else { format!("const {}&", ty) }
             }
 
-            HirTyKind::Ident {
-                ident,
-                generics,
-                is_generic,
-            } => {
+            HirTyKind::Ident { ident, generics, is_generic } => {
                 let generics = if generics.params.is_empty() {
                     "".to_string()
                 } else {
@@ -50,19 +38,11 @@ impl CppCodegen {
                         .hir()
                         .symbols
                         .resolve(&ident.to_string(), self.current_mod.as_usize())
-                        .expect(&format!(
-                            "Failed to resolve symbol: {}",
-                            ident.name.to_string()
-                        ));
+                        .expect(&format!("Failed to resolve symbol: {}", ident.name.to_string()));
 
                     let mod_id = symbol.id.mod_id;
 
-                    format!(
-                        "module{}::brim_{}{}",
-                        mod_id.as_usize(),
-                        ident.name,
-                        generics
-                    )
+                    format!("module{}::brim_{}{}", mod_id.as_usize(), ident.name, generics)
                 }
             }
 

@@ -13,9 +13,7 @@ pub fn setup_tracing() {
         .with_file(true)
         .with_target(true);
 
-    let subscriber = tracing_subscriber::Registry::default()
-        .with(env)
-        .with(console_layer);
+    let subscriber = tracing_subscriber::Registry::default().with(env).with(console_layer);
 
     subscriber::set_global_default(subscriber).expect("Failed to set global default subscriber");
 }

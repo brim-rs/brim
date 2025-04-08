@@ -63,9 +63,8 @@ impl TypeChecker {
                     let val_ty = val.ty.clone();
 
                     if val.ty == HirTyKind::Primitive(PrimitiveType::Void) {
-                        self.ctx.emit_impl(CannotInitializeWithVoid {
-                            span: (stmt.span, self.mod_id),
-                        });
+                        self.ctx
+                            .emit_impl(CannotInitializeWithVoid { span: (stmt.span, self.mod_id) });
                     } else {
                         if !ty.can_be_initialized_with(&val_ty) {
                             self.ctx.emit_impl(CannotInitializeVariable {
@@ -82,10 +81,7 @@ impl TypeChecker {
 
                 self.scope_manager.declare_variable(
                     ident.to_string(),
-                    TypeInfo {
-                        ty,
-                        span: stmt.span,
-                    },
+                    TypeInfo { ty, span: stmt.span },
                     true,
                 );
             }

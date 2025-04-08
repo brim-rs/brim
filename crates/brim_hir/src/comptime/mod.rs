@@ -119,9 +119,7 @@ impl<'a> ComptimeTransformer<'a> {
             HirItemKind::External(_) => {}
         }
 
-        self.hir
-            .hir_items
-            .insert(item.id, StoredHirItem::Item(item.clone()));
+        self.hir.hir_items.insert(item.id, StoredHirItem::Item(item.clone()));
         self.compiled.items.insert(item.id, item);
     }
 
@@ -181,13 +179,10 @@ impl<'a> Evaluator<'a> {
                     } else {
                         ComptimeReturnValue::Lit(Lit::new(LitKind::None, Empty, None))
                     };
-                    self.scopes.declare_variable(
-                        ident.name.to_string(),
-                        VariableInfo {
-                            span: ident.span,
-                            val,
-                        },
-                    );
+                    self.scopes.declare_variable(ident.name.to_string(), VariableInfo {
+                        span: ident.span,
+                        val,
+                    });
                 }
                 HirStmtKind::If(_) => {
                     todo!()
@@ -199,9 +194,7 @@ impl<'a> Evaluator<'a> {
         if let Some(val) = self.last_val.clone() {
             val
         } else {
-            let err = self.temp.emit_impl(NoValueReturned {
-                span: (block.span, self.mod_id),
-            });
+            let err = self.temp.emit_impl(NoValueReturned { span: (block.span, self.mod_id) });
 
             ComptimeReturnValue::Lit(Lit::new(LitKind::Err(err), Empty, None))
         }

@@ -16,7 +16,7 @@ use std::{
     io::{Stderr, Stdout, Write},
     path::PathBuf,
 };
-use terminal_size::{terminal_size, Height, Width};
+use terminal_size::{Height, Width, terminal_size};
 
 #[derive(Debug)]
 pub struct ShellOutput {
@@ -117,11 +117,8 @@ impl Shell {
     }
 
     pub fn set_color_choice(&mut self, color_choice: ColorChoice) {
-        let (stdout, stderr, color) = (
-            &mut self.output.stdout,
-            &mut self.output.stderr,
-            &mut self.output.color,
-        );
+        let (stdout, stderr, color) =
+            (&mut self.output.stdout, &mut self.output.stderr, &mut self.output.color);
 
         *color = color_choice;
         *stdout = AutoStream::new(std::io::stdout(), color_choice);
@@ -131,11 +128,7 @@ impl Shell {
     pub fn file_link(&mut self, file: PathBuf) -> Result<url::Url> {
         let mut url = url::Url::from_file_path(file).ok().unwrap();
 
-        let hostname = if cfg!(windows) {
-            None
-        } else {
-            gethostname().into_string().ok()
-        };
+        let hostname = if cfg!(windows) { None } else { gethostname().into_string().ok() };
         let _ = url.set_host(hostname.as_deref());
         Ok(url)
     }
@@ -146,13 +139,9 @@ impl Shell {
 
     pub fn cond_print<T: fmt::Display>(&mut self, message: T, err: bool) -> Result<()> {
         if err {
-            self.output
-                .stderr()
-                .write_all(format!("{}", message).as_bytes())?;
+            self.output.stderr().write_all(format!("{}", message).as_bytes())?;
         } else {
-            self.output
-                .stdout()
-                .write_all(format!("{}", message).as_bytes())?;
+            self.output.stdout().write_all(format!("{}", message).as_bytes())?;
         }
         Ok(())
     }

@@ -50,10 +50,7 @@ pub struct ProjectInitializer<'a> {
 
 impl<'a> ProjectInitializer<'a> {
     pub fn new(shell: &'a mut Shell, args: &ArgMatches) -> Result<Self> {
-        let name = args
-            .get_one::<String>("name")
-            .context("Project name is required")?
-            .to_owned();
+        let name = args.get_one::<String>("name").context("Project name is required")?.to_owned();
 
         let project_type = match (args.get_flag("bin"), args.get_flag("lib")) {
             (true, false) => ProjectType::Bin,
@@ -88,13 +85,11 @@ impl<'a> ProjectInitializer<'a> {
 
     fn validate_project_name(&mut self) -> Result<()> {
         if self.name == "std" {
-            self.shell
-                .warn("'std' is a part of the standard library and not recommended")?;
+            self.shell.warn("'std' is a part of the standard library and not recommended")?;
         }
 
         if self.name.chars().any(|ch| ch > '\x7f') {
-            self.shell
-                .warn("Project name contains non-ascii characters")?;
+            self.shell.warn("Project name contains non-ascii characters")?;
         }
 
         Ok(())
@@ -105,16 +100,14 @@ impl<'a> ProjectInitializer<'a> {
 
         if project_dir.exists() {
             if self.force {
-                self.shell
-                    .warn("Force flag is enabled. Removing existing directory.")?;
+                self.shell.warn("Force flag is enabled. Removing existing directory.")?;
                 fs::remove_dir_all(&project_dir)?;
             } else {
                 anyhow::bail!("Project directory already exists");
             }
         }
 
-        self.shell
-            .status("Creating", format!("{} project", self.project_type))?;
+        self.shell.status("Creating", format!("{} project", self.project_type))?;
 
         fs::create_dir(&project_dir)?;
         Ok(project_dir)
@@ -123,15 +116,11 @@ impl<'a> ProjectInitializer<'a> {
     fn initialize_git(&mut self, project_dir: &Path) -> Result<()> {
         self.shell.status("Initializing", "git repository")?;
 
-        let output = ProcessCommand::new("git")
-            .arg("init")
-            .current_dir(project_dir)
-            .output()?;
+        let output = ProcessCommand::new("git").arg("init").current_dir(project_dir).output()?;
 
         if !output.status.success() {
             let error_msg = String::from_utf8_lossy(&output.stderr);
-            self.shell
-                .error(format!("Git initialization failed: {}", error_msg))?;
+            self.shell.error(format!("Git initialization failed: {}", error_msg))?;
         }
 
         Ok(())
@@ -176,11 +165,7 @@ impl<'a> ProjectInitializer<'a> {
 pub fn init_cmd() -> Command {
     Command::new("init")
         .about("Initialize a new project")
-        .arg(
-            Arg::new("name")
-                .required(true)
-                .help("The name of the project"),
-        )
+        .arg(Arg::new("name").required(true).help("The name of the project"))
         .arg(
             Arg::new("bin")
                 .short('b')

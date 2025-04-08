@@ -146,21 +146,13 @@ where
     Source: AsRef<str>,
 {
     fn new(name: OsString, source: Source) -> Self {
-        let line_starts = line_starts(source.as_ref())
-            .map(|i| ByteIndex::from(i as u32))
-            .collect();
+        let line_starts = line_starts(source.as_ref()).map(|i| ByteIndex::from(i as u32)).collect();
 
-        File {
-            name,
-            source,
-            line_starts,
-        }
+        File { name, source, line_starts }
     }
 
     fn update(&mut self, source: Source) {
-        let line_starts = line_starts(source.as_ref())
-            .map(|i| ByteIndex::from(i as u32))
-            .collect();
+        let line_starts = line_starts(source.as_ref()).map(|i| ByteIndex::from(i as u32)).collect();
         self.source = source;
         self.line_starts = line_starts;
     }
@@ -202,12 +194,10 @@ where
 
     fn location(&self, byte_index: ByteIndex) -> Result<Location, Error> {
         let line_index = self.line_index(byte_index);
-        let line_start_index = self
-            .line_start(line_index)
-            .map_err(|_| Error::IndexTooLarge {
-                given: byte_index.to_usize(),
-                max: self.source().as_ref().len() - 1,
-            })?;
+        let line_start_index = self.line_start(line_index).map_err(|_| Error::IndexTooLarge {
+            given: byte_index.to_usize(),
+            max: self.source().as_ref().len() - 1,
+        })?;
         let line_src = self
             .source
             .as_ref()
@@ -242,10 +232,7 @@ where
 
         self.source.as_ref().get(start..end).ok_or_else(|| {
             let max = self.source().as_ref().len() - 1;
-            Error::IndexTooLarge {
-                given: if start > max { start } else { end },
-                max,
-            }
+            Error::IndexTooLarge { given: if start > max { start } else { end }, max }
         })
     }
 }

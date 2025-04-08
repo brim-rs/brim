@@ -78,9 +78,7 @@ impl Parser {
                     ),
                 ));
             } else {
-                box_diag!(ExpectedColonInTernaryError {
-                    span: (self.current().span, self.file),
-                })
+                box_diag!(ExpectedColonInTernaryError { span: (self.current().span, self.file) })
             }
         }
 
@@ -163,10 +161,7 @@ impl Parser {
 
             self.advance();
             let operand = self.parse_unary_expr()?;
-            return Ok(self.new_expr(
-                span.to(operand.span),
-                ExprKind::Unary(op, Box::new(operand)),
-            ));
+            return Ok(self.new_expr(span.to(operand.span), ExprKind::Unary(op, Box::new(operand))));
         }
 
         self.parse_access_expr()
@@ -217,9 +212,7 @@ impl Parser {
 
                     Ok(self.new_expr(span.to(expr.span), ExprKind::Return(Box::new(expr))))
                 } else if self.eat_keyword(ptok!(If)) {
-                    box_diag!(IfAsExpressionError {
-                        span: (self.current().span, self.file),
-                    })
+                    box_diag!(IfAsExpressionError { span: (self.current().span, self.file) })
                 } else if self.eat_keyword(ptok!(Comptime)) {
                     let block = self.parse_block(true)?;
                     let expr = self.new_expr(block.span, ExprKind::Block(block));
@@ -291,11 +284,8 @@ impl Parser {
                         ))
                     } else {
                         if let Some(primitive) = self.is_primitive(ident.clone())? {
-                            let ty = Ty {
-                                span,
-                                kind: TyKind::Primitive(primitive),
-                                id: self.new_id(),
-                            };
+                            let ty =
+                                Ty { span, kind: TyKind::Primitive(primitive), id: self.new_id() };
                             return Ok(self.new_expr(span, ExprKind::Type(Box::new(ty))));
                         }
 
@@ -405,10 +395,7 @@ impl Parser {
                 self.expect_cbracket()?;
 
                 debug!("Parsed array expression");
-                Ok(self.new_expr(
-                    span_start.to(self.current().span),
-                    ExprKind::Array(elements),
-                ))
+                Ok(self.new_expr(span_start.to(self.current().span), ExprKind::Array(elements)))
             }
             TokenKind::BinOp(BinOpToken::And) | TokenKind::BinOp(BinOpToken::Star) => {
                 if let Some(ty) = self.parse_ty_without_ident()? {
@@ -484,17 +471,9 @@ impl Parser {
 
             // This means that the suffix is not expected in the literal
             if valid_suffixes.is_empty() {
-                self.emit(UnexpectedLiteralSuffix {
-                    lit,
-                    span: (span, self.file),
-                    note: msg,
-                });
+                self.emit(UnexpectedLiteralSuffix { lit, span: (span, self.file), note: msg });
             } else if !valid_suffixes.contains(&suffix.as_str()) {
-                self.emit(InvalidLiteralSuffix {
-                    lit,
-                    span: (span, self.file),
-                    note: msg,
-                });
+                self.emit(InvalidLiteralSuffix { lit, span: (span, self.file), note: msg });
             }
         }
 
@@ -538,9 +517,7 @@ impl Parser {
         while !self.is_brace(Orientation::Close) {
             if self.eat_keyword(ptok!(Else)) {
                 if has_else_arm {
-                    box_diag!(MultipleElseArmsError {
-                        span: (self.prev().span, self.file),
-                    });
+                    box_diag!(MultipleElseArmsError { span: (self.prev().span, self.file) });
                 }
 
                 self.expect_fat_arrow()?;
@@ -570,9 +547,7 @@ impl Parser {
         }
 
         if match_arms.is_empty() {
-            box_diag!(EmptyMatchExpressionError {
-                span: (start_span, self.file),
-            });
+            box_diag!(EmptyMatchExpressionError { span: (start_span, self.file) });
         }
 
         Ok(self.new_expr(
@@ -616,13 +591,11 @@ impl Parser {
 
                     Ok(lit.symbol.to_string())
                 }
-                _ => box_diag!(ExpectedStringLiteralError {
-                    span: (self.current().span, self.file)
-                }),
+                _ => {
+                    box_diag!(ExpectedStringLiteralError { span: (self.current().span, self.file) })
+                }
             },
-            _ => box_diag!(ExpectedStringLiteralError {
-                span: (self.current().span, self.file)
-            }),
+            _ => box_diag!(ExpectedStringLiteralError { span: (self.current().span, self.file) }),
         }
     }
 
@@ -664,9 +637,7 @@ impl Parser {
                     // we eat until we find the brace of the opening of the else block
                     let _ = self.eat_until_brace(Orientation::Open);
 
-                    self.emit(ElseBranchExpr {
-                        span: (span.to(self.prev().span), self.file),
-                    });
+                    self.emit(ElseBranchExpr { span: (span.to(self.prev().span), self.file) });
                 }
                 self.parsing_ctx = ParsingContext::Normal;
                 let block = self.parse_block(true)?;
@@ -700,10 +671,6 @@ impl Parser {
     }
 
     pub fn new_expr(&mut self, span: Span, kind: ExprKind) -> Expr {
-        Expr {
-            id: self.new_id(),
-            span,
-            kind,
-        }
+        Expr { id: self.new_id(), span, kind }
     }
 }

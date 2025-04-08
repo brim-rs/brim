@@ -98,10 +98,7 @@ pub type PResult<T> = Result<T, Box<dyn ToDiagnostic>>;
 #[macro_export]
 macro_rules! ptok {
     ($sym:ident) => {
-        PToken {
-            sym: $sym,
-            kind: PTokenKind::$sym,
-        }
+        PToken { sym: $sym, kind: PTokenKind::$sym }
     };
 }
 
@@ -154,10 +151,7 @@ impl Parser {
             GLOBAL_INTERNER.lock().unwrap().initialized = true;
 
             for (key, value) in SYMBOL_STRINGS.iter() {
-                GLOBAL_INTERNER
-                    .lock()
-                    .unwrap()
-                    .add_existing(*key, value.clone());
+                GLOBAL_INTERNER.lock().unwrap().add_existing(*key, value.clone());
             }
         }
 
@@ -215,11 +209,7 @@ impl Parser {
         self.dcx.diags.extend(lexer.ctx.diags);
         debug!("======= Finished parsing barrel with id: {}", self.file);
 
-        Ok(Barrel {
-            items,
-            id: self.new_id(),
-            file_id: self.file,
-        })
+        Ok(Barrel { items, id: self.new_id(), file_id: self.file })
     }
 
     pub fn advance(&mut self) -> Token {
@@ -343,10 +333,7 @@ impl Parser {
 
     /// Eats until it finds a first brace, returns the span of the brace
     pub fn eat_until_brace(&mut self, orientation: Orientation) -> Span {
-        while !self
-            .current()
-            .is(TokenKind::Delimiter(Delimiter::Brace, orientation))
-        {
+        while !self.current().is(TokenKind::Delimiter(Delimiter::Brace, orientation)) {
             self.advance();
         }
 

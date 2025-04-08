@@ -224,10 +224,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
             write!(self, " ")?;
 
             let mut previous_label_style = None;
-            let placeholder_metrics = Metrics {
-                byte_index: source.len(),
-                unicode_width: 1,
-            };
+            let placeholder_metrics = Metrics { byte_index: source.len(), unicode_width: 1 };
             for (metrics, ch) in self
                 .char_metrics(source.char_indices())
                 .chain(std::iter::once((placeholder_metrics, '\0')))
@@ -480,12 +477,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         outer_padding: usize,
     ) -> Result<(), Error> {
         self.set_color(&self.styles().line_number)?;
-        write!(
-            self,
-            "{line_number: >width$}",
-            line_number = line_number,
-            width = outer_padding,
-        )?;
+        write!(self, "{line_number: >width$}", line_number = line_number, width = outer_padding,)?;
         self.reset()?;
         write!(self, " ")?;
         Ok(())

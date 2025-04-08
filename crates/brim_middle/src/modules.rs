@@ -36,11 +36,7 @@ impl ModuleMap {
             }
         }
 
-        self.modules.push(Module {
-            path,
-            barrel,
-            imports: vec![],
-        });
+        self.modules.push(Module { path, barrel, imports: vec![] });
     }
 
     pub fn update_modules_imports(&mut self, mod_id: ModuleId, imports: Vec<Location>) {
@@ -53,9 +49,7 @@ impl ModuleMap {
     }
 
     pub fn get_module_by_id(&self, id: ModuleId) -> Option<&Module> {
-        self.modules
-            .iter()
-            .find(|module| ModuleId::from_usize(module.barrel.file_id) == id)
+        self.modules.iter().find(|module| ModuleId::from_usize(module.barrel.file_id) == id)
     }
 }
 
@@ -68,11 +62,7 @@ pub struct SymbolCollector<'a> {
 
 impl<'a> SymbolCollector<'a> {
     pub fn new(table: &'a mut SymbolTable, simple: &'a mut SimpleModules) -> Self {
-        Self {
-            table,
-            file_id: 0,
-            simple,
-        }
+        Self { table, file_id: 0, simple }
     }
 
     pub fn collect(&mut self, map: &mut ModuleMap) {
@@ -88,40 +78,30 @@ impl<'a> SymbolCollector<'a> {
 
 impl<'a> AstWalker for SymbolCollector<'a> {
     fn visit_item(&mut self, item: &mut Item) {
-        let id = Location {
-            mod_id: ModuleId::from_usize(self.file_id),
-            item_id: item.id,
-        };
+        let id = Location { mod_id: ModuleId::from_usize(self.file_id), item_id: item.id };
 
         self.simple.items.insert(item.id, item.clone());
         match &item.kind {
             ItemKind::Fn(_) => {
-                self.table
-                    .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
+                self.table.add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
             ItemKind::Struct(_) => {
-                self.table
-                    .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
+                self.table.add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
             ItemKind::TypeAlias(_) => {
-                self.table
-                    .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
+                self.table.add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
             ItemKind::Enum(_) => {
-                self.table
-                    .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
+                self.table.add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
             ItemKind::External(external) => {
                 for item in external.items.clone() {
                     self.table.add_symbol(
                         self.file_id,
-                        GlobalSymbol::new(
-                            item.ident.clone(),
-                            Location {
-                                mod_id: ModuleId::from_usize(self.file_id),
-                                item_id: item.id,
-                            },
-                        ),
+                        GlobalSymbol::new(item.ident.clone(), Location {
+                            mod_id: ModuleId::from_usize(self.file_id),
+                            item_id: item.id,
+                        }),
                     );
                 }
             }
@@ -210,13 +190,10 @@ impl<'a> AstWalker for UseCollector<'a> {
 
                         let id = ItemId::new();
                         self.namespaces.insert((ident.clone(), id), map);
-                        symbols.push(GlobalSymbol::new(
-                            ident.clone(),
-                            Location {
-                                mod_id,
-                                item_id: id,
-                            },
-                        ))
+                        symbols.push(GlobalSymbol::new(ident.clone(), Location {
+                            mod_id,
+                            item_id: id,
+                        }))
                     }
                 }
 

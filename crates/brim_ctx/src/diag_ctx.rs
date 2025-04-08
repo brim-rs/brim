@@ -13,9 +13,7 @@ pub struct DiagnosticContext {
 
 impl DiagnosticContext {
     pub fn new() -> Self {
-        Self {
-            config: DiagConfig::default(),
-        }
+        Self { config: DiagConfig::default() }
     }
 
     pub fn emit(&mut self, diag: &Box<dyn ToDiagnostic>, files: &SimpleFiles) {

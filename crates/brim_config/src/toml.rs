@@ -169,11 +169,8 @@ impl Config {
                 OptLevel::Debug
             };
 
-            build.lib_type = if args.get_flag("dynamic") {
-                LibType::Dynamic
-            } else {
-                LibType::Static
-            };
+            build.lib_type =
+                if args.get_flag("dynamic") { LibType::Dynamic } else { LibType::Static };
         }
 
         let lints = config.lints.unwrap_or_default();
@@ -182,15 +179,7 @@ impl Config {
         let dependencies = dependencies;
         let cwd = canonicalize_path(cwd)?;
 
-        Ok(Self {
-            project,
-            tasks,
-            build,
-            dependencies,
-            lints,
-            experimental,
-            cwd,
-        })
+        Ok(Self { project, tasks, build, dependencies, lints, experimental, cwd })
     }
 
     pub fn is_bin(&self) -> bool {

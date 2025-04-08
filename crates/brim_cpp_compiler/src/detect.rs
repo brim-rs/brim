@@ -79,10 +79,7 @@ fn detect_clang_or_gcc() -> Result<Compiler> {
 }
 
 fn setup_msvc_environment(vcvars_path: &Path) -> Result<HashMap<String, String>> {
-    debug!(
-        "Setting up MSVC environment using: {}",
-        vcvars_path.display()
-    );
+    debug!("Setting up MSVC environment using: {}", vcvars_path.display());
 
     let output = Command::new("cmd")
         .args(&["/C", vcvars_path.to_str().unwrap(), "x64", "&&", "set"])
@@ -106,15 +103,10 @@ fn setup_msvc_environment(vcvars_path: &Path) -> Result<HashMap<String, String>>
     }
 
     if env_vars.is_empty() {
-        return Err(anyhow!(
-            "No environment variables were set by vcvars script"
-        ));
+        return Err(anyhow!("No environment variables were set by vcvars script"));
     }
 
-    debug!(
-        "Successfully captured {} environment variables",
-        env_vars.len()
-    );
+    debug!("Successfully captured {} environment variables", env_vars.len());
     Ok(env_vars)
 }
 

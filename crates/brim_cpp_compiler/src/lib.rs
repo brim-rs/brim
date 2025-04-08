@@ -43,17 +43,10 @@ impl CppBuild {
         lib_type: LibType,
     ) -> Result<Self> {
         let build_dir = build_dir.as_ref();
-        ensure!(
-            build_dir.exists(),
-            "Build directory does not exist: {}",
-            build_dir.display()
-        );
+        ensure!(build_dir.exists(), "Build directory does not exist: {}", build_dir.display());
 
-        let compiler = if let Some(kind) = compiler {
-            resolve_from_kind(kind)?
-        } else {
-            detect_compiler()?
-        };
+        let compiler =
+            if let Some(kind) = compiler { resolve_from_kind(kind)? } else { detect_compiler()? };
         Ok(Self {
             compiler,
             source_files: HashSet::new(),
@@ -128,10 +121,8 @@ impl CppBuild {
 
         debug!("Executing compilation command: {:?}", command);
 
-        let output = command
-            .current_dir(&*self.build_dir)
-            .output()
-            .context("Failed to execute compiler")?;
+        let output =
+            command.current_dir(&*self.build_dir).output().context("Failed to execute compiler")?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -168,11 +159,7 @@ impl CppBuild {
         }
 
         for dir in &self.include_dirs {
-            command.arg(if self.compiler.kind() == &CompilerKind::Msvc {
-                "/I"
-            } else {
-                "-I"
-            });
+            command.arg(if self.compiler.kind() == &CompilerKind::Msvc { "/I" } else { "-I" });
             command.arg(dir.as_os_str());
         }
 
@@ -195,11 +182,7 @@ impl CppBuild {
         }
 
         for define in &self.defines {
-            command.arg(if self.compiler.kind() == &CompilerKind::Msvc {
-                "/D"
-            } else {
-                "-D"
-            });
+            command.arg(if self.compiler.kind() == &CompilerKind::Msvc { "/D" } else { "-D" });
             command.arg(define);
         }
 
@@ -282,30 +265,24 @@ impl CppBuild {
     }
 
     pub fn disable_warnings(&mut self) -> &mut Self {
-        self.add_flag(if self.compiler.kind() == &CompilerKind::Msvc {
-            "/W0"
-        } else {
-            "-w"
-        });
+        self.add_flag(if self.compiler.kind() == &CompilerKind::Msvc { "/W0" } else { "-w" });
         self.add_flag("-Waddress-of-temporary");
         self
     }
 
     fn get_output_path(&self, output_name: &OsStr) -> PathBuf {
-        self.build_dir
-            .join(output_name)
-            .with_extension(match self.project_type {
-                ProjectType::Lib => match self.lib_type {
-                    LibType::Static => "lib",
-                    LibType::Dynamic => "dll",
-                },
-                ProjectType::Bin => {
-                    if cfg!(windows) {
-                        "exe"
-                    } else {
-                        ""
-                    }
+        self.build_dir.join(output_name).with_extension(match self.project_type {
+            ProjectType::Lib => match self.lib_type {
+                LibType::Static => "lib",
+                LibType::Dynamic => "dll",
+            },
+            ProjectType::Bin => {
+                if cfg!(windows) {
+                    "exe"
+                } else {
+                    ""
                 }
-            })
+            }
+        })
     }
 }

@@ -185,12 +185,7 @@ pub struct HirFn {
 impl HirFn {
     /// Only if the first parameter is named `self`
     pub fn is_static(&self) -> bool {
-        !self
-            .sig
-            .params
-            .params
-            .first()
-            .map_or(false, |param| param.name.to_string() == "self")
+        !self.sig.params.params.first().map_or(false, |param| param.name.to_string() == "self")
     }
 }
 
@@ -219,10 +214,7 @@ pub struct HirGenerics {
 impl HirGenerics {
     pub fn is_generic(&self, ty: &HirTyKind) -> Option<HirGenericParam> {
         if let HirTyKind::Ident { ident, .. } = ty {
-            self.params
-                .iter()
-                .find(|g| g.name.to_string() == *ident.to_string())
-                .cloned()
+            self.params.iter().find(|g| g.name.to_string() == *ident.to_string()).cloned()
         } else {
             None
         }
@@ -231,10 +223,7 @@ impl HirGenerics {
     pub fn join(&self, other: &HirGenerics) -> HirGenerics {
         let mut params = self.params.clone();
         params.extend(other.params.clone());
-        HirGenerics {
-            params,
-            span: self.span.to(other.span),
-        }
+        HirGenerics { params, span: self.span.to(other.span) }
     }
 }
 
@@ -269,10 +258,7 @@ impl HirGenericArgs {
     }
 
     pub fn empty() -> Self {
-        Self {
-            span: Span::DUMMY,
-            params: vec![],
-        }
+        Self { span: Span::DUMMY, params: vec![] }
     }
 }
 

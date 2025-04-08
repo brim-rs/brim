@@ -8,9 +8,6 @@ pub struct Location {
 
 impl Location {
     pub fn new(line: impl Into<LineIndex>, column: impl Into<ColumnIndex>) -> Location {
-        Location {
-            line: line.into(),
-            column: column.into(),
-        }
+        Location { line: line.into(), column: column.into() }
     }
 }

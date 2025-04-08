@@ -50,9 +50,7 @@ pub struct InferCtx {
 
 impl InferCtx {
     pub fn new() -> Self {
-        Self {
-            generics: Vec::new(),
-        }
+        Self { generics: Vec::new() }
     }
 
     pub fn push_generic(&mut self, generic: HirGenericParam) {
@@ -116,9 +114,8 @@ impl<'a> TypeInference<'a> {
             HirTyKind::Const(inner) => HirTyKind::Const(Box::new(self.resolve_type_alias(inner))),
             HirTyKind::Vec(inner) => HirTyKind::Vec(Box::new(self.resolve_type_alias(inner))),
             HirTyKind::Ident { ident, .. } => {
-                if let Some(sym) = self
-                    .compiled
-                    .resolve_symbol(&ident.to_string(), self.current_mod.as_usize())
+                if let Some(sym) =
+                    self.compiled.resolve_symbol(&ident.to_string(), self.current_mod.as_usize())
                 {
                     if let HirItemKind::TypeAlias(ty_alias) = &sym.kind {
                         let resolved_ty = ty_alias.ty.resolved().as_ty();
@@ -178,10 +175,7 @@ impl<'a> TypeInference<'a> {
                     param.ty.kind = self.update_generic(param.ty.kind.clone());
 
                     let param_type = param.ty.kind.clone();
-                    let type_info = TypeInfo {
-                        ty: param_type,
-                        span: param.span.clone(),
-                    };
+                    let type_info = TypeInfo { ty: param_type, span: param.span.clone() };
                     self.scope_manager.declare_variable(
                         param.name.clone().to_string(),
                         type_info,
@@ -252,21 +246,13 @@ impl<'a> TypeInference<'a> {
                 generic.ty = self.update_generic(generic.ty.clone());
             }
 
-            ty = HirTyKind::Ident {
-                ident,
-                generics,
-                is_generic: true,
-            };
+            ty = HirTyKind::Ident { ident, generics, is_generic: true };
         } else if let Some((ident, mut generics)) = ty.clone().as_ident() {
             for generic in generics.params.iter_mut() {
                 generic.ty = self.update_generic(generic.ty.clone());
             }
 
-            ty = self.resolve_type_alias(&HirTyKind::Ident {
-                ident,
-                generics,
-                is_generic: false,
-            })
+            ty = self.resolve_type_alias(&HirTyKind::Ident { ident, generics, is_generic: false })
         } else {
             ty = self.resolve_type_alias(&ty)
         }
@@ -277,9 +263,7 @@ impl<'a> TypeInference<'a> {
     fn infer_item(&mut self, item: ItemId) {
         let item = self.infer_item_inner(item);
 
-        self.hir
-            .hir_items
-            .insert(item.id, StoredHirItem::Item(item.clone()));
+        self.hir.hir_items.insert(item.id, StoredHirItem::Item(item.clone()));
         self.compiled.items.insert(item.id, item);
     }
 
@@ -293,11 +277,7 @@ impl<'a> TypeInference<'a> {
     fn infer_stmt(&mut self, stmt: &mut HirStmt) {
         match &mut stmt.kind {
             HirStmtKind::Expr(expr) => self.infer_expr(expr),
-            HirStmtKind::Let {
-                ty: let_ty,
-                value,
-                ident,
-            } => {
+            HirStmtKind::Let { ty: let_ty, value, ident } => {
                 if let Some(value) = value {
                     self.infer_expr(value);
 
@@ -315,10 +295,7 @@ impl<'a> TypeInference<'a> {
 
                 self.scope_manager.declare_variable(
                     ident.to_string(),
-                    TypeInfo {
-                        ty,
-                        span: stmt.span.clone(),
-                    },
+                    TypeInfo { ty, span: stmt.span.clone() },
                     true,
                 );
             }
@@ -327,18 +304,12 @@ impl<'a> TypeInference<'a> {
             }
         }
 
-        self.hir
-            .hir_items
-            .insert(stmt.id, StoredHirItem::Stmt(stmt.clone()));
+        self.hir.hir_items.insert(stmt.id, StoredHirItem::Stmt(stmt.clone()));
     }
 
     fn is_generic(&self, ty: &HirTyKind) -> Option<HirGenericParam> {
         if let HirTyKind::Ident { ident, .. } = ty {
-            self.ctx
-                .generics
-                .iter()
-                .find(|g| g.name.to_string() == *ident.to_string())
-                .cloned()
+            self.ctx.generics.iter().find(|g| g.name.to_string() == *ident.to_string()).cloned()
         } else {
             None
         }
@@ -346,10 +317,7 @@ impl<'a> TypeInference<'a> {
 
     fn assign_generic(&self, expr: &mut HirExpr) {
         if let Some(generic) = self.is_generic(&expr.ty) {
-            if let HirGenericKind::Type {
-                default: Some(default),
-            } = generic.kind
-            {
+            if let HirGenericKind::Type { default: Some(default) } = generic.kind {
                 expr.ty = default.kind;
             } else {
                 expr.ty = HirTyKind::Ident {
@@ -531,11 +499,7 @@ impl<'a> TypeInference<'a> {
             HirExprKind::Var(name) => {
                 let var = self.scope_manager.resolve_variable(&name.to_string());
 
-                if let Some(var) = var {
-                    &var.ty
-                } else {
-                    panic!()
-                }
+                if let Some(var) = var { &var.ty } else { panic!() }
             }
             HirExprKind::Call(ident, args, params) => {
                 let func_ident = ident.as_ident().unwrap().to_string();
@@ -599,9 +563,7 @@ impl<'a> TypeInference<'a> {
                                 }
                             }
                             HirGenericKind::Const { .. } => {
-                                hir_struct
-                                    .field_types
-                                    .insert(ident.clone(), expr.ty.clone());
+                                hir_struct.field_types.insert(ident.clone(), expr.ty.clone());
                             }
                         }
                     } else {
@@ -609,13 +571,9 @@ impl<'a> TypeInference<'a> {
 
                         HirTyKind::try_promote_type(&mut expr.ty, &field_ty, false);
 
-                        hir_struct
-                            .field_types
-                            .insert(ident.clone(), expr.ty.clone());
+                        hir_struct.field_types.insert(ident.clone(), expr.ty.clone());
 
-                        hir_struct
-                            .field_types
-                            .insert(ident.clone(), expr.ty.clone());
+                        hir_struct.field_types.insert(ident.clone(), expr.ty.clone());
                     }
                 }
 
@@ -649,10 +607,7 @@ impl<'a> TypeInference<'a> {
                 }
                 let collected: Vec<HirGenericArg> = sorted_generics
                     .iter()
-                    .map(|(id, ty)| HirGenericArg {
-                        id: *id,
-                        ty: ty.clone(),
-                    })
+                    .map(|(id, ty)| HirGenericArg { id: *id, ty: ty.clone() })
                     .collect();
 
                 &HirTyKind::Ident {
@@ -774,9 +729,7 @@ impl<'a> TypeInference<'a> {
                             );
                             expr.ty = inferred_type.clone();
 
-                            self.hir
-                                .hir_items
-                                .insert(expr.id, StoredHirItem::Expr(*expr.clone()));
+                            self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(*expr.clone()));
 
                             self.hir.update_builtins(*expr.clone());
 
@@ -808,9 +761,7 @@ impl<'a> TypeInference<'a> {
                 if let Some(field_type) = field_ty {
                     expr.ty = field_type;
 
-                    self.hir
-                        .hir_items
-                        .insert(expr.id, StoredHirItem::Expr(expr.clone()));
+                    self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(expr.clone()));
 
                     self.hir.update_builtins(expr.clone());
 
@@ -842,9 +793,7 @@ impl<'a> TypeInference<'a> {
 
         expr.ty = self.resolve_type_alias(&expr.ty);
 
-        self.hir
-            .hir_items
-            .insert(expr.id, StoredHirItem::Expr(expr.clone()));
+        self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(expr.clone()));
 
         self.hir.update_builtins(expr.clone());
     }
@@ -891,9 +840,7 @@ impl<'a> TypeInference<'a> {
         if let Some(type_ident) = ty.is_ident() {
             let type_name = type_ident.to_string();
 
-            let sym = self
-                .compiled
-                .resolve_symbol(&type_name, self.current_mod.as_usize());
+            let sym = self.compiled.resolve_symbol(&type_name, self.current_mod.as_usize());
 
             if let Some(sym) = sym {
                 if let Some(struct_data) = sym.as_struct() {
@@ -999,9 +946,7 @@ impl<'a> TypeInference<'a> {
         if let Some(ident) = type_info.ty.is_ident() {
             let ident_str = ident.to_string();
 
-            let sym = self
-                .compiled
-                .resolve_symbol(&ident_str, self.current_mod.as_usize());
+            let sym = self.compiled.resolve_symbol(&ident_str, self.current_mod.as_usize());
 
             if let Some(_) = sym {
                 return self.resolve_member_access(
@@ -1034,9 +979,7 @@ impl<'a> TypeInference<'a> {
         if let Some(type_ident) = ty.is_ident() {
             let type_name = type_ident.to_string();
 
-            let sym = self
-                .compiled
-                .resolve_symbol(&type_name, self.current_mod.as_usize());
+            let sym = self.compiled.resolve_symbol(&type_name, self.current_mod.as_usize());
 
             if let Some(sym) = sym {
                 let method_id = sym.as_struct().unwrap().get_item(current_ident.clone());
@@ -1052,10 +995,8 @@ impl<'a> TypeInference<'a> {
                         let method_fn = item.as_fn();
                         let return_type = method_fn.sig.return_type.clone();
 
-                        let next_type = TypeInfo {
-                            ty: return_type,
-                            span: idents.first().unwrap().span,
-                        };
+                        let next_type =
+                            TypeInfo { ty: return_type, span: idents.first().unwrap().span };
 
                         self.resolve_method_from_idents(idents, expr, Some(next_type))
                     };
@@ -1070,10 +1011,8 @@ impl<'a> TypeInference<'a> {
                             return None;
                         }
 
-                        let next_type = TypeInfo {
-                            ty: field.ty.clone(),
-                            span: idents.first().unwrap().span,
-                        };
+                        let next_type =
+                            TypeInfo { ty: field.ty.clone(), span: idents.first().unwrap().span };
 
                         return self.resolve_method_from_idents(idents, expr, Some(next_type));
                     }
@@ -1201,11 +1140,7 @@ impl<'a> TypeInference<'a> {
             HirTyKind::Vec(inner) => {
                 self.replace_generics_recursive(inner, generic_types);
             }
-            HirTyKind::Ident {
-                ident,
-                generics,
-                is_generic,
-            } => {
+            HirTyKind::Ident { ident, generics, is_generic } => {
                 let ident_string = ident.to_string();
                 if *is_generic {
                     if let Some(replacement) = generic_types.get(&ident_string) {

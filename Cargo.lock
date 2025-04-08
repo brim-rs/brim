@@ -173,7 +173,6 @@ dependencies = [
  "colored",
  "sysinfo",
  "terminal_size",
- "toml",
  "toml_edit",
  "tracing",
  "tracing-subscriber",

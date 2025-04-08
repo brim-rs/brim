@@ -21,13 +21,7 @@ pub struct ModuleDiscover<'a> {
 
 impl<'a> ModuleDiscover<'a> {
     pub fn new(ctx: &'a mut TemporaryDiagnosticContext, sess: &'a mut Session) -> Self {
-        Self {
-            ctx,
-            map: ModuleMap::new(),
-            temp_loader: BrimFileLoader,
-            file: 0,
-            sess,
-        }
+        Self { ctx, map: ModuleMap::new(), temp_loader: BrimFileLoader, file: 0, sess }
     }
 
     pub fn create_module_map(
@@ -41,8 +35,7 @@ impl<'a> ModuleDiscover<'a> {
         let current_path = get_path(self.file)?;
         debug!("Resolving module declarations in file: {:?}", current_path);
 
-        self.map
-            .insert_or_update(current_path.clone(), barrel.clone());
+        self.map.insert_or_update(current_path.clone(), barrel.clone());
 
         if visited.contains(&current_path) {
             return Ok(self.map.clone());

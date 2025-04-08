@@ -17,11 +17,7 @@ pub struct CodeBuilder {
 impl CodeBuilder {
     /// Creates a new `CodeBuilder` with the given indentation size
     pub fn new(indent_size: usize) -> Self {
-        Self {
-            code: String::new(),
-            indent: 0,
-            indent_size,
-        }
+        Self { code: String::new(), indent: 0, indent_size }
     }
 
     pub fn increase_indent(&mut self) {

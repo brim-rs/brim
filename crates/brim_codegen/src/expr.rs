@@ -63,10 +63,7 @@ impl CppCodegen {
                 format!("{}[{}]", expr_code, index_code)
             }
             HirExprKind::Field(idents) => {
-                let mut vals = idents
-                    .iter()
-                    .map(|id| format!("{}", id))
-                    .collect::<Vec<String>>();
+                let mut vals = idents.iter().map(|id| format!("{}", id)).collect::<Vec<String>>();
                 if let Some(last) = idents.last() {
                     let last = last.clone();
 
@@ -120,12 +117,7 @@ impl CppCodegen {
                     HirExprKind::Call(ident, args, _) => {
                         let ident = ident.as_ident().unwrap().to_string();
                         let call = format!("{}({})", ident, self.generate_call_args(args));
-                        format!(
-                            "(module{}::brim_{}_{})",
-                            item.mod_id.as_usize(),
-                            item.ident,
-                            call
-                        )
+                        format!("(module{}::brim_{}_{})", item.mod_id.as_usize(), item.ident, call)
                     }
                     _ => unimplemented!(),
                 }
@@ -134,11 +126,8 @@ impl CppCodegen {
                 HirExprKind::Call(_, args, _) => {
                     let last = r_ident.last().unwrap().clone();
                     r_ident.pop();
-                    let path = r_ident
-                        .iter()
-                        .map(|id| id.to_string())
-                        .collect::<Vec<String>>()
-                        .join(".");
+                    let path =
+                        r_ident.iter().map(|id| id.to_string()).collect::<Vec<String>>().join(".");
 
                     let call =
                         format!("{}(brim_{}, {})", last, path, self.generate_call_args(args));
@@ -169,21 +158,15 @@ impl CppCodegen {
     }
 
     fn generate_call_args(&mut self, args: Vec<HirExpr>) -> String {
-        args.iter()
-            .map(|arg| self.generate_expr(arg.clone()))
-            .collect::<Vec<String>>()
-            .join(", ")
+        args.iter().map(|arg| self.generate_expr(arg.clone())).collect::<Vec<String>>().join(", ")
     }
 
     fn generate_call_expr(&mut self, func: Box<HirExpr>, args: Vec<HirExpr>) -> String {
         let fn_ident = func.as_ident().unwrap();
         let fn_name = fn_ident.to_string();
 
-        let func_symbol = self
-            .hir()
-            .symbols
-            .resolve(&fn_name, self.current_mod.as_usize())
-            .unwrap();
+        let func_symbol =
+            self.hir().symbols.resolve(&fn_name, self.current_mod.as_usize()).unwrap();
 
         let func_mod_id = func_symbol.id.mod_id;
 
@@ -203,12 +186,7 @@ impl CppCodegen {
         for branch in &if_stmt.else_ifs {
             let branch_condition = self.generate_expr(*branch.condition.clone());
             let branch_block = self.generate_expr(*branch.block.clone());
-            write!(
-                else_ifs,
-                " else if ({}) {{ {} }}",
-                branch_condition, branch_block
-            )
-            .unwrap();
+            write!(else_ifs, " else if ({}) {{ {} }}", branch_condition, branch_block).unwrap();
         }
 
         let else_block = if let Some(else_block) = if_stmt.else_block {
@@ -217,10 +195,7 @@ impl CppCodegen {
             String::new()
         };
 
-        format!(
-            "if ({}) {{ {} }}{}{}",
-            condition, then_block, else_ifs, else_block,
-        )
+        format!("if ({}) {{ {} }}{}{}", condition, then_block, else_ifs, else_block,)
     }
 
     fn generate_array_expr(&mut self, exprs: Vec<HirExpr>) -> String {
@@ -236,11 +211,8 @@ impl CppCodegen {
     fn generate_struct_constructor(&mut self, str: HirStructConstructor) -> String {
         let ident = str.name.clone();
 
-        let symbol = self
-            .hir()
-            .symbols
-            .resolve(&ident.to_string(), self.current_mod.as_usize())
-            .unwrap();
+        let symbol =
+            self.hir().symbols.resolve(&ident.to_string(), self.current_mod.as_usize()).unwrap();
 
         let mod_id = symbol.id.mod_id;
 
@@ -250,12 +222,7 @@ impl CppCodegen {
             format!("<{}>", self.generate_generic_args(&str.generics))
         };
 
-        let mut code = format!(
-            "module{}::brim_{}{}",
-            mod_id.as_usize(),
-            ident.name,
-            generics
-        );
+        let mut code = format!("module{}::brim_{}{}", mod_id.as_usize(), ident.name, generics);
 
         if !str.fields.is_empty() {
             let fields_code = str
@@ -312,16 +279,12 @@ impl CppCodegen {
                     format!("{}({})", ty, lit.symbol)
                 }
             }
-            LitKind::Str => format!(
-                "std::string(\"{}\")",
-                escape_string(&lit.symbol.to_string())
-            ),
+            LitKind::Str => format!("std::string(\"{}\")", escape_string(&lit.symbol.to_string())),
             LitKind::Char => format!("'{}'", escape_char(&lit.symbol.to_string())),
             LitKind::Bool => lit.symbol.to_string(),
-            LitKind::Byte => format!(
-                "static_cast<unsigned char>('{}')",
-                escape_char(&lit.symbol.to_string())
-            ),
+            LitKind::Byte => {
+                format!("static_cast<unsigned char>('{}')", escape_char(&lit.symbol.to_string()))
+            }
             LitKind::ByteStr => format!(
                 "std::vector<uint8_t>{{{}}}",
                 lit.symbol

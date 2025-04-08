@@ -72,5 +72,102 @@ terminal_size = "0.4.1"
 sysinfo = "0.33.1"
 fs-err = "3.1.0"
 
+# These clippy settings are copied from https://github.com/oxc-project/oxc/blob/main/Cargo.toml
+
+[workspace.lints.rust]
+absolute_paths_not_starting_with_crate = "warn"
+non_ascii_idents = "warn"
+unit-bindings = "warn"
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage)', 'cfg(coverage_nightly)'] }
+tail_expr_drop_order = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+unused_unsafe = "warn"
+
 [workspace.lints.clippy]
-non_upper_case_globals = "allow"
+all = { level = "warn", priority = -1 }
+# restriction
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+allow_attributes = "warn"
+clone_on_ref_ptr = "warn"
+self_named_module_files = "warn" # "-Wclippy::mod_module_files"
+empty_drop = "warn"
+empty_structs_with_brackets = "warn"
+exit = "warn"
+filetype_is_file = "warn"
+get_unwrap = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+unnecessary_safety_comment = "warn"
+undocumented_unsafe_blocks = "warn"
+infinite_loop = "warn"
+map_with_unused_argument_over_ranges = "warn"
+unused_result_ok = "warn"
+pathbuf_init_then_push = "warn"
+# pedantic
+pedantic = { level = "warn", priority = -1 }
+struct_excessive_bools = "allow"
+too_many_lines = "allow"
+must_use_candidate = "allow"
+wildcard_imports = "allow"
+doc_markdown = "allow"
+similar_names = "allow"
+fn_params_excessive_bools = "allow"
+complexity = { level = "warn", priority = -1 }
+too_many_arguments = "allow"
+non_std_lazy_statics = "allow"
+# nursery
+nursery = { level = "warn", priority = -1 }
+missing_const_for_fn = "allow"
+option_if_let_else = "allow"
+or_fun_call = "allow"
+cognitive_complexity = "allow"
+non_send_fields_in_send_ty = "allow"
+use_self = "allow"
+significant_drop_tightening = "allow"
+branches_sharing_code = "allow"
+fallible_impl_from = "allow"
+useless_let_if_seq = "allow"
+impl_trait_in_params = "allow"
+significant_drop_in_scrutinee = "warn"
+iter_on_single_items = "warn"
+unused_peekable = "warn"
+too_long_first_doc_paragraph = "warn"
+suspicious_operation_groupings = "warn"
+redundant_clone = "warn"
+# cargo
+cargo = { level = "warn", priority = -1 }
+multiple_crate_versions = "allow"
+
+[profile.dev]
+debug = false
+
+[profile.dev.package]
+oxc_macros.opt-level = 1
+oxc_ast_macros.opt-level = 1
+insta.opt-level = 3
+similar.opt-level = 3
+
+[profile.release.package.oxc_playground_napi]
+opt-level = 'z'
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+debug = false
+panic = "abort"
+
+[profile.release-with-debug]
+inherits = "release"
+strip = false
+debug = true
+
+[profile.dev-no-debug-assertions]
+inherits = "dev"
+debug-assertions = false

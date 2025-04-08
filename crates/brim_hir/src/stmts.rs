@@ -26,11 +26,7 @@ impl HirStmt {
 #[derive(Clone, Debug)]
 pub enum HirStmtKind {
     /// `let x: i32 = 5;`
-    Let {
-        ident: Ident,
-        ty: Option<HirTyKind>,
-        value: Option<HirExpr>,
-    },
+    Let { ident: Ident, ty: Option<HirTyKind>, value: Option<HirExpr> },
     /// An expression statement.
     Expr(HirExpr),
     /// An if statement.

@@ -218,11 +218,7 @@ impl PartialEq for Lit {
 
 impl Lit {
     pub fn new(kind: LitKind, symbol: Symbol, suffix: Option<Ident>) -> Self {
-        Self {
-            kind,
-            symbol,
-            suffix,
-        }
+        Self { kind, symbol, suffix }
     }
 
     /// Only use when you are sure that the literal is an integer.
@@ -233,12 +229,7 @@ impl Lit {
 
 impl Display for Lit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}{}",
-            self.symbol,
-            self.suffix.map_or("".to_string(), |s| s.to_string())
-        )
+        write!(f, "{}{}", self.symbol, self.suffix.map_or("".to_string(), |s| s.to_string()))
     }
 }
 

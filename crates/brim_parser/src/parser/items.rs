@@ -47,20 +47,11 @@ impl Parser {
         } else if self.current().is_keyword(Enum) {
             self.parse_enum()?
         } else {
-            box_diag!(UnknownItem {
-                span: (span, self.file),
-                found: self.current().kind,
-            })
+            box_diag!(UnknownItem { span: (span, self.file), found: self.current().kind })
         };
         self.eat_semis();
 
-        Ok(Some(Item {
-            id: self.new_id(),
-            span,
-            vis,
-            kind,
-            ident,
-        }))
+        Ok(Some(Item { id: self.new_id(), span, vis, kind, ident }))
     }
 
     pub fn parse_enum(&mut self) -> PResult<(Ident, ItemKind)> {
@@ -106,13 +97,7 @@ impl Parser {
 
             self.eat_semis();
 
-            items.push(Item {
-                id: self.new_id(),
-                span: item_span,
-                vis,
-                kind,
-                ident: item_ident,
-            });
+            items.push(Item { id: self.new_id(), span: item_span, vis, kind, ident: item_ident });
         }
 
         self.expect_cbrace()?;
@@ -144,20 +129,13 @@ impl Parser {
             self.expect_oparen()?;
             while !self.is_paren(Orientation::Close) {
                 let ty = self.parse_type()?;
-                fields.push(EnumField {
-                    span: ty.span.to(self.current().span),
-                    ty,
-                });
+                fields.push(EnumField { span: ty.span.to(self.current().span), ty });
                 self.eat_possible(TokenKind::Comma);
             }
             self.expect_cparen()?;
         }
 
-        Ok(EnumVariant {
-            span: ident.span.to(self.current().span),
-            ident,
-            fields,
-        })
+        Ok(EnumVariant { span: ident.span.to(self.current().span), ident, fields })
     }
 
     pub fn parse_struct(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {
@@ -211,34 +189,14 @@ impl Parser {
 
             self.eat_semis();
 
-            items.push(Item {
-                id: self.new_id(),
-                span: item_span,
-                vis,
-                kind,
-                ident: item_ident,
-            });
+            items.push(Item { id: self.new_id(), span: item_span, vis, kind, ident: item_ident });
         }
 
         self.expect_cbrace()?;
 
-        debug!(
-            "Parsed struct: {:?} with {} fields and {} items",
-            ident,
-            fields.len(),
-            items.len()
-        );
+        debug!("Parsed struct: {:?} with {} fields and {} items", ident, fields.len(), items.len());
 
-        Ok((
-            ident,
-            ItemKind::Struct(Struct {
-                ident,
-                generics,
-                span,
-                fields,
-                items,
-            }),
-        ))
+        Ok((ident, ItemKind::Struct(Struct { ident, generics, span, fields, items })))
     }
 
     pub fn parse_extern(&mut self) -> PResult<(Ident, ItemKind)> {
@@ -286,11 +244,7 @@ impl Parser {
 
         Ok((
             Ident::dummy(),
-            ItemKind::External(ExternBlock {
-                span: span.to(self.prev().span),
-                abi,
-                items,
-            }),
+            ItemKind::External(ExternBlock { span: span.to(self.prev().span), abi, items }),
         ))
     }
 
@@ -311,10 +265,7 @@ impl Parser {
         debug!("Parsed module declaration: {:?}", idents);
         Ok((
             Ident::dummy(),
-            ItemKind::Module(ModuleDecl {
-                span: idents[0].span.to(self.prev().span),
-                idents,
-            }),
+            ItemKind::Module(ModuleDecl { span: idents[0].span.to(self.prev().span), idents }),
         ))
     }
 
@@ -344,15 +295,11 @@ impl Parser {
             let ident = self.parse_ident()?;
             ImportsKind::Default(ident)
         } else {
-            box_diag!(UseStatementBraces {
-                span: (span.to(self.current().span), self.file),
-            });
+            box_diag!(UseStatementBraces { span: (span.to(self.current().span), self.file) });
         };
 
         if !self.eat_keyword(ptok!(From)) {
-            self.emit(MissingFromKeyword {
-                span: (self.prev().span.from_end(), self.file),
-            });
+            self.emit(MissingFromKeyword { span: (self.prev().span.from_end(), self.file) });
         }
 
         let path = self.expect_str_literal()?;
@@ -384,23 +331,13 @@ impl Parser {
 
         let copy = self.fn_ctx().clone();
         self.fn_ctx = None;
-        Ok((
-            sig.name,
-            ItemKind::Fn(FnDecl {
-                sig,
-                generics,
-                body,
-                context: copy,
-            }),
-        ))
+        Ok((sig.name, ItemKind::Fn(FnDecl { sig, generics, body, context: copy })))
     }
 
     pub fn parse_fn_body(&mut self) -> PResult<Option<Block>> {
         if self.eat(TokenKind::Semicolon) {
             if !self.fn_ctx().allows_empty_body() {
-                self.emit(EmptyBody {
-                    span: (self.prev().span, self.file),
-                });
+                self.emit(EmptyBody { span: (self.prev().span, self.file) });
             }
 
             return Ok(None);
@@ -450,9 +387,7 @@ impl Parser {
     }
 
     pub fn parse_return_type(&mut self) -> PResult<FnReturnType> {
-        if self
-            .current()
-            .is_delimiter(Delimiter::Brace, Orientation::Open)
+        if self.current().is_delimiter(Delimiter::Brace, Orientation::Open)
             || self.current().kind == TokenKind::Semicolon
         {
             Ok(FnReturnType::Default)
@@ -464,13 +399,8 @@ impl Parser {
 
     pub fn parse_fn_params(&mut self) -> PResult<Vec<Param>> {
         let mut params = vec![];
-        if !self
-            .current_token
-            .is_delimiter(Delimiter::Paren, Orientation::Open)
-        {
-            self.emit(MissingParamList {
-                span: (self.prev().span.from_end(), self.file),
-            });
+        if !self.current_token.is_delimiter(Delimiter::Paren, Orientation::Open) {
+            self.emit(MissingParamList { span: (self.prev().span.from_end(), self.file) });
 
             return Ok(params);
         }
@@ -482,9 +412,7 @@ impl Parser {
 
             if ident.name == SelfSmall {
                 if !self.fn_ctx().allows_self() {
-                    box_diag!(SelfOutsideMethod {
-                        span: (ident.span, self.file),
-                    });
+                    box_diag!(SelfOutsideMethod { span: (ident.span, self.file) });
                 }
             }
 

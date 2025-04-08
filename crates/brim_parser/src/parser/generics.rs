@@ -14,10 +14,7 @@ impl Parser {
         let token = self.current().span;
         if !self.eat(TokenKind::Lt) {
             // no generics. return early
-            return Ok(Generics {
-                span: self.prev().span.from_end(),
-                params: vec![],
-            });
+            return Ok(Generics { span: self.prev().span.from_end(), params: vec![] });
         }
 
         let params = self.parse_generics_params()?;
@@ -25,9 +22,7 @@ impl Parser {
         if !self.eat(TokenKind::Gt) {
             let expected_span = self.prev().span.from_end();
 
-            self.emit(ExpectedClosingGenerics {
-                span: (expected_span, self.file),
-            });
+            self.emit(ExpectedClosingGenerics { span: (expected_span, self.file) });
         }
 
         let span = token.to(self.prev().span);
@@ -47,10 +42,7 @@ impl Parser {
         let token = self.current().span;
         if !self.eat(TokenKind::Lt) {
             // no generics. return early
-            return Ok(GenericArgs {
-                span: self.prev().span.from_end(),
-                params: vec![],
-            });
+            return Ok(GenericArgs { span: self.prev().span.from_end(), params: vec![] });
         }
 
         let params = {
@@ -59,10 +51,7 @@ impl Parser {
             loop {
                 let ty = self.parse_type()?;
 
-                params.push(GenericArg {
-                    id: self.new_id(),
-                    ty,
-                });
+                params.push(GenericArg { id: self.new_id(), ty });
 
                 if !self.eat(TokenKind::Comma) {
                     break;
@@ -75,15 +64,10 @@ impl Parser {
         if !self.eat(TokenKind::Gt) {
             let expected_span = self.prev().span.from_end();
 
-            self.emit(ExpectedClosingGenerics {
-                span: (expected_span, self.file),
-            });
+            self.emit(ExpectedClosingGenerics { span: (expected_span, self.file) });
         }
 
-        Ok(GenericArgs {
-            span: token.to(self.prev().span),
-            params,
-        })
+        Ok(GenericArgs { span: token.to(self.prev().span), params })
     }
 
     pub fn parse_generics_params(&mut self) -> PResult<Vec<GenericParam>> {
@@ -122,10 +106,7 @@ impl Parser {
                 params.push(GenericParam {
                     id: self.new_id(),
                     ident,
-                    kind: GenericKind::NonType {
-                        ty,
-                        default: const_expr,
-                    },
+                    kind: GenericKind::NonType { ty, default: const_expr },
                 })
             } else {
                 break;

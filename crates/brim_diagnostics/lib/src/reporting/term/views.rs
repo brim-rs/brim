@@ -1,8 +1,8 @@
 use crate::reporting::{
     diagnostic::{Diagnostic, LabelStyle},
     term::{
-        renderer::{Locus, MultiLabel, Renderer, SingleLabel},
         DiagConfig,
+        renderer::{Locus, MultiLabel, Renderer, SingleLabel},
     },
 };
 use brim_span::files::{Error, Files, Location};
@@ -113,9 +113,7 @@ where
                         lines: BTreeMap::new(),
                         max_label_style: label.style.clone(),
                     });
-                    labeled_files
-                        .last_mut()
-                        .expect("just pushed an element that disappeared")
+                    labeled_files.last_mut().expect("just pushed an element that disappeared")
                 }
             };
 
@@ -136,9 +134,7 @@ where
             }
 
             for offset in 1..self.config.after_label_lines + 1 {
-                let index = end_line_index
-                    .checked_add(offset)
-                    .expect("line index too big");
+                let index = end_line_index.checked_add(offset).expect("line index too big");
 
                 if let Ok(range) = files.line_range(label.file_id, index) {
                     let line =
@@ -168,11 +164,7 @@ where
 
                 line.single_labels.insert(
                     index,
-                    (
-                        label.style.clone(),
-                        label_start..label_end,
-                        label.message.clone(),
-                    ),
+                    (label.style.clone(), label_start..label_end, label.message.clone()),
                 );
 
                 line.must_render = true;
@@ -204,8 +196,7 @@ where
 
                     let line = labeled_file.get_or_insert_line(line_index, line_range, line_number);
 
-                    line.multi_labels
-                        .push((label_index, label.style.clone(), MultiLabel::Left));
+                    line.multi_labels.push((label_index, label.style.clone(), MultiLabel::Left));
 
                     line.must_render |= line_index - start_line_index
                         <= self.config.start_context_lines
@@ -243,13 +234,10 @@ where
             let source = source.as_ref();
 
             if !labeled_file.lines.is_empty() {
-                renderer.render_snippet_start(
-                    outer_padding,
-                    &Locus {
-                        name: labeled_file.name,
-                        location: labeled_file.location,
-                    },
-                )?;
+                renderer.render_snippet_start(outer_padding, &Locus {
+                    name: labeled_file.name,
+                    location: labeled_file.location,
+                })?;
                 renderer.render_snippet_empty(
                     outer_padding,
                     self.diagnostic.severity,
@@ -258,11 +246,8 @@ where
                 )?;
             }
 
-            let mut lines = labeled_file
-                .lines
-                .iter()
-                .filter(|(_, line)| line.must_render)
-                .peekable();
+            let mut lines =
+                labeled_file.lines.iter().filter(|(_, line)| line.must_render).peekable();
 
             while let Some((line_index, line)) = lines.next() {
                 renderer.render_snippet_source(

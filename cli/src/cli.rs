@@ -61,18 +61,13 @@ pub fn static_lib_mode() -> Arg {
 }
 
 pub fn no_write() -> Arg {
-    opt("no-write", "Do not write the output to a file")
-        .action(ArgAction::SetTrue)
-        .short('w')
+    opt("no-write", "Do not write the output to a file").action(ArgAction::SetTrue).short('w')
 }
 
 pub fn codegen_debug() -> Arg {
-    opt(
-        "codegen-debug",
-        "Displays generated c++ code in the terminal",
-    )
-    .short('c')
-    .action(ArgAction::SetTrue)
+    opt("codegen-debug", "Displays generated c++ code in the terminal")
+        .short('c')
+        .action(ArgAction::SetTrue)
 }
 
 pub fn cli() -> Command {
@@ -91,10 +86,7 @@ pub fn cli() -> Command {
         .allow_external_subcommands(true)
         .styles(styles)
         .arg(
-            opt("verbose", "Use verbose output")
-                .short('v')
-                .action(ArgAction::SetTrue)
-                .global(true),
+            opt("verbose", "Use verbose output").short('v').action(ArgAction::SetTrue).global(true),
         )
         .arg(
             opt("no-color", "Disable colored output")

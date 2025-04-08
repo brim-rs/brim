@@ -32,12 +32,7 @@ impl<'a, FileId> Label<FileId> {
         file_id: FileId,
         range: impl Into<Range<usize>>,
     ) -> Label<FileId> {
-        Label {
-            style,
-            file_id,
-            range: range.into(),
-            message: String::new(),
-        }
+        Label { style, file_id, range: range.into(), message: String::new() }
     }
 
     pub fn primary(file_id: FileId, range: impl Into<Range<usize>>) -> Label<FileId> {

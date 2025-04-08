@@ -68,8 +68,7 @@ impl CppCodegen {
                 for field in s.fields.clone() {
                     let ty = self.generate_ty(field.ty.clone());
 
-                    self.code
-                        .add_line(&format!("{} {};", ty, field.ident.to_string()));
+                    self.code.add_line(&format!("{} {};", ty, field.ident.to_string()));
                 }
 
                 for (ident, id) in s.items.clone() {
@@ -147,13 +146,11 @@ impl CppCodegen {
                         .map(|(i, field)| format!("{} f{}", self.generate_ty(field.ty.clone()), i))
                         .collect();
 
-                    let init_list: Vec<String> = (0..variant.fields.len())
-                        .map(|i| format!("field_{}(f{})", i, i))
-                        .collect();
+                    let init_list: Vec<String> =
+                        (0..variant.fields.len()).map(|i| format!("field_{}(f{})", i, i)).collect();
 
                     if variant.fields.is_empty() {
-                        self.code
-                            .add_line(&format!("{}() = default;", variant_name));
+                        self.code.add_line(&format!("{}() = default;", variant_name));
                     } else {
                         self.code.add_line(&format!(
                             "{}({}) : {} {{}}",
@@ -175,11 +172,7 @@ impl CppCodegen {
                     self.code.add_line(&format!(
                         "{}{}",
                         variant_name,
-                        if index == variant_names.len() - 1 {
-                            ""
-                        } else {
-                            ","
-                        }
+                        if index == variant_names.len() - 1 { "" } else { "," }
                     ));
                 }
                 self.code.add_line("> value;");
@@ -242,11 +235,7 @@ impl CppCodegen {
                     .params
                     .iter()
                     .map(|p| {
-                        format!(
-                            "{} {}",
-                            self.generate_ty(p.ty.kind.clone()),
-                            p.name.to_string()
-                        )
+                        format!("{} {}", self.generate_ty(p.ty.kind.clone()), p.name.to_string())
                     })
                     .collect::<Vec<_>>()
                     .join(", ");
@@ -310,10 +299,7 @@ pub fn sort_items_by_module(
             .map(|dep| dep.id.item_id.clone())
             .collect();
 
-        module_graphs
-            .get_mut(&mod_id)
-            .unwrap()
-            .insert(item_id, same_module_deps);
+        module_graphs.get_mut(&mod_id).unwrap().insert(item_id, same_module_deps);
     }
 
     let mut result: HashMap<ModuleId, Vec<ItemId>> = HashMap::new();

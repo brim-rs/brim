@@ -19,11 +19,7 @@ struct SymbolDefs {
 
 impl Parse for SymbolDef {
     fn parse(input: ParseStream) -> Result<Self> {
-        Ok(SymbolDef {
-            name: input.parse()?,
-            equals: input.parse()?,
-            value: input.parse()?,
-        })
+        Ok(SymbolDef { name: input.parse()?, equals: input.parse()?, value: input.parse()? })
     }
 }
 

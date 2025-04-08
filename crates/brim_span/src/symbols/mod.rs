@@ -34,11 +34,7 @@ pub struct SymbolInterner {
 
 impl SymbolInterner {
     pub fn new() -> Self {
-        Self {
-            strings: HashMap::new(),
-            symbols: Vec::new(),
-            initialized: false,
-        }
+        Self { strings: HashMap::new(), symbols: Vec::new(), initialized: false }
     }
 
     pub fn add_existing(&mut self, index: SymbolIndex, value: String) {
@@ -78,11 +74,7 @@ pub static GLOBAL_INTERNER: Lazy<Mutex<SymbolInterner>> =
 /// Interns a string in the global interner and returns its index.
 #[inline]
 fn intern(s: &str) -> usize {
-    GLOBAL_INTERNER
-        .lock()
-        .expect("Failed to lock global interner")
-        .intern(s)
-        .as_usize()
+    GLOBAL_INTERNER.lock().expect("Failed to lock global interner").intern(s).as_usize()
 }
 
 /// Resolves a symbol index to its original string.

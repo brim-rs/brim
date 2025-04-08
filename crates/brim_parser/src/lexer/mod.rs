@@ -31,12 +31,7 @@ impl<'a> Lexer<'a> {
         primitives: Vec<PrimitiveToken>,
         lex_temp: TemporaryDiagnosticContext,
     ) -> Lexer<'a> {
-        Lexer {
-            pos: ByteIndex::default(),
-            file,
-            primitives,
-            ctx: lex_temp,
-        }
+        Lexer { pos: ByteIndex::default(), file, primitives, ctx: lex_temp }
     }
 }
 
@@ -71,10 +66,8 @@ impl<'a> Lexer<'a> {
             {
                 let symbol = nfc_normalize(self.content_from(start));
                 let span = Span::new(start, self.pos);
-                self.ctx.emit_impl(EmojiIdentifier {
-                    ident: symbol,
-                    label: (span, self.file.id()),
-                });
+                self.ctx
+                    .emit_impl(EmojiIdentifier { ident: symbol, label: (span, self.file.id()) });
                 TokenKind::Ident(symbol)
             }
 
@@ -86,19 +79,12 @@ impl<'a> Lexer<'a> {
                     if string == "_" {
                         None
                     } else {
-                        Some(Ident::new(
-                            Symbol::new(string),
-                            Span::new(suffix_start, self.pos),
-                        ))
+                        Some(Ident::new(Symbol::new(string), Span::new(suffix_start, self.pos)))
                     }
                 } else {
                     None
                 };
-                TokenKind::Literal(Lit {
-                    kind,
-                    symbol,
-                    suffix,
-                })
+                TokenKind::Literal(Lit { kind, symbol, suffix })
             }
 
             // Delimiters
@@ -182,10 +168,7 @@ impl<'a> Lexer<'a> {
         self.try_multi_char_token(
             &[
                 (PrimitiveTokenKind::GreaterThan, TokenKind::Arrow),
-                (
-                    PrimitiveTokenKind::Equals,
-                    TokenKind::AssignOp(AssignOpToken::MinusEq),
-                ),
+                (PrimitiveTokenKind::Equals, TokenKind::AssignOp(AssignOpToken::MinusEq)),
             ],
             TokenKind::BinOp(BinOpToken::Minus),
         )

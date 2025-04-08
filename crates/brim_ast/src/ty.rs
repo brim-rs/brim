@@ -30,11 +30,7 @@ pub enum Mutable {
 
 impl Mutable {
     pub fn from_bool(is_mutable: bool) -> Self {
-        if is_mutable {
-            Mutable::Yes
-        } else {
-            Mutable::No
-        }
+        if is_mutable { Mutable::Yes } else { Mutable::No }
     }
 }
 

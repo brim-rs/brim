@@ -106,11 +106,8 @@ impl ModuleDependencyResolver {
             let modules_ready_for_generation: Vec<ModuleId> = remaining_modules
                 .iter()
                 .filter(|&module_id| {
-                    let deps = self
-                        .module_dependencies
-                        .get(module_id)
-                        .cloned()
-                        .unwrap_or(HashSet::new());
+                    let deps =
+                        self.module_dependencies.get(module_id).cloned().unwrap_or(HashSet::new());
 
                     deps.is_empty() || deps.iter().all(|dep| self.processed_modules.contains(dep))
                 })
@@ -216,8 +213,7 @@ impl CppCodegen {
         self.code.add_line("");
         self.code.add_line("int main() {");
         self.code.increase_indent();
-        self.code
-            .add_line(&format!("module{}::brim_main();", self.main_file));
+        self.code.add_line(&format!("module{}::brim_main();", self.main_file));
         self.code.add_line("return 0;");
         self.code.decrease_indent();
         self.code.add_line("}");
@@ -267,12 +263,10 @@ impl Codegen for CppCodegen {
     fn generate_module(&mut self, module: HirModule, compiled: &CompiledModules) {
         let mod_id = module.mod_id;
 
-        self.code
-            .add_line(&format!("\n\n// =========== module{}", mod_id.as_u32()));
+        self.code.add_line(&format!("\n\n// =========== module{}", mod_id.as_u32()));
         self.code.add_line("");
 
-        self.code
-            .add_line(&format!("namespace module{} {{", mod_id.as_u32()));
+        self.code.add_line(&format!("namespace module{} {{", mod_id.as_u32()));
         self.code.increase_indent();
 
         let order = self.items_order.get(&mod_id);

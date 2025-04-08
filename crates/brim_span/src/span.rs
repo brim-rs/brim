@@ -8,30 +8,19 @@ pub struct Span {
 }
 
 impl Span {
-    pub const DUMMY: Span = Span {
-        start: ByteIndex(0),
-        end: ByteIndex(0),
-    };
+    pub const DUMMY: Span = Span { start: ByteIndex(0), end: ByteIndex(0) };
 
     pub fn new(start: impl Into<ByteIndex>, end: impl Into<ByteIndex>) -> Span {
         let start = start.into();
         let end = end.into();
 
-        assert!(
-            end >= start,
-            "end ({}) must be greater than or equal to start ({})",
-            end,
-            start
-        );
+        assert!(end >= start, "end ({}) must be greater than or equal to start ({})", end, start);
 
         Span { start, end }
     }
 
     pub const fn initial() -> Span {
-        Span {
-            start: ByteIndex(0),
-            end: ByteIndex(0),
-        }
+        Span { start: ByteIndex(0), end: ByteIndex(0) }
     }
 
     pub fn from_str(s: &str) -> Span {
@@ -47,11 +36,7 @@ impl Span {
     }
 
     pub fn disjoint(self, other: Span) -> bool {
-        let (first, last) = if self.end < other.end {
-            (self, other)
-        } else {
-            (other, self)
-        };
+        let (first, last) = if self.end < other.end { (self, other) } else { (other, self) };
         first.end <= last.start
     }
 
@@ -95,12 +80,7 @@ impl Default for Span {
 
 impl fmt::Display for Span {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "[{start}, {end})",
-            start = self.start(),
-            end = self.end(),
-        )
+        write!(f, "[{start}, {end})", start = self.start(), end = self.end(),)
     }
 }
 

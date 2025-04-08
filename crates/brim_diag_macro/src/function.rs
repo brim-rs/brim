@@ -74,20 +74,10 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
         })
         .ok_or(MacroFunctionError::MissingAttribute)?;
 
-    let severity = diagnostic_attr
-        .path()
-        .segments
-        .last()
-        .unwrap()
-        .ident
-        .to_string()
-        .to_lowercase();
+    let severity = diagnostic_attr.path().segments.last().unwrap().ident.to_string().to_lowercase();
 
-    let severity_variant = format!(
-        "{}{}",
-        severity.chars().next().unwrap().to_uppercase(),
-        &severity[1..]
-    );
+    let severity_variant =
+        format!("{}{}", severity.chars().next().unwrap().to_uppercase(), &severity[1..]);
 
     let expr = diagnostic_attr.parse_args::<Expr>()?;
     let error_string = get_string_literal(&expr)?;
@@ -130,14 +120,7 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
         .iter()
         .filter_map(|field| {
             field.attrs.iter().find(|attr| {
-                let ident = attr
-                    .path()
-                    .segments
-                    .last()
-                    .unwrap()
-                    .ident
-                    .to_string()
-                    .to_lowercase();
+                let ident = attr.path().segments.last().unwrap().ident.to_string().to_lowercase();
                 ident == "note"
             })?;
 
@@ -150,25 +133,11 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
         .iter()
         .filter_map(|field| {
             let attr = field.attrs.iter().find(|attr| {
-                let ident = attr
-                    .path()
-                    .segments
-                    .last()
-                    .unwrap()
-                    .ident
-                    .to_string()
-                    .to_lowercase();
+                let ident = attr.path().segments.last().unwrap().ident.to_string().to_lowercase();
                 is_valid_severity(&ident)
             })?;
 
-            let severity = attr
-                .path()
-                .segments
-                .last()
-                .unwrap()
-                .ident
-                .to_string()
-                .to_lowercase();
+            let severity = attr.path().segments.last().unwrap().ident.to_string().to_lowercase();
 
             let message = attr
                 .parse_args::<Expr>()

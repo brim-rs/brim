@@ -19,10 +19,7 @@ impl Parser {
             self.expect_obrace()?;
         }
 
-        while !self
-            .current()
-            .is(TokenKind::Delimiter(Delimiter::Brace, Orientation::Close))
-        {
+        while !self.current().is(TokenKind::Delimiter(Delimiter::Brace, Orientation::Close)) {
             let stmt = self.parse_stmt()?;
             self.eat_semis();
 
@@ -33,11 +30,7 @@ impl Parser {
             self.expect_cbrace()?;
         }
 
-        Ok(Block {
-            id: self.new_id(),
-            stmts,
-            span: span_start.to(self.current().span),
-        })
+        Ok(Block { id: self.new_id(), stmts, span: span_start.to(self.current().span) })
     }
 
     pub fn parse_stmt(&mut self) -> PResult<Stmt> {
@@ -59,11 +52,7 @@ impl Parser {
 
         self.eat_semis();
 
-        Ok(Stmt {
-            id: self.new_id(),
-            kind: kind?,
-            span: start.to(self.prev().span),
-        })
+        Ok(Stmt { id: self.new_id(), kind: kind?, span: start.to(self.prev().span) })
     }
 
     pub fn parse_let(&mut self) -> PResult<Let> {
@@ -72,29 +61,16 @@ impl Parser {
 
         let ident = self.parse_ident()?;
 
-        let ty = if self.eat(TokenKind::Colon) {
-            Some(self.parse_type()?)
-        } else {
-            None
-        };
+        let ty = if self.eat(TokenKind::Colon) { Some(self.parse_type()?) } else { None };
 
         let value = if self.eat(TokenKind::Eq) {
             Some(self.parse_expr()?)
         } else if let Some(op) = self.current().is_compound_assign() {
-            box_diag!(InvalidVariableInit {
-                found: op,
-                span: (self.current().span, self.file),
-            })
+            box_diag!(InvalidVariableInit { found: op, span: (self.current().span, self.file) })
         } else {
             None
         };
 
-        Ok(Let {
-            id: self.new_id(),
-            ident,
-            ty,
-            value,
-            span: span.to(self.prev().span),
-        })
+        Ok(Let { id: self.new_id(), ident, ty, value, span: span.to(self.prev().span) })
     }
 }

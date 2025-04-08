@@ -54,9 +54,8 @@ pub fn setup_panic_handler(no_backtrace: bool) {
         let divider = "━".repeat(terminal_width).bright_red();
 
         let title = " 💥 Oh no! Something went wrong! 💥 ";
-        let centered_title = format!("{:^width$}", title, width = terminal_width)
-            .bright_red()
-            .bold();
+        let centered_title =
+            format!("{:^width$}", title, width = terminal_width).bright_red().bold();
 
         let report_info = format!(
             "{} {}",
@@ -130,9 +129,8 @@ pub fn setup_panic_handler(no_backtrace: bool) {
                     let file_path = filename.to_str().unwrap_or("");
 
                     if !is_system_code {
-                        is_system_code = SYSTEM_PATH_PATTERNS
-                            .iter()
-                            .any(|pattern| file_path.contains(pattern));
+                        is_system_code =
+                            SYSTEM_PATH_PATTERNS.iter().any(|pattern| file_path.contains(pattern));
                     }
 
                     if file_path.contains("core/src/ops/function.rs") {
@@ -180,15 +178,9 @@ pub fn setup_panic_handler(no_backtrace: bool) {
         }
 
         if consecutive_system_lines > 0 {
-            let collapse_message = format!(
-                "... collapsed {} lines from system code ...",
-                consecutive_system_lines
-            );
-            backtrace = format!(
-                "{}  {}\n",
-                backtrace,
-                collapse_message.bright_magenta().italic()
-            );
+            let collapse_message =
+                format!("... collapsed {} lines from system code ...", consecutive_system_lines);
+            backtrace = format!("{}  {}\n", backtrace, collapse_message.bright_magenta().italic());
         }
 
         let footer = "━".repeat(terminal_width).bright_red();
@@ -256,10 +248,7 @@ pub fn shorten_path(path: &str) -> Result<String> {
     let path = PathBuf::from(path);
     let should_skip = path.starts_with("/rustc/") || path.starts_with("\\rustc\\");
 
-    let shortened = path
-        .iter()
-        .skip(if should_skip { 3 } else { 0 })
-        .collect::<PathBuf>();
+    let shortened = path.iter().skip(if should_skip { 3 } else { 0 }).collect::<PathBuf>();
 
     Ok(shortened.to_string_lossy().to_string())
 }
