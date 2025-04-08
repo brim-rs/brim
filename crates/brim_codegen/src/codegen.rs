@@ -55,7 +55,7 @@ impl ModuleDependencyResolver {
     }
 
     fn build_dependency_graph(&mut self, compiled: &CompiledModules) {
-        for (_, project) in compiled.map.iter() {
+        for project in compiled.map.values() {
             for module in &project.hir.modules {
                 let module_id = module.mod_id;
                 let mut dependencies = HashSet::new();
@@ -87,7 +87,7 @@ impl ModuleDependencyResolver {
         compiled: &CompiledModules,
         path: &PathBuf,
     ) -> Option<ModuleId> {
-        for (_, project) in compiled.map.iter() {
+        for project in compiled.map.values() {
             for module in &project.hir.modules {
                 if module.path == *path {
                     return Some(module.mod_id);
@@ -100,7 +100,7 @@ impl ModuleDependencyResolver {
     fn determine_generation_order(&mut self) -> Vec<ModuleId> {
         let mut generation_order = Vec::new();
         let mut remaining_modules: HashSet<ModuleId> =
-            self.module_dependencies.keys().cloned().collect();
+            self.module_dependencies.keys().copied().collect();
 
         while !remaining_modules.is_empty() {
             let modules_ready_for_generation: Vec<ModuleId> = remaining_modules
@@ -111,18 +111,17 @@ impl ModuleDependencyResolver {
 
                     deps.is_empty() || deps.iter().all(|dep| self.processed_modules.contains(dep))
                 })
-                .cloned()
+                .copied()
                 .collect();
 
-            if modules_ready_for_generation.is_empty() {
-                panic!(
-                    "Circular module dependencies detected: {:?}",
-                    remaining_modules
-                        .iter()
-                        .map(|&mod_id| format!("Module {}", mod_id.as_u32()))
-                        .collect::<Vec<_>>()
-                );
-            }
+            assert!(
+                !modules_ready_for_generation.is_empty(),
+                "Circular module dependencies detected: {:?}",
+                remaining_modules
+                    .iter()
+                    .map(|&mod_id| format!("Module {}", mod_id.as_u32()))
+                    .collect::<Vec<_>>()
+            );
 
             for module_id in modules_ready_for_generation {
                 generation_order.push(module_id);
@@ -181,7 +180,7 @@ impl CppCodegen {
                 "variant",
             ]
             .iter()
-            .map(|s| s.to_string())
+            .map(|s| (*s).to_string())
             .collect(),
             add_prefix: true,
             compiled,
@@ -202,7 +201,7 @@ impl CppCodegen {
         self.code.add_line("");
 
         for std_module in &self.imports {
-            self.code.add_line(&format!("#include <{}>;", std_module));
+            self.code.add_line(&format!("#include <{std_module}>;"));
         }
         self.code.add_line("");
     }
@@ -220,7 +219,7 @@ impl CppCodegen {
     }
 
     pub fn populate(&mut self, compiled: &CompiledModules) {
-        for (_, project) in compiled.map.iter() {
+        for project in compiled.map.values() {
             for module in &project.hir.modules {
                 self.modules.push(module.mod_id.as_usize());
             }
@@ -253,7 +252,7 @@ impl Codegen for CppCodegen {
                 .expect("Module not found");
 
             self.current_mod = module.mod_id;
-            self.hir = Some(resolver.hirs.get(&module_id).unwrap().clone());
+            self.hir = Some(resolver.hirs[&module_id].clone());
             self.generate_module(module.clone(), compiled);
         }
 
@@ -280,13 +279,10 @@ impl Codegen for CppCodegen {
             for item in order {
                 let item = compiled.get_item(item).clone();
 
-                match &item.kind {
-                    HirItemKind::Fn(f) => {
-                        if f.ctx == FunctionContext::Extern {
-                            continue;
-                        }
+                if let HirItemKind::Fn(f) = &item.kind {
+                    if f.ctx == FunctionContext::Extern {
+                        continue;
                     }
-                    _ => {}
                 }
 
                 self.generate_item(item, compiled);
@@ -303,7 +299,7 @@ impl Codegen for CppCodegen {
     }
 
     fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules) {
-        self.generate_item(item, compiled)
+        self.generate_item(item, compiled);
     }
 
     fn generate_expr(&mut self, expr: HirExpr) -> String {

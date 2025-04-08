@@ -185,7 +185,7 @@ pub struct HirFn {
 impl HirFn {
     /// Only if the first parameter is named `self`
     pub fn is_static(&self) -> bool {
-        !self.sig.params.params.first().map_or(false, |param| param.name.to_string() == "self")
+        self.sig.params.params.first().is_none_or(|param| param.name.to_string() != "self")
     }
 }
 

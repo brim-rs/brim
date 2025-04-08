@@ -98,7 +98,7 @@ impl HirModuleMap {
     pub fn get_expr_mut(&mut self, id: ItemId) -> &mut HirExpr {
         match self.get_mut(id) {
             Some(StoredHirItem::Expr(expr)) => expr,
-            _ => panic!("Expected expr for ID {:?}", id),
+            _ => panic!("Expected expr for ID {id:?}"),
         }
     }
 
@@ -110,7 +110,7 @@ impl HirModuleMap {
         self.get_module(id).and_then(|module| {
             module.items.iter().find_map(|item| match self.get(*item) {
                 Some(StoredHirItem::Item(HirItem { kind: HirItemKind::Fn(f), .. }))
-                    if f.sig.name.to_string() == name.to_string() =>
+                    if f.sig.name.to_string() == *name =>
                 {
                     Some(f)
                 }
@@ -125,7 +125,7 @@ impl HirModuleMap {
 
     /// looks for an expr in a self.builtin_args and updates if found
     pub fn update_builtins(&mut self, expr: HirExpr) {
-        for (_, args) in self.builtin_args.iter_mut() {
+        for args in self.builtin_args.values_mut() {
             for arg in args.iter_mut() {
                 if arg.id == expr.id {
                     *arg = expr.clone();
@@ -201,8 +201,7 @@ impl<'a> Transformer<'a> {
             .barrel
             .items
             .iter()
-            .map(|item| self.transform_item(item.clone()))
-            .filter_map(|item| item)
+            .filter_map(|item| self.transform_item(item.clone()))
             .collect();
 
         HirModule {
@@ -238,8 +237,7 @@ impl<'a> Transformer<'a> {
                 let items = external
                     .items
                     .iter()
-                    .map(|item| self.transform_item(item.clone()))
-                    .filter_map(|item| item)
+                    .filter_map(|item| self.transform_item(item.clone()))
                     .collect::<Vec<_>>();
 
                 HirItemKind::External(HirExternBlock {
@@ -447,7 +445,7 @@ impl<'a> Transformer<'a> {
             }
             GenericKind::NonType { ty, default } => HirGenericKind::Const {
                 ty: self.transform_ty(ty),
-                default: default.map(|expr| self.transform_comptime_expr(expr).as_lit().clone()),
+                default: default.map(|expr| *self.transform_comptime_expr(expr).as_lit()),
             },
         }
     }
@@ -478,7 +476,7 @@ impl<'a> Transformer<'a> {
                 ExprKind::Literal(lit) => {
                     // When literal is an integer with f32 suffix, we need to convert it to float,
                     // because C++ compiler will error
-                    if let LitKind::Integer = lit.kind
+                    if lit.kind == LitKind::Integer
                         && lit.suffix.is_some_and(|s| s.to_string() == "f32")
                     {
                         let sym = lit.symbol.to_string();
@@ -486,7 +484,7 @@ impl<'a> Transformer<'a> {
                         HirExprKind::Literal(Lit {
                             kind: LitKind::Float,
                             suffix: lit.suffix,
-                            symbol: Symbol::new(&format!("{}.0", sym)),
+                            symbol: Symbol::new(&format!("{sym}.0")),
                         })
                     } else {
                         HirExprKind::Literal(lit)
@@ -578,9 +576,7 @@ impl<'a> Transformer<'a> {
                         generics: self.transform_generic_arguments(generics),
                         fields: fields
                             .iter()
-                            .map(|(ident, expr)| {
-                                (ident.clone(), self.transform_expr(expr.clone()).0)
-                            })
+                            .map(|(ident, expr)| (*ident, self.transform_expr(expr.clone()).0))
                             .collect(),
                         field_types: HashMap::new(),
                     })
@@ -635,7 +631,7 @@ impl<'a> Transformer<'a> {
             self.compiled.builtin_args.insert(id, builtin_params);
         }
 
-        (expr.clone(), id)
+        (expr, id)
     }
 
     pub fn transform_if_stmt(&mut self, if_expr: IfStmt) -> HirIfStmt {
@@ -643,11 +639,9 @@ impl<'a> Transformer<'a> {
             span: if_expr.span,
             condition: Box::new(self.transform_expr(*if_expr.condition).0),
             then_block: Box::new(self.transform_expr(*if_expr.then_block).0),
-            else_block: if let Some(else_block) = if_expr.else_block {
-                Some(Box::new(self.transform_expr(*else_block).0))
-            } else {
-                None
-            },
+            else_block: if_expr
+                .else_block
+                .map(|else_block| Box::new(self.transform_expr(*else_block).0)),
             else_ifs: if_expr
                 .else_ifs
                 .iter()
@@ -698,7 +692,7 @@ impl<'a> Transformer<'a> {
                     Box::new(self.transform_ty(*err_ty).kind),
                 ),
                 TyKind::Option(ty) => HirTyKind::Option(Box::new(self.transform_ty(*ty).kind)),
-                TyKind::Err(_) => panic!("on ty: {:?}", ty),
+                TyKind::Err(_) => panic!("on ty: {ty:?}"),
             },
         }
     }

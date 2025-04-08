@@ -14,6 +14,12 @@ pub struct Lints {
     enabled_lints: HashMap<String, bool>,
 }
 
+impl Default for Lints {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Lints {
     pub fn new() -> Self {
         Self { enabled_lints: HashMap::new() }

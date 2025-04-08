@@ -12,7 +12,7 @@ impl CppCodegen {
             for param in &generics.params {
                 match &param.kind {
                     HirGenericKind::Type { default } => {
-                        gens.push_str(&format!("typename {}", param.name.to_string()));
+                        gens.push_str(&format!("typename {}", param.name));
                         if let Some(default) = default {
                             gens.push_str(&format!(
                                 " = {}",
@@ -24,12 +24,12 @@ impl CppCodegen {
                         gens.push_str(&format!(
                             "{} {}",
                             self.generate_ty(ty.kind.clone()),
-                            param.name.to_string()
+                            param.name
                         ));
                         if let Some(default) = default {
                             gens.push_str(&format!(
                                 " = {}",
-                                self.generate_lit(default.clone(), ty.kind.clone())
+                                self.generate_lit(*default, ty.kind.clone())
                             ));
                         }
                     }
@@ -37,7 +37,7 @@ impl CppCodegen {
             }
             gens
         };
-        self.code.add_line(&format!("template <{}>", gens));
+        self.code.add_line(&format!("template <{gens}>"));
     }
 
     pub fn generate_generic_args(&mut self, generics: &HirGenericArgs) -> String {
@@ -48,11 +48,11 @@ impl CppCodegen {
         let gens = {
             let mut gens = String::new();
             for param in &generics.params {
-                gens.push_str(&format!("{}", self.generate_ty(param.ty.clone())));
+                gens.push_str(&self.generate_ty(param.ty.clone()).to_string());
             }
             gens
         };
 
-        String::from(&format!("template <{}>", gens))
+        String::from(&format!("template <{gens}>"))
     }
 }

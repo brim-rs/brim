@@ -16,7 +16,7 @@ pub fn release_mode() -> Arg {
     opt("release", "Build in release mode")
         .action(ArgAction::SetTrue)
         .short('r')
-        .conflicts_with_all(&["debug", "min-size-rel", "rel-with-deb-info"])
+        .conflicts_with_all(["debug", "min-size-rel", "rel-with-deb-info"])
         .help_heading(COMPILATION_HEADING)
 }
 
@@ -24,7 +24,7 @@ pub fn debug_mode() -> Arg {
     opt("debug", "Build in debug mode")
         .action(ArgAction::SetTrue)
         .short('d')
-        .conflicts_with_all(&["release", "min-size-rel", "rel-with-deb-info"])
+        .conflicts_with_all(["release", "min-size-rel", "rel-with-deb-info"])
         .help_heading(COMPILATION_HEADING)
 }
 
@@ -32,7 +32,7 @@ pub fn min_size_rel_mode() -> Arg {
     opt("min-size-rel", "Build in min-size-rel mode")
         .action(ArgAction::SetTrue)
         .short('m')
-        .conflicts_with_all(&["release", "debug", "rel-with-deb-info"])
+        .conflicts_with_all(["release", "debug", "rel-with-deb-info"])
         .help_heading(COMPILATION_HEADING)
 }
 
@@ -40,7 +40,7 @@ pub fn rel_with_deb_info_mode() -> Arg {
     opt("rel-with-deb-info", "Build in rel-with-deb-info mode")
         .action(ArgAction::SetTrue)
         .short('i')
-        .conflicts_with_all(&["release", "debug", "min-size-rel"])
+        .conflicts_with_all(["release", "debug", "min-size-rel"])
         .help_heading(COMPILATION_HEADING)
 }
 

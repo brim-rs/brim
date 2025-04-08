@@ -8,17 +8,17 @@ impl CppCodegen {
             HirTyKind::Primitive(prim) => self.transform_primitive(prim),
             HirTyKind::Ptr(ty, mutable) => {
                 let ty = self.generate_ty(*ty);
-                if mutable == Mutable::No { format!("{}*", ty) } else { format!("const {}*", ty) }
+                if mutable == Mutable::No { format!("{ty}*") } else { format!("const {ty}*") }
             }
 
             HirTyKind::Ref(ty, mutable) => {
                 let ty = self.generate_ty(*ty);
-                if mutable == Mutable::No { format!("{}&", ty) } else { format!("const {}&", ty) }
+                if mutable == Mutable::No { format!("{ty}&") } else { format!("const {ty}&") }
             }
 
             HirTyKind::Ident { ident, generics, is_generic } => {
                 let generics = if generics.params.is_empty() {
-                    "".to_string()
+                    String::new()
                 } else {
                     format!(
                         "<{}>",
@@ -38,7 +38,7 @@ impl CppCodegen {
                         .hir()
                         .symbols
                         .resolve(&ident.to_string(), self.current_mod.as_usize())
-                        .expect(&format!("Failed to resolve symbol: {}", ident.name.to_string()));
+                        .unwrap_or_else(|| panic!("Failed to resolve symbol: {}", ident.name));
 
                     let mod_id = symbol.id.mod_id;
 
@@ -48,35 +48,35 @@ impl CppCodegen {
 
             HirTyKind::Vec(ty) => {
                 let ty = self.generate_ty(*ty);
-                format!("std::vector<{}>", ty)
+                format!("std::vector<{ty}>")
             }
 
             HirTyKind::Mut(ty) => {
                 let ty = self.generate_ty(*ty);
-                format!("{}", ty)
+                ty
             }
 
             HirTyKind::Const(ty) => {
                 let ty = self.generate_ty(*ty);
-                format!("const {}", ty)
+                format!("const {ty}")
             }
 
             HirTyKind::Result(ok, err) => {
                 let ok = self.generate_ty(*ok);
                 let err = self.generate_ty(*err);
-                format!("std::expected<{}, {}>", ok, err)
+                format!("std::expected<{ok}, {err}>")
             }
 
             HirTyKind::ResultOk(ty) | HirTyKind::ResultErr(ty) => self.generate_ty(*ty),
 
             HirTyKind::Option(ty) => {
                 let ty = self.generate_ty(*ty);
-                format!("std::optional<{}>", ty)
+                format!("std::optional<{ty}>")
             }
 
             HirTyKind::Some(ty) => {
                 let ty = self.generate_ty(*ty);
-                format!("std::optional<{}>", ty)
+                format!("std::optional<{ty}>")
             }
 
             // Only for now, this will be replaced in type checking

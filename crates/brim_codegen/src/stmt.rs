@@ -14,7 +14,7 @@ impl CppCodegen {
                 let ident = ident.to_string();
                 if let Some(value) = value {
                     if let HirExprKind::Ternary(cond, then, else_) = value.kind {
-                        let var_decl = format!("{} brim_{};", ty, ident.to_string());
+                        let var_decl = format!("{ty} brim_{ident};");
 
                         return format!(
                             "{var_decl}\n if ({}) {{ brim_{ident} = {}; }} else {{ brim_{ident} = {}; }}",
@@ -25,9 +25,9 @@ impl CppCodegen {
                     }
 
                     let value = self.generate_expr(value);
-                    format!("{} brim_{} = {};", ty, ident.to_string(), value)
+                    format!("{ty} brim_{ident} = {value};")
                 } else {
-                    format!("{} brim_{};", ty, ident.to_string())
+                    format!("{ty} brim_{ident};")
                 }
             }
             HirStmtKind::If(if_expr) => self.generate_if_stmt(if_expr),

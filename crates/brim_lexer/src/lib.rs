@@ -163,7 +163,7 @@ pub enum PrimitiveTokenKind {
     InvalidIdent,
 }
 
-impl<'a> Cursor<'a> {
+impl Cursor<'_> {
     pub fn next_token(&mut self) -> PrimitiveToken {
         let first_char = match self.bump() {
             Some(c) => c,
@@ -332,11 +332,8 @@ impl<'a> Cursor<'a> {
         self.bump();
         let mut doc_comment = false;
 
-        match self.first() {
-            '/' => {
-                doc_comment = true;
-            }
-            _ => {}
+        if self.first() == '/' {
+            doc_comment = true;
         }
 
         self.eat_while(|c| c != '\n');

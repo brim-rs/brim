@@ -130,7 +130,7 @@ impl Config {
 
         path.pop();
 
-        Ok(Self::parse(config, args, path)?)
+        Self::parse(config, args, path)
     }
 
     pub fn parse(config: BrimConfig, args: Option<&ArgMatches>, cwd: PathBuf) -> Result<Self> {

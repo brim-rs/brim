@@ -13,7 +13,7 @@ use brim_span::{
     symbols::Symbol,
 };
 
-impl<'a> Lexer<'a> {
+impl Lexer<'_> {
     pub fn lex_literal(
         &mut self,
         lit: LiteralKind,
@@ -31,8 +31,8 @@ impl<'a> Lexer<'a> {
                 } else if matches!(base, Base::Binary | Base::Octal) {
                     // Get the slice without the prefix (0b or 0o)
                     let digits = &content[2..];
-                    let kind = self.validate_digits(start, base as u32, digits);
-                    kind
+
+                    self.validate_digits(start, base as u32, digits)
                 } else {
                     LitKind::Integer
                 };

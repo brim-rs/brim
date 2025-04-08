@@ -44,12 +44,12 @@ fn main() -> Result<()> {
     let dir = env::current_dir()?;
     let res = match cmd.0 {
         "run" => {
-            let config = Config::get(&dir, Some(&cmd.1))?;
-            let run_args = RunArgs::from_args(&cmd.1);
+            let config = Config::get(&dir, Some(cmd.1))?;
+            let run_args = RunArgs::from_args(cmd.1);
 
             exec_command(run_args, run_command, shell, config)
         }
-        "init" => init_command(shell, &cmd.1),
+        "init" => init_command(shell, cmd.1),
         _ => {
             eprintln!("Unknown command: {}", cmd.0);
             exit(1);

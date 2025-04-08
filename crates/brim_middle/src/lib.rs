@@ -73,6 +73,12 @@ pub struct SymbolTable {
     pub symbols: HashMap<usize, Vec<GlobalSymbol>>,
 }
 
+impl Default for SymbolTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SymbolTable {
     pub fn new() -> Self {
         Self { symbols: HashMap::new() }
@@ -81,7 +87,7 @@ impl SymbolTable {
     pub fn add_symbol(&mut self, file_id: usize, symbol: GlobalSymbol) {
         debug!("Adding symbol: {}", symbol.name);
 
-        self.symbols.entry(file_id).or_insert_with(Vec::new).push(symbol);
+        self.symbols.entry(file_id).or_default().push(symbol);
     }
 
     pub fn get_by_ident(&self, ident: &Ident, file_id: usize) -> Option<&GlobalSymbol> {
@@ -125,8 +131,8 @@ pub struct SimpleModules {
 
 impl SimpleModules {
     pub fn get_item(&self, item_id: ItemId) -> &Item {
-        self.items
-            .get(&item_id)
-            .expect(&format!("tried to query an item with id: {:?}, but it doesn't exist", item_id))
+        self.items.get(&item_id).unwrap_or_else(|| {
+            panic!("tried to query an item with id: {item_id:?}, but it doesn't exist")
+        })
     }
 }

@@ -36,6 +36,12 @@ pub struct GenericsCtx {
     pub generics: Vec<GenericParam>,
 }
 
+impl Default for GenericsCtx {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GenericsCtx {
     pub fn new() -> Self {
         Self { generics: Vec::new() }
@@ -97,7 +103,7 @@ impl<'a> NameResolver<'a> {
             debug!("Resolving names for module: {:?}", module.barrel.file_id);
 
             self.file = module.barrel.file_id;
-            for item in module.barrel.items.iter_mut() {
+            for item in &mut module.barrel.items {
                 self.walk_item(item);
             }
 
@@ -110,11 +116,11 @@ impl<'a> NameResolver<'a> {
     /// declare_param doesn't check for duplicates, because that is already handled by the
     /// [`AstValidator`](crate::validator::AstValidator)
     fn declare_param(&mut self, name: &str, info: VariableInfo) {
-        diag_opt!(self.ctx, self.scopes.declare_variable(name.to_string(), info, false))
+        diag_opt!(self.ctx, self.scopes.declare_variable(name.to_string(), info, false));
     }
 
     fn declare_variable(&mut self, name: &str, info: VariableInfo) {
-        diag_opt!(self.ctx, self.scopes.declare_variable(name.to_string(), info, true))
+        diag_opt!(self.ctx, self.scopes.declare_variable(name.to_string(), info, true));
     }
 
     // Check if a variable is declared in any accessible scope
@@ -148,7 +154,7 @@ impl<'a> NameResolver<'a> {
                 if from_call {
                     match &item.kind {
                         ItemKind::Struct(_) | ItemKind::Enum(_) => {
-                            self.compiled.assign_path(expr_id, item.id)
+                            self.compiled.assign_path(expr_id, item.id);
                         }
                         _ => {
                             self.ctx.emit_impl(InvalidReceiverForStaticAccess { span, name });
@@ -199,7 +205,7 @@ impl<'a> NameResolver<'a> {
             }
             TyKind::Ident { ident, generics } => {
                 // try to resolve the identifier
-                let ident = ident.clone();
+                let ident = *ident;
                 self.resolve_ident(ident);
 
                 for generic in generics.params.clone() {
@@ -223,7 +229,7 @@ impl<'a> NameResolver<'a> {
         } else {
             // if the symbol wasn't found then we will look for a generic
 
-            if let None = self.generics.find(&ident.to_string()) {
+            if self.generics.find(&ident.to_string()).is_none() {
                 self.ctx.emit_impl(IdentifierNotFound {
                     span: (ident.span, self.file),
                     name: ident.to_string(),
@@ -249,7 +255,7 @@ impl<'a> NameResolver<'a> {
                 Some((scope, var.clone()))
             }
         } else {
-            if let None = self.compiled.symbols.resolve(&var_name, self.file) {
+            if self.compiled.symbols.resolve(&var_name, self.file).is_none() {
                 self.ctx.emit_impl(UndeclaredVariable {
                     span: (ident.span, self.file),
                     name: var_name.clone(),
@@ -271,7 +277,7 @@ impl<'a> NameResolver<'a> {
     }
 }
 
-impl<'a> AstWalker for NameResolver<'a> {
+impl AstWalker for NameResolver<'_> {
     fn visit_let(&mut self, let_stmt: &mut Let) {
         let name = let_stmt.ident.to_string();
 
@@ -295,7 +301,7 @@ impl<'a> AstWalker for NameResolver<'a> {
     fn visit_block(&mut self, block: &mut Block) {
         self.scopes.push_scope(self.file, self.inside_comptime);
 
-        for stmt in block.stmts.iter_mut() {
+        for stmt in &mut block.stmts {
             self.visit_stmt(stmt);
         }
 
@@ -349,7 +355,7 @@ impl<'a> AstWalker for NameResolver<'a> {
 
         if name != camel && !self.external {
             self.ctx.emit_lint(self.lints.function_not_camel_case(
-                name.to_string(),
+                name,
                 camel,
                 (func.sig.name.span, self.file),
             ));
@@ -468,7 +474,7 @@ impl<'a> AstWalker for NameResolver<'a> {
 
                 let func_sym = self.compiled.symbols.resolve(&name, self.file);
 
-                if let None = func_sym {
+                if func_sym.is_none() {
                     self.ctx
                         .emit(Box::new(UndeclaredFunction { span: (func.span, self.file), name }));
                 }
@@ -491,7 +497,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                 let name = ident.to_string();
                 let func = BUILTIN_FUNCTIONS.get(&name);
 
-                if let None = func {
+                if func.is_none() {
                     self.ctx
                         .emit(Box::new(UndeclaredFunction { span: (ident.span, self.file), name }));
                 }
@@ -504,7 +510,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                 let name = ident.to_string();
                 let func_sym = self.compiled.symbols.resolve(&name, self.file);
 
-                if let None = func_sym {
+                if func_sym.is_none() {
                     self.ctx
                         .emit(Box::new(UndeclaredStruct { span: (ident.span, self.file), name }));
                 }
@@ -521,7 +527,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                     let str = self.simple.get_item(*assigned);
 
                     if let ExprKind::Call(ident, _) = &expr.kind {
-                        let ident = ident.as_ident().unwrap().clone();
+                        let ident = *ident.as_ident().unwrap();
 
                         if let Some(item) = str.kind.as_struct() {
                             let item = item.find_item(ident);
@@ -549,7 +555,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                                 });
                             }
                         } else if let Some(item) = str.kind.as_enum() {
-                            if let None = item.find(&ident) {
+                            if item.find(&ident).is_none() {
                                 self.ctx.emit_impl(NoVariantInEnum {
                                     span: (ident.span, self.file),
                                     name: ident.name.to_string(),

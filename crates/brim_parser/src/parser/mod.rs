@@ -133,11 +133,11 @@ impl Parser {
     }
 
     pub fn fn_ctx(&self) -> FunctionContext {
-        self.fn_ctx.clone().unwrap()
+        self.fn_ctx.unwrap()
     }
 
     pub fn set_fn_ctx(&mut self, ctx: FunctionContext) {
-        if let None = self.fn_ctx {
+        if self.fn_ctx.is_none() {
             self.fn_ctx = Some(ctx);
         }
     }

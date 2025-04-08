@@ -16,63 +16,57 @@ impl CppCodegen {
                 let generics = if let Some((_, generics)) = &self.parent_item {
                     generics.join(&decl.sig.generics)
                 } else {
-                    decl.sig.generics.clone()
+                    decl.sig.generics
                 };
                 self.generate_generics(&generics);
 
-                let params = decl.sig.params.params.clone();
+                let params = decl.sig.params.params;
                 let params = params
                     .iter()
-                    .map(|p| {
-                        format!(
-                            "{} brim_{}",
-                            self.generate_ty(p.ty.kind.clone()),
-                            p.name.to_string()
-                        )
-                    })
+                    .map(|p| format!("{} brim_{}", self.generate_ty(p.ty.kind.clone()), p.name))
                     .collect::<Vec<_>>()
                     .join(", ");
 
                 let name = if self.add_prefix {
                     if let Some((ident, _)) = &self.parent_item {
-                        format!("brim_{}_{}", ident, decl.sig.name.to_string())
+                        format!("brim_{}_{}", ident, decl.sig.name)
                     } else {
-                        format!("brim_{}", decl.sig.name.to_string())
+                        format!("brim_{}", decl.sig.name)
                     }
                 } else {
                     decl.sig.name.to_string()
                 };
-                let block_name = format!("{} {}({})", ret, name, params);
+                let block_name = format!("{ret} {name}({params})");
 
                 if let Some(body) = decl.body {
                     let body_expr = self.hir().get_expr(body).clone();
-                    let body_code = self.generate_expr(body_expr.clone());
+                    let body_code = self.generate_expr(body_expr);
 
                     self.code.add_block(&block_name, |code| {
                         code.add_line_no_indent(&body_code);
                     });
                 } else {
-                    self.code.add_line(&format!("{};", block_name));
+                    self.code.add_line(&format!("{block_name};"));
                 };
             }
             HirItemKind::Struct(mut s) => {
                 self.generate_generics(&s.generics);
                 let name = if self.add_prefix {
-                    format!("brim_{}", s.ident.name.to_string())
+                    format!("brim_{}", s.ident.name)
                 } else {
                     s.ident.name.to_string()
                 };
-                self.code.add_line(&format!("struct {} {{", name));
+                self.code.add_line(&format!("struct {name} {{"));
                 self.code.increase_indent();
 
                 for field in s.fields.clone() {
                     let ty = self.generate_ty(field.ty.clone());
 
-                    self.code.add_line(&format!("{} {};", ty, field.ident.to_string()));
+                    self.code.add_line(&format!("{} {};", ty, field.ident));
                 }
 
                 for (ident, id) in s.items.clone() {
-                    let item = self.compiled.get_item(id.clone());
+                    let item = self.compiled.get_item(id);
 
                     if let Some(func) = item.as_fn_safe() {
                         if !func.is_static() {
@@ -86,7 +80,7 @@ impl CppCodegen {
                 self.code.decrease_indent();
                 self.code.add_line("};");
 
-                self.parent_item = Some((s.ident.clone(), s.generics));
+                self.parent_item = Some((s.ident, s.generics));
                 for (_, id) in s.items {
                     let item = self.compiled.get_item(id);
 
@@ -96,7 +90,7 @@ impl CppCodegen {
             }
             HirItemKind::External(external) => {
                 if let Some(abi) = external.abi {
-                    self.code.add_line(&format!("extern \"{}\" {{", abi));
+                    self.code.add_line(&format!("extern \"{abi}\" {{"));
                 } else {
                     self.code.add_line("extern {");
                 }
@@ -119,24 +113,24 @@ impl CppCodegen {
             HirItemKind::Enum(mut e) => {
                 self.generate_generics(&e.generics);
                 let name = if self.add_prefix {
-                    format!("brim_{}", e.ident.name.to_string())
+                    format!("brim_{}", e.ident.name)
                 } else {
                     e.ident.name.to_string()
                 };
                 let mut variant_names = vec![];
 
-                self.code.add_line(&format!("struct {};", name));
+                self.code.add_line(&format!("struct {name};"));
 
                 for variant in &e.variants {
                     let variant_name = format!("{}_{}", name, variant.ident.name);
                     variant_names.push(variant_name.clone());
 
-                    self.code.add_line(&format!("struct {} {{", variant_name));
+                    self.code.add_line(&format!("struct {variant_name} {{"));
                     self.code.increase_indent();
 
                     for (i, field) in variant.fields.iter().enumerate() {
                         let ty = self.generate_ty(field.ty.clone());
-                        self.code.add_line(&format!("{} field_{};", ty, i));
+                        self.code.add_line(&format!("{ty} field_{i};"));
                     }
 
                     let params: Vec<String> = variant
@@ -147,10 +141,10 @@ impl CppCodegen {
                         .collect();
 
                     let init_list: Vec<String> =
-                        (0..variant.fields.len()).map(|i| format!("field_{}(f{})", i, i)).collect();
+                        (0..variant.fields.len()).map(|i| format!("field_{i}(f{i})")).collect();
 
                     if variant.fields.is_empty() {
-                        self.code.add_line(&format!("{}() = default;", variant_name));
+                        self.code.add_line(&format!("{variant_name}() = default;"));
                     } else {
                         self.code.add_line(&format!(
                             "{}({}) : {} {{}}",
@@ -164,7 +158,7 @@ impl CppCodegen {
                     self.code.add_line("};");
                 }
 
-                self.code.add_line(&format!("struct {} {{", name));
+                self.code.add_line(&format!("struct {name} {{"));
                 self.code.increase_indent();
 
                 self.code.add_line("std::variant<");
@@ -177,27 +171,23 @@ impl CppCodegen {
                 }
                 self.code.add_line("> value;");
 
-                self.code.add_line(&format!("{}() = default;", name));
+                self.code.add_line(&format!("{name}() = default;"));
 
                 self.code.add_line(&format!(
-                    "{0}(const {0}& other) : value(std::visit([](const auto& v) {{ return decltype(value)(v); }}, other.value)) {{}}",
-                    name
+                    "{name}(const {name}& other) : value(std::visit([](const auto& v) {{ return decltype(value)(v); }}, other.value)) {{}}"
                 ));
 
                 self.code.add_line(&format!(
-                    "{0}({0}&& other) noexcept : value(std::move(other.value)) {{}}",
-                    name
+                    "{name}({name}&& other) noexcept : value(std::move(other.value)) {{}}"
                 ));
 
                 for variant_name in &variant_names {
-                    self.code.add_line(&format!(
-                        "{}({} v) : value(std::move(v)) {{}}",
-                        name, variant_name
-                    ));
+                    self.code
+                        .add_line(&format!("{name}({variant_name} v) : value(std::move(v)) {{}}"));
                 }
 
                 for (ident, id) in e.items.clone() {
-                    let item = self.compiled.get_item(id.clone());
+                    let item = self.compiled.get_item(id);
 
                     if let Some(func) = item.as_fn_safe() {
                         if !func.is_static() {
@@ -224,40 +214,35 @@ impl CppCodegen {
     }
 
     pub fn generate_wrapper_item(&mut self, item: HirItem) {
-        match item.kind {
-            HirItemKind::Fn(decl) => {
-                let ret = self.generate_ty(decl.sig.return_type);
-                self.generate_generics(&decl.sig.generics);
+        if let HirItemKind::Fn(decl) = item.kind {
+            let ret = self.generate_ty(decl.sig.return_type);
+            self.generate_generics(&decl.sig.generics);
 
-                let params = decl
+            let params = decl
+                .sig
+                .params
+                .params
+                .iter()
+                .map(|p| format!("{} {}", self.generate_ty(p.ty.kind.clone()), p.name))
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            let original_name = decl.sig.name.to_string();
+            let wrapper_name = format!("brim_{original_name}");
+            let block_name = format!("inline {ret} {wrapper_name}({params})");
+
+            self.code.add_block(&block_name, |code| {
+                let param_names = decl
                     .sig
                     .params
                     .params
                     .iter()
-                    .map(|p| {
-                        format!("{} {}", self.generate_ty(p.ty.kind.clone()), p.name.to_string())
-                    })
+                    .map(|p| p.name.to_string())
                     .collect::<Vec<_>>()
                     .join(", ");
 
-                let original_name = decl.sig.name.to_string();
-                let wrapper_name = format!("brim_{}", original_name);
-                let block_name = format!("inline {} {}({})", ret, wrapper_name, params);
-
-                self.code.add_block(&block_name, |code| {
-                    let param_names = decl
-                        .sig
-                        .params
-                        .params
-                        .iter()
-                        .map(|p| p.name.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ");
-
-                    code.add_line(&format!("return {}({});", original_name, param_names));
-                });
-            }
-            _ => {}
+                code.add_line(&format!("return {original_name}({param_names});"));
+            });
         }
     }
 }
@@ -276,27 +261,22 @@ pub fn sort_items_by_module(
     }
 
     for item in &all_items {
-        module_items
-            .entry(item.id.mod_id.clone())
-            .or_insert_with(BTreeSet::new)
-            .insert(item.id.item_id.clone());
+        module_items.entry(item.id.mod_id).or_default().insert(item.id.item_id);
     }
 
     let mut module_graphs: BTreeMap<ModuleId, BTreeMap<ItemId, Vec<ItemId>>> = BTreeMap::new();
 
     for (item, dependencies) in item_relations {
-        let mod_id = item.id.mod_id.clone();
-        let item_id = item.id.item_id.clone();
+        let mod_id = item.id.mod_id;
+        let item_id = item.id.item_id;
 
-        if !module_graphs.contains_key(&mod_id) {
-            module_graphs.insert(mod_id.clone(), BTreeMap::new());
-        }
+        module_graphs.entry(mod_id).or_insert_with(BTreeMap::new);
 
         // Add dependencies within the same module
         let same_module_deps: Vec<ItemId> = dependencies
             .iter()
             .filter(|dep| dep.id.mod_id == mod_id)
-            .map(|dep| dep.id.item_id.clone())
+            .map(|dep| dep.id.item_id)
             .collect();
 
         module_graphs.get_mut(&mod_id).unwrap().insert(item_id, same_module_deps);
@@ -308,7 +288,7 @@ pub fn sort_items_by_module(
         let temp = BTreeMap::new();
         let graph = module_graphs.get(mod_id).unwrap_or(&temp);
         let sorted_items = topological_sort(items, graph);
-        result.insert(mod_id.clone(), sorted_items);
+        result.insert(*mod_id, sorted_items);
     }
 
     result
@@ -322,15 +302,15 @@ pub fn topological_sort(
     let mut adj_list: BTreeMap<ItemId, Vec<ItemId>> = BTreeMap::new();
 
     for item in items {
-        indegree.insert(item.clone(), 0);
-        adj_list.insert(item.clone(), Vec::new());
+        indegree.insert(*item, 0);
+        adj_list.insert(*item, Vec::new());
     }
 
     for (item, deps) in graph {
         for dep in deps {
             if items.contains(dep) {
-                adj_list.entry(item.clone()).or_default().push(dep.clone());
-                *indegree.entry(dep.clone()).or_default() += 1;
+                adj_list.entry(*item).or_default().push(*dep);
+                *indegree.entry(*dep).or_default() += 1;
             }
         }
     }
@@ -338,20 +318,20 @@ pub fn topological_sort(
     let mut queue: BinaryHeap<std::cmp::Reverse<ItemId>> = indegree
         .iter()
         .filter(|&(_, &count)| count == 0)
-        .map(|(item, _)| std::cmp::Reverse(item.clone()))
+        .map(|(item, _)| std::cmp::Reverse(*item))
         .collect();
 
     let mut result = Vec::new();
 
     while let Some(std::cmp::Reverse(item)) = queue.pop() {
-        result.push(item.clone());
+        result.push(item);
 
         if let Some(adjacent) = adj_list.get(&item) {
             for adj in adjacent {
                 if let Some(count) = indegree.get_mut(adj) {
                     *count -= 1;
                     if *count == 0 {
-                        queue.push(std::cmp::Reverse(adj.clone()));
+                        queue.push(std::cmp::Reverse(*adj));
                     }
                 }
             }
@@ -361,7 +341,7 @@ pub fn topological_sort(
     if result.len() != items.len() {
         for item in items {
             if !result.contains(item) {
-                result.push(item.clone());
+                result.push(*item);
             }
         }
     }

@@ -7,7 +7,7 @@ pub type RawIndex = u32;
 
 pub type RawOffset = i64;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub struct LineIndex(pub RawIndex);
 
 impl LineIndex {
@@ -17,12 +17,6 @@ impl LineIndex {
 
     pub const fn to_usize(self) -> usize {
         self.0 as usize
-    }
-}
-
-impl Default for LineIndex {
-    fn default() -> LineIndex {
-        LineIndex(0)
     }
 }
 
@@ -63,14 +57,8 @@ impl fmt::Display for LineNumber {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub struct LineOffset(pub RawOffset);
-
-impl Default for LineOffset {
-    fn default() -> LineOffset {
-        LineOffset(0)
-    }
-}
 
 impl fmt::Debug for LineOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -86,7 +74,7 @@ impl fmt::Display for LineOffset {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub struct ColumnIndex(pub RawIndex);
 
 impl ColumnIndex {
@@ -96,12 +84,6 @@ impl ColumnIndex {
 
     pub const fn to_usize(self) -> usize {
         self.0 as usize
-    }
-}
-
-impl Default for ColumnIndex {
-    fn default() -> ColumnIndex {
-        ColumnIndex(0)
     }
 }
 
@@ -136,14 +118,8 @@ impl fmt::Display for ColumnNumber {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub struct ColumnOffset(pub RawOffset);
-
-impl Default for ColumnOffset {
-    fn default() -> ColumnOffset {
-        ColumnOffset(0)
-    }
-}
 
 impl fmt::Debug for ColumnOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -159,18 +135,12 @@ impl fmt::Display for ColumnOffset {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub struct ByteIndex(pub RawIndex);
 
 impl ByteIndex {
     pub const fn to_usize(self) -> usize {
         self.0 as usize
-    }
-}
-
-impl Default for ByteIndex {
-    fn default() -> ByteIndex {
-        ByteIndex(0)
     }
 }
 

@@ -82,7 +82,7 @@ fn setup_msvc_environment(vcvars_path: &Path) -> Result<HashMap<String, String>>
     debug!("Setting up MSVC environment using: {}", vcvars_path.display());
 
     let output = Command::new("cmd")
-        .args(&["/C", vcvars_path.to_str().unwrap(), "x64", "&&", "set"])
+        .args(["/C", vcvars_path.to_str().unwrap(), "x64", "&&", "set"])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()

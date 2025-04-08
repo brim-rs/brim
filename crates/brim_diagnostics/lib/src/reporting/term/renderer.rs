@@ -692,7 +692,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
     }
 }
 
-impl<'writer, 'config> Write for Renderer<'writer, 'config> {
+impl Write for Renderer<'_, '_> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.writer.write(buf)
     }
@@ -702,7 +702,7 @@ impl<'writer, 'config> Write for Renderer<'writer, 'config> {
     }
 }
 
-impl<'writer, 'config> Renderer<'writer, 'config> {
+impl Renderer<'_, '_> {
     fn set_color(&mut self, spec: &Style) -> io::Result<()> {
         self.writer.write(spec.to_string().as_bytes())?;
 
@@ -745,6 +745,6 @@ fn hanging_labels<'labels, 'diagnostic>(
         .iter()
         .enumerate()
         .filter(|(_, (_, _, message))| !message.is_empty())
-        .filter(move |(i, _)| trailing_label.map_or(true, |(j, _)| *i != j))
+        .filter(move |(i, _)| trailing_label.is_none_or(|(j, _)| *i != j))
         .map(|(_, label)| label)
 }

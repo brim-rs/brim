@@ -11,6 +11,12 @@ pub struct TemporaryDiagnosticContext {
     pub diags: Vec<Diagnostic<usize>>,
 }
 
+impl Default for TemporaryDiagnosticContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TemporaryDiagnosticContext {
     pub fn new() -> Self {
         Self { diags: vec![] }

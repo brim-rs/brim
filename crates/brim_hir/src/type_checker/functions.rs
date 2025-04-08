@@ -22,14 +22,12 @@ impl TypeChecker {
             self.check_expr(body.clone());
             self.current_fn = None;
 
-            if let None = &self.ty_returned_from_fn {
-                if !func.sig.return_type.can_be_ignored() {
-                    self.ctx.emit_impl(NoReturnFound {
-                        span: (func.sig.span, self.mod_id),
-                        name: func.sig.name.to_string(),
-                        expected: func.sig.return_type.clone(),
-                    });
-                }
+            if self.ty_returned_from_fn.is_none() && !func.sig.return_type.can_be_ignored() {
+                self.ctx.emit_impl(NoReturnFound {
+                    span: (func.sig.span, self.mod_id),
+                    name: func.sig.name.to_string(),
+                    expected: func.sig.return_type,
+                });
             }
 
             self.ty_returned_from_fn = None;
@@ -65,15 +63,13 @@ impl TypeChecker {
                     if val.ty == HirTyKind::Primitive(PrimitiveType::Void) {
                         self.ctx
                             .emit_impl(CannotInitializeWithVoid { span: (stmt.span, self.mod_id) });
-                    } else {
-                        if !ty.can_be_initialized_with(&val_ty) {
-                            self.ctx.emit_impl(CannotInitializeVariable {
-                                span: (stmt.span, self.mod_id),
-                                name: ident.to_string(),
-                                ty: ty.clone(),
-                                val_ty,
-                            });
-                        }
+                    } else if !ty.can_be_initialized_with(&val_ty) {
+                        self.ctx.emit_impl(CannotInitializeVariable {
+                            span: (stmt.span, self.mod_id),
+                            name: ident.to_string(),
+                            ty: ty.clone(),
+                            val_ty,
+                        });
                     }
 
                     self.check_expr(val);

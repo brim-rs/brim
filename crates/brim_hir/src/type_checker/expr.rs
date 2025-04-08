@@ -75,7 +75,7 @@ impl TypeChecker {
                 let fields = hir_struct.fields;
 
                 for (ident, field) in fields {
-                    let field_ty = hir_struct.field_types.get(&ident).unwrap().clone();
+                    let field_ty = hir_struct.field_types[&ident].clone();
 
                     if !field_ty.simple_eq(&field.ty) {
                         self.ctx.emit_impl(FieldMismatch {
@@ -103,7 +103,7 @@ impl TypeChecker {
                         span: (lhs.span.to(rhs.span), self.mod_id),
                         name: match lhs.kind {
                             HirExprKind::Var(ident) => ident.to_string(),
-                            _ => "".to_string(),
+                            _ => String::new(),
                         },
                     });
                 }

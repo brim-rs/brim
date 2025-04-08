@@ -11,6 +11,12 @@ pub struct DiagnosticContext {
     pub config: DiagConfig,
 }
 
+impl Default for DiagnosticContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DiagnosticContext {
     pub fn new() -> Self {
         Self { config: DiagConfig::default() }
@@ -27,7 +33,7 @@ impl DiagnosticContext {
     }
 
     pub fn extend_temporary(&mut self, temp: &TemporaryDiagnosticContext, files: &SimpleFiles) {
-        for diag in temp.diags.iter() {
+        for diag in &temp.diags {
             self.emit_inner(diag.clone(), files);
         }
     }

@@ -24,6 +24,12 @@ pub struct AstValidator {
     pub current_file: usize,
 }
 
+impl Default for AstValidator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AstValidator {
     pub fn new() -> Self {
         Self { ctx: TemporaryDiagnosticContext::new(), current_file: 0 }
@@ -34,7 +40,7 @@ impl AstValidator {
         for module in module_map.modules {
             debug!("AST validating module: {:?}", module.barrel.file_id);
 
-            self.current_file = module.barrel.file_id.clone();
+            self.current_file = module.barrel.file_id;
             for mut item in module.barrel.items {
                 self.visit_item(&mut item);
             }
@@ -46,7 +52,7 @@ impl AstValidator {
     pub fn validate_function_params(&mut self, sig: &FnSignature) {
         if sig.params.len() > 255 {
             self.ctx.emit(Box::new(TooManyParameters {
-                span: (sig.span.clone(), self.current_file),
+                span: (sig.span, self.current_file),
                 note: "Because we compile to C++, we have to limit the number of parameters to 255.",
             }));
         }
@@ -56,12 +62,12 @@ impl AstValidator {
             let param_name = param.name.to_string();
             if let Some(original_span) = seen.get(&param_name) {
                 self.ctx.emit(Box::new(DuplicateParam {
-                    dup: (param.span.clone(), self.current_file),
-                    span: (original_span.clone(), self.current_file),
+                    dup: (param.span, self.current_file),
+                    span: (*original_span, self.current_file),
                     name: param_name,
                 }));
             } else {
-                seen.insert(param_name, param.span.clone());
+                seen.insert(param_name, param.span);
             }
         }
     }
@@ -83,7 +89,7 @@ impl AstWalker for AstValidator {
                 }
             }
             ItemKind::Struct(str) => {
-                for item in str.items.iter_mut() {
+                for item in &mut str.items {
                     self.visit_item(item);
                 }
             }
@@ -122,12 +128,12 @@ impl AstWalker for AstValidator {
             let ident_name = ident.to_string();
             if let Some(original_span) = seen.get(&ident_name) {
                 self.ctx.emit(Box::new(DuplicateFieldInitializer {
-                    second: (original_span.clone(), self.current_file),
-                    first: (ident.span.clone(), self.current_file),
+                    second: (*original_span, self.current_file),
+                    first: (ident.span, self.current_file),
                     name: ident_name,
                 }));
             } else {
-                seen.insert(ident_name, ident.span.clone());
+                seen.insert(ident_name, ident.span);
             }
         }
     }
@@ -139,7 +145,7 @@ impl AstWalker for AstValidator {
         if let Some(func) = func {
             if args.len() != func.expected_args {
                 self.ctx.emit_impl(BuiltinFunctionArgCount {
-                    span: (ident.span.clone(), self.current_file),
+                    span: (ident.span, self.current_file),
                     expected: func.expected_args,
                     found: args.len(),
                 });

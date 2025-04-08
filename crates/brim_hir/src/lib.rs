@@ -55,6 +55,12 @@ pub struct CompiledModules {
     pub builtin_args: HashMap<ItemId, Vec<HirExpr>>,
 }
 
+impl Default for CompiledModules {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CompiledModules {
     pub fn new() -> Self {
         Self {
@@ -81,9 +87,9 @@ impl CompiledModules {
     }
 
     pub fn get_item(&self, item_id: ItemId) -> &HirItem {
-        self.items
-            .get(&item_id)
-            .expect(&format!("tried to query an item with id: {:?}, but it doesn't exist", item_id))
+        self.items.get(&item_id).unwrap_or_else(|| {
+            panic!("tried to query an item with id: {item_id:?}, but it doesn't exist")
+        })
     }
 
     pub fn assign_path(&mut self, item_id: ItemId, path: ItemId) {
@@ -91,14 +97,14 @@ impl CompiledModules {
     }
 
     pub fn get_assigned_path(&self, item_id: ItemId) -> ItemId {
-        self.assigned_paths
+        *self
+            .assigned_paths
             .get(&item_id)
-            .expect(&format!("an assigned path with id: {:?} doesn't exist", item_id))
-            .clone()
+            .unwrap_or_else(|| panic!("an assigned path with id: {item_id:?} doesn't exist"))
     }
 
     pub fn add_item_relation(&mut self, item_id: GlobalSymbol, relation: GlobalSymbol) {
-        self.item_relations.entry(item_id).or_insert_with(Vec::new).push(relation);
+        self.item_relations.entry(item_id).or_default().push(relation);
     }
 
     pub fn get_item_relations(&self, item_id: GlobalSymbol) -> Option<&Vec<GlobalSymbol>> {

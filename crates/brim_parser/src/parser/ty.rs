@@ -178,11 +178,7 @@ impl Parser {
             let ident_opt = self.parse_ident_without_err()?;
 
             if let Some(ident) = ident_opt {
-                if let Some(primitive) = self.is_primitive(ident)? {
-                    Some(TyKind::Primitive(primitive))
-                } else {
-                    None
-                }
+                self.is_primitive(ident)?.map(TyKind::Primitive)
             } else {
                 None
             }

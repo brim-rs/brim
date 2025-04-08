@@ -46,23 +46,20 @@ fn main() -> Result<()> {
         )]);
 
     for label in &mut diagnostic.labels {
-        match label.style.clone() {
-            LabelStyle::Add(to_add) => {
-                let range = label.range.start..label.range.start;
+        if let LabelStyle::Add(to_add) = label.style.clone() {
+            let range = label.range.start..label.range.start;
 
-                let file = files.get(label.file_id)?;
-                let source = file.source().as_str();
-                // Insert code to add between the range
-                let source = source[..range.start].to_string()
-                    + &to_add.bright_green().to_string()
-                    + &source[range.end..];
+            let file = files.get(label.file_id)?;
+            let source = file.source().as_str();
+            // Insert code to add between the range
+            let source = source[..range.start].to_string()
+                + &to_add.bright_green().to_string()
+                + &source[range.end..];
 
-                files.update(label.file_id, file.name().clone(), source);
+            files.update(label.file_id, file.name().clone(), source);
 
-                // Update the range to include the added code
-                label.range = label.range.start..label.range.start + to_add.len() + 1;
-            }
-            _ => {}
+            // Update the range to include the added code
+            label.range = label.range.start..label.range.start + to_add.len() + 1;
         }
     }
 

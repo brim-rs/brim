@@ -38,7 +38,7 @@ impl From<Param> for VariableInfo {
     }
 }
 
-impl<'a> Scope {
+impl Scope {
     pub fn new(file: usize) -> Self {
         Self { variables: HashMap::new(), parent: None, file, inside_comptime: false }
     }
@@ -57,9 +57,9 @@ impl<'a> Scope {
         name: String,
         info: VariableInfo,
         check_duplicates: bool,
-    ) -> OptionalDiag<'a> {
+    ) -> OptionalDiag<'_> {
         if self.variables.contains_key(&name) && check_duplicates {
-            let var = self.variables.get(&name).unwrap();
+            let var = &self.variables[&name];
 
             box_diag!(@opt RedeclaredVariable {
                 span: (var.span, self.file),
@@ -89,7 +89,7 @@ pub struct ScopeManager {
     scope_stack: Vec<Scope>,
 }
 
-impl<'a> ScopeManager {
+impl ScopeManager {
     pub fn new(file: usize) -> Self {
         Self { scope_stack: vec![Scope::new(file)] }
     }
@@ -119,7 +119,7 @@ impl<'a> ScopeManager {
         name: String,
         info: VariableInfo,
         check_duplicates: bool,
-    ) -> OptionalDiag<'a> {
+    ) -> OptionalDiag<'_> {
         self.current_scope().declare_variable(name, info, check_duplicates)
     }
 }

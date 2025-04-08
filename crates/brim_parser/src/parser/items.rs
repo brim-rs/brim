@@ -329,7 +329,7 @@ impl Parser {
 
         debug!("=== Parsed function: {:?}", sig);
 
-        let copy = self.fn_ctx().clone();
+        let copy = self.fn_ctx();
         self.fn_ctx = None;
         Ok((sig.name, ItemKind::Fn(FnDecl { sig, generics, body, context: copy })))
     }
@@ -410,10 +410,8 @@ impl Parser {
             let span_start = self.current().span;
             let ident = self.parse_ident()?;
 
-            if ident.name == SelfSmall {
-                if !self.fn_ctx().allows_self() {
-                    box_diag!(SelfOutsideMethod { span: (ident.span, self.file) });
-                }
+            if ident.name == SelfSmall && !self.fn_ctx().allows_self() {
+                box_diag!(SelfOutsideMethod { span: (ident.span, self.file) });
             }
 
             self.expect(TokenKind::Colon)?;

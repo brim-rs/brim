@@ -141,7 +141,7 @@ pub trait AstWalker {
             }
             ExprKind::Builtin(ident, args) => self.visit_builtin(ident, args),
             ExprKind::StructConstructor(ident, gens, fields) => {
-                self.visit_struct_constructor(ident, gens, fields)
+                self.visit_struct_constructor(ident, gens, fields);
             }
             ExprKind::Match(expr, arms) => {
                 self.visit_expr(expr);

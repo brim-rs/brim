@@ -29,6 +29,12 @@ pub type OptionalDiag<'a> = Option<Box<dyn ToDiagnostic>>;
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct ErrorEmitted(());
 
+impl Default for ErrorEmitted {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ErrorEmitted {
     pub fn new() -> Self {
         Self(())

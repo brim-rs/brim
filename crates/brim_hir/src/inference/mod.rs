@@ -48,6 +48,12 @@ pub struct InferCtx {
     pub generics: Vec<HirGenericParam>,
 }
 
+impl Default for InferCtx {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InferCtx {
     pub fn new() -> Self {
         Self { generics: Vec::new() }
@@ -79,7 +85,7 @@ pub fn infer_types<'a>(
     ti
 }
 
-impl<'a> TypeInference<'a> {
+impl TypeInference<'_> {
     pub fn infer(&mut self) {
         let inferred_modules: Vec<_> = self
             .hir
@@ -98,7 +104,7 @@ impl<'a> TypeInference<'a> {
 
     pub fn infer_module(&mut self, module: &mut HirModule) {
         for item in &mut module.items {
-            self.infer_item(item.clone());
+            self.infer_item(*item);
         }
     }
 
@@ -162,7 +168,7 @@ impl<'a> TypeInference<'a> {
     }
 
     fn infer_item_inner(&mut self, id: ItemId) -> HirItem {
-        let mut item = self.compiled.items.get(&id).unwrap().clone();
+        let mut item = self.compiled.items[&id].clone();
         match item.kind {
             HirItemKind::Fn(ref mut f) => {
                 self.scope_manager.push_scope();
@@ -175,7 +181,7 @@ impl<'a> TypeInference<'a> {
                     param.ty.kind = self.update_generic(param.ty.kind.clone());
 
                     let param_type = param.ty.kind.clone();
-                    let type_info = TypeInfo { ty: param_type, span: param.span.clone() };
+                    let type_info = TypeInfo { ty: param_type, span: param.span };
                     self.scope_manager.declare_variable(
                         param.name.clone().to_string(),
                         type_info,
@@ -198,12 +204,12 @@ impl<'a> TypeInference<'a> {
                     self.ctx.push_generic(generic.clone());
                 }
 
-                for field in str.fields.iter_mut() {
+                for field in &mut str.fields {
                     field.ty = self.update_generic(field.ty.clone());
                 }
 
-                for (_, id) in str.items.iter_mut() {
-                    self.infer_item(id.clone());
+                for id in str.items.values_mut() {
+                    self.infer_item(*id);
                 }
 
                 self.scope_manager.pop_scope();
@@ -215,21 +221,21 @@ impl<'a> TypeInference<'a> {
                     self.ctx.push_generic(generic.clone());
                 }
 
-                for variant in en.variants.iter_mut() {
-                    for field in variant.fields.iter_mut() {
+                for variant in &mut en.variants {
+                    for field in &mut variant.fields {
                         field.ty = self.update_generic(field.ty.clone());
                     }
                 }
 
-                for (_, id) in en.items.iter_mut() {
-                    self.infer_item(id.clone());
+                for id in en.items.values_mut() {
+                    self.infer_item(*id);
                 }
 
                 self.scope_manager.pop_scope();
             }
             HirItemKind::External(ref ext) => {
                 for item in ext.items.clone() {
-                    self.infer_item(item.clone());
+                    self.infer_item(item);
                 }
             }
             HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::TypeAlias(_) => {}
@@ -239,22 +245,22 @@ impl<'a> TypeInference<'a> {
     }
 
     fn update_generic(&mut self, mut ty: HirTyKind) -> HirTyKind {
-        if let Some(_) = self.is_generic(&ty) {
-            let (ident, mut generics) = ty.clone().as_ident().unwrap();
+        if self.is_generic(&ty).is_some() {
+            let (ident, mut generics) = ty.as_ident().unwrap();
 
-            for generic in generics.params.iter_mut() {
+            for generic in &mut generics.params {
                 generic.ty = self.update_generic(generic.ty.clone());
             }
 
             ty = HirTyKind::Ident { ident, generics, is_generic: true };
-        } else if let Some((ident, mut generics)) = ty.clone().as_ident() {
-            for generic in generics.params.iter_mut() {
+        } else if let Some((ident, mut generics)) = ty.as_ident() {
+            for generic in &mut generics.params {
                 generic.ty = self.update_generic(generic.ty.clone());
             }
 
-            ty = self.resolve_type_alias(&HirTyKind::Ident { ident, generics, is_generic: false })
+            ty = self.resolve_type_alias(&HirTyKind::Ident { ident, generics, is_generic: false });
         } else {
-            ty = self.resolve_type_alias(&ty)
+            ty = self.resolve_type_alias(&ty);
         }
 
         ty
@@ -281,7 +287,7 @@ impl<'a> TypeInference<'a> {
                 if let Some(value) = value {
                     self.infer_expr(value);
 
-                    if let None = let_ty {
+                    if let_ty.is_none() {
                         let_ty.replace(value.ty.clone());
                     }
                 }
@@ -295,7 +301,7 @@ impl<'a> TypeInference<'a> {
 
                 self.scope_manager.declare_variable(
                     ident.to_string(),
-                    TypeInfo { ty, span: stmt.span.clone() },
+                    TypeInfo { ty, span: stmt.span },
                     true,
                 );
             }
@@ -321,7 +327,7 @@ impl<'a> TypeInference<'a> {
                 expr.ty = default.kind;
             } else {
                 expr.ty = HirTyKind::Ident {
-                    ident: generic.name.clone(),
+                    ident: generic.name,
                     generics: HirGenericArgs::empty(),
                     is_generic: true,
                 }
@@ -330,7 +336,7 @@ impl<'a> TypeInference<'a> {
     }
 
     fn infer_expr(&mut self, expr: &mut HirExpr) {
-        if let Some(_) = self.compiled.expanded_by_builtins.get(&expr.id).cloned() {
+        if self.compiled.expanded_by_builtins.get(&expr.id).cloned().is_some() {
             let mut new = vec![];
             if let Some(params) = &mut self.compiled.builtin_args.get(&expr.id).cloned() {
                 for param in params.iter_mut() {
@@ -354,7 +360,7 @@ impl<'a> TypeInference<'a> {
                             ty
                         } else {
                             &self.ret_with_error(CannotApplyUnary {
-                                span: (expr.span.clone(), self.current_mod.as_usize()),
+                                span: (expr.span, self.current_mod.as_usize()),
                                 op: UnaryOp::Minus,
                                 ty: ty.clone(),
                             })
@@ -365,7 +371,7 @@ impl<'a> TypeInference<'a> {
                             ty
                         } else {
                             &self.ret_with_error(CannotApplyUnary {
-                                span: (expr.span.clone(), self.current_mod.as_usize()),
+                                span: (expr.span, self.current_mod.as_usize()),
                                 op: UnaryOp::Deref,
                                 ty: ty.clone(),
                             })
@@ -375,7 +381,7 @@ impl<'a> TypeInference<'a> {
                     (UnaryOp::Ref, ty) => {
                         if !operand.kind.is_lvalue() {
                             self.ret_with_error(AddressOfRvalue {
-                                expr_span: (expr.span.clone(), self.current_mod.as_usize()),
+                                expr_span: (expr.span, self.current_mod.as_usize()),
                                 note: "only variables, array elements, or dereferenced pointers have an address — consider storing the value in a variable first"
                                     .to_string(),
                             });
@@ -387,12 +393,10 @@ impl<'a> TypeInference<'a> {
                             } else {
                                 HirTyKind::Ptr(Box::new(opt), Mutable::No)
                             }))
+                        } else if ty.is_mutable() {
+                            &HirTyKind::Ptr(Box::new(ty.clone()), Mutable::Yes)
                         } else {
-                            if ty.is_mutable() {
-                                &HirTyKind::Ptr(Box::new(ty.clone()), Mutable::Yes)
-                            } else {
-                                &HirTyKind::Ptr(Box::new(ty.clone()), Mutable::No)
-                            }
+                            &HirTyKind::Ptr(Box::new(ty.clone()), Mutable::No)
                         }
                     }
                 }
@@ -405,7 +409,7 @@ impl<'a> TypeInference<'a> {
                 block
                     .stmts
                     .last()
-                    .and_then(|stmt| stmt.can_be_used_for_inference())
+                    .and_then(super::stmts::HirStmt::can_be_used_for_inference)
                     .unwrap_or(HirTyKind::void())
             },
             HirExprKind::Return(expr) => &{
@@ -440,12 +444,12 @@ impl<'a> TypeInference<'a> {
                         if l.is_numeric() && r.is_numeric() {
                             let ty =
                                 PrimitiveType::promote_type(&l.to_primitive(), &r.to_primitive())
-                                    .expect(&format!("failed for types: {:?} and {:?}", l, r));
+                                    .unwrap_or_else(|| panic!("failed for types: {l:?} and {r:?}"));
 
                             &HirTyKind::Primitive(ty)
                         } else {
                             &self.ret_with_error(CannotApplyBinary {
-                                span: (expr.span.clone(), self.current_mod.as_usize()),
+                                span: (expr.span, self.current_mod.as_usize()),
                                 op: opc,
                                 lhs: l.clone(),
                                 rhs: r.clone(),
@@ -467,7 +471,7 @@ impl<'a> TypeInference<'a> {
                             &HirTyKind::Primitive(PrimitiveType::Bool)
                         } else {
                             &self.ret_with_error(CannotCompare {
-                                span: (expr.span.clone(), self.current_mod.as_usize()),
+                                span: (expr.span, self.current_mod.as_usize()),
                                 op: opc,
                                 lhs: l.clone(),
                                 rhs: r.clone(),
@@ -480,7 +484,7 @@ impl<'a> TypeInference<'a> {
                             &HirTyKind::Primitive(PrimitiveType::Bool)
                         } else {
                             &self.ret_with_error(CannotApplyUnary {
-                                span: (expr.span.clone(), self.current_mod.as_usize()),
+                                span: (expr.span, self.current_mod.as_usize()),
                                 op: UnaryOp::Not,
                                 ty: l.clone(),
                             })
@@ -490,7 +494,7 @@ impl<'a> TypeInference<'a> {
                     (BinOpKind::OrElse, l, _) => &match l.is_option() {
                         Some(x) => x,
                         None => self.ret_with_error(OrelseExpectedOption {
-                            span: (expr.span.clone(), self.current_mod.as_usize()),
+                            span: (expr.span, self.current_mod.as_usize()),
                             ty: l.clone(),
                         }),
                     },
@@ -509,7 +513,7 @@ impl<'a> TypeInference<'a> {
                     .cloned()
                 {
                     Some(f) => f,
-                    None => panic!("'{}' function not found", func_ident),
+                    None => panic!("'{func_ident}' function not found"),
                 };
 
                 let fn_def = match &func.kind {
@@ -555,15 +559,13 @@ impl<'a> TypeInference<'a> {
                                 if let Some(existing) = generic_types
                                     .insert(generic_param.name.to_string(), inferred_type.clone())
                                 {
-                                    hir_struct.field_types.insert(ident.clone(), existing);
+                                    hir_struct.field_types.insert(*ident, existing);
                                 } else {
-                                    hir_struct
-                                        .field_types
-                                        .insert(ident.clone(), inferred_type.clone());
+                                    hir_struct.field_types.insert(*ident, inferred_type.clone());
                                 }
                             }
                             HirGenericKind::Const { .. } => {
-                                hir_struct.field_types.insert(ident.clone(), expr.ty.clone());
+                                hir_struct.field_types.insert(*ident, expr.ty.clone());
                             }
                         }
                     } else {
@@ -571,9 +573,9 @@ impl<'a> TypeInference<'a> {
 
                         HirTyKind::try_promote_type(&mut expr.ty, &field_ty, false);
 
-                        hir_struct.field_types.insert(ident.clone(), expr.ty.clone());
+                        hir_struct.field_types.insert(*ident, expr.ty.clone());
 
-                        hir_struct.field_types.insert(ident.clone(), expr.ty.clone());
+                        hir_struct.field_types.insert(*ident, expr.ty.clone());
                     }
                 }
 
@@ -588,8 +590,7 @@ impl<'a> TypeInference<'a> {
                                 expr.ty.clone()
                             };
 
-                            generic_types
-                                .insert(generic_param.name.to_string(), inferred_type.clone());
+                            generic_types.insert(generic_param.name.to_string(), inferred_type);
                         }
                         HirGenericKind::Const { .. } => {}
                     }
@@ -611,8 +612,8 @@ impl<'a> TypeInference<'a> {
                     .collect();
 
                 &HirTyKind::Ident {
-                    ident: ident.clone(),
-                    generics: HirGenericArgs::new(expr.span.clone(), collected),
+                    ident: *ident,
+                    generics: HirGenericArgs::new(expr.span, collected),
                     is_generic: false,
                 }
             }
@@ -638,9 +639,9 @@ impl<'a> TypeInference<'a> {
                 &HirTyKind::Placeholder
             }
             HirExprKind::Type(ty) => {
-                let resolved = self.resolve_type_alias(&ty);
+                let resolved = self.resolve_type_alias(ty);
 
-                *ty = resolved.clone();
+                *ty = resolved;
                 ty
             }
             HirExprKind::Assign(lhs, rhs) => {
@@ -650,7 +651,7 @@ impl<'a> TypeInference<'a> {
                 &HirTyKind::void()
             }
             HirExprKind::StaticAccess(id, expr) => {
-                let citem = self.compiled.get_item(id.clone());
+                let citem = self.compiled.get_item(*id);
 
                 let generics = if let Some(str) = citem.as_struct() {
                     str.generics.clone().params
@@ -660,45 +661,42 @@ impl<'a> TypeInference<'a> {
                     Vec::new()
                 };
 
-                match &mut expr.kind {
-                    HirExprKind::Call(ident, args, params) => {
-                        let ident = ident.as_ident().unwrap().clone();
-                        if let Some(str) = citem.as_struct() {
-                            let method = str.get_item(ident);
-                            let func = self.compiled.get_item(method.unwrap()).as_fn().clone();
+                if let HirExprKind::Call(ident, args, params) = &mut expr.kind {
+                    let ident = *ident.as_ident().unwrap();
+                    if let Some(str) = citem.as_struct() {
+                        let method = str.get_item(ident);
+                        let func = self.compiled.get_item(method.unwrap()).as_fn().clone();
+
+                        for generic in generics {
+                            self.ctx.push_generic(generic);
+                        }
+
+                        &self.infer_call_expr(ident, &func, args, params)
+                    } else if let Some(str) = citem.as_enum() {
+                        if str.get_variant(ident).is_some() {
+                            &HirTyKind::Ident {
+                                ident: citem.ident,
+                                generics: HirGenericArgs::empty(),
+                                is_generic: false,
+                            }
+                        } else if let Some(item) = str.get_item(ident) {
+                            let func = self.compiled.get_item(*item).as_fn().clone();
 
                             for generic in generics {
                                 self.ctx.push_generic(generic);
                             }
 
                             &self.infer_call_expr(ident, &func, args, params)
-                        } else if let Some(str) = citem.as_enum() {
-                            if let Some(_) = str.get_variant(ident) {
-                                &HirTyKind::Ident {
-                                    ident: citem.ident.clone(),
-                                    generics: HirGenericArgs::empty(),
-                                    is_generic: false,
-                                }
-                            } else if let Some(item) = str.get_item(ident) {
-                                let func = self.compiled.get_item(*item).as_fn().clone();
-
-                                for generic in generics {
-                                    self.ctx.push_generic(generic);
-                                }
-
-                                &self.infer_call_expr(ident, &func, args, params)
-                            } else {
-                                todo!()
-                            }
                         } else {
                             todo!()
                         }
+                    } else {
+                        todo!()
                     }
-                    _ => {
-                        self.infer_expr(expr);
+                } else {
+                    self.infer_expr(expr);
 
-                        &expr.ty
-                    }
+                    &expr.ty
                 }
             }
             HirExprKind::MethodCall(idents, expr) => {
@@ -712,9 +710,9 @@ impl<'a> TypeInference<'a> {
 
                     &match &mut expr.kind {
                         HirExprKind::Call(call_ident, args, params) => {
-                            let ident_clone = call_ident.as_ident().unwrap().clone();
+                            let ident_clone = *call_ident.as_ident().unwrap();
 
-                            let mut method_fn_for_inference = method_fn.clone();
+                            let mut method_fn_for_inference = method_fn;
                             if !method_fn_for_inference.is_static()
                                 && method_fn_for_inference.ctx == FunctionContext::Method
                             {
@@ -727,7 +725,7 @@ impl<'a> TypeInference<'a> {
                                 args,
                                 params,
                             );
-                            expr.ty = inferred_type.clone();
+                            expr.ty = inferred_type;
 
                             self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(*expr.clone()));
 
@@ -748,7 +746,7 @@ impl<'a> TypeInference<'a> {
                     HirTyKind::Option(ty) => ty.clone(),
                     HirTyKind::Some(ty) => ty.clone(),
                     _ => Box::from(self.ret_with_error(UnwrapNonOptional {
-                        span: (expr.span.clone(), self.current_mod.as_usize()),
+                        span: (expr.span, self.current_mod.as_usize()),
                         ty: expr.ty.clone(),
                     })),
                 }
@@ -834,7 +832,7 @@ impl<'a> TypeInference<'a> {
         if idents.is_empty() {
             return Some(ty);
         }
-        let current_ident = idents.first().unwrap().clone();
+        let current_ident = *idents.first().unwrap();
         let error_span = current_ident.span;
 
         if let Some(type_ident) = ty.is_ident() {
@@ -864,12 +862,9 @@ impl<'a> TypeInference<'a> {
 
             if current_ident.to_string() == "ptr" {
                 return if ty.is_const_vector() {
-                    Some(HirTyKind::Ptr(
-                        Box::from(HirTyKind::Const(Box::new(new_ty.clone()))),
-                        Mutable::No,
-                    ))
+                    Some(HirTyKind::Ptr(Box::from(HirTyKind::Const(Box::new(new_ty))), Mutable::No))
                 } else {
-                    Some(HirTyKind::Ptr(Box::new(new_ty.clone()), Mutable::Yes))
+                    Some(HirTyKind::Ptr(Box::new(new_ty), Mutable::Yes))
                 };
             }
         }
@@ -877,7 +872,7 @@ impl<'a> TypeInference<'a> {
         self.temp.emit_impl(NoField {
             span: (error_span, self.current_mod.as_usize()),
             field: current_ident.to_string(),
-            ty: ty.clone(),
+            ty,
         });
 
         None
@@ -948,9 +943,9 @@ impl<'a> TypeInference<'a> {
 
             let sym = self.compiled.resolve_symbol(&ident_str, self.current_mod.as_usize());
 
-            if let Some(_) = sym {
+            if sym.is_some() {
                 return self.resolve_member_access(
-                    type_info.ty.clone(),
+                    type_info.ty,
                     idents,
                     expr,
                     idents.first().unwrap().span,
@@ -961,7 +956,7 @@ impl<'a> TypeInference<'a> {
         self.temp.emit_impl(NoMethod {
             span: (idents.first().unwrap().span, self.current_mod.as_usize()),
             method: idents.first().unwrap().to_string(),
-            ty: type_info.ty.clone(),
+            ty: type_info.ty,
         });
 
         None
@@ -974,7 +969,7 @@ impl<'a> TypeInference<'a> {
         expr: &mut Box<HirExpr>,
         error_span: Span,
     ) -> Option<HirItem> {
-        let current_ident = idents.first().unwrap().clone();
+        let current_ident = *idents.first().unwrap();
 
         if let Some(type_ident) = ty.is_ident() {
             let type_name = type_ident.to_string();
@@ -982,7 +977,7 @@ impl<'a> TypeInference<'a> {
             let sym = self.compiled.resolve_symbol(&type_name, self.current_mod.as_usize());
 
             if let Some(sym) = sym {
-                let method_id = sym.as_struct().unwrap().get_item(current_ident.clone());
+                let method_id = sym.as_struct().unwrap().get_item(current_ident);
 
                 if let Some(method_id) = method_id {
                     idents.remove(0);
@@ -1023,7 +1018,7 @@ impl<'a> TypeInference<'a> {
         self.temp.emit_impl(NoMethod {
             span: (error_span, self.current_mod.as_usize()),
             method: current_ident.to_string(),
-            ty: ty.clone(),
+            ty,
         });
 
         None
@@ -1042,7 +1037,7 @@ impl<'a> TypeInference<'a> {
         }
         let mut generic_types: IndexMap<String, HirTyKind> = IndexMap::new();
 
-        let mut req_params = func_params.clone().len();
+        let mut req_params = func_params.len();
 
         if !fn_def.is_static() {
             req_params -= 1; // Static methods don't count the self parameter

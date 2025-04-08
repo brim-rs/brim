@@ -106,7 +106,7 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
                 attr.path()
                     .segments
                     .last()
-                    .map_or(true, |seg| !is_valid_severity(&seg.ident.to_string()))
+                    .is_none_or(|seg| !is_valid_severity(&seg.ident.to_string()))
             }) {
                 field.ident.as_ref()
             } else {

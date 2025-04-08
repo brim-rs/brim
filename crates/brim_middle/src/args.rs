@@ -16,7 +16,7 @@ impl RunArgs {
             exec_args: args
                 .get_many::<String>("args")
                 .unwrap_or_default()
-                .map(|s| s.to_string())
+                .map(std::string::ToString::to_string)
                 .collect(),
             time: args.get_flag("time"),
         }

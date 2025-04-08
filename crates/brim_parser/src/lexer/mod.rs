@@ -35,7 +35,7 @@ impl<'a> Lexer<'a> {
     }
 }
 
-impl<'a> Lexer<'a> {
+impl Lexer<'_> {
     pub fn next_token(&mut self) -> Option<Token> {
         if self.primitives.is_empty() {
             return None;
@@ -201,7 +201,7 @@ impl<'a> Lexer<'a> {
         // First check if we have a double asterisk '**'
         if !self.primitives.is_empty() && self.primitives[0].kind == PrimitiveTokenKind::Asterisk {
             self.primitives.remove(0);
-            self.pos = self.pos + ByteOffset(1);
+            self.pos += ByteOffset(1);
             return TokenKind::BinOp(BinOpToken::Power);
         }
 
@@ -278,7 +278,7 @@ impl<'a> Lexer<'a> {
             for &(kind, ref token) in options {
                 if next_kind == kind {
                     self.primitives.remove(0);
-                    self.pos = self.pos + ByteOffset(1);
+                    self.pos += ByteOffset(1);
                     return token.clone();
                 }
             }
@@ -301,18 +301,18 @@ impl<'a> Lexer<'a> {
 
         if self.primitives[0].kind == second_char {
             self.primitives.remove(0);
-            self.pos = self.pos + ByteOffset(1);
+            self.pos += ByteOffset(1);
 
             if !self.primitives.is_empty() && self.primitives[0].kind == third_char {
                 self.primitives.remove(0);
-                self.pos = self.pos + ByteOffset(1);
+                self.pos += ByteOffset(1);
                 three_char_result
             } else {
                 two_char_result
             }
         } else if self.primitives[0].kind == single_char_option.0 {
             self.primitives.remove(0);
-            self.pos = self.pos + ByteOffset(1);
+            self.pos += ByteOffset(1);
             single_char_option.1
         } else {
             default
@@ -333,7 +333,7 @@ impl<'a> Lexer<'a> {
     ) -> TokenKind {
         if !self.primitives.is_empty() && self.primitives[0].kind == next_kind {
             self.primitives.remove(0);
-            self.pos = self.pos + ByteOffset(1);
+            self.pos += ByteOffset(1);
             compound_token
         } else {
             default_token

@@ -90,7 +90,7 @@ fn resolve_build_order(
 
         temp_marks.insert(project.to_string());
 
-        for (dep_name, _dep_info) in &config.dependencies {
+        for dep_name in config.dependencies.keys() {
             visit(dep_name, configs, resolved, visited, temp_marks)?;
         }
 

@@ -23,6 +23,12 @@ pub struct ModuleMap {
     pub modules: Vec<Module>,
 }
 
+impl Default for ModuleMap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ModuleMap {
     pub fn new() -> Self {
         Self { modules: vec![] }
@@ -66,17 +72,17 @@ impl<'a> SymbolCollector<'a> {
     }
 
     pub fn collect(&mut self, map: &mut ModuleMap) {
-        for module in map.modules.iter_mut() {
+        for module in &mut map.modules {
             self.file_id = module.barrel.file_id;
 
-            for item in module.barrel.items.iter_mut() {
+            for item in &mut module.barrel.items {
                 self.visit_item(item);
             }
         }
     }
 }
 
-impl<'a> AstWalker for SymbolCollector<'a> {
+impl AstWalker for SymbolCollector<'_> {
     fn visit_item(&mut self, item: &mut Item) {
         let id = Location { mod_id: ModuleId::from_usize(self.file_id), item_id: item.id };
 
@@ -98,7 +104,7 @@ impl<'a> AstWalker for SymbolCollector<'a> {
                 for item in external.items.clone() {
                     self.table.add_symbol(
                         self.file_id,
-                        GlobalSymbol::new(item.ident.clone(), Location {
+                        GlobalSymbol::new(item.ident, Location {
                             mod_id: ModuleId::from_usize(self.file_id),
                             item_id: item.id,
                         }),
@@ -130,78 +136,74 @@ impl<'a> UseCollector<'a> {
     }
 
     pub fn collect(&mut self, map: &mut ModuleMap) {
-        for module in map.modules.iter_mut() {
+        for module in &mut map.modules {
             self.file_id = module.barrel.file_id;
 
-            for item in module.barrel.items.iter_mut() {
+            for item in &mut module.barrel.items {
                 self.visit_item(item);
             }
         }
     }
 }
 
-impl<'a> AstWalker for UseCollector<'a> {
+impl AstWalker for UseCollector<'_> {
     fn visit_item(&mut self, item: &mut Item) {
-        match &item.kind {
-            ItemKind::Use(use_stmt) => {
-                let path = &use_stmt.resolved.clone().unwrap();
-                let id = get_id_by_name(path);
+        if let ItemKind::Use(use_stmt) = &item.kind {
+            let path = &use_stmt.resolved.clone().unwrap();
+            let id = get_id_by_name(path);
 
-                if id.is_err() {
-                    self.ctx.emit_impl(ModuleNotFoundError {
-                        span: (use_stmt.span.clone(), self.file_id),
-                        path: path.clone().display().to_string(),
-                        note: "make sure you added this module using `mod <path to module>`"
-                            .to_string(),
-                    });
+            if id.is_err() {
+                self.ctx.emit_impl(ModuleNotFoundError {
+                    span: (use_stmt.span, self.file_id),
+                    path: path.clone().display().to_string(),
+                    note: "make sure you added this module using `mod <path to module>`"
+                        .to_string(),
+                });
 
-                    return;
-                }
+                return;
+            }
 
-                let id = id.expect(&format!(
+            let id = id.unwrap_or_else(|_| {
+                panic!(
                     "Failed to get id for module: {}",
                     use_stmt.resolved.clone().unwrap().display()
-                ));
+                )
+            });
 
-                let mut symbols: Vec<GlobalSymbol> = vec![];
+            let mut symbols: Vec<GlobalSymbol> = vec![];
 
-                let mod_id = ModuleId::from_usize(id);
-                match &use_stmt.imports {
-                    ImportsKind::All => {
-                        symbols = self.table.by_module(mod_id);
-                    }
-                    ImportsKind::List(list) => {
-                        for import in list {
-                            let symbol = self.table.get_by_ident(import, id);
+            let mod_id = ModuleId::from_usize(id);
+            match &use_stmt.imports {
+                ImportsKind::All => {
+                    symbols = self.table.by_module(mod_id);
+                }
+                ImportsKind::List(list) => {
+                    for import in list {
+                        let symbol = self.table.get_by_ident(import, id);
 
-                            if let Some(symbol) = symbol {
-                                symbols.push(symbol.clone());
-                            } else {
-                                self.ctx.emit(Box::new(UseError {
-                                    span: (import.span.clone(), self.file_id),
-                                    symbol: import.to_string(),
-                                }));
-                            }
+                        if let Some(symbol) = symbol {
+                            symbols.push(symbol.clone());
+                        } else {
+                            self.ctx.emit(Box::new(UseError {
+                                span: (import.span, self.file_id),
+                                symbol: import.to_string(),
+                            }));
                         }
                     }
-                    // use windows from std::os::windows;
-                    ImportsKind::Default(ident) => {
-                        let map = self.table.create_map(mod_id);
-
-                        let id = ItemId::new();
-                        self.namespaces.insert((ident.clone(), id), map);
-                        symbols.push(GlobalSymbol::new(ident.clone(), Location {
-                            mod_id,
-                            item_id: id,
-                        }))
-                    }
                 }
+                // use windows from std::os::windows;
+                ImportsKind::Default(ident) => {
+                    let map = self.table.create_map(mod_id);
 
-                for symbol in symbols {
-                    self.table.add_symbol(self.file_id, symbol.clone());
+                    let id = ItemId::new();
+                    self.namespaces.insert((*ident, id), map);
+                    symbols.push(GlobalSymbol::new(*ident, Location { mod_id, item_id: id }));
                 }
             }
-            _ => {}
+
+            for symbol in symbols {
+                self.table.add_symbol(self.file_id, symbol.clone());
+            }
         }
     }
 }

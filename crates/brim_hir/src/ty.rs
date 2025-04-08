@@ -60,31 +60,31 @@ impl Display for HirTyKind {
         match self {
             HirTyKind::Ref(ty, mutable) => {
                 let const_str = if *mutable == Mutable::Yes { "mut " } else { "" };
-                write!(f, "&{}{}", const_str, ty)
+                write!(f, "&{const_str}{ty}")
             }
             HirTyKind::Ptr(ty, mutable) => {
                 let const_str = if *mutable == Mutable::Yes { "mut " } else { "" };
-                write!(f, "*{}{}", const_str, ty)
+                write!(f, "*{const_str}{ty}")
             }
-            HirTyKind::Mut(ty) => write!(f, "mut {}", ty),
-            HirTyKind::Const(ty) => write!(f, "const {}", ty),
-            HirTyKind::Vec(ty) => write!(f, "{}[]", ty),
-            HirTyKind::Primitive(p) => write!(f, "{}", p),
+            HirTyKind::Mut(ty) => write!(f, "mut {ty}"),
+            HirTyKind::Const(ty) => write!(f, "const {ty}"),
+            HirTyKind::Vec(ty) => write!(f, "{ty}[]"),
+            HirTyKind::Primitive(p) => write!(f, "{p}"),
             HirTyKind::Ident { ident, generics, .. } => {
                 if generics.params.is_empty() {
-                    write!(f, "{}", ident)
+                    write!(f, "{ident}")
                 } else {
-                    write!(f, "{}{}", ident, generics)
+                    write!(f, "{ident}{generics}")
                 }
             }
 
-            HirTyKind::Result(ty, err) => write!(f, "{}!{}", ty, err),
-            HirTyKind::ResultOk(ty) => write!(f, "@ok({})", ty),
-            HirTyKind::ResultErr(err) => write!(f, "@err({})", err),
+            HirTyKind::Result(ty, err) => write!(f, "{ty}!{err}"),
+            HirTyKind::ResultOk(ty) => write!(f, "@ok({ty})"),
+            HirTyKind::ResultErr(err) => write!(f, "@err({err})"),
 
-            HirTyKind::Option(ty) => write!(f, "{}?", ty),
+            HirTyKind::Option(ty) => write!(f, "{ty}?"),
             HirTyKind::None => write!(f, "None"),
-            HirTyKind::Some(ty) => write!(f, "Some({})", ty),
+            HirTyKind::Some(ty) => write!(f, "Some({ty})"),
 
             HirTyKind::Err(_) => write!(f, "<error>"),
             HirTyKind::Placeholder => write!(f, "_"),
@@ -270,16 +270,18 @@ impl HirTyKind {
 
     pub fn is_numeric(&self) -> bool {
         match self {
-            HirTyKind::Primitive(PrimitiveType::I8)
-            | HirTyKind::Primitive(PrimitiveType::I16)
-            | HirTyKind::Primitive(PrimitiveType::I32)
-            | HirTyKind::Primitive(PrimitiveType::I64)
-            | HirTyKind::Primitive(PrimitiveType::U8)
-            | HirTyKind::Primitive(PrimitiveType::U16)
-            | HirTyKind::Primitive(PrimitiveType::U32)
-            | HirTyKind::Primitive(PrimitiveType::U64)
-            | HirTyKind::Primitive(PrimitiveType::F32)
-            | HirTyKind::Primitive(PrimitiveType::F64) => true,
+            HirTyKind::Primitive(
+                PrimitiveType::I8
+                | PrimitiveType::I16
+                | PrimitiveType::I32
+                | PrimitiveType::I64
+                | PrimitiveType::U8
+                | PrimitiveType::U16
+                | PrimitiveType::U32
+                | PrimitiveType::U64
+                | PrimitiveType::F32
+                | PrimitiveType::F64,
+            ) => true,
             HirTyKind::Mut(ty) => ty.is_numeric(),
             HirTyKind::Ref(ty, _) => ty.is_numeric(),
             HirTyKind::Ptr(ty, _) => ty.is_numeric(),
@@ -315,15 +317,15 @@ impl HirTyKind {
             HirTyKind::Mut(ty) => ty.to_primitive(),
             HirTyKind::Ref(ty, _) => ty.to_primitive(),
             HirTyKind::Ptr(ty, _) => ty.to_primitive(),
-            _ => panic!("Expected primitive type, found {:?}", self),
+            _ => panic!("Expected primitive type, found {self:?}"),
         }
     }
 
     pub fn can_be_logically_compared_to(&self, other: &HirTyKind) -> bool {
         match (self, other) {
             (HirTyKind::Primitive(_), HirTyKind::Primitive(_)) => true,
-            (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1.can_be_logically_compared_to(&ty2),
-            (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.can_be_logically_compared_to(&ty2),
+            (HirTyKind::Mut(ty1), HirTyKind::Mut(ty2)) => ty1.can_be_logically_compared_to(ty2),
+            (HirTyKind::Vec(ty1), HirTyKind::Vec(ty2)) => ty1.can_be_logically_compared_to(ty2),
             _ => false,
         }
     }
@@ -343,7 +345,7 @@ impl HirTyKind {
 
     pub fn as_ident(&self) -> Option<(Ident, HirGenericArgs)> {
         match self {
-            HirTyKind::Ident { ident, generics, .. } => Some((ident.clone(), generics.clone())),
+            HirTyKind::Ident { ident, generics, .. } => Some((*ident, generics.clone())),
             _ => None,
         }
     }
@@ -391,7 +393,7 @@ impl HirTyKind {
 
     pub fn is_ident(&self) -> Option<Ident> {
         match self {
-            HirTyKind::Ident { ident, .. } => Some(ident.clone()),
+            HirTyKind::Ident { ident, .. } => Some(*ident),
             HirTyKind::Ptr(ty, _) | HirTyKind::Ref(ty, _) | HirTyKind::Mut(ty) => ty.is_ident(),
             _ => None,
         }
@@ -453,7 +455,7 @@ impl HirTyKind {
                 HirTyKind::Ref(target_inner, target_mut),
             ) => {
                 if source_mut == *target_mut {
-                    let mut_clone = source_mut.clone(); // Clone the mutability
+                    let mut_clone = source_mut; // Clone the mutability
                     return HirTyKind::try_promote_wrapped_type(
                         source_ty,
                         &source_inner,
@@ -469,7 +471,7 @@ impl HirTyKind {
                 HirTyKind::Ptr(target_inner, target_mut),
             ) => {
                 if source_mut == *target_mut {
-                    let mut_clone = source_mut.clone(); // Clone the mutability
+                    let mut_clone = source_mut; // Clone the mutability
                     return HirTyKind::try_promote_wrapped_type(
                         source_ty,
                         &source_inner,

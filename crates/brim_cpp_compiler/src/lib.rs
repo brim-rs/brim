@@ -116,7 +116,7 @@ impl CppBuild {
         ensure!(!self.source_files.is_empty(), "No source files specified");
 
         let mut sp = Spinner::new(Spinners::Line, "Waiting for C++ compiler to finish".into());
-        let mut command = Command::new(&self.compiler.path());
+        let mut command = Command::new(self.compiler.path());
         self.configure_command(&mut command, output_name.as_ref())?;
 
         debug!("Executing compilation command: {:?}", command);

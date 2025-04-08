@@ -14,6 +14,12 @@ pub struct TypeInfo {
     pub span: Span,
 }
 
+impl<'a> Default for TypeScope {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> TypeScope {
     pub fn new() -> Self {
         Self { variables: HashMap::new(), parent: None }
@@ -30,7 +36,7 @@ impl<'a> TypeScope {
         check_duplicates: bool,
     ) -> Option<TypeInfo> {
         if self.variables.contains_key(&name) && check_duplicates {
-            let var = self.variables.get(&name).unwrap().clone();
+            let var = self.variables[&name].clone();
             return Some(var);
         }
 
@@ -50,6 +56,12 @@ impl<'a> TypeScope {
 #[derive(Debug, Clone)]
 pub struct TypeScopeManager {
     scope_stack: Vec<TypeScope>,
+}
+
+impl<'a> Default for TypeScopeManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<'a> TypeScopeManager {

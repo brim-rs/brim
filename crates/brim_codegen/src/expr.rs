@@ -15,7 +15,7 @@ impl CppCodegen {
         if let Some(fn_name) = self.compiled.expanded_by_builtins.get(&expr.id).cloned() {
             let func = get_builtin_function(&fn_name).unwrap();
             self.compiled.expanded_by_builtins.remove(&expr.id);
-            let params = &mut self.compiled.builtin_args.get(&expr.id).unwrap().clone();
+            let params = &mut self.compiled.builtin_args[&expr.id].clone();
 
             if let Some(codegen) = func.codegen {
                 let string = codegen(self, params);
@@ -39,7 +39,7 @@ impl CppCodegen {
             HirExprKind::Return(expr) => {
                 let expr_code = self.generate_expr(*expr);
 
-                format!("return {};", expr_code)
+                format!("return {expr_code};")
             }
             HirExprKind::Binary(lhs, op, rhs) => {
                 let lhs_code = self.generate_expr(*lhs);
@@ -47,25 +47,25 @@ impl CppCodegen {
 
                 // Special handling for power operator which doesn't exist in C++
                 if op == BinOpKind::Power {
-                    format!("(std::pow({}, {}))", lhs_code, rhs_code)
+                    format!("(std::pow({lhs_code}, {rhs_code}))")
                 } else if op == BinOpKind::OrElse {
-                    format!("({} ? {}.value() : {})", lhs_code, lhs_code, rhs_code)
+                    format!("({lhs_code} ? {lhs_code}.value() : {rhs_code})")
                 } else {
                     format!("({} {} {})", lhs_code, self.bin_op(op), rhs_code)
                 }
             }
-            HirExprKind::Var(ident) => format!("brim_{}", ident),
+            HirExprKind::Var(ident) => format!("brim_{ident}"),
             HirExprKind::Call(func, args, _) => self.generate_call_expr(func, args),
             HirExprKind::Literal(lit) => self.generate_lit(lit, expr.ty),
             HirExprKind::Index(expr, index) => {
                 let expr_code = self.generate_expr(*expr);
                 let index_code = self.generate_expr(*index);
-                format!("{}[{}]", expr_code, index_code)
+                format!("{expr_code}[{index_code}]")
             }
             HirExprKind::Field(idents) => {
-                let mut vals = idents.iter().map(|id| format!("{}", id)).collect::<Vec<String>>();
+                let mut vals = idents.iter().map(|id| format!("{id}")).collect::<Vec<String>>();
                 if let Some(last) = idents.last() {
-                    let last = last.clone();
+                    let last = *last;
 
                     if last.to_string() == "len" {
                         vals.pop();
@@ -87,24 +87,24 @@ impl CppCodegen {
             HirExprKind::Assign(lhs, rhs) => {
                 let lhs_code = self.generate_expr(*lhs);
                 let rhs_code = self.generate_expr(*rhs);
-                format!("{} = {};", lhs_code, rhs_code)
+                format!("{lhs_code} = {rhs_code};")
             }
             HirExprKind::Unary(op, expr) => {
                 let expr_code = self.generate_expr(*expr.clone());
                 match op {
-                    UnaryOp::Minus => format!("-{}", expr_code),
-                    UnaryOp::Not => format!("!{}", expr_code),
-                    UnaryOp::Deref => format!("*{}", expr_code),
+                    UnaryOp::Minus => format!("-{expr_code}"),
+                    UnaryOp::Not => format!("!{expr_code}"),
+                    UnaryOp::Deref => format!("*{expr_code}"),
                     UnaryOp::Ref => {
                         if let Some(opt) = expr.ty.is_option() {
                             format!(
                                 "({}.has_value() ? std::optional<{}*>(&{}.value()) : std::nullopt)",
                                 expr_code,
-                                self.generate_ty(opt.clone()),
+                                self.generate_ty(opt),
                                 expr_code
                             )
                         } else {
-                            format!("&{}", expr_code)
+                            format!("&{expr_code}")
                         }
                     }
                     _ => unimplemented!(),
@@ -124,21 +124,24 @@ impl CppCodegen {
             }
             HirExprKind::MethodCall(mut r_ident, call) => match call.kind.clone() {
                 HirExprKind::Call(_, args, _) => {
-                    let last = r_ident.last().unwrap().clone();
+                    let last = *r_ident.last().unwrap();
                     r_ident.pop();
-                    let path =
-                        r_ident.iter().map(|id| id.to_string()).collect::<Vec<String>>().join(".");
+                    let path = r_ident
+                        .iter()
+                        .map(std::string::ToString::to_string)
+                        .collect::<Vec<String>>()
+                        .join(".");
 
                     let call =
                         format!("{}(brim_{}, {})", last, path, self.generate_call_args(args));
 
-                    format!("(brim_{}.brim_{})", path, call)
+                    format!("(brim_{path}.brim_{call})")
                 }
                 _ => unimplemented!(),
             },
             HirExprKind::Unwrap(expr) => {
                 let expr_code = self.generate_expr(*expr);
-                format!("unwrap({})", expr_code)
+                format!("unwrap({expr_code})")
             }
             HirExprKind::Dummy => match expr.ty {
                 HirTyKind::None => "std::nullopt".to_string(),
@@ -149,7 +152,7 @@ impl CppCodegen {
                 let then_code = self.generate_expr(*then_block);
                 let else_code = self.generate_expr(*else_block);
 
-                format!("({} ? {} : {})", cond_code, then_code, else_code)
+                format!("({cond_code} ? {then_code} : {else_code})")
             }
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         };
@@ -186,7 +189,7 @@ impl CppCodegen {
         for branch in &if_stmt.else_ifs {
             let branch_condition = self.generate_expr(*branch.condition.clone());
             let branch_block = self.generate_expr(*branch.block.clone());
-            write!(else_ifs, " else if ({}) {{ {} }}", branch_condition, branch_block).unwrap();
+            write!(else_ifs, " else if ({branch_condition}) {{ {branch_block} }}").unwrap();
         }
 
         let else_block = if let Some(else_block) = if_stmt.else_block {
@@ -195,7 +198,7 @@ impl CppCodegen {
             String::new()
         };
 
-        format!("if ({}) {{ {} }}{}{}", condition, then_block, else_ifs, else_block,)
+        format!("if ({condition}) {{ {then_block} }}{else_ifs}{else_block}",)
     }
 
     fn generate_array_expr(&mut self, exprs: Vec<HirExpr>) -> String {
@@ -205,11 +208,11 @@ impl CppCodegen {
             .collect::<Vec<String>>()
             .join(", ");
 
-        format!("{{ {} }}", exprs_code)
+        format!("{{ {exprs_code} }}")
     }
 
     fn generate_struct_constructor(&mut self, str: HirStructConstructor) -> String {
-        let ident = str.name.clone();
+        let ident = str.name;
 
         let symbol =
             self.hir().symbols.resolve(&ident.to_string(), self.current_mod.as_usize()).unwrap();
@@ -235,7 +238,7 @@ impl CppCodegen {
                 .collect::<Vec<String>>()
                 .join(", ");
 
-            write!(code, " {{ {} }}", fields_code).unwrap();
+            write!(code, " {{ {fields_code} }}").unwrap();
         }
 
         code
@@ -290,7 +293,7 @@ impl CppCodegen {
                 lit.symbol
                     .to_string()
                     .chars()
-                    .map(|b| format!("\'{}\'", b))
+                    .map(|b| format!("\'{b}\'"))
                     .collect::<Vec<_>>()
                     .join(", ")
             ),

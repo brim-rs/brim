@@ -67,7 +67,7 @@ impl CompilerContext {
     }
 
     pub fn extend_temp(&mut self, temp: TemporaryDiagnosticContext) {
-        for diag in temp.diags.iter() {
+        for diag in &temp.diags {
             self.emit_diag(diag.clone());
         }
     }
@@ -93,10 +93,10 @@ impl CompilerContext {
         self.extend_temp(use_collector.ctx);
 
         for ((ident, id), symbols) in use_collector.namespaces.clone() {
-            simple.items.insert(id.clone(), Item {
-                id: id.clone(),
+            simple.items.insert(id, Item {
+                id,
                 span: Span::DUMMY,
-                ident: ident.clone(),
+                ident,
                 kind: ItemKind::Namespace(
                     symbols.iter().map(|(k, v)| (k.clone(), v.clone().into_temp())).collect(),
                 ),
@@ -116,7 +116,7 @@ impl CompilerContext {
         self.extend_temp(hir_temp.clone());
 
         let comp_transformer = transform_comptime(hir, compiled);
-        self.extend_temp(comp_transformer.temp.clone());
+        self.extend_temp(comp_transformer.temp);
 
         let ti = infer_types(hir, compiled);
         self.extend_temp(ti.temp.clone());
@@ -134,7 +134,7 @@ impl CompilerContext {
 
     /// More to be added
     pub fn validate_main_function(&mut self, func: &HirFn, main: usize) {
-        if func.sig.params.params.len() != 0 {
+        if !func.sig.params.params.is_empty() {
             self.emit(MainFunctionParams { span: (func.sig.params.span, main) });
         }
 

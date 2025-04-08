@@ -43,7 +43,7 @@ impl ComptimeReturnValue {
     }
 }
 
-impl<'a> Transformer<'a> {
+impl Transformer<'_> {
     pub fn transform_comptime_expr(&mut self, expr: Expr) -> ComptimeReturnValue {
         let (expr, _) = self.transform_expr(expr);
 
@@ -76,7 +76,7 @@ pub struct ComptimeTransformer<'a> {
     pub compiled: &'a mut CompiledModules,
 }
 
-impl<'a> ComptimeTransformer<'a> {
+impl ComptimeTransformer<'_> {
     pub fn eval(&mut self) {
         let inferred_modules: Vec<_> = self
             .hir
@@ -100,18 +100,18 @@ impl<'a> ComptimeTransformer<'a> {
     }
 
     fn visit_item(&mut self, item: &mut ItemId) {
-        let mut item = self.compiled.items.get(&item).unwrap().clone();
+        let mut item = self.compiled.items[item].clone();
 
         match &mut item.kind {
             HirItemKind::Fn(_) => {}
             HirItemKind::TypeAlias(type_alias) => self.visit_type_alias(type_alias),
             HirItemKind::Enum(en) => {
-                for (_, id) in &mut en.items {
+                for id in en.items.values_mut() {
                     self.visit_item(id);
                 }
             }
             HirItemKind::Struct(str) => {
-                for (_, id) in &mut str.items {
+                for id in str.items.values_mut() {
                     self.visit_item(id);
                 }
             }
@@ -125,16 +125,16 @@ impl<'a> ComptimeTransformer<'a> {
 
     fn visit_type_alias(&mut self, type_alias: &mut HirTypeAlias) {
         if let ComptimeValue::Expr(expr) = &mut type_alias.ty {
-            type_alias.ty = match self.transform_comptime_expr(*expr.clone()) {
-                ComptimeReturnValue::Ty(ty) => ComptimeValue::Resolved(ComptimeReturnValue::Ty(ty)),
-                _ => {
+            type_alias.ty =
+                if let ComptimeReturnValue::Ty(ty) = self.transform_comptime_expr(*expr.clone()) {
+                    ComptimeValue::Resolved(ComptimeReturnValue::Ty(ty))
+                } else {
                     self.temp.emit_impl(ComptimeExpectedType {
                         span: (expr.span, self.current_mod.as_usize()),
                     });
 
                     ComptimeValue::Resolved(ComptimeReturnValue::Ty(HirTyKind::void()))
                 }
-            }
         }
     }
 
@@ -165,7 +165,7 @@ impl<'a> Evaluator<'a> {
     }
 }
 
-impl<'a> Evaluator<'a> {
+impl Evaluator<'_> {
     pub fn eval_block(&mut self, block: &HirBlock) -> ComptimeReturnValue {
         self.scopes.push_scope();
         for stmt in block.stmts.clone() {
@@ -202,7 +202,7 @@ impl<'a> Evaluator<'a> {
 
     pub fn eval_expr(&mut self, expr: HirExpr) -> ComptimeReturnValue {
         let lit = match &expr.kind {
-            HirExprKind::Literal(lit) => ComptimeReturnValue::Lit(lit.clone()),
+            HirExprKind::Literal(lit) => ComptimeReturnValue::Lit(*lit),
             HirExprKind::Block(block) => self.eval_block(block),
             HirExprKind::Match(expr, arms) => {
                 let ret = self.eval_expr(*expr.clone());
@@ -231,7 +231,7 @@ impl<'a> Evaluator<'a> {
             }
             HirExprKind::Type(ty) => ComptimeReturnValue::Ty(ty.clone()),
             HirExprKind::Path(id) => {
-                let item = self.compiled.get_item(id.clone());
+                let item = self.compiled.get_item(*id);
 
                 if let HirItemKind::TypeAlias(alias) = &item.kind {
                     if let ComptimeValue::Resolved(val) = &alias.ty {

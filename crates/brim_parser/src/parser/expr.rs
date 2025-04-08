@@ -283,7 +283,7 @@ impl Parser {
                             ExprKind::StructConstructor(ident, generics, fields),
                         ))
                     } else {
-                        if let Some(primitive) = self.is_primitive(ident.clone())? {
+                        if let Some(primitive) = self.is_primitive(ident)? {
                             let ty =
                                 Ty { span, kind: TyKind::Primitive(primitive), id: self.new_id() };
                             return Ok(self.new_expr(span, ExprKind::Type(Box::new(ty))));
@@ -351,10 +351,9 @@ impl Parser {
 
                                 let call_span = span.to(self.prev().span);
                                 let ex = ExprKind::Call(
-                                    Box::new(self.new_expr(
-                                        idents[0].span,
-                                        ExprKind::Var(idents[0].clone()),
-                                    )),
+                                    Box::new(
+                                        self.new_expr(idents[0].span, ExprKind::Var(idents[0])),
+                                    ),
                                     args,
                                 );
                                 let call_expr = self.new_expr(call_span, ex);

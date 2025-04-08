@@ -32,6 +32,12 @@ pub struct SymbolInterner {
     pub initialized: bool,
 }
 
+impl Default for SymbolInterner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SymbolInterner {
     pub fn new() -> Self {
         Self { strings: HashMap::new(), symbols: Vec::new(), initialized: false }

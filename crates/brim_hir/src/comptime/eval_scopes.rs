@@ -15,7 +15,13 @@ pub struct VariableInfo {
     pub val: ComptimeReturnValue,
 }
 
-impl<'a> EvalScope {
+impl<'a> Default for EvalScope {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl EvalScope {
     pub fn new() -> Self {
         Self { variables: HashMap::new(), parent: None }
     }
@@ -24,7 +30,7 @@ impl<'a> EvalScope {
         Self { variables: HashMap::new(), parent: Some(Box::new(parent.clone())) }
     }
 
-    pub fn declare_variable(&mut self, name: String, info: VariableInfo) -> OptionalDiag<'a> {
+    pub fn declare_variable(&mut self, name: String, info: VariableInfo) -> OptionalDiag<'_> {
         self.variables.insert(name, info);
         None
     }
@@ -43,7 +49,13 @@ pub struct EvalScopeManager {
     scope_stack: Vec<EvalScope>,
 }
 
-impl<'a> EvalScopeManager {
+impl<'a> Default for EvalScopeManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl EvalScopeManager {
     pub fn new() -> Self {
         Self { scope_stack: vec![EvalScope::new()] }
     }
@@ -68,7 +80,7 @@ impl<'a> EvalScopeManager {
         self.scope_stack.last().and_then(|scope| scope.resolve_variable(name))
     }
 
-    pub fn declare_variable(&mut self, name: String, info: VariableInfo) -> OptionalDiag<'a> {
+    pub fn declare_variable(&mut self, name: String, info: VariableInfo) -> OptionalDiag<'_> {
         self.current_scope().declare_variable(name, info)
     }
 }
