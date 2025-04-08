@@ -374,9 +374,7 @@ impl HirTyKind {
     pub fn as_ident(&self) -> Option<(Ident, HirGenericArgs)> {
         match self {
             HirTyKind::Ident {
-                ident,
-                generics,
-                is_generic,
+                ident, generics, ..
             } => Some((ident.clone(), generics.clone())),
             _ => None,
         }
@@ -560,7 +558,7 @@ impl HirTyKind {
                 }
             }
 
-            (HirTyKind::ResultOk(source_inner), HirTyKind::Result(ok, err)) => {
+            (HirTyKind::ResultOk(source_inner), HirTyKind::Result(ok, _)) => {
                 return HirTyKind::try_promote_wrapped_type(
                     source_ty,
                     &source_inner,
@@ -570,7 +568,7 @@ impl HirTyKind {
                 );
             }
 
-            (HirTyKind::ResultErr(source_err), HirTyKind::Result(ok, err)) => {
+            (HirTyKind::ResultErr(source_err), HirTyKind::Result(_, err)) => {
                 return HirTyKind::try_promote_wrapped_type(
                     source_ty,
                     &source_err,

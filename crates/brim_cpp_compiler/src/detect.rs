@@ -78,24 +78,6 @@ fn detect_clang_or_gcc() -> Result<Compiler> {
     Err(anyhow!("No suitable C++ compiler found"))
 }
 
-/// Attempts to detect GCC compiler first, then Clang
-fn detect_gcc_or_clang() -> Result<Compiler> {
-    debug!("Attempting to detect GCC compiler");
-    if let Ok(path) = which::which("g++") {
-        debug!("Found G++ at: {}", path.display());
-        return Compiler::new(path, CompilerKind::Gcc).context("Failed to initialize GCC compiler");
-    }
-
-    debug!("GCC not found, attempting to detect Clang");
-    if let Ok(path) = which::which("clang++") {
-        debug!("Found Clang++ at: {}", path.display());
-        return Compiler::new(path, CompilerKind::Clang)
-            .context("Failed to initialize Clang compiler");
-    }
-
-    Err(anyhow!("No suitable C++ compiler found"))
-}
-
 fn setup_msvc_environment(vcvars_path: &Path) -> Result<HashMap<String, String>> {
     debug!(
         "Setting up MSVC environment using: {}",

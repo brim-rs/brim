@@ -95,19 +95,19 @@ impl<'a> AstWalker for SymbolCollector<'a> {
 
         self.simple.items.insert(item.id, item.clone());
         match &item.kind {
-            ItemKind::Fn(f) => {
+            ItemKind::Fn(_) => {
                 self.table
                     .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
-            ItemKind::Struct(s) => {
+            ItemKind::Struct(_) => {
                 self.table
                     .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
-            ItemKind::TypeAlias(t) => {
+            ItemKind::TypeAlias(_) => {
                 self.table
                     .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
-            ItemKind::Enum(e) => {
+            ItemKind::Enum(_) => {
                 self.table
                     .add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
@@ -115,10 +115,13 @@ impl<'a> AstWalker for SymbolCollector<'a> {
                 for item in external.items.clone() {
                     self.table.add_symbol(
                         self.file_id,
-                        GlobalSymbol::new(item.ident.clone(), Location {
-                            mod_id: ModuleId::from_usize(self.file_id),
-                            item_id: item.id,
-                        }),
+                        GlobalSymbol::new(
+                            item.ident.clone(),
+                            Location {
+                                mod_id: ModuleId::from_usize(self.file_id),
+                                item_id: item.id,
+                            },
+                        ),
                     );
                 }
             }
@@ -207,10 +210,13 @@ impl<'a> AstWalker for UseCollector<'a> {
 
                         let id = ItemId::new();
                         self.namespaces.insert((ident.clone(), id), map);
-                        symbols.push(GlobalSymbol::new(ident.clone(), Location {
-                            mod_id,
-                            item_id: id,
-                        }))
+                        symbols.push(GlobalSymbol::new(
+                            ident.clone(),
+                            Location {
+                                mod_id,
+                                item_id: id,
+                            },
+                        ))
                     }
                 }
 

@@ -10,7 +10,7 @@ use crate::{
     ptok,
 };
 use brim_ast::{
-    Const, Enum, Extern, Fn, From, Mod, Parent, SelfSmall, Struct, Type, Use,
+    Const, Enum, Extern, Fn, From, Mod, SelfSmall, Struct, Type, Use,
     item::{
         Block, Enum as AstEnum, EnumField, EnumVariant, ExternBlock, Field, FnDecl, FnReturnType,
         FnSignature, FunctionContext, Generics, Ident, ImportsKind, Item, ItemKind, ModuleDecl,
@@ -440,13 +440,16 @@ impl Parser {
 
         let ret_type = self.parse_return_type()?;
 
-        Ok((generics, FnSignature {
-            constant,
-            span: span.to(self.prev().span),
-            name: ident,
-            params,
-            return_type: ret_type,
-        }))
+        Ok((
+            generics,
+            FnSignature {
+                constant,
+                span: span.to(self.prev().span),
+                name: ident,
+                params,
+                return_type: ret_type,
+            },
+        ))
     }
 
     pub fn parse_return_type(&mut self) -> PResult<FnReturnType> {

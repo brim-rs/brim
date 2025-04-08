@@ -129,7 +129,7 @@ fn impl_diagnostic_derive(ast: &DeriveInput) -> Result<TokenStream, MacroFunctio
         .named
         .iter()
         .filter_map(|field| {
-            let ident = field.attrs.iter().find(|attr| {
+            field.attrs.iter().find(|attr| {
                 let ident = attr
                     .path()
                     .segments

@@ -60,14 +60,6 @@ impl ProjectResolver {
         Ok(order)
     }
 
-    pub fn get_config(&self, project_name: &str) -> Option<&Config> {
-        self.loaded_configs.get(project_name)
-    }
-
-    pub fn get_all_configs(&self) -> &HashMap<String, Config> {
-        &self.loaded_configs
-    }
-
     pub fn get_configs(&self, order: &[String]) -> Vec<Config> {
         order
             .iter()

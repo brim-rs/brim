@@ -5,7 +5,7 @@ use brim_hir::{
     items::{HirItem, HirItemKind},
 };
 use brim_middle::{GlobalSymbol, ModuleId};
-use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap};
 
 impl CppCodegen {
     pub fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules) {
@@ -114,7 +114,7 @@ impl CppCodegen {
 
                 for item in external.items {
                     let item = compiled.get_item(item).clone();
-                    self.generate_wrapper_item(item, compiled);
+                    self.generate_wrapper_item(item);
                 }
             }
             HirItemKind::Enum(mut e) => {
@@ -230,7 +230,7 @@ impl CppCodegen {
         }
     }
 
-    pub fn generate_wrapper_item(&mut self, item: HirItem, compiled: &CompiledModules) {
+    pub fn generate_wrapper_item(&mut self, item: HirItem) {
         match item.kind {
             HirItemKind::Fn(decl) => {
                 let ret = self.generate_ty(decl.sig.return_type);

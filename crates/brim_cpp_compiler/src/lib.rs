@@ -33,7 +33,6 @@ pub struct CppBuild {
     opt_level: OptLevel,
     defines: HashSet<Arc<OsStr>>,
     lib_type: LibType,
-    precompile: Vec<Arc<OsStr>>,
 }
 
 impl CppBuild {
@@ -42,7 +41,6 @@ impl CppBuild {
         project_type: ProjectType,
         build_dir: impl AsRef<Path>,
         lib_type: LibType,
-        precompile: Vec<impl AsRef<OsStr>>,
     ) -> Result<Self> {
         let build_dir = build_dir.as_ref();
         ensure!(
@@ -68,10 +66,6 @@ impl CppBuild {
             opt_level: OptLevel::Debug,
             defines: HashSet::new(),
             lib_type,
-            precompile: precompile
-                .into_iter()
-                .map(|s| Arc::from(s.as_ref()))
-                .collect(),
         })
     }
 

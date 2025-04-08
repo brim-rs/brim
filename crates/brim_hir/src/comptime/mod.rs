@@ -103,7 +103,7 @@ impl<'a> ComptimeTransformer<'a> {
         let mut item = self.compiled.items.get(&item).unwrap().clone();
 
         match &mut item.kind {
-            HirItemKind::Fn(func) => {}
+            HirItemKind::Fn(_) => {}
             HirItemKind::TypeAlias(type_alias) => self.visit_type_alias(type_alias),
             HirItemKind::Enum(en) => {
                 for (_, id) in &mut en.items {
@@ -169,7 +169,7 @@ impl<'a> Evaluator<'a> {
 
 impl<'a> Evaluator<'a> {
     pub fn eval_block(&mut self, block: &HirBlock) -> ComptimeReturnValue {
-        self.scopes.push_scope(self.mod_id);
+        self.scopes.push_scope();
         for stmt in block.stmts.clone() {
             match stmt.kind {
                 HirStmtKind::Expr(expr) => {
@@ -181,13 +181,15 @@ impl<'a> Evaluator<'a> {
                     } else {
                         ComptimeReturnValue::Lit(Lit::new(LitKind::None, Empty, None))
                     };
-                    self.scopes
-                        .declare_variable(ident.name.to_string(), VariableInfo {
+                    self.scopes.declare_variable(
+                        ident.name.to_string(),
+                        VariableInfo {
                             span: ident.span,
                             val,
-                        });
+                        },
+                    );
                 }
-                HirStmtKind::If(if_expr) => {
+                HirStmtKind::If(_) => {
                     todo!()
                 }
             };

@@ -49,7 +49,6 @@ pub fn generate(tokens: TokenStream) -> TokenStream {
     let mut index = 0;
     let const_definitions = symbols.iter().map(|symbol| {
         let name = &symbol.name;
-        let value = &symbol.value;
         let current_index: usize = index;
         index += 1;
 

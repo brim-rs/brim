@@ -126,7 +126,7 @@ impl TypeChecker {
             HirExprKind::Unwrap(expr) => {
                 self.check_expr(*expr);
             }
-            HirExprKind::Unary(op, operand) => {
+            HirExprKind::Unary(_, operand) => {
                 self.check_expr(*operand);
             }
             HirExprKind::Ternary(cond, then, else_) => {

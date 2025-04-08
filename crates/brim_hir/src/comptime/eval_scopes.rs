@@ -7,7 +7,6 @@ use std::collections::HashMap;
 pub struct EvalScope {
     variables: HashMap<String, VariableInfo>,
     parent: Option<Box<EvalScope>>,
-    file: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -17,19 +16,17 @@ pub struct VariableInfo {
 }
 
 impl<'a> EvalScope {
-    pub fn new(file: usize) -> Self {
+    pub fn new() -> Self {
         Self {
             variables: HashMap::new(),
             parent: None,
-            file,
         }
     }
 
-    pub fn new_child(parent: &EvalScope, file: usize) -> Self {
+    pub fn new_child(parent: &EvalScope) -> Self {
         Self {
             variables: HashMap::new(),
             parent: Some(Box::new(parent.clone())),
-            file,
         }
     }
 
@@ -57,13 +54,13 @@ pub struct EvalScopeManager {
 impl<'a> EvalScopeManager {
     pub fn new(file: usize) -> Self {
         Self {
-            scope_stack: vec![EvalScope::new(file)],
+            scope_stack: vec![EvalScope::new()],
         }
     }
 
-    pub fn push_scope(&mut self, file: usize) {
+    pub fn push_scope(&mut self) {
         let current_scope = self.current_scope();
-        let new_scope = EvalScope::new_child(current_scope, file);
+        let new_scope = EvalScope::new_child(current_scope);
         self.scope_stack.push(new_scope);
     }
 

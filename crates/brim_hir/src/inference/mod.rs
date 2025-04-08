@@ -3,13 +3,11 @@ pub mod scope;
 
 use crate::{
     CompiledModules,
-    builtin::get_builtin_function,
     expr::{HirExpr, HirExprKind, HirIfStmt},
     inference::{
         errors::{
             AddressOfRvalue, CannotApplyBinary, CannotApplyUnary, CannotCompare,
-            CannotReferenceToRef, InvalidFunctionArgCount, NoField, OrelseExpectedOption,
-            UnwrapNonOptional,
+            InvalidFunctionArgCount, NoField, OrelseExpectedOption, UnwrapNonOptional,
         },
         scope::{TypeInfo, TypeScopeManager},
     },
@@ -117,11 +115,7 @@ impl<'a> TypeInference<'a> {
             HirTyKind::Mut(inner) => HirTyKind::Mut(Box::new(self.resolve_type_alias(inner))),
             HirTyKind::Const(inner) => HirTyKind::Const(Box::new(self.resolve_type_alias(inner))),
             HirTyKind::Vec(inner) => HirTyKind::Vec(Box::new(self.resolve_type_alias(inner))),
-            HirTyKind::Ident {
-                ident,
-                generics,
-                is_generic,
-            } => {
+            HirTyKind::Ident { ident, .. } => {
                 if let Some(sym) = self
                     .compiled
                     .resolve_symbol(&ident.to_string(), self.current_mod.as_usize())
@@ -370,7 +364,7 @@ impl<'a> TypeInference<'a> {
     }
 
     fn infer_expr(&mut self, expr: &mut HirExpr) {
-        if let Some(builtin) = self.compiled.expanded_by_builtins.get(&expr.id).cloned() {
+        if let Some(_) = self.compiled.expanded_by_builtins.get(&expr.id).cloned() {
             let mut new = vec![];
             if let Some(params) = &mut self.compiled.builtin_args.get(&expr.id).cloned() {
                 for param in params.iter_mut() {
@@ -527,7 +521,7 @@ impl<'a> TypeInference<'a> {
                         }
                     }
 
-                    (BinOpKind::OrElse, l, r) => &match l.is_option() {
+                    (BinOpKind::OrElse, l, _) => &match l.is_option() {
                         Some(x) => x,
                         None => self.ret_with_error(OrelseExpectedOption {
                             span: (expr.span.clone(), self.current_mod.as_usize()),
@@ -1011,7 +1005,7 @@ impl<'a> TypeInference<'a> {
                 .compiled
                 .resolve_symbol(&ident_str, self.current_mod.as_usize());
 
-            if let Some(sym) = sym {
+            if let Some(_) = sym {
                 return self.resolve_member_access(
                     type_info.ty.clone(),
                     idents,

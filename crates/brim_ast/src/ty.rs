@@ -2,7 +2,6 @@ use crate::{
     ItemId,
     expr::Expr,
     item::{GenericArgs, Ident},
-    ty::PrimitiveType::{I8, I16, I32, I64, Isize, U8, U16, U32, U64, Usize},
 };
 use brim_diagnostics::ErrorEmitted;
 use brim_span::span::Span;

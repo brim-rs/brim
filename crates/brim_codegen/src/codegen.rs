@@ -6,14 +6,13 @@ use brim_ast::{
 use brim_hir::{
     Codegen, CompiledModules,
     expr::HirExpr,
-    items::{HirGenerics, HirItem, HirItemKind, HirStruct},
+    items::{HirGenerics, HirItem, HirItemKind},
     stmts::HirStmt,
     transformer::{HirModule, HirModuleMap},
     ty::HirTyKind,
 };
-use brim_middle::{GlobalSymbol, ModuleId};
+use brim_middle::ModuleId;
 use std::{
-    any::Any,
     collections::{HashMap, HashSet},
     path::PathBuf,
 };

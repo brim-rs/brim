@@ -99,7 +99,7 @@ impl<'a> NameResolver<'a> {
             debug!("Resolving names for module: {:?}", module.barrel.file_id);
 
             self.file = module.barrel.file_id;
-            for mut item in module.barrel.items.iter_mut() {
+            for item in module.barrel.items.iter_mut() {
                 self.walk_item(item);
             }
 
@@ -285,15 +285,18 @@ impl<'a> AstWalker for NameResolver<'a> {
     fn visit_let(&mut self, let_stmt: &mut Let) {
         let name = let_stmt.ident.to_string();
 
-        self.declare_variable(&name, VariableInfo {
-            id: let_stmt.id,
-            is_const: if let Some(ty) = &let_stmt.ty {
-                ty.is_const()
-            } else {
-                false
+        self.declare_variable(
+            &name,
+            VariableInfo {
+                id: let_stmt.id,
+                is_const: if let Some(ty) = &let_stmt.ty {
+                    ty.is_const()
+                } else {
+                    false
+                },
+                span: let_stmt.span,
             },
-            span: let_stmt.span,
-        });
+        );
 
         self.validate_var_name(&name, let_stmt.ident.span);
 
@@ -374,11 +377,14 @@ impl<'a> AstWalker for NameResolver<'a> {
         }
 
         for param in &func.sig.params {
-            self.declare_param(&param.name.to_string(), VariableInfo {
-                id: param.id,
-                is_const: false,
-                span: param.span,
-            });
+            self.declare_param(
+                &param.name.to_string(),
+                VariableInfo {
+                    id: param.id,
+                    is_const: false,
+                    span: param.span,
+                },
+            );
 
             self.validate_var_name(&param.name.to_string(), param.name.span);
             self.resolve_type(param.ty.clone());
@@ -576,8 +582,7 @@ impl<'a> AstWalker for NameResolver<'a> {
                                 });
                             }
                         } else if let Some(item) = str.kind.as_enum() {
-                            if let Some(variant) = item.find(&ident) {
-                            } else {
+                            if let None = item.find(&ident) {
                                 self.ctx.emit_impl(NoVariantInEnum {
                                     span: (ident.span, self.file),
                                     name: ident.name.to_string(),

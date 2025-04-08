@@ -34,7 +34,6 @@ generate_symbols! {
     Match = "match",
     Mod = "mod",
     Mut = "mut",
-    Parent = "parent",
     Pub = "pub",
     Return = "return",
     Struct = "struct",

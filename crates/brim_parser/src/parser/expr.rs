@@ -210,7 +210,7 @@ impl Parser {
 
                 Ok(self.new_expr(self.prev().span, ExprKind::Literal(lit)))
             }
-            TokenKind::Ident(x) => {
+            TokenKind::Ident(_) => {
                 if self.eat_keyword(ptok!(Return)) {
                     let span = self.current().span;
                     let expr = self.parse_expr()?;
@@ -229,7 +229,6 @@ impl Parser {
                 } else if self.is_keyword(ptok!(Match)) {
                     self.parse_match_expression()
                 } else if self.current().is_keyword(Const) {
-                    let span_start = self.current().span;
                     if let Some(ty) = self.parse_ty_without_ident()? {
                         Ok(self.new_expr(ty.span, ExprKind::Type(Box::new(ty))))
                     } else {
@@ -406,11 +405,12 @@ impl Parser {
                 self.expect_cbracket()?;
 
                 debug!("Parsed array expression");
-                Ok(self.new_expr(self.current().span, ExprKind::Array(elements)))
+                Ok(self.new_expr(
+                    span_start.to(self.current().span),
+                    ExprKind::Array(elements),
+                ))
             }
             TokenKind::BinOp(BinOpToken::And) | TokenKind::BinOp(BinOpToken::Star) => {
-                let span_start = self.current().span;
-
                 if let Some(ty) = self.parse_ty_without_ident()? {
                     return Ok(self.new_expr(ty.span, ExprKind::Type(Box::new(ty))));
                 }

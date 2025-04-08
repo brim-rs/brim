@@ -33,7 +33,6 @@ impl<'a> ModuleDiscover<'a> {
     pub fn create_module_map(
         &mut self,
         barrel: &Barrel,
-        file_id: usize,
         visited: &mut HashSet<PathBuf>,
     ) -> Result<ModuleMap> {
         self.file = barrel.file_id;
@@ -86,7 +85,7 @@ impl<'a> ModuleDiscover<'a> {
             let new_barrel = parser.parse_barrel()?;
             self.ctx.extend(parser.dcx.diags);
 
-            self.create_module_map(&new_barrel, new_barrel.file_id, visited)?;
+            self.create_module_map(&new_barrel, visited)?;
         }
         Ok(self.map.clone())
     }

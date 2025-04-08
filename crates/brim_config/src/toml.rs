@@ -179,23 +179,7 @@ impl Config {
         let lints = config.lints.unwrap_or_default();
         let experimental = config.experimental.unwrap_or_default();
 
-        let std_dep = Dependency {
-            version: None,
-            path: Some(build.std.to_string_lossy().into_owned()),
-            github: None,
-            branch: None,
-        };
-
-        let core_dep = Dependency {
-            version: None,
-            path: Some(build.core.to_string_lossy().into_owned()),
-            github: None,
-            branch: None,
-        };
-
         let dependencies = dependencies;
-        // dependencies.insert("std".to_string(), std_dep);
-        // dependencies.insert("core".to_string(), core_dep);
         let cwd = canonicalize_path(cwd)?;
 
         Ok(Self {

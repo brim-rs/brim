@@ -73,7 +73,7 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
         for config in configs {
             let sess = &mut Session::new(config.cwd.clone(), config.clone(), c_choice);
             let ctx = &mut CompilerContext::new(args.clone(), lints);
-            let hir = compile_project(sess, ctx, c_choice, args.clone(), compiled_projects, simple)?;
+            let hir = compile_project(sess, ctx, c_choice, compiled_projects, simple)?;
 
             compiled_projects
                 .map
@@ -112,7 +112,6 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
         let project_type = main_sess.config.project.r#type.clone();
         let build_dir = main_sess.build_dir();
         let opt_level = main_sess.config.build.level.clone();
-        let file = main_sess.main_file()?;
         let lib_type = main_sess.config.build.lib_type.clone();
 
         let build_process = &mut CppBuild::new(
@@ -120,7 +119,6 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
             project_type,
             build_dir,
             lib_type,
-            cg.imports,
         )?;
         build_process.set_opt_level(opt_level).disable_warnings();
         build_process.add_sources(sources);
@@ -173,7 +171,6 @@ pub fn compile_project(
     sess: &mut Session,
     comp: &mut CompilerContext,
     c_choice: ColorChoice,
-    args: RunArgs,
     compiled: &mut CompiledModules,
     simple: &mut SimpleModules,
 ) -> Result<HirModuleMap> {
@@ -197,13 +194,12 @@ pub fn compile_project(
 
     let mut discover = ModuleDiscover::new(resolver_temp, sess);
 
-    let id = barrel.file_id.clone();
     discover
         .map
         .insert_or_update(get_path(entry_file)?, barrel.clone());
     let mut visited = HashSet::new();
 
-    let module_map = discover.create_module_map(&mut barrel, id, &mut visited)?;
+    let module_map = discover.create_module_map(&mut barrel, &mut visited)?;
     let mut resolver = ImportResolver::new(resolver_temp, sess, compiled.clone(), module_map);
     let map = resolver.resolve()?;
 

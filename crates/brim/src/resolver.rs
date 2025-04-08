@@ -4,7 +4,6 @@ use brim_ast::item::ItemKind;
 use brim_fs::{canonicalize_path, loader::BrimFileLoader};
 use brim_middle::{modules::ModuleMap, temp_diag::TemporaryDiagnosticContext};
 use brim_span::files::get_path;
-use std::path::PathBuf;
 use tracing::debug;
 
 #[derive(Debug)]

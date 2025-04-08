@@ -79,7 +79,7 @@ pub trait AstWalker {
                     }
                 }
             }
-            ItemKind::Enum(en) => {}
+            ItemKind::Enum(_) => {}
             ItemKind::Namespace(_) | ItemKind::Module(_) => {}
         }
     }
@@ -113,7 +113,7 @@ pub trait AstWalker {
                 self.visit_expr(rhs);
             }
             ExprKind::Unary(_, operand) => self.visit_expr(operand),
-            ExprKind::Field(idents) => {}
+            ExprKind::Field(_) => {}
             ExprKind::Index(base, index) => {
                 self.visit_expr(base);
                 self.visit_expr(index);
@@ -161,7 +161,7 @@ pub trait AstWalker {
             ExprKind::Type(ty) => {
                 self.visit_ty(ty);
             }
-            ExprKind::StaticAccess(ident, expr) => {
+            ExprKind::StaticAccess(_, expr) => {
                 self.visit_expr(expr);
             }
             ExprKind::MethodCall(ident, expr) => {
@@ -178,7 +178,7 @@ pub trait AstWalker {
         }
     }
 
-    fn visit_method_call(&mut self, ident: &Vec<Ident>, args: &mut Box<Expr>) {
+    fn visit_method_call(&mut self, _: &Vec<Ident>, args: &mut Box<Expr>) {
         self.visit_expr(args);
     }
 

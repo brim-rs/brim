@@ -1,7 +1,7 @@
 use crate::{
     CompiledModules,
     builtin::get_builtin_function,
-    comptime::{ComptimeReturnValue, errors::ComptimeExprExpectedTy},
+    comptime::ComptimeReturnValue,
     expr::{
         ComptimeValue, HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfStmt, HirMatchArm,
         HirStructConstructor,
@@ -624,7 +624,7 @@ impl<'a> Transformer<'a> {
                     HirExprKind::Path(id)
                 }
                 ExprKind::Type(ty) => HirExprKind::Type(self.transform_ty(*ty).kind),
-                ExprKind::StaticAccess(ident, expr) => {
+                ExprKind::StaticAccess(_, expr) => {
                     let id = self.compiled.get_assigned_path(expr.id);
 
                     HirExprKind::StaticAccess(id, Box::new(self.transform_expr(*expr).0))

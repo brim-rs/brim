@@ -4,7 +4,7 @@ use crate::{
 };
 use brim_ast::{
     Const, Mut, Type,
-    expr::{Expr, ExprKind},
+    expr::Expr,
     item::{Block, Ident, ItemKind, TypeAlias, TypeAliasValue},
     stmts::{Stmt, StmtKind},
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
@@ -67,8 +67,8 @@ impl Parser {
             .current()
             .is_delimiter(Delimiter::Bracket, Orientation::Open)
             && self
-            .next()
-            .is_delimiter(Delimiter::Bracket, Orientation::Close)
+                .next()
+                .is_delimiter(Delimiter::Bracket, Orientation::Close)
         {
             self.expect_obracket()?;
             self.expect_cbracket()?;
@@ -87,7 +87,7 @@ impl Parser {
                         })),
                         id: self.new_id(),
                     };
-                },
+                }
                 // For mut types, we want mut(T[]) not (mut T)[]
                 TyKind::Mut(inner_ty) => {
                     let element_ty = *inner_ty;
@@ -100,7 +100,7 @@ impl Parser {
                         })),
                         id: self.new_id(),
                     };
-                },
+                }
                 // For ref types, apply vec to the inner type: &(T[]) not (&T)[]
                 TyKind::Ref(inner_ty, mutability) => {
                     let element_ty = *inner_ty;
@@ -112,11 +112,11 @@ impl Parser {
                                 kind: TyKind::Vec(Box::new(element_ty)),
                                 id: self.new_id(),
                             }),
-                            mutability
+                            mutability,
                         ),
                         id: self.new_id(),
                     };
-                },
+                }
                 // For ptr types, apply vec to the inner type: *(T[]) not (*T)[]
                 TyKind::Ptr(inner_ty, mutability) => {
                     let element_ty = *inner_ty;
@@ -128,11 +128,11 @@ impl Parser {
                                 kind: TyKind::Vec(Box::new(element_ty)),
                                 id: self.new_id(),
                             }),
-                            mutability
+                            mutability,
                         ),
                         id: self.new_id(),
                     };
-                },
+                }
                 _ => {
                     ty = Ty {
                         span,

@@ -1,17 +1,13 @@
 use crate::codegen::CppCodegen;
 use brim_ast::{
-    ItemId,
     expr::{BinOpKind, UnaryOp},
     token::{Lit, LitKind},
-    ty::PrimitiveType,
 };
 use brim_hir::{
-    Codegen,
     builtin::get_builtin_function,
     expr::{HirExpr, HirExprKind, HirIfStmt, HirStructConstructor},
     ty::HirTyKind,
 };
-use brim_span::span::Span;
 use std::fmt::Write;
 
 impl CppCodegen {
@@ -135,7 +131,7 @@ impl CppCodegen {
                 }
             }
             HirExprKind::MethodCall(mut r_ident, call) => match call.kind.clone() {
-                HirExprKind::Call(ident, args, _) => {
+                HirExprKind::Call(_, args, _) => {
                     let last = r_ident.last().unwrap().clone();
                     r_ident.pop();
                     let path = r_ident

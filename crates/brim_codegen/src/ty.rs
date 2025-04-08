@@ -1,5 +1,5 @@
 use crate::codegen::CppCodegen;
-use brim_ast::ty::PrimitiveType;
+use brim_ast::ty::{Mutable, PrimitiveType};
 use brim_hir::ty::HirTyKind;
 
 impl CppCodegen {
@@ -8,12 +8,20 @@ impl CppCodegen {
             HirTyKind::Primitive(prim) => self.transform_primitive(prim),
             HirTyKind::Ptr(ty, mutable) => {
                 let ty = self.generate_ty(*ty);
-                format!("{}*", ty)
+                if mutable == Mutable::No {
+                    format!("{}*", ty)
+                } else {
+                    format!("const {}*", ty)
+                }
             }
 
             HirTyKind::Ref(ty, mutable) => {
                 let ty = self.generate_ty(*ty);
-                format!("{}&", ty)
+                if mutable == Mutable::No {
+                    format!("{}&", ty)
+                } else {
+                    format!("const {}&", ty)
+                }
             }
 
             HirTyKind::Ident {
