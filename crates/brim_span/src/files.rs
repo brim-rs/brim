@@ -289,8 +289,8 @@ impl Iterator for SimpleFiles {
 }
 
 impl<'a> IntoIterator for &'a SimpleFiles {
-    type IntoIter = Iter<'a, SimpleFile>;
     type Item = &'a SimpleFile;
+    type IntoIter = Iter<'a, SimpleFile>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.files.iter()

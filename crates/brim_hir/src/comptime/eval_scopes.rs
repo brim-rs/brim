@@ -52,7 +52,7 @@ pub struct EvalScopeManager {
 }
 
 impl<'a> EvalScopeManager {
-    pub fn new(file: usize) -> Self {
+    pub fn new() -> Self {
         Self {
             scope_stack: vec![EvalScope::new()],
         }

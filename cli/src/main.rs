@@ -7,7 +7,7 @@ use crate::{
 };
 use anstream::ColorChoice;
 use anyhow::Result;
-use brim::{Shell, args::RunArgs, toml::Config};
+use brim::{Shell, args::RunArgs, config::toml::Config};
 use cli::cli;
 use std::{env, process::exit};
 

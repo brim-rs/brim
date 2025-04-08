@@ -110,7 +110,6 @@ impl AstWalker for AstValidator {
             | ItemKind::Module(_)
             | ItemKind::TypeAlias(_)
             | ItemKind::Use(_) => {}
-            _ => todo!("missing implementation for {:?}", item.kind),
         }
     }
 

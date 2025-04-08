@@ -7,4 +7,3 @@ edition = "2024"
 once_cell = "1.21.1"
 brim-index = { workspace = true }
 thiserror = { workspace = true }
-indexmap = { workspace = true }

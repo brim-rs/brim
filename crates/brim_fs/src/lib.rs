@@ -23,7 +23,7 @@ pub fn path<P: AsRef<std::path::Path>>(elems: Vec<P>) -> PathBuf {
 }
 
 /// Takes a provided path and creates all the parent directories.
-pub fn create_file_parent_dirs(file: &PathBuf) -> anyhow::Result<()> {
+pub fn create_file_parent_dirs(file: &PathBuf) -> Result<()> {
     if let Some(parent) = file.parent() {
         std::fs::create_dir_all(parent)?;
     } else {

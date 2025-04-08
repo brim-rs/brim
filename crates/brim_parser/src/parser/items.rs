@@ -40,11 +40,11 @@ impl Parser {
             self.parse_struct(span)?
         } else if self.current().is_keyword(Type) {
             self.parse_type_alias()?
-        } else if self.current().is_keyword(brim_ast::Mod) {
+        } else if self.current().is_keyword(Mod) {
             self.parse_mod_decl()?
         } else if self.current().is_keyword(Extern) {
             self.parse_extern()?
-        } else if self.current().is_keyword(brim_ast::Enum) {
+        } else if self.current().is_keyword(Enum) {
             self.parse_enum()?
         } else {
             box_diag!(UnknownItem {
@@ -440,16 +440,13 @@ impl Parser {
 
         let ret_type = self.parse_return_type()?;
 
-        Ok((
-            generics,
-            FnSignature {
-                constant,
-                span: span.to(self.prev().span),
-                name: ident,
-                params,
-                return_type: ret_type,
-            },
-        ))
+        Ok((generics, FnSignature {
+            constant,
+            span: span.to(self.prev().span),
+            name: ident,
+            params,
+            return_type: ret_type,
+        }))
     }
 
     pub fn parse_return_type(&mut self) -> PResult<FnReturnType> {

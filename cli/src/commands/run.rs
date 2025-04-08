@@ -12,6 +12,7 @@ use brim::{
     Codegen, CompiledModule, CompiledModules, ModuleId, Shell,
     args::RunArgs,
     compiler::CompilerContext,
+    config::toml::{Config, ProjectType},
     create_file_parent_dirs,
     discover::ModuleDiscover,
     files::get_path,
@@ -19,7 +20,6 @@ use brim::{
     resolver::ImportResolver,
     session::Session,
     temp_diag::TemporaryDiagnosticContext,
-    toml::{Config, ProjectType},
     transformer::HirModuleMap,
 };
 use brim_codegen::codegen::CppCodegen;
@@ -155,7 +155,7 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
     Ok(())
 }
 
-pub fn bail_on_errors(len: usize) -> anyhow::Result<()> {
+pub fn bail_on_errors(len: usize) -> Result<()> {
     if len > 0 {
         bail!(
             "Compilation failed due to {} previous {}",

@@ -1,6 +1,5 @@
 use crate::{
     ItemId,
-    expr::Expr,
     item::{GenericArgs, Ident},
 };
 use brim_diagnostics::ErrorEmitted;

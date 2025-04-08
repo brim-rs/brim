@@ -161,7 +161,6 @@ impl<'a> TypeInference<'a> {
             | HirTyKind::Placeholder
             | HirTyKind::None
             | HirTyKind::Err(_) => ty.clone(),
-            _ => todo!("missing implementation for {:?}", ty),
         }
     }
 
@@ -240,7 +239,6 @@ impl<'a> TypeInference<'a> {
                 }
             }
             HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::TypeAlias(_) => {}
-            _ => todo!("missing implementation for {:?}", item.kind),
         }
 
         item.clone()
@@ -866,7 +864,7 @@ impl<'a> TypeInference<'a> {
                 return Some(var.ty);
             }
 
-            return self.resolve_field_access(var.ty, idents);
+            self.resolve_field_access(var.ty, idents)
         } else {
             let error_span = idents.first().unwrap().span;
             self.temp.emit_impl(NoField {
@@ -980,7 +978,7 @@ impl<'a> TypeInference<'a> {
                 return None;
             }
 
-            return self.resolve_member_access(var.ty, idents, expr, function_call.span);
+            self.resolve_member_access(var.ty, idents, expr, function_call.span)
         } else {
             self.temp.emit_impl(NoMethod {
                 span: (function_call.span, self.current_mod.as_usize()),
@@ -1048,8 +1046,8 @@ impl<'a> TypeInference<'a> {
 
                     let item = self.compiled.get_item(method_id).clone();
 
-                    if idents.is_empty() {
-                        return Some(item);
+                    return if idents.is_empty() {
+                        Some(item)
                     } else {
                         let method_fn = item.as_fn();
                         let return_type = method_fn.sig.return_type.clone();
@@ -1059,8 +1057,8 @@ impl<'a> TypeInference<'a> {
                             span: idents.first().unwrap().span,
                         };
 
-                        return self.resolve_method_from_idents(idents, expr, Some(next_type));
-                    }
+                        self.resolve_method_from_idents(idents, expr, Some(next_type))
+                    };
                 }
 
                 let struct_data = sym.as_struct().unwrap();

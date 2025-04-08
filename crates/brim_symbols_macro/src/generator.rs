@@ -6,6 +6,7 @@ use syn::{
     parse2,
 };
 
+#[allow(unused)]
 struct SymbolDef {
     name: Ident,
     equals: Token![=],

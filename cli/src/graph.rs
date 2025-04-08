@@ -1,5 +1,5 @@
 use anyhow::Result;
-use brim::toml::Config;
+use brim::config::toml::Config;
 use std::{
     collections::{HashMap, HashSet, VecDeque},
     path::PathBuf,

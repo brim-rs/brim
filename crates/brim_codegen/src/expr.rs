@@ -18,7 +18,7 @@ impl CppCodegen {
             let params = &mut self.compiled.builtin_args.get(&expr.id).unwrap().clone();
 
             if let Some(codegen) = func.codegen {
-                let string = (codegen)(self, params);
+                let string = codegen(self, params);
                 return string;
             }
         }

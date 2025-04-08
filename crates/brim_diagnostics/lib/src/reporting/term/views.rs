@@ -67,7 +67,7 @@ where
 
         struct Line<'diagnostic> {
             number: usize,
-            range: std::ops::Range<usize>,
+            range: Range<usize>,
             // TODO: How do we reuse these allocations?
             single_labels: Vec<SingleLabel>,
             multi_labels: Vec<(usize, LabelStyle, MultiLabel<'diagnostic>)>,

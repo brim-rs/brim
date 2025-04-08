@@ -175,7 +175,7 @@ impl<'a> Cursor<'a> {
     pub fn next_token(&mut self) -> PrimitiveToken {
         let first_char = match self.bump() {
             Some(c) => c,
-            None => return PrimitiveToken::new(PrimitiveTokenKind::Eof, 0),
+            None => return PrimitiveToken::new(Eof, 0),
         };
         let token_kind = match first_char {
             _ if is_whitespace(first_char) => {
@@ -218,7 +218,7 @@ impl<'a> Cursor<'a> {
                 let literal_kind = self.number(c);
                 let suffix_start = self.pos_within_token();
                 self.eat_literal_suffix();
-                PrimitiveTokenKind::Literal {
+                Literal {
                     kind: literal_kind,
                     suffix_start,
                 }
@@ -506,7 +506,7 @@ pub fn tokenize(input: &str) -> impl Iterator<Item = PrimitiveToken> + '_ {
     let mut cursor = Cursor::new(input);
     std::iter::from_fn(move || {
         let token = cursor.next_token();
-        if token.kind != PrimitiveTokenKind::Eof {
+        if token.kind != Eof {
             Some(token)
         } else {
             None
@@ -535,230 +535,185 @@ mod tests {
     fn test_tokenize() {
         let input = "fn main() { println(\"Hello, world!\"); }";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [
-                Ident,
-                Ident,
-                OpenParen,
-                CloseParen,
-                OpenBrace,
-                Ident,
-                OpenParen,
-                Literal {
-                    kind: Str { terminated: true },
-                    suffix_start: 15
-                },
-                CloseParen,
-                Semicolon,
-                CloseBrace
-            ]
-        );
+        assert_eq!(tokens, [
+            Ident,
+            Ident,
+            OpenParen,
+            CloseParen,
+            OpenBrace,
+            Ident,
+            OpenParen,
+            Literal {
+                kind: Str { terminated: true },
+                suffix_start: 15
+            },
+            CloseParen,
+            Semicolon,
+            CloseBrace
+        ]);
     }
 
     #[test]
     fn test_byte_string() {
         let input = "b\"hello\"";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: ByteStr { terminated: true },
-                suffix_start: 8
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: ByteStr { terminated: true },
+            suffix_start: 8
+        }]);
     }
 
     #[test]
     fn test_byte_string_escaped() {
         let input = "b\"hello\\n\"";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: ByteStr { terminated: true },
-                suffix_start: 10
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: ByteStr { terminated: true },
+            suffix_start: 10
+        }]);
     }
 
     #[test]
     fn test_str() {
         let input = "\"hello\"";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: Str { terminated: true },
-                suffix_start: 7
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: Str { terminated: true },
+            suffix_start: 7
+        }]);
     }
 
     #[test]
     fn test_str_escaped() {
         let input = "\"hello\\n\"";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: Str { terminated: true },
-                suffix_start: 9
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: Str { terminated: true },
+            suffix_start: 9
+        }]);
     }
 
     #[test]
     fn test_char() {
         let input = "'a'";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: LiteralKind::Char { terminated: true },
-                suffix_start: 3
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: LiteralKind::Char { terminated: true },
+            suffix_start: 3
+        }]);
     }
 
     #[test]
     fn test_char_escaped() {
         let input = "'\\n'";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: LiteralKind::Char { terminated: true },
-                suffix_start: 4
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: LiteralKind::Char { terminated: true },
+            suffix_start: 4
+        }]);
     }
 
     #[test]
     fn test_int() {
         let input = "123";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: Int {
-                    base: Base::Decimal,
-                    empty_int: false
-                },
-                suffix_start: 3
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: Int {
+                base: Base::Decimal,
+                empty_int: false
+            },
+            suffix_start: 3
+        }]);
     }
 
     #[test]
     fn test_int_bin() {
         let input = "0b101";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: Int {
-                    base: Base::Binary,
-                    empty_int: false
-                },
-                suffix_start: 5
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: Int {
+                base: Base::Binary,
+                empty_int: false
+            },
+            suffix_start: 5
+        }]);
     }
 
     #[test]
     fn test_int_octal() {
         let input = "0o123";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: Int {
-                    base: Base::Octal,
-                    empty_int: false
-                },
-                suffix_start: 5
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: Int {
+                base: Base::Octal,
+                empty_int: false
+            },
+            suffix_start: 5
+        }]);
     }
 
     #[test]
     fn test_int_hex() {
         let input = "0x123abc";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: Int {
-                    base: Base::Hexadecimal,
-                    empty_int: false
-                },
-                suffix_start: 8
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: Int {
+                base: Base::Hexadecimal,
+                empty_int: false
+            },
+            suffix_start: 8
+        }]);
     }
 
     #[test]
     fn test_float() {
         let input = "1.23";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: Float {
-                    base: Base::Decimal,
-                    empty_exponent: false
-                },
-                suffix_start: 4
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: Float {
+                base: Base::Decimal,
+                empty_exponent: false
+            },
+            suffix_start: 4
+        }]);
     }
 
     #[test]
     fn test_float_exp() {
         let input = "1.23e5";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: Float {
-                    base: Base::Decimal,
-                    empty_exponent: false
-                },
-                suffix_start: 6
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: Float {
+                base: Base::Decimal,
+                empty_exponent: false
+            },
+            suffix_start: 6
+        }]);
     }
 
     #[test]
     fn test_float_exp_neg() {
         let input = "1.23e-5";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: Float {
-                    base: Base::Decimal,
-                    empty_exponent: false
-                },
-                suffix_start: 7
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: Float {
+                base: Base::Decimal,
+                empty_exponent: false
+            },
+            suffix_start: 7
+        }]);
     }
 
     #[test]
     fn test_float_exp_pos() {
         let input = "1.23e+5";
         let tokens: Vec<_> = tokens(input, false).iter().map(|t| t.kind).collect();
-        assert_eq!(
-            tokens,
-            [Literal {
-                kind: Float {
-                    base: Base::Decimal,
-                    empty_exponent: false
-                },
-                suffix_start: 7
-            }]
-        );
+        assert_eq!(tokens, [Literal {
+            kind: Float {
+                base: Base::Decimal,
+                empty_exponent: false
+            },
+            suffix_start: 7
+        }]);
     }
 }

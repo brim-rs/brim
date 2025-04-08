@@ -8,7 +8,7 @@ use crate::{
     styles::{ERROR, HEADER, NOTE, WARN},
 };
 use anstream::{AutoStream, ColorChoice};
-use anstyle::Style;
+use anstyle::{Effects, Style};
 use anyhow::Result;
 use gethostname::gethostname;
 use std::{
@@ -58,7 +58,7 @@ impl Shell {
         style: &Style,
         justified: bool,
     ) -> Result<()> {
-        let dim = anstyle::Style::new() | anstyle::Effects::DIMMED;
+        let dim = Style::new() | Effects::DIMMED;
 
         let mut buffer = Vec::new();
         if justified {
@@ -81,7 +81,7 @@ impl Shell {
         style: &Style,
         justified: bool,
     ) -> Result<String> {
-        let dim = anstyle::Style::new() | anstyle::Effects::DIMMED;
+        let dim = Style::new() | Effects::DIMMED;
 
         let mut buffer = Vec::new();
         if justified {

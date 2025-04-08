@@ -351,7 +351,6 @@ impl<'a> AstWalker for NameResolver<'a> {
             TypeAliasValue::Ty(ty) => {
                 self.resolve_type(ty.clone());
             }
-            _ => {}
         }
     }
 

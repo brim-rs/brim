@@ -64,7 +64,6 @@ impl TypeChecker {
                 }
             }
             HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::TypeAlias(_) => {}
-            _ => todo!("missing implementation for {:?}", item),
         }
     }
 

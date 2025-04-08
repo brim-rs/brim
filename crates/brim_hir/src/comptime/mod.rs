@@ -158,7 +158,7 @@ pub struct Evaluator<'a> {
 impl<'a> Evaluator<'a> {
     pub fn new(mod_id: ModuleId, compiled: &'a mut CompiledModules) -> Self {
         Self {
-            scopes: EvalScopeManager::new(0),
+            scopes: EvalScopeManager::new(),
             last_val: None,
             mod_id: mod_id.as_usize(),
             temp: TemporaryDiagnosticContext::new(),

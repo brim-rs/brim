@@ -4,8 +4,8 @@ pub mod discover;
 pub mod resolver;
 pub mod session;
 
-pub use brim_ast::*;
-pub use brim_config::*;
+pub use brim_ast as ast;
+pub use brim_config as config;
 pub use brim_ctx::*;
 pub use brim_diag_macro::*;
 pub use brim_diagnostics::*;
