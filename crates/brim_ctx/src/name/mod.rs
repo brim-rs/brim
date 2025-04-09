@@ -579,18 +579,18 @@ impl AstWalker for NameResolver<'_> {
                 }
             }
             ExprKind::Match(expr, arms) => {
-                self.walk_expr(expr);
-                for arm in arms {
-                    match arm {
-                        MatchArm::Case(pat, block) => {
-                            self.walk_expr(pat);
-                            self.walk_expr(block);
-                        }
-                        MatchArm::Else(block) => {
-                            self.walk_expr(block);
-                        }
-                    }
-                }
+                // self.walk_expr(expr);
+                // for arm in arms {
+                //     match arm {
+                //         MatchArm::Case(pat, block) => {
+                //             self.walk_expr(pat);
+                //             self.walk_expr(block);
+                //         }
+                //         MatchArm::Else(block) => {
+                //             self.walk_expr(block);
+                //         }
+                //     }
+                // }
             }
             ExprKind::Path(idents) => {
                 self.resolve_path(idents.clone(), expr.id, false);

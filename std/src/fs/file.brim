@@ -1,6 +1,6 @@
 use { HANDLE, DWORD, OVERLAPPED, OVERLAPPED_0, OVERLAPPED_0_0, BOOL } from "../os/windows.brim"
 use { IoError } from "../io/error.brim";
-use { WriteFile } from "../os/windows/kernel32.brim";
+use { WriteFile, GetLastError } from "../os/windows/kernel32.brim";
 
 pub type HandleTy = match @os() {
     "windows" => HANDLE,
@@ -27,7 +27,12 @@ pub struct Handle {
                 .hEvent = @none()
             }) : @none();
 
-        if WriteFile(self.inner, data.ptr, data.len, @some(&bytes_written), &overlapped) == 0 {}
+        if WriteFile(self.inner, data.ptr, data.len, @some(&bytes_written), &overlapped) == 0 {
+            match GetLastError() {
+                2 => return @err(IoError.NotFound),
+                _ => return @err(IoError.Unknown),
+            }
+        }
 
         return @ok(bytes_written);
     }

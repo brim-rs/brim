@@ -243,6 +243,22 @@ impl Evaluator<'_> {
                     todo!("Resolve path to item")
                 }
             }
+            HirExprKind::Var(ident) => {
+                let ident = ident.to_string();
+                if let Some((_, info)) = self.scopes.resolve_variable(&ident) {
+                    return info.val.clone();
+                } else {
+                    if let Some(item) = self.compiled.resolve_symbol(&ident, self.mod_id) {
+                        if let HirItemKind::TypeAlias(alias) = &item.kind {
+                            return alias.ty.resolved().clone();
+                        } else {
+                            todo!("handle not a type")
+                        }
+                    }
+
+                    todo!("handle not found symbol")
+                }
+            }
             _ => unimplemented!("Comptime evaluation for {:?}", expr),
         };
 

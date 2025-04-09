@@ -10,4 +10,6 @@ extern "C" {
         lpNumberOfBytesWritten: *DWORD?,
         lpOverlapped: *OVERLAPPED?
     ) BOOL;
+
+    fn GetLastError() DWORD;
 }
