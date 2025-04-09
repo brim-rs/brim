@@ -23,7 +23,7 @@ pub struct BuiltInFunction {
 #[macro_export]
 macro_rules! builtin_function {
     (fn $name:ident($file:ident $(, $($arg:ident),* $(, ...$rest:ident)?)?) {$($body:tt)*}) => {
-        #[expect(unused_mut, unused_variables)]
+        #[allow(unused_mut, unused_variables)]
         pub fn $name() -> BuiltInFunction {
             fn inner(file_param: usize, args: &mut Vec<HirExpr>) -> BuiltinResult<HirExpr> {
                 let mut iter = args.iter_mut();
@@ -43,7 +43,7 @@ macro_rules! builtin_function {
     };
     (fn $name:ident($file:ident $(, $($arg:ident),* $(, ...$rest:ident)?)?) {$($body:tt)*}
         codegen($cg_ctx:ident) {$($cg_body:tt)*}) => {
-        #[expect(unused_mut, unused_variables)]
+        #[allow(unused_mut, unused_variables)]
         pub fn $name() -> BuiltInFunction {
             fn inner(file_param: usize, args: &mut Vec<HirExpr>) -> BuiltinResult<HirExpr> {
                 let mut iter = args.iter_mut();
@@ -118,6 +118,9 @@ builtin_function! {
         }
     }
     codegen(cg_ctx) {
+        if a.ty.is_void_ptr() {
+            return format!("reinterpret_cast<{}>({})", cg_ctx.generate_expr(b.clone()), cg_ctx.generate_expr(a.clone()));
+        }
         format!("static_cast<{}>({})", cg_ctx.generate_expr(b.clone()), cg_ctx.generate_expr(a.clone()))
     }
 }

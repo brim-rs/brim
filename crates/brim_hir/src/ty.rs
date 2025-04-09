@@ -622,4 +622,12 @@ impl HirTyKind {
             _ => false,
         }
     }
+    
+    pub fn is_void_ptr(&self) -> bool {
+        match self {
+            HirTyKind::Ptr(ty, _) => ty.is_void(),
+            HirTyKind::Ref(ty, _) => ty.is_void(),
+            _ => false,
+        }
+    }
 }
