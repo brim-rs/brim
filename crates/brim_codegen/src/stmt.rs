@@ -36,23 +36,29 @@ impl CppCodegen {
             HirStmtKind::Match(mt) => {
                 let expr = self.generate_expr(*mt.expr);
                 let mut arms = vec![];
+                let mut has_else = false;
 
-                for arm in mt.arms {
-                    match arm {
+                for (i, arm) in mt.arms.iter().enumerate() {
+                    match arm.clone() {
                         HirMatchArm::Case(pat, block) => {
                             let pat = self.generate_expr(pat);
                             let block = self.generate_expr(block);
-                            arms.push(format!("if ({pat} == {expr}) {{ {block} }}"));
+                            if i == 0 {
+                                arms.push(format!("if ({pat} == {expr}) {{ {block} }}"));
+                            } else {
+                                arms.push(format!("else if ({pat} == {expr}) {{ {block} }}"));
+                            }
                         }
                         HirMatchArm::Else(block) => {
                             let block = self.generate_expr(block);
                             arms.push(format!("else {{ {block} }}"));
+                            has_else = true;
                         }
                     }
                 }
 
                 let arms = arms.join("\n");
-                format!("if ({expr}) {{\n{arms}\n}}")
+                arms
             }
         }
     }
