@@ -28,7 +28,8 @@ impl CppCodegen {
 
     fn generate_expr_kind(&mut self, expr: HirExpr) -> String {
         let mut is_ret = false;
-        let code = match expr.kind {
+        let kind = expr.kind.clone();
+        let code = match kind.clone() {
             HirExprKind::Block(block) => {
                 let mut code = String::new();
                 for stmt in block.stmts {
@@ -160,7 +161,7 @@ impl CppCodegen {
         };
 
         if let HirTyKind::ResultErr(err) = expr.ty
-            && !is_ret
+            && !matches!(kind, HirExprKind::Return(_) | HirExprKind::Block(_))
         {
             format!("std::unexpected<{}>({})", self.generate_ty(*err), code)
         } else {
