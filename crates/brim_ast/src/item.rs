@@ -3,6 +3,7 @@ use brim_span::{span::Span, symbols::Symbol};
 use std::{
     collections::HashMap,
     fmt::{Debug, Display},
+    hash::Hash,
     path::PathBuf,
 };
 
@@ -15,10 +16,16 @@ pub struct Item<Kind = ItemKind> {
     pub kind: Kind,
 }
 
-#[derive(Copy, Clone, Eq, Hash, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, Ord, PartialOrd)]
 pub struct Ident {
     pub name: Symbol,
     pub span: Span,
+}
+
+impl Hash for Ident {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.to_string().hash(state);
+    }
 }
 
 impl PartialEq for Ident {

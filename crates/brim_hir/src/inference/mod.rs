@@ -676,14 +676,14 @@ impl TypeInference<'_> {
                         }
 
                         &self.infer_call_expr(ident, &func, args, params)
-                    } else if let Some(str) = citem.as_enum() {
-                        if str.get_variant(ident).is_some() {
+                    } else if let Some(en) = citem.as_enum() {
+                        if en.get_variant(ident).is_some() {
                             &HirTyKind::Ident {
                                 ident: citem.ident,
                                 generics: HirGenericArgs::empty(),
                                 is_generic: false,
                             }
-                        } else if let Some(item) = str.get_item(ident) {
+                        } else if let Some(item) = en.get_item(ident) {
                             let func = self.compiled.get_item(*item).as_fn().clone();
 
                             for generic in generics {
@@ -692,7 +692,7 @@ impl TypeInference<'_> {
 
                             &self.infer_call_expr(ident, &func, args, params)
                         } else {
-                            todo!()
+                            panic!("not found item or variant: {ident:?} in enum {}", en.ident);
                         }
                     } else {
                         todo!()
