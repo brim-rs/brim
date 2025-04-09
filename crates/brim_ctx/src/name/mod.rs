@@ -3,8 +3,8 @@ pub mod scopes;
 
 use crate::name::{
     errors::{
-        AccessOutsideComptime, InvalidPathAccess, NamespaceMissingSymbol, UndeclaredFunction,
-        UndeclaredStruct, UndeclaredVariable,
+        AccessOutsideComptime, InvalidPathAccess, NamespaceMissingSymbol, NoVariantOrItemInEnum,
+        UndeclaredFunction, UndeclaredStruct, UndeclaredVariable,
     },
     scopes::Scope,
 };
@@ -25,7 +25,7 @@ use brim_span::span::Span;
 use convert_case::{Case, Casing};
 use errors::{
     IdentifierNotFound, InvalidReceiverForStaticAccess, ItemNotAMethodInStruct, NoItemInStruct,
-    NoVariantInEnum, StaticCallToMethodInStruct,
+    StaticCallToMethodInStruct,
 };
 use scopes::{ScopeManager, VariableInfo};
 use tracing::debug;
@@ -555,12 +555,15 @@ impl AstWalker for NameResolver<'_> {
                                 });
                             }
                         } else if let Some(item) = str.kind.as_enum() {
-                            if item.find(&ident).is_none() {
-                                self.ctx.emit_impl(NoVariantInEnum {
-                                    span: (ident.span, self.file),
-                                    name: ident.name.to_string(),
-                                    enum_name: str.ident.to_string(),
-                                });
+                            if let None = item.find(&ident) {
+                                let res = item.find_item(&ident);
+                                if res.is_none() {
+                                    self.ctx.emit_impl(NoVariantOrItemInEnum {
+                                        span: (ident.span, self.file),
+                                        name: ident.name.to_string(),
+                                        enum_name: str.ident.to_string(),
+                                    });
+                                }
                             }
                         }
                     } else {
@@ -578,20 +581,7 @@ impl AstWalker for NameResolver<'_> {
                     }
                 }
             }
-            ExprKind::Match(expr, arms) => {
-                // self.walk_expr(expr);
-                // for arm in arms {
-                //     match arm {
-                //         MatchArm::Case(pat, block) => {
-                //             self.walk_expr(pat);
-                //             self.walk_expr(block);
-                //         }
-                //         MatchArm::Else(block) => {
-                //             self.walk_expr(block);
-                //         }
-                //     }
-                // }
-            }
+            ExprKind::Match(mt) => self.visit_match(mt),
             ExprKind::Path(idents) => {
                 self.resolve_path(idents.clone(), expr.id, false);
             }

@@ -28,10 +28,7 @@ pub struct Handle {
             }) : @none();
 
         if WriteFile(self.inner, data.ptr, data.len, @some(&bytes_written), &overlapped) == 0 {
-            match GetLastError() {
-                2 => return @err(IoError.NotFound),
-                _ => return @err(IoError.Unknown),
-            }
+            return IoError::fromOsError(GetLastError());
         }
 
         return @ok(bytes_written);

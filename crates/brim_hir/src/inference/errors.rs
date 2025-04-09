@@ -92,3 +92,11 @@ pub struct AddressOfRvalue {
     #[note]
     pub note: String,
 }
+
+#[derive(Diagnostic)]
+#[error("no variable `{name}` found for a method access")]
+pub struct NoVariableForMethodAccess {
+    #[error]
+    pub span: (Span, usize),
+    pub name: String,
+}

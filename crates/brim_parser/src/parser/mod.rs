@@ -49,6 +49,7 @@ pub struct Parser {
 pub enum ParsingContext {
     Normal,
     IfStatement,
+    Match,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

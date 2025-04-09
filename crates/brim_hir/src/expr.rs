@@ -84,7 +84,7 @@ pub enum HirExprKind {
     /// Struct constructor.
     StructConstructor(HirStructConstructor),
     /// Match expressions.
-    Match(Box<HirExpr>, Vec<HirMatchArm>),
+    Match(HirMatch),
     /// Path to a module or item.
     Path(ItemId),
     /// Type as a value
@@ -101,6 +101,13 @@ pub enum HirExprKind {
     Ternary(Box<HirExpr>, Box<HirExpr>, Box<HirExpr>),
 
     Dummy,
+}
+
+#[derive(Clone, Debug)]
+pub struct HirMatch {
+    pub span: Span,
+    pub expr: Box<HirExpr>,
+    pub arms: Vec<HirMatchArm>,
 }
 
 impl HirExprKind {

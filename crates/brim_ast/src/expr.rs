@@ -63,7 +63,7 @@ pub enum ExprKind {
     /// `Vec2 { x: 1, y: 2 }`
     StructConstructor(Ident, GenericArgs, IndexMap<Ident, Expr>),
     /// `match x { ... }`
-    Match(Box<Expr>, Vec<MatchArm>),
+    Match(Match),
     /// `windows::io::File`
     Path(Vec<Ident>),
     /// `i32`. Type as an value.
@@ -72,6 +72,13 @@ pub enum ExprKind {
     Unwrap(Box<Expr>),
     /// `cond ? then : else`
     Ternary(Box<Expr>, Box<Expr>, Box<Expr>),
+}
+
+#[derive(Clone, Debug)]
+pub struct Match {
+    pub expr: Box<Expr>,
+    pub arms: Vec<MatchArm>,
+    pub span: Span,
 }
 
 #[derive(Clone, Debug)]

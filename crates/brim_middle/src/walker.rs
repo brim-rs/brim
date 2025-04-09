@@ -1,5 +1,5 @@
 use brim_ast::{
-    expr::{Expr, ExprKind, MatchArm},
+    expr::{Expr, ExprKind, Match, MatchArm},
     item::{
         Block, FnDecl, FnReturnType, FnSignature, GenericArgs, Generics, Ident, Item, ItemKind,
         Struct, TypeAlias, Use,
@@ -89,6 +89,7 @@ pub trait AstWalker {
             StmtKind::Let(let_stmt) => self.visit_let(let_stmt),
             StmtKind::Expr(expr) => self.visit_expr(expr),
             StmtKind::If(stmt) => self.visit_if(stmt),
+            StmtKind::Match(mt) => self.visit_match(mt),
         }
     }
 
@@ -143,20 +144,7 @@ pub trait AstWalker {
             ExprKind::StructConstructor(ident, gens, fields) => {
                 self.visit_struct_constructor(ident, gens, fields);
             }
-            ExprKind::Match(expr, arms) => {
-                self.visit_expr(expr);
-                for arm in arms {
-                    match arm {
-                        MatchArm::Case(pat, block) => {
-                            self.visit_expr(pat);
-                            self.visit_expr(block);
-                        }
-                        MatchArm::Else(block) => {
-                            self.visit_expr(block);
-                        }
-                    }
-                }
-            }
+            ExprKind::Match(mt) => self.visit_match(mt),
             ExprKind::Path(_) => {}
             ExprKind::Type(ty) => {
                 self.visit_ty(ty);
@@ -174,6 +162,21 @@ pub trait AstWalker {
                 self.visit_expr(cond);
                 self.visit_expr(then);
                 self.visit_expr(else_);
+            }
+        }
+    }
+
+    fn visit_match(&mut self, mt: &mut Match) {
+        self.visit_expr(&mut mt.expr);
+        for arm in &mut mt.arms {
+            match arm {
+                MatchArm::Case(pat, block) => {
+                    self.visit_expr(pat);
+                    self.visit_expr(block);
+                }
+                MatchArm::Else(block) => {
+                    self.visit_expr(block);
+                }
             }
         }
     }

@@ -27,6 +27,7 @@ impl CppCodegen {
     }
 
     fn generate_expr_kind(&mut self, expr: HirExpr) -> String {
+        let mut is_ret = false;
         let code = match expr.kind {
             HirExprKind::Block(block) => {
                 let mut code = String::new();
@@ -38,6 +39,7 @@ impl CppCodegen {
             }
             HirExprKind::Return(expr) => {
                 let expr_code = self.generate_expr(*expr);
+                is_ret = true;
 
                 format!("return {expr_code};")
             }
@@ -56,7 +58,7 @@ impl CppCodegen {
             }
             HirExprKind::Var(ident) => format!("brim_{ident}"),
             HirExprKind::Call(func, args, _) => self.generate_call_expr(func, args),
-            HirExprKind::Literal(lit) => self.generate_lit(lit, expr.ty),
+            HirExprKind::Literal(lit) => self.generate_lit(lit, expr.ty.clone()),
             HirExprKind::Index(expr, index) => {
                 let expr_code = self.generate_expr(*expr);
                 let index_code = self.generate_expr(*index);
@@ -150,14 +152,20 @@ impl CppCodegen {
             HirExprKind::Ternary(cond, then_block, else_block) => {
                 let cond_code = self.generate_expr(*cond);
                 let then_code = self.generate_expr(*then_block);
-                let else_code = self.generate_expr(*else_block);
+                let else_code = self.generate_expr(*else_block.clone());
 
                 format!("({cond_code} ? {then_code} : {else_code})")
             }
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         };
 
-        code
+        if let HirTyKind::ResultErr(err) = expr.ty
+            && !is_ret
+        {
+            format!("std::unexpected<{}>({})", self.generate_ty(*err), code)
+        } else {
+            code
+        }
     }
 
     fn generate_call_args(&mut self, args: Vec<HirExpr>) -> String {

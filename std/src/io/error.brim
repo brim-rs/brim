@@ -1,3 +1,124 @@
 pub enum IoError {
+    // an entity was not found, typically a file
     NotFound,
+    // operation lacked necessary privileges to complete
+    PermissionDenied,
+    // connection refused by remote server
+    ConnectionRefused,
+    // connection reset by remote server
+    ConnectionReset,
+    // remote host is not reachable
+    HostUnreachable,
+    // network containing remote host is not reachable
+    NetworkUnreachable,
+    // connection terminated by remote server
+    ConnectionAborted,
+    // network operation failed due to not being connected
+    NotConnected,
+    // socket address already in use elsewhere
+    AddrInUse,
+    // nonexistent interface requested or address not local
+    AddrNotAvailable,
+    // system's networking is down
+    NetworkDown,
+    // operation failed because a pipe was closed
+    BrokenPipe,
+    // entity already exists, often a file
+    AlreadyExists,
+    // operation needs to block but was requested not to
+    WouldBlock,
+    // filesystem object is not a directory when expected
+    NotADirectory,
+    // filesystem object is a directory when not expected
+    IsADirectory,
+    // non-empty directory where empty was expected
+    DirectoryNotEmpty,
+    // write attempted on read-only filesystem
+    ReadOnlyFilesystem,
+    // filesystem loop or excessive symlink chain depth
+    FilesystemLoop,
+    // network file handle became invalid
+    StaleNetworkFileHandle,
+    // parameter was incorrect
+    InvalidInput,
+    // operation encountered malformed input data
+    InvalidData,
+    // i/o operation's timeout expired
+    TimedOut,
+    // write operation returned zero bytes written
+    WriteZero,
+    // storage is full
+    StorageFull,
+    // seeking attempted on non-seekable file
+    NotSeekable,
+    // resource quota was exceeded
+    QuotaExceeded,
+    // file exceeds allowed size limit
+    FileTooLarge,
+    // resource is busy
+    ResourceBusy,
+    // executable file is currently in use
+    ExecutableFileBusy,
+    // file locking would result in deadlock
+    Deadlock,
+    // cross-device link or rename attempted
+    CrossesDevices,
+    // too many hardlinks to same file
+    TooManyLinks,
+    // filename invalid or exceeds length limit
+    InvalidFilename,
+    // program argument list too long
+    ArgumentListTooLong,
+    // operation was interrupted
+    Interrupted,
+    // operation unsupported on this platform
+    Unsupported,
+    // end of file reached prematurely
+    UnexpectedEof,
+    // operation failed to allocate enough memory
+    OutOfMemory,
+    // partially successful operation, check later
+    InProgress,
+    // custom error not matching other kinds
+    Other(u32),
+
+
+    fn fromOsError(error: u32) IoError {
+        match error {
+            2 => return IoError::NotFound(),
+            5 => return IoError::PermissionDenied(),
+            6 => return IoError::InvalidInput(),
+            13 => return IoError::InvalidData(),
+            14 => return IoError::OutOfMemory(),
+            21 => return IoError::IsADirectory(),
+            22 => return IoError::InvalidInput(),
+            30 => return IoError::ReadOnlyFilesystem(),
+            36 => return IoError::FileTooLarge(),
+            38 => return IoError::UnexpectedEof(),
+            39 => return IoError::DirectoryNotEmpty(),
+            40 => return IoError::CrossesDevices(),
+            47 => return IoError::TooManyLinks(),
+            67 => return IoError::AddrInUse(),
+            83 => return IoError::HostUnreachable(),
+            101 => return IoError::NetworkUnreachable(),
+            103 => return IoError::ConnectionAborted(),
+            104 => return IoError::ConnectionReset(),
+            107 => return IoError::NotConnected(),
+            109 => return IoError::BrokenPipe(),
+            111 => return IoError::ConnectionRefused(),
+            112 => return IoError::StorageFull(),
+            114 => return IoError::Deadlock(),
+            122 => return IoError::QuotaExceeded(),
+            150 => return IoError::FilesystemLoop(),
+            183 => return IoError::AlreadyExists(),
+            232 => return IoError::WriteZero(),
+            10004 => return IoError::Interrupted(),
+            10035 => return IoError::WouldBlock(),
+            10060 => return IoError::TimedOut(),
+            10061 => return IoError::ConnectionRefused(),
+            10093 => return IoError::NetworkDown(),
+            // default case for any other error code
+            else => return IoError::Other(error)
+        }
+    }
 }

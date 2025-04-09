@@ -97,9 +97,9 @@ pub struct StaticCallToMethodInStruct {
 }
 
 #[derive(Diagnostic)]
-#[error("no variant `{name}` found in enum `{enum_name}`")]
-pub struct NoVariantInEnum {
-    #[error("no variant `{name}` found in enum `{enum_name}`")]
+#[error("no variant or item `{name}` found in enum `{enum_name}`")]
+pub struct NoVariantOrItemInEnum {
+    #[error("no variant or item `{name}` found in enum `{enum_name}`")]
     pub span: (Span, usize),
     pub name: String,
     pub enum_name: String,

@@ -1,5 +1,5 @@
 use crate::{
-    expr::{HirExpr, HirIfStmt},
+    expr::{HirExpr, HirIfStmt, HirMatch},
     ty::HirTyKind,
 };
 use brim_ast::{ItemId, item::Ident};
@@ -19,6 +19,7 @@ impl HirStmt {
             HirStmtKind::Let { .. } => None,
             HirStmtKind::Expr(expr) => Some(expr.ty.clone()),
             HirStmtKind::If(_) => None,
+            HirStmtKind::Match(_) => None,
         }
     }
 }
@@ -31,4 +32,6 @@ pub enum HirStmtKind {
     Expr(HirExpr),
     /// An if statement.
     If(HirIfStmt),
+    /// Match
+    Match(HirMatch),
 }

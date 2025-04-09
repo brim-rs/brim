@@ -1,5 +1,6 @@
+use super::errors::{CannotInitializeWithVoid, TernaryTypeMismatch};
 use crate::{
-    expr::{HirExpr, HirExprKind},
+    expr::{HirExpr, HirExprKind, HirMatch, HirMatchArm},
     ty::HirTyKind,
     type_checker::{
         TypeChecker,
@@ -10,8 +11,6 @@ use crate::{
     },
 };
 use brim_ast::ty::PrimitiveType;
-
-use super::errors::{CannotInitializeWithVoid, TernaryTypeMismatch};
 
 impl TypeChecker {
     pub fn check_expr(&mut self, expr: HirExpr) {
@@ -140,11 +139,55 @@ impl TypeChecker {
                     });
                 }
             }
+            HirExprKind::Match(mt) => {
+                self.check_match(&mt);
+            }
             HirExprKind::Var(_)
             | HirExprKind::Literal(_)
             | HirExprKind::Field(_)
             | HirExprKind::Dummy => {}
             _ => todo!("missing implementation for {:?}", expr),
+        }
+    }
+
+    pub fn check_match(&mut self, mt: &HirMatch) {
+        self.check_expr(*mt.expr.clone());
+
+        for arm in &mt.arms {
+            let mut ret_ty = None;
+            let mut first_ty = None;
+            match arm {
+                HirMatchArm::Case(pat, expr) => {
+                    self.check_expr(pat.clone());
+                    self.check_expr(expr.clone());
+                    ret_ty = Some((expr.ty.clone(), pat.span));
+
+                    if first_ty.is_none() {
+                        first_ty = Some(expr.ty.clone());
+                    }
+                }
+                HirMatchArm::Else(expr) => {
+                    self.check_expr(expr.clone());
+                    ret_ty = Some((expr.ty.clone(), expr.span));
+
+                    if first_ty.is_none() {
+                        first_ty = Some(expr.ty.clone());
+                    }
+                }
+            }
+
+            if let Some((ty, span)) = ret_ty
+                && let Some(first_ty) = first_ty
+            {
+                if !first_ty.simple_eq(&ty) {
+                    self.ctx.emit_impl(FieldMismatch {
+                        span: (span, self.mod_id),
+                        field: String::new(),
+                        expected: mt.expr.ty.clone(),
+                        found: ty.clone(),
+                    });
+                }
+            }
         }
     }
 }

@@ -12,7 +12,7 @@ use crate::{
 };
 use brim_ast::{
     Comptime, Const, Else, If, Match, Return, Try,
-    expr::{BinOpAssociativity, BinOpKind, Expr, ExprKind, MatchArm, UnaryOp},
+    expr::{BinOpAssociativity, BinOpKind, Expr, ExprKind, Match, MatchArm, UnaryOp},
     item::Ident,
     stmts::{ConditionBranch, IfStmt, StmtKind},
     token::{BinOpToken, Delimiter, Lit, LitKind, Orientation, TokenKind},
@@ -254,7 +254,9 @@ impl Parser {
                             ExprKind::Call(Box::new(var), args),
                         ))
                     } else if self.is_brace(Orientation::Open) {
-                        if self.parsing_ctx == ParsingContext::IfStatement {
+                        if self.parsing_ctx == ParsingContext::IfStatement
+                            || self.parsing_ctx == ParsingContext::Match
+                        {
                             return Ok(self.new_expr(span, ExprKind::Var(ident)));
                         }
 
@@ -490,7 +492,8 @@ impl Parser {
         Ok(())
     }
 
-    fn parse_match_expression(&mut self) -> PResult<Expr> {
+    pub fn parse_match(&mut self) -> PResult<Match> {
+        self.parsing_ctx = ParsingContext::Match;
         if !self.eat_keyword(ptok!(Match)) {
             box_diag!(UnexpectedTokenInMatch {
                 found: self.current().kind,
@@ -549,10 +552,17 @@ impl Parser {
             box_diag!(EmptyMatchExpressionError { span: (start_span, self.file) });
         }
 
-        Ok(self.new_expr(
-            start_span.to(self.prev().span),
-            ExprKind::Match(Box::new(subject_expr), match_arms),
-        ))
+        self.parsing_ctx = ParsingContext::Normal;
+        Ok(Match {
+            expr: Box::new(subject_expr),
+            arms: match_arms,
+            span: start_span.to(self.prev().span),
+        })
+    }
+
+    pub fn parse_match_expression(&mut self) -> PResult<Expr> {
+        let mt = self.parse_match()?;
+        Ok(self.new_expr(mt.span, ExprKind::Match(mt)))
     }
 
     fn parse_match_arm(&mut self) -> PResult<MatchArm> {

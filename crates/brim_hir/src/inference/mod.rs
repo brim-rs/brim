@@ -3,11 +3,12 @@ pub mod scope;
 
 use crate::{
     CompiledModules,
-    expr::{HirExpr, HirExprKind, HirIfStmt},
+    expr::{HirExpr, HirExprKind, HirIfStmt, HirMatch, HirMatchArm},
     inference::{
         errors::{
             AddressOfRvalue, CannotApplyBinary, CannotApplyUnary, CannotCompare,
-            InvalidFunctionArgCount, NoField, OrelseExpectedOption, UnwrapNonOptional,
+            InvalidFunctionArgCount, NoField, NoVariableForMethodAccess, OrelseExpectedOption,
+            UnwrapNonOptional,
         },
         scope::{TypeInfo, TypeScopeManager},
     },
@@ -307,6 +308,9 @@ impl TypeInference<'_> {
             }
             HirStmtKind::If(if_stmt) => {
                 self.infer_if_stmt(if_stmt);
+            }
+            HirStmtKind::Match(mt) => {
+                self.infer_match(mt);
             }
         }
 
@@ -777,6 +781,7 @@ impl TypeInference<'_> {
 
                 &then_expr.ty
             }
+            HirExprKind::Match(mt) => &self.infer_match(mt),
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
 
@@ -794,6 +799,31 @@ impl TypeInference<'_> {
         self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(expr.clone()));
 
         self.hir.update_builtins(expr.clone());
+    }
+
+    pub fn infer_match(&mut self, mt: &mut HirMatch) -> HirTyKind {
+        self.infer_expr(&mut mt.expr);
+
+        let mut ty: Option<HirTyKind> = None;
+        for arm in &mut mt.arms {
+            match arm {
+                HirMatchArm::Case(pat, expr) => {
+                    self.infer_expr(pat);
+                    self.infer_expr(expr);
+
+                    if let None = ty {
+                        ty = Some(expr.ty.clone());
+                    } else if let Some(ty) = &mut ty {
+                        HirTyKind::try_promote_type(&mut expr.ty, ty, true);
+                    }
+                }
+                HirMatchArm::Else(expr) => {
+                    self.infer_expr(expr);
+                }
+            }
+        }
+
+        ty.unwrap_or(HirTyKind::void())
     }
 
     pub fn resolve_field_from_idents(&mut self, idents: &mut Vec<Ident>) -> Option<HirTyKind> {
@@ -922,10 +952,9 @@ impl TypeInference<'_> {
 
             self.resolve_member_access(var.ty, idents, expr, function_call.span)
         } else {
-            self.temp.emit_impl(NoMethod {
+            self.temp.emit_impl(NoVariableForMethodAccess {
                 span: (function_call.span, self.current_mod.as_usize()),
-                method: first,
-                ty: HirTyKind::err(),
+                name: first,
             });
 
             None

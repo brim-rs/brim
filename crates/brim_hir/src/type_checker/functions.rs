@@ -81,6 +81,7 @@ impl TypeChecker {
                     true,
                 );
             }
+            HirStmtKind::Match(match_stmt) => self.check_match(&match_stmt),
         }
     }
 }

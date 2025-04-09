@@ -3,8 +3,8 @@ use crate::{
     builtin::get_builtin_function,
     comptime::ComptimeReturnValue,
     expr::{
-        ComptimeValue, HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfStmt, HirMatchArm,
-        HirStructConstructor,
+        ComptimeValue, HirBlock, HirConditionBranch, HirExpr, HirExprKind, HirIfStmt, HirMatch,
+        HirMatchArm, HirStructConstructor,
     },
     items::{
         HirEnum, HirEnumField, HirEnumVariant, HirExternBlock, HirField, HirFn, HirFnParams,
@@ -16,7 +16,7 @@ use crate::{
 };
 use brim_ast::{
     ItemId,
-    expr::{BinOpKind, Expr, ExprKind, MatchArm},
+    expr::{BinOpKind, Expr, ExprKind, Match, MatchArm},
     item::{
         Block, Enum, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, ImportsKind, Item,
         ItemKind, Struct, TypeAlias, TypeAliasValue,
@@ -434,6 +434,7 @@ impl<'a> Transformer<'a> {
                     value: le.value.map(|expr| self.transform_expr(expr).0),
                 },
                 StmtKind::If(if_expr) => HirStmtKind::If(self.transform_if_stmt(if_expr)),
+                StmtKind::Match(mt) => HirStmtKind::Match(self.transform_match(mt)),
             },
         }
     }
@@ -581,22 +582,7 @@ impl<'a> Transformer<'a> {
                         field_types: HashMap::new(),
                     })
                 }
-                ExprKind::Match(expr, arms) => {
-                    let arms = arms
-                        .iter()
-                        .map(|arm| match arm {
-                            MatchArm::Else(block) => {
-                                HirMatchArm::Else(self.transform_expr(block.clone()).0)
-                            }
-                            MatchArm::Case(pat, block) => HirMatchArm::Case(
-                                self.transform_expr(pat.clone()).0,
-                                self.transform_expr(block.clone()).0,
-                            ),
-                        })
-                        .collect();
-
-                    HirExprKind::Match(Box::new(self.transform_expr(*expr).0), arms)
-                }
+                ExprKind::Match(mt) => HirExprKind::Match(self.transform_match(mt)),
                 ExprKind::Path(_) => {
                     let id = self.compiled.get_assigned_path(expr.id);
 
@@ -632,6 +618,22 @@ impl<'a> Transformer<'a> {
         }
 
         (expr, id)
+    }
+
+    pub fn transform_match(&mut self, mt: Match) -> HirMatch {
+        let arms = mt
+            .arms
+            .iter()
+            .map(|arm| match arm {
+                MatchArm::Else(block) => HirMatchArm::Else(self.transform_expr(block.clone()).0),
+                MatchArm::Case(pat, block) => HirMatchArm::Case(
+                    self.transform_expr(pat.clone()).0,
+                    self.transform_expr(block.clone()).0,
+                ),
+            })
+            .collect();
+
+        HirMatch { span: mt.span, expr: Box::new(self.transform_expr(*mt.expr).0), arms }
     }
 
     pub fn transform_if_stmt(&mut self, if_expr: IfStmt) -> HirIfStmt {

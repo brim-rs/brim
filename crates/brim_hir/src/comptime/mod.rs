@@ -8,7 +8,7 @@ use crate::{
         eval_scopes::{EvalScopeManager, VariableInfo},
     },
     errors::ComptimeExpectedType,
-    expr::{ComptimeValue, HirBlock, HirExpr, HirExprKind, HirMatchArm},
+    expr::{ComptimeValue, HirBlock, HirExpr, HirExprKind, HirMatch, HirMatchArm},
     items::{HirItemKind, HirTypeAlias},
     stmts::HirStmtKind,
     transformer::{HirModule, HirModuleMap, StoredHirItem, Transformer},
@@ -184,6 +184,10 @@ impl Evaluator<'_> {
                         val,
                     });
                 }
+                HirStmtKind::Match(mt) => {
+                    let val = self.eval_match(mt);
+                    self.last_val = Some(val);
+                }
                 HirStmtKind::If(_) => {
                     todo!()
                 }
@@ -200,35 +204,37 @@ impl Evaluator<'_> {
         }
     }
 
+    pub fn eval_match(&mut self, mt: HirMatch) -> ComptimeReturnValue {
+        let ret = self.eval_expr(*mt.expr.clone());
+
+        let mut found_match = false;
+        let mut lit: Option<ComptimeReturnValue> = None;
+        for arm in mt.arms {
+            match arm {
+                HirMatchArm::Case(pat, expr) => {
+                    let pat = self.eval_expr(pat.clone());
+
+                    if pat.as_lit() == ret.as_lit() {
+                        found_match = true;
+                        lit = Some(self.eval_expr(expr.clone()));
+                    }
+                }
+                HirMatchArm::Else(expr) => {
+                    if !found_match {
+                        lit = Some(self.eval_expr(expr.clone()));
+                    }
+                }
+            }
+        }
+
+        lit.expect("No match arm found")
+    }
+
     pub fn eval_expr(&mut self, expr: HirExpr) -> ComptimeReturnValue {
         let lit = match &expr.kind {
             HirExprKind::Literal(lit) => ComptimeReturnValue::Lit(*lit),
             HirExprKind::Block(block) => self.eval_block(block),
-            HirExprKind::Match(expr, arms) => {
-                let ret = self.eval_expr(*expr.clone());
-
-                let mut found_match = false;
-                let mut lit: Option<ComptimeReturnValue> = None;
-                for arm in arms {
-                    match arm {
-                        HirMatchArm::Case(pat, expr) => {
-                            let pat = self.eval_expr(pat.clone());
-
-                            if pat.as_lit() == ret.as_lit() {
-                                found_match = true;
-                                lit = Some(self.eval_expr(expr.clone()));
-                            }
-                        }
-                        HirMatchArm::Else(expr) => {
-                            if !found_match {
-                                lit = Some(self.eval_expr(expr.clone()));
-                            }
-                        }
-                    }
-                }
-
-                lit.expect("No match arm found")
-            }
+            HirExprKind::Match(mt) => self.eval_match(mt.clone()),
             HirExprKind::Type(ty) => ComptimeReturnValue::Ty(ty.clone()),
             HirExprKind::Path(id) => {
                 let item = self.compiled.get_item(*id);

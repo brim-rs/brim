@@ -1,6 +1,8 @@
 use crate::codegen::CppCodegen;
+use brim_ast::expr::MatchArm;
 use brim_hir::{
-    expr::HirExprKind,
+    Codegen,
+    expr::{HirExprKind, HirMatchArm},
     stmts::{HirStmt, HirStmtKind},
 };
 
@@ -31,6 +33,27 @@ impl CppCodegen {
                 }
             }
             HirStmtKind::If(if_expr) => self.generate_if_stmt(if_expr),
+            HirStmtKind::Match(mt) => {
+                let expr = self.generate_expr(*mt.expr);
+                let mut arms = vec![];
+
+                for arm in mt.arms {
+                    match arm {
+                        HirMatchArm::Case(pat, block) => {
+                            let pat = self.generate_expr(pat);
+                            let block = self.generate_expr(block);
+                            arms.push(format!("if ({pat} == {expr}) {{ {block} }}"));
+                        }
+                        HirMatchArm::Else(block) => {
+                            let block = self.generate_expr(block);
+                            arms.push(format!("else {{ {block} }}"));
+                        }
+                    }
+                }
+
+                let arms = arms.join("\n");
+                format!("if ({expr}) {{\n{arms}\n}}")
+            }
         }
     }
 }
