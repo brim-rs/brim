@@ -63,7 +63,10 @@ impl TypeChecker {
                     self.check_item(item.kind);
                 }
             }
-            HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::TypeAlias(_) => {}
+            HirItemKind::Namespace(_)
+            | HirItemKind::Use(_)
+            | HirItemKind::TypeAlias(_)
+            | HirItemKind::EnumVariant(_) => {}
         }
     }
 

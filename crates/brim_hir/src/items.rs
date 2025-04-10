@@ -74,6 +74,8 @@ pub enum HirItemKind {
     External(HirExternBlock),
     /// Enum definition
     Enum(HirEnum),
+    /// Enum variant.
+    EnumVariant(HirEnumVariant),
 }
 
 #[derive(Clone, Debug)]
@@ -97,6 +99,7 @@ impl HirEnum {
 
 #[derive(Clone, Debug)]
 pub struct HirEnumVariant {
+    pub id: ItemId,
     pub span: Span,
     pub ident: Ident,
     pub fields: Vec<HirEnumField>,

@@ -53,6 +53,8 @@ pub struct CompiledModules {
     pub item_relations: HashMap<GlobalSymbol, Vec<GlobalSymbol>>,
     pub expanded_by_builtins: HashMap<ItemId, String>,
     pub builtin_args: HashMap<ItemId, Vec<HirExpr>>,
+    //          enum variant -> enum id
+    pub enums: HashMap<ItemId, ItemId>,
 }
 
 impl Default for CompiledModules {
@@ -71,6 +73,7 @@ impl CompiledModules {
             item_relations: HashMap::new(),
             expanded_by_builtins: HashMap::new(),
             builtin_args: HashMap::new(),
+            enums: HashMap::new(),
         }
     }
 
@@ -109,5 +112,15 @@ impl CompiledModules {
 
     pub fn get_item_relations(&self, item_id: GlobalSymbol) -> Option<&Vec<GlobalSymbol>> {
         self.item_relations.get(&item_id)
+    }
+
+    pub fn add_enum(&mut self, variant_id: ItemId, item_id: ItemId) {
+        self.enums.insert(variant_id, item_id);
+    }
+
+    pub fn get_enum_by_variant(&self, variant_id: ItemId) -> &ItemId {
+        self.enums.get(&variant_id).unwrap_or_else(|| {
+            panic!("tried to query an enum with variant id: {variant_id:?}, but it doesn't exist")
+        })
     }
 }

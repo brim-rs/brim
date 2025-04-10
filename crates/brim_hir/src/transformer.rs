@@ -18,8 +18,8 @@ use brim_ast::{
     ItemId,
     expr::{BinOpKind, Expr, ExprKind, Match, MatchArm},
     item::{
-        Block, Enum, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, ImportsKind, Item,
-        ItemKind, Struct, TypeAlias, TypeAliasValue,
+        Block, Enum, FnDecl, FnReturnType, GenericArgs, GenericKind, Generics, Ident, ImportsKind,
+        Item, ItemKind, Struct, TypeAlias, TypeAliasValue,
     },
     stmts::{IfStmt, Stmt, StmtKind},
     token::{AssignOpToken, Lit, LitKind},
@@ -32,7 +32,7 @@ use brim_middle::{
     temp_diag::TemporaryDiagnosticContext,
 };
 use brim_span::{span::Span, symbols::Symbol};
-use std::{collections::HashMap, path::PathBuf, vec};
+use std::{collections::HashMap, env::var, path::PathBuf, vec};
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -376,25 +376,40 @@ impl<'a> Transformer<'a> {
                 items.insert(i.ident, item);
             }
         }
+        let mut variants = vec![];
+
+        for variant in enm.variants.iter() {
+            let variant = HirEnumVariant {
+                id: variant.id,
+                span: variant.span,
+                ident: variant.ident,
+                fields: variant
+                    .fields
+                    .iter()
+                    .map(|field| HirEnumField {
+                        span: field.span,
+                        ty: self.transform_ty(field.ty.clone()).kind,
+                    })
+                    .collect(),
+            };
+            variants.push(variant.clone());
+
+            let item = HirItem {
+                id: variant.id,
+                span: variant.span,
+                ident: Ident::dummy(),
+                kind: HirItemKind::EnumVariant(variant),
+                is_public: true,
+                mod_id: self.current_mod_id,
+            };
+
+            self.map.insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
+            self.compiled.insert_item(item.clone());
+        }
 
         HirEnum {
             ident: enm.ident,
-            variants: enm
-                .variants
-                .iter()
-                .map(|variant| HirEnumVariant {
-                    span: variant.span,
-                    ident: variant.ident,
-                    fields: variant
-                        .fields
-                        .iter()
-                        .map(|field| HirEnumField {
-                            span: field.span,
-                            ty: self.transform_ty(field.ty.clone()).kind,
-                        })
-                        .collect(),
-                })
-                .collect(),
+            variants,
             generics: self.transform_generics(enm.generics),
             span: enm.span,
             items,

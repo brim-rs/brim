@@ -14,7 +14,7 @@ use crate::{
     },
     items::{
         HirCallParam, HirFn, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam,
-        HirItem, HirItemKind,
+        HirGenerics, HirItem, HirItemKind,
     },
     stmts::{HirStmt, HirStmtKind},
     transformer::{HirModule, HirModuleMap, StoredHirItem},
@@ -239,7 +239,10 @@ impl TypeInference<'_> {
                     self.infer_item(item);
                 }
             }
-            HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::TypeAlias(_) => {}
+            HirItemKind::Namespace(_)
+            | HirItemKind::Use(_)
+            | HirItemKind::TypeAlias(_)
+            | HirItemKind::EnumVariant(_) => {}
         }
 
         item.clone()
@@ -782,6 +785,23 @@ impl TypeInference<'_> {
                 &then_expr.ty
             }
             HirExprKind::Match(mt) => &self.infer_match(mt),
+            HirExprKind::Path(id) => {
+                let item = self.compiled.get_item(*id);
+
+                match &item.kind {
+                    HirItemKind::EnumVariant(variant) => {
+                        let id = self.compiled.get_enum_by_variant(variant.id);
+                        let item = self.compiled.get_item(*id);
+
+                        &HirTyKind::Ident {
+                            ident: item.ident,
+                            generics: HirGenericArgs::empty(),
+                            is_generic: false,
+                        }
+                    }
+                    _ => todo!("not ready"),
+                }
+            }
             _ => todo!("infer_expr: {:?}", expr.kind),
         };
 

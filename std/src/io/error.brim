@@ -1,4 +1,4 @@
-pub enum IoError {
+pub enum IoErrorKind {
     // an entity was not found, typically a file
     NotFound,
     // operation lacked necessary privileges to complete
@@ -81,44 +81,52 @@ pub enum IoError {
     InProgress,
     // custom error not matching other kinds
     Other(u32),
+}
 
+pub struct IoError {
+    kind: IoErrorKind,
+    message: string,
+
+    fn new(kind: IoErrorKind, message: string) IoError {
+        return IoError { .kind = kind, .message = message };
+    }
 
     fn fromOsError(error: u32) IoError {
         match error {
-            2 => return IoError::NotFound(),
-            5 => return IoError::PermissionDenied(),
-            6 => return IoError::InvalidInput(),
-            13 => return IoError::InvalidData(),
-            14 => return IoError::OutOfMemory(),
-            21 => return IoError::IsADirectory(),
-            22 => return IoError::InvalidInput(),
-            30 => return IoError::ReadOnlyFilesystem(),
-            36 => return IoError::FileTooLarge(),
-            38 => return IoError::UnexpectedEof(),
-            39 => return IoError::DirectoryNotEmpty(),
-            40 => return IoError::CrossesDevices(),
-            47 => return IoError::TooManyLinks(),
-            67 => return IoError::AddrInUse(),
-            83 => return IoError::HostUnreachable(),
-            101 => return IoError::NetworkUnreachable(),
-            103 => return IoError::ConnectionAborted(),
-            104 => return IoError::ConnectionReset(),
-            107 => return IoError::NotConnected(),
-            109 => return IoError::BrokenPipe(),
-            111 => return IoError::ConnectionRefused(),
-            112 => return IoError::StorageFull(),
-            114 => return IoError::Deadlock(),
-            122 => return IoError::QuotaExceeded(),
-            150 => return IoError::FilesystemLoop(),
-            183 => return IoError::AlreadyExists(),
-            232 => return IoError::WriteZero(),
-            10004 => return IoError::Interrupted(),
-            10035 => return IoError::WouldBlock(),
-            10060 => return IoError::TimedOut(),
-            10061 => return IoError::ConnectionRefused(),
-            10093 => return IoError::NetworkDown(),
+            2 => return IoError::new(IoErrorKind::NotFound, "The system cannot find the file specified."),
+            5 => return IoError::new(IoErrorKind::PermissionDenied, "Access is denied."),
+            6 => return IoError::new(IoErrorKind::InvalidInput, "The handle is invalid."),
+            13 => return IoError::new(IoErrorKind::InvalidData, "The data is invalid."),
+            14 => return IoError::new(IoErrorKind::OutOfMemory, "Not enough storage is available."),
+            21 => return IoError::new(IoErrorKind::IsADirectory, "Is a directory."),
+            22 => return IoError::new(IoErrorKind::InvalidInput, "Invalid argument."),
+            30 => return IoError::new(IoErrorKind::ReadOnlyFilesystem, "Read-only file system."),
+            36 => return IoError::new(IoErrorKind::FileTooLarge, "File too large."),
+            38 => return IoError::new(IoErrorKind::UnexpectedEof, "Reached end of file unexpectedly."),
+            39 => return IoError::new(IoErrorKind::DirectoryNotEmpty, "Directory not empty."),
+            40 => return IoError::new(IoErrorKind::CrossesDevices, "Cross-device link operation attempted."),
+            47 => return IoError::new(IoErrorKind::TooManyLinks, "Too many links."),
+            67 => return IoError::new(IoErrorKind::AddrInUse, "Address already in use."),
+            83 => return IoError::new(IoErrorKind::HostUnreachable, "Host is unreachable."),
+            101 => return IoError::new(IoErrorKind::NetworkUnreachable, "Network is unreachable."),
+            103 => return IoError::new(IoErrorKind::ConnectionAborted, "Connection aborted."),
+            104 => return IoError::new(IoErrorKind::ConnectionReset, "Connection reset by peer."),
+            107 => return IoError::new(IoErrorKind::NotConnected, "Transport endpoint is not connected."),
+            109 => return IoError::new(IoErrorKind::BrokenPipe, "Broken pipe."),
+            111 => return IoError::new(IoErrorKind::ConnectionRefused, "Connection refused."),
+            112 => return IoError::new(IoErrorKind::StorageFull, "No space left on device."),
+            114 => return IoError::new(IoErrorKind::Deadlock, "Resource deadlock would occur."),
+            122 => return IoError::new(IoErrorKind::QuotaExceeded, "Quota exceeded."),
+            150 => return IoError::new(IoErrorKind::FilesystemLoop, "Too many levels of symbolic links."),
+            183 => return IoError::new(IoErrorKind::AlreadyExists, "File exists."),
+            232 => return IoError::new(IoErrorKind::WriteZero, "Write returned zero bytes."),
+            10004 => return IoError::new(IoErrorKind::Interrupted, "Operation interrupted."),
+            10035 => return IoError::new(IoErrorKind::WouldBlock, "Operation would block."),
+            10060 => return IoError::new(IoErrorKind::TimedOut, "Connection timed out."),
+            10061 => return IoError::new(IoErrorKind::ConnectionRefused, "Connection refused."),
+            10093 => return IoError::new(IoErrorKind::NetworkDown, "Network is down."),
             // default case for any other error code
-            else => return IoError::Other(error)
+            else => return IoError::new(IoErrorKind::Other(error), "Unknown error occurred.")
         }
     }
 }

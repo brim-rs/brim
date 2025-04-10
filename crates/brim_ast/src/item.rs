@@ -126,6 +126,7 @@ impl Enum {
 
 #[derive(Clone, Debug)]
 pub struct EnumVariant {
+    pub id: ItemId,
     pub span: Span,
     pub ident: Ident,
     pub fields: Vec<EnumField>,

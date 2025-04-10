@@ -176,6 +176,18 @@ impl<'a> NameResolver<'a> {
                                 });
                             }
                         }
+                        ItemKind::Enum(e) => {
+                            if let Some(variant) = e.find(&second_ident) {
+                                self.compiled.assign_path(expr_id, variant.id);
+                                self.compiled.add_enum(variant.id, item.id);
+                            } else {
+                                self.ctx.emit_impl(NoVariantOrItemInEnum {
+                                    span: (second_ident.span, self.file),
+                                    name: second_name,
+                                    enum_name: name,
+                                });
+                            }
+                        }
                         _ => {
                             self.ctx.emit_impl(InvalidPathAccess { span, name });
                         }
@@ -524,9 +536,13 @@ impl AstWalker for NameResolver<'_> {
 
                 let assigned = self.compiled.assigned_paths.get(&expr.id);
                 if let Some(assigned) = assigned {
-                    let str = self.simple.get_item(*assigned);
+                    let str = self.simple.get_item(*assigned).clone();
 
-                    if let ExprKind::Call(ident, _) = &expr.kind {
+                    if let ExprKind::Call(ident, args) = &mut expr.kind {
+                        for arg in args {
+                            self.walk_expr(arg);
+                        }
+
                         let ident = *ident.as_ident().unwrap();
 
                         if let Some(item) = str.kind.as_struct() {

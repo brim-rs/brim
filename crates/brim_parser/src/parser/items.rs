@@ -135,7 +135,12 @@ impl Parser {
             self.expect_cparen()?;
         }
 
-        Ok(EnumVariant { span: ident.span.to(self.current().span), ident, fields })
+        Ok(EnumVariant {
+            span: ident.span.to(self.current().span),
+            ident,
+            fields,
+            id: self.new_id(),
+        })
     }
 
     pub fn parse_struct(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {

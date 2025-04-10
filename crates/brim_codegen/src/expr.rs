@@ -6,6 +6,7 @@ use brim_ast::{
 use brim_hir::{
     builtin::get_builtin_function,
     expr::{HirExpr, HirExprKind, HirIfStmt, HirStructConstructor},
+    items::{HirGenericArgs, HirItemKind},
     ty::HirTyKind,
 };
 use std::fmt::Write;
@@ -156,6 +157,24 @@ impl CppCodegen {
                 let else_code = self.generate_expr(*else_block.clone());
 
                 format!("({cond_code} ? {then_code} : {else_code})")
+            }
+            HirExprKind::Path(id) => {
+                let item = self.compiled.get_item(id);
+
+                match &item.kind {
+                    HirItemKind::EnumVariant(variant) => {
+                        let id = self.compiled.get_enum_by_variant(variant.id);
+                        let item = self.compiled.get_item(*id);
+
+                        format!(
+                            "(module{}::brim_{}_{}())",
+                            item.mod_id.as_usize(),
+                            item.ident,
+                            variant.ident
+                        )
+                    }
+                    _ => todo!("not ready"),
+                }
             }
             _ => panic!("Unsupported expression: {:?}", expr.kind),
         };

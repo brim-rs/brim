@@ -115,7 +115,7 @@ impl ComptimeTransformer<'_> {
                     self.visit_item(id);
                 }
             }
-            HirItemKind::Namespace(_) | HirItemKind::Use(_) => {}
+            HirItemKind::Namespace(_) | HirItemKind::Use(_) | HirItemKind::EnumVariant(_) => {}
             HirItemKind::External(_) => {}
         }
 

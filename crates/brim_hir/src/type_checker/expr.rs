@@ -145,6 +145,7 @@ impl TypeChecker {
             HirExprKind::Var(_)
             | HirExprKind::Literal(_)
             | HirExprKind::Field(_)
+            | HirExprKind::Path(_)
             | HirExprKind::Dummy => {}
             _ => todo!("missing implementation for {:?}", expr),
         }
