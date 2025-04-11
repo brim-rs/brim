@@ -167,17 +167,15 @@ impl CppCodegen {
                 "cstdint",
                 "expected",
                 "any",
-                "source_location",
                 "cstdlib",
-                "sstream",
-                "iostream",
                 "optional",
                 "typeinfo",
                 "typeindex",
                 "cstring",
                 "cstddef",
-                "span",
                 "variant",
+                "iostream",
+                "format",
             ]
             .iter()
             .map(|s| (*s).to_string())

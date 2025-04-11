@@ -60,8 +60,8 @@ pub struct InvalidFunctionArgCount {
 }
 
 #[derive(Diagnostic)]
-#[error("unwrapping a non-optional type `{ty}`")]
-pub struct UnwrapNonOptional {
+#[error("unwrapping a type `{ty}` that is not a result or option")]
+pub struct UnwrapNonOptionalOrResult {
     #[error]
     pub span: (Span, usize),
     pub ty: HirTyKind,

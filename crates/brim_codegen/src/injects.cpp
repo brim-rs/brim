@@ -1,63 +1,16 @@
-inline void panic_impl(const std::string& message,
-                       const std::source_location& location) {
-    std::cerr << "\n[PANIC] " << message << "\n    at " << location.file_name()
-              << ":" << location.line() << ":" << location.column() << std::endl;
-    exit(1);
+inline void panic(const std::string& message) {
+    std::cerr << "[PANIC] " << message << std::endl;
+    std::exit(1);
 }
 
-#define PANIC(message) panic_impl(message, std::source_location::current())
-
+#define PANIC(msg) panic(msg)
 
 template <typename... Args>
-inline void panic_format_impl(const std::string& format,
-                              const std::source_location& location,
-                              Args&&... args) {
-    std::ostringstream message;
-
-    std::tuple<Args...> arg_tuple(std::forward<Args>(args)...);
-    size_t arg_index = 0;
-
-    size_t pos = 0;
-    while (pos < format.size()) {
-        size_t open_brace = format.find('{', pos);
-        if (open_brace == std::string::npos) {
-            message << format.substr(pos);
-            break;
-        }
-
-        message << format.substr(pos, open_brace - pos);
-
-        if (open_brace + 1 < format.size() && format[open_brace + 1] == '}') {
-            if (arg_index < sizeof...(Args)) {
-                size_t current_index = arg_index;
-                ((current_index == 0 ?
-                  (message << args, true) :
-                  (--current_index == 0 ? (message << args, true) : false)) || ...);
-            }
-            arg_index++;
-            pos = open_brace + 2;
-        } else {
-            message << '{';
-            pos = open_brace + 1;
-        }
-    }
-
-    panic_impl(message.str(), location);
+inline void panicf(const std::format_string<Args...> fmt, Args&&... args) {
+    panic(std::format(fmt, std::forward<Args>(args)...));
 }
 
-#define PANIC_F(format, ...) \
-    panic_format_impl(format, std::source_location::current(), ##__VA_ARGS__)
-
-
-template <typename T>
-T safe_cast(const std::any& value) {
-    try {
-        return std::any_cast<T>(value);
-    } catch (const std::bad_any_cast&) {
-        PANIC_F("Failed to cast std::any to requested type: {}. Found type: {}",
-                typeid(T).name(), value.type().name());
-    }
-}
+#define PANIC_F(...) panicf(__VA_ARGS__)
 
 template <typename T>
 T unwrap(const std::optional<T>& opt) {
@@ -65,4 +18,20 @@ T unwrap(const std::optional<T>& opt) {
         PANIC_F("Attempted to unwrap an empty optional of type {}", typeid(T).name());
     }
     return *opt;
+}
+
+template<typename T, typename E>
+T unwrap(const std::expected<T, E> &result) {
+    if (!result.has_value()) {
+        if constexpr (std::is_same_v<E, std::string>) {
+            panic("Attempted to unwrap an error result: " + result.error());
+        }
+        else if constexpr (std::is_arithmetic_v<E>) {
+            panic("Attempted to unwrap an error result: " + std::to_string(result.error()));
+        }
+        else {
+            panic("Attempted to unwrap an error result (error details unavailable)");
+        }
+    }
+    return *result;
 }

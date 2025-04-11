@@ -8,7 +8,7 @@ use crate::{
         errors::{
             AddressOfRvalue, CannotApplyBinary, CannotApplyUnary, CannotCompare,
             InvalidFunctionArgCount, NoField, NoVariableForMethodAccess, OrelseExpectedOption,
-            UnwrapNonOptional,
+            UnwrapNonOptionalOrResult,
         },
         scope::{TypeInfo, TypeScopeManager},
     },
@@ -752,7 +752,10 @@ impl TypeInference<'_> {
                 &match &expr.ty {
                     HirTyKind::Option(ty) => ty.clone(),
                     HirTyKind::Some(ty) => ty.clone(),
-                    _ => Box::from(self.ret_with_error(UnwrapNonOptional {
+                    HirTyKind::Result(ty, _) => ty.clone(),
+                    HirTyKind::ResultOk(ty) => ty.clone(),
+                    HirTyKind::ResultErr(ty) => ty.clone(),
+                    _ => Box::from(self.ret_with_error(UnwrapNonOptionalOrResult {
                         span: (expr.span, self.current_mod.as_usize()),
                         ty: expr.ty.clone(),
                     })),
