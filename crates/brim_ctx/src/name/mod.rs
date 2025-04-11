@@ -28,7 +28,7 @@ use errors::{
     StaticCallToMethodInStruct,
 };
 use scopes::{ScopeManager, VariableInfo};
-use tracing::debug;
+use tracing::{debug, trace};
 
 #[derive(Debug, Clone)]
 pub struct GenericsCtx {
@@ -148,8 +148,9 @@ impl<'a> NameResolver<'a> {
         let span = (idents[0].span, self.file);
 
         match self.compiled.symbols.resolve(&name, self.file) {
-            Some(item) => {
-                let item = self.simple.get_item(item.id.item_id);
+            Some(sym) => {
+                let item = self.simple.get_item(sym.id.item_id).clone();
+                self.resolve_ident(item.ident);
 
                 if from_call {
                     match &item.kind {
@@ -234,13 +235,11 @@ impl<'a> NameResolver<'a> {
 
         if let Some(sym) = sym {
             if let Some(current) = self.current_sym.clone() {
-                self.compiled.add_item_relation(sym, current);
+                self.compiled.add_item_relation(current, sym);
             } else {
-                panic!("no current sym")
+                trace!("Resolving identifier {} outside of an item context", ident);
             }
         } else {
-            // if the symbol wasn't found then we will look for a generic
-
             if self.generics.find(&ident.to_string()).is_none() {
                 self.ctx.emit_impl(IdentifierNotFound {
                     span: (ident.span, self.file),
@@ -320,27 +319,6 @@ impl AstWalker for NameResolver<'_> {
         self.scopes.pop_scope();
     }
 
-    fn visit_struct(&mut self, str: &mut Struct) {
-        let s = self.compiled.symbols.resolve(&str.ident.to_string(), self.file);
-
-        self.set_id(s);
-
-        for generics in str.generics.params.clone() {
-            self.generics.push_generic(generics);
-        }
-
-        for field in &mut str.fields {
-            self.resolve_type(field.ty.clone());
-        }
-
-        for item in &mut str.items {
-            self.visit_item(item);
-        }
-
-        self.generics.clear_generics();
-        self.reset_id();
-    }
-
     fn visit_type_alias(&mut self, ta: &mut TypeAlias) {
         match &mut ta.ty {
             TypeAliasValue::Const(expr) => {
@@ -352,10 +330,49 @@ impl AstWalker for NameResolver<'_> {
         }
     }
 
+    fn visit_struct(&mut self, str: &mut Struct) {
+        let s = self.compiled.symbols.resolve(&str.ident.to_string(), self.file);
+
+        let parent_sym = self.current_sym.clone();
+        self.set_id(s);
+
+        for generics in str.generics.params.clone() {
+            self.generics.push_generic(generics);
+        }
+
+        for field in &mut str.fields {
+            self.resolve_type(field.ty.clone());
+        }
+
+        for item in &mut str.items {
+            let struct_sym = self.current_sym.clone();
+            self.visit_item(item);
+
+            if let Some(struct_sym) = struct_sym {
+                if let Some(item_sym) =
+                    self.compiled.symbols.resolve(&item.ident.to_string(), self.file)
+                {
+                    self.compiled.add_item_relation(struct_sym, item_sym);
+                }
+            }
+        }
+
+        self.generics.clear_generics();
+        self.current_sym = parent_sym;
+    }
+
     fn visit_fn(&mut self, func: &mut FnDecl) {
         let name = func.sig.name.to_string();
+        let parent_sym = self.current_sym.clone();
 
-        let sym = self.compiled.symbols.resolve(&name, self.file);
+        // Check if the function is located lower like for example in a function or an enum.
+        let sym = if let Some(sym) = self.current_sym.clone() {
+            let item = self.simple.get_item(sym.id.item_id).clone();
+
+            self.compiled.symbols.resolve(&format!("{}::{}", item.ident, name), self.file)
+        } else {
+            self.compiled.symbols.resolve(&name, self.file)
+        };
         self.set_id(sym);
 
         for generic in func.generics.params.clone() {
@@ -389,7 +406,7 @@ impl AstWalker for NameResolver<'_> {
         }
 
         self.generics.clear_generics();
-        self.reset_id();
+        self.current_sym = parent_sym;
     }
 
     fn walk_item(&mut self, item: &mut Item) {
@@ -414,7 +431,9 @@ impl AstWalker for NameResolver<'_> {
             ItemKind::Enum(e) => {
                 let en = self.compiled.symbols.resolve(&e.ident.to_string(), self.file);
 
+                let parent_sym = self.current_sym.clone();
                 self.set_id(en);
+
                 for generics in e.generics.params.clone() {
                     self.generics.push_generic(generics);
                 }
@@ -426,11 +445,20 @@ impl AstWalker for NameResolver<'_> {
                 }
 
                 for item in &mut e.items {
+                    let enum_sym = self.current_sym.clone();
                     self.visit_item(item);
+
+                    if let Some(enum_sym) = enum_sym {
+                        if let Some(item_sym) =
+                            self.compiled.symbols.resolve(&item.ident.to_string(), self.file)
+                        {
+                            self.compiled.add_item_relation(enum_sym, item_sym);
+                        }
+                    }
                 }
 
                 self.generics.clear_generics();
-                self.reset_id();
+                self.current_sym = parent_sym;
             }
         }
     }

@@ -11,16 +11,14 @@ impl CppCodegen {
     pub fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules) {
         match item.kind {
             HirItemKind::Fn(decl) => {
+                self.code.add_line(&format!("// Generated item with id {}", item.id.as_usize()));
+
                 let ret = self.generate_ty(decl.sig.return_type.clone());
 
-                let generics = if let Some((_, generics)) = &self.parent_item {
-                    generics.join(&decl.sig.generics)
-                } else {
-                    decl.sig.generics
-                };
+                let generics = &decl.sig.generics;
                 self.generate_generics(&generics);
 
-                let params = decl.sig.params.params;
+                let params = &decl.sig.params.params;
                 let params = params
                     .iter()
                     .map(|p| format!("{} brim_{}", self.generate_ty(p.ty.kind.clone()), p.name))
@@ -28,15 +26,12 @@ impl CppCodegen {
                     .join(", ");
 
                 let name = if self.add_prefix {
-                    if let Some((ident, _)) = &self.parent_item {
-                        format!("brim_{}_{}", ident, decl.sig.name)
-                    } else {
-                        format!("brim_{}", decl.sig.name)
-                    }
+                    format!("brim_{}", decl.sig.name)
                 } else {
                     decl.sig.name.to_string()
                 };
-                let block_name = format!("{ret} {name}({params})");
+                let is_static = if self.generate_static { "static" } else { "" };
+                let block_name = format!("{is_static} {ret} {name}({params})");
 
                 if let Some(body) = decl.body {
                     let body_expr = self.hir().get_expr(body).clone();
@@ -50,6 +45,8 @@ impl CppCodegen {
                 };
             }
             HirItemKind::Struct(mut s) => {
+                self.code.add_line(&format!("// Generated item with id {}", item.id.as_usize()));
+
                 self.generate_generics(&s.generics);
                 let name = if self.add_prefix {
                     format!("brim_{}", s.ident.name)
@@ -77,16 +74,16 @@ impl CppCodegen {
                     }
                 }
 
-                self.code.decrease_indent();
-                self.code.add_line("};");
-
-                self.parent_item = Some((s.ident, s.generics));
-                for (_, id) in s.items {
+                self.generate_static = true;
+                for (ident, id) in s.items {
                     let item = self.compiled.get_item(id);
 
                     self.generate_item(item.clone(), compiled);
                 }
-                self.parent_item.take();
+                self.generate_static = false;
+
+                self.code.decrease_indent();
+                self.code.add_line("};");
             }
             HirItemKind::External(external) => {
                 if let Some(abi) = external.abi {
@@ -111,6 +108,8 @@ impl CppCodegen {
                 }
             }
             HirItemKind::Enum(mut e) => {
+                self.code.add_line(&format!("// Generated item with id {}", item.id.as_usize()));
+
                 self.generate_generics(&e.generics);
                 let name = if self.add_prefix {
                     format!("brim_{}", e.ident.name)
@@ -119,10 +118,11 @@ impl CppCodegen {
                 };
                 let mut variant_names = vec![];
 
-                self.code.add_line(&format!("struct {name};"));
+                self.code.add_line(&format!("struct {name} {{"));
+                self.code.increase_indent();
 
                 for variant in &e.variants {
-                    let variant_name = format!("{}_{}", name, variant.ident.name);
+                    let variant_name = format!("brim_{}", variant.ident);
                     variant_names.push(variant_name.clone());
 
                     self.code.add_line(&format!("struct {variant_name} {{"));
@@ -157,9 +157,6 @@ impl CppCodegen {
                     self.code.decrease_indent();
                     self.code.add_line("};");
                 }
-
-                self.code.add_line(&format!("struct {name} {{"));
-                self.code.increase_indent();
 
                 self.code.add_line("std::variant<");
                 for (index, variant_name) in variant_names.iter().enumerate() {
@@ -198,16 +195,16 @@ impl CppCodegen {
                     }
                 }
 
-                self.code.decrease_indent();
-                self.code.add_line("};");
-
-                self.parent_item = Some((e.ident, e.generics));
+                self.generate_static = true;
                 for (_, id) in e.items {
                     let item = self.compiled.get_item(id);
 
                     self.generate_item(item.clone(), compiled);
                 }
-                self.parent_item.take();
+                self.generate_static = false;
+
+                self.code.decrease_indent();
+                self.code.add_line("};");
             }
             _ => {}
         }
@@ -253,10 +250,15 @@ pub fn sort_items_by_module(
     let mut module_items: BTreeMap<ModuleId, BTreeSet<ItemId>> = BTreeMap::new();
     let mut all_items: BTreeSet<GlobalSymbol> = BTreeSet::new();
 
-    for (item, dependencies) in item_relations {
+    let mut dependency_map: HashMap<GlobalSymbol, Vec<GlobalSymbol>> = HashMap::new();
+
+    for (item, relations) in item_relations {
         all_items.insert(item.clone());
-        for dep in dependencies {
-            all_items.insert(dep.clone());
+
+        for related_item in relations {
+            all_items.insert(related_item.clone());
+
+            dependency_map.entry(related_item.clone()).or_insert_with(Vec::new).push(item.clone());
         }
     }
 
@@ -266,13 +268,12 @@ pub fn sort_items_by_module(
 
     let mut module_graphs: BTreeMap<ModuleId, BTreeMap<ItemId, Vec<ItemId>>> = BTreeMap::new();
 
-    for (item, dependencies) in item_relations {
+    for (item, dependencies) in &dependency_map {
         let mod_id = item.id.mod_id;
         let item_id = item.id.item_id;
 
         module_graphs.entry(mod_id).or_insert_with(BTreeMap::new);
 
-        // Add dependencies within the same module
         let same_module_deps: Vec<ItemId> = dependencies
             .iter()
             .filter(|dep| dep.id.mod_id == mod_id)
@@ -280,6 +281,14 @@ pub fn sort_items_by_module(
             .collect();
 
         module_graphs.get_mut(&mod_id).unwrap().insert(item_id, same_module_deps);
+    }
+
+    for (mod_id, items) in &module_items {
+        let graph_entry = module_graphs.entry(*mod_id).or_insert_with(BTreeMap::new);
+
+        for &item_id in items {
+            graph_entry.entry(item_id).or_insert_with(Vec::new);
+        }
     }
 
     let mut result: HashMap<ModuleId, Vec<ItemId>> = HashMap::new();

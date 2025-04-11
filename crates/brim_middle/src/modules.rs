@@ -80,6 +80,19 @@ impl<'a> SymbolCollector<'a> {
             }
         }
     }
+
+    pub fn inner_items(&mut self, ident: Ident, items: &Vec<Item>) {
+        for item in items {
+            let name = Ident::new(format!("{}::{}", ident, item.ident).into(), item.ident.span);
+            self.table.add_symbol(
+                self.file_id,
+                GlobalSymbol::new(name, Location {
+                    mod_id: ModuleId::from_usize(self.file_id),
+                    item_id: item.id,
+                }),
+            );
+        }
+    }
 }
 
 impl AstWalker for SymbolCollector<'_> {
@@ -91,14 +104,16 @@ impl AstWalker for SymbolCollector<'_> {
             ItemKind::Fn(_) => {
                 self.table.add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
-            ItemKind::Struct(_) => {
+            ItemKind::Struct(s) => {
                 self.table.add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
+                self.inner_items(s.ident, &s.items);
             }
             ItemKind::TypeAlias(_) => {
                 self.table.add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
             }
-            ItemKind::Enum(_) => {
+            ItemKind::Enum(e) => {
                 self.table.add_symbol(self.file_id, GlobalSymbol::new(item.ident, id));
+                self.inner_items(e.ident, &e.items);
             }
             ItemKind::External(external) => {
                 for item in external.items.clone() {

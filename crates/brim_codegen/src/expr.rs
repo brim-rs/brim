@@ -121,7 +121,12 @@ impl CppCodegen {
                     HirExprKind::Call(ident, args, _) => {
                         let ident = ident.as_ident().unwrap().to_string();
                         let call = format!("{}({})", ident, self.generate_call_args(args));
-                        format!("(module{}::brim_{}_{})", item.mod_id.as_usize(), item.ident, call)
+                        format!(
+                            "(module{}::brim_{}::brim_{})",
+                            item.mod_id.as_usize(),
+                            item.ident,
+                            call
+                        )
                     }
                     _ => unimplemented!(),
                 }
@@ -167,7 +172,7 @@ impl CppCodegen {
                         let item = self.compiled.get_item(*id);
 
                         format!(
-                            "(module{}::brim_{}_{}())",
+                            "(module{}::brim_{}::brim_{}())",
                             item.mod_id.as_usize(),
                             item.ident,
                             variant.ident

@@ -13,7 +13,7 @@ use brim_hir::{
 };
 use brim_middle::ModuleId;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     path::PathBuf,
 };
 use tracing::debug;
@@ -28,8 +28,9 @@ pub struct CppCodegen {
     pub imports: Vec<String>,
     pub add_prefix: bool,
     pub compiled: CompiledModules,
-    pub parent_item: Option<(Ident, HirGenerics)>,
     pub items_order: HashMap<ModuleId, Vec<ItemId>>,
+    /// adds `static` before function in static methods
+    pub generate_static: bool,
 }
 
 #[derive(Debug)]
@@ -182,8 +183,8 @@ impl CppCodegen {
             .collect(),
             add_prefix: true,
             compiled,
-            parent_item: None,
             items_order: sorted_modules,
+            generate_static: false,
         }
     }
 
@@ -266,28 +267,60 @@ impl Codegen for CppCodegen {
         self.code.add_line(&format!("namespace module{} {{", mod_id.as_u32()));
         self.code.increase_indent();
 
-        let order = self.items_order.get(&mod_id);
+        let mut items = BTreeMap::new();
 
-        if let Some(mut order) = order.cloned() {
-            for item in &module.items {
-                if !order.contains(item) {
-                    order.push(*item);
+        for &item_id in module.items.iter() {
+            let item = compiled.get_item(item_id).clone();
+
+            items.insert(item.ident, item.clone());
+        }
+
+        let ordered_item_ids = self.items_order.get(&mod_id).cloned();
+
+        if let Some(ordered_ids) = ordered_item_ids {
+            let mut processed_items = HashSet::new();
+
+            for item_id in ordered_ids {
+                let item = compiled.get_item(item_id);
+
+                if !processed_items.insert(item_id) {
+                    continue;
+                }
+
+                match &item.kind {
+                    HirItemKind::EnumVariant(_)
+                    | HirItemKind::Namespace(_)
+                    | HirItemKind::TypeAlias(_) => continue,
+                    HirItemKind::Fn(f) if f.ctx == FunctionContext::Extern => continue,
+                    _ => {}
+                }
+
+                if let Some(item) = items.remove(&item.ident) {
+                    self.generate_item(item, compiled);
                 }
             }
-            for item in order {
-                let item = compiled.get_item(item).clone();
 
-                if let HirItemKind::Fn(f) = &item.kind {
-                    if f.ctx == FunctionContext::Extern {
-                        continue;
-                    }
+            for (_, item) in items {
+                match &item.kind {
+                    HirItemKind::EnumVariant(_)
+                    | HirItemKind::Namespace(_)
+                    | HirItemKind::TypeAlias(_) => continue,
+                    HirItemKind::Fn(f) if f.ctx == FunctionContext::Extern => continue,
+                    _ => {}
                 }
 
                 self.generate_item(item, compiled);
             }
         } else {
-            for item in module.items {
-                let item = compiled.get_item(item).clone();
+            for (_, item) in items {
+                match &item.kind {
+                    HirItemKind::EnumVariant(_)
+                    | HirItemKind::Namespace(_)
+                    | HirItemKind::TypeAlias(_) => continue,
+                    HirItemKind::Fn(f) if f.ctx == FunctionContext::Extern => continue,
+                    _ => {}
+                }
+
                 self.generate_item(item, compiled);
             }
         }
