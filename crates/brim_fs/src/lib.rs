@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub mod loader;
 pub mod walk_dir;
@@ -23,7 +23,7 @@ pub fn path<P: AsRef<std::path::Path>>(elems: Vec<P>) -> PathBuf {
 }
 
 /// Takes a provided path and creates all the parent directories.
-pub fn create_file_parent_dirs(file: &PathBuf) -> Result<()> {
+pub fn create_file_parent_dirs(file: &Path) -> Result<()> {
     if let Some(parent) = file.parent() {
         std::fs::create_dir_all(parent)?;
     } else {
@@ -32,18 +32,17 @@ pub fn create_file_parent_dirs(file: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-pub fn remove_prefix(path: &PathBuf) -> PathBuf {
+pub fn remove_prefix(path: &Path) -> PathBuf {
     let path_str = path.to_str().unwrap_or("");
-    let normalized_str = if path_str.starts_with(r"\\?\") {
-        &path_str[4..] // Strip the \\?\ prefix
+    PathBuf::from(if let Some(stripped) = path_str.strip_prefix(r"\\?\") {
+        &stripped
     } else {
         path_str
-    };
-    PathBuf::from(normalized_str)
+    })
 }
 
-pub fn normalize_path(path: &PathBuf, root: &PathBuf) -> PathBuf {
-    let mut temp = path.clone();
+pub fn normalize_path(path: &Path, root: &Path) -> PathBuf {
+    let mut temp = path.to_path_buf();
 
     if temp.is_relative() {
         temp = root.join(temp);
@@ -54,7 +53,7 @@ pub fn normalize_path(path: &PathBuf, root: &PathBuf) -> PathBuf {
 
 pub const SEP: char = std::path::MAIN_SEPARATOR;
 
-pub fn normalize_slashes(path: &PathBuf) -> PathBuf {
+pub fn normalize_slashes(path: &Path) -> PathBuf {
     let path_str = path.to_str().unwrap_or("");
     let sep = &SEP.to_string();
     let normalized_str = if cfg!(windows) {

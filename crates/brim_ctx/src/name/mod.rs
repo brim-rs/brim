@@ -10,7 +10,7 @@ use crate::name::{
 };
 use brim_ast::{
     ItemId,
-    expr::{Expr, ExprKind, MatchArm},
+    expr::{Expr, ExprKind},
     item::{Block, FnDecl, GenericParam, Ident, Item, ItemKind, Struct, TypeAlias, TypeAliasValue},
     stmts::Let,
     ty::{Ty, TyKind},
@@ -56,7 +56,7 @@ impl GenericsCtx {
     }
 
     pub fn find(&self, name: &str) -> Option<&GenericParam> {
-        self.generics.iter().find(|g| &g.ident.to_string() == name)
+        self.generics.iter().find(|g| g.ident.to_string() == name)
     }
 }
 
@@ -139,7 +139,7 @@ impl<'a> NameResolver<'a> {
         }
     }
 
-    pub fn resolve_path(&mut self, idents: Vec<Ident>, expr_id: ItemId, from_call: bool) {
+    pub fn resolve_path(&mut self, idents: &[Ident], expr_id: ItemId, from_call: bool) {
         if idents.is_empty() {
             return;
         }
@@ -178,7 +178,7 @@ impl<'a> NameResolver<'a> {
                             }
                         }
                         ItemKind::Enum(e) => {
-                            if let Some(variant) = e.find(&second_ident) {
+                            if let Some(variant) = e.find(second_ident) {
                                 self.compiled.assign_path(expr_id, variant.id);
                                 self.compiled.add_enum(variant.id, item.id);
                             } else {
@@ -207,25 +207,25 @@ impl<'a> NameResolver<'a> {
         }
     }
 
-    fn resolve_type(&mut self, ty: Ty) {
+    fn resolve_type(&mut self, ty: &Ty) {
         match &ty.kind {
-            TyKind::Ref(ty, _) | TyKind::Ptr(ty, _) => self.resolve_type(*ty.clone()),
-            TyKind::Mut(ty) | TyKind::Vec(ty) => self.resolve_type(*ty.clone()),
-            TyKind::Const(ty) => self.resolve_type(*ty.clone()),
+            TyKind::Ref(ty, _) | TyKind::Ptr(ty, _) => self.resolve_type(&ty),
+            TyKind::Mut(ty) | TyKind::Const(ty) | TyKind::Option(ty) | TyKind::Vec(ty) => {
+                self.resolve_type(&ty)
+            }
             TyKind::Result(ok, err) => {
-                self.resolve_type(*ok.clone());
-                self.resolve_type(*err.clone());
+                self.resolve_type(&ok);
+                self.resolve_type(&err);
             }
             TyKind::Ident { ident, generics } => {
                 // try to resolve the identifier
                 let ident = *ident;
                 self.resolve_ident(ident);
 
-                for generic in generics.params.clone() {
-                    self.resolve_type(generic.ty);
+                for generic in &generics.params {
+                    self.resolve_type(&generic.ty);
                 }
             }
-            TyKind::Option(ty) => self.resolve_type(*ty.clone()),
             TyKind::Primitive(_) | TyKind::Err(_) => {}
         }
     }
@@ -239,13 +239,11 @@ impl<'a> NameResolver<'a> {
             } else {
                 trace!("Resolving identifier {} outside of an item context", ident);
             }
-        } else {
-            if self.generics.find(&ident.to_string()).is_none() {
-                self.ctx.emit_impl(IdentifierNotFound {
-                    span: (ident.span, self.file),
-                    name: ident.to_string(),
-                });
-            }
+        } else if self.generics.find(&ident.to_string()).is_none() {
+            self.ctx.emit_impl(IdentifierNotFound {
+                span: (ident.span, self.file),
+                name: ident.to_string(),
+            });
         }
     }
 
@@ -282,10 +280,6 @@ impl<'a> NameResolver<'a> {
             self.current_sym = Some(id);
         }
     }
-
-    fn reset_id(&mut self) {
-        self.current_sym = None;
-    }
 }
 
 impl AstWalker for NameResolver<'_> {
@@ -301,7 +295,7 @@ impl AstWalker for NameResolver<'_> {
         self.validate_var_name(&name, let_stmt.ident.span);
 
         if let Some(ty) = &mut let_stmt.ty {
-            self.resolve_type(ty.clone());
+            self.resolve_type(ty);
         }
 
         if let Some(expr) = &mut let_stmt.value {
@@ -325,7 +319,7 @@ impl AstWalker for NameResolver<'_> {
                 self.walk_expr(expr);
             }
             TypeAliasValue::Ty(ty) => {
-                self.resolve_type(ty.clone());
+                self.resolve_type(ty);
             }
         }
     }
@@ -341,7 +335,7 @@ impl AstWalker for NameResolver<'_> {
         }
 
         for field in &mut str.fields {
-            self.resolve_type(field.ty.clone());
+            self.resolve_type(&field.ty);
         }
 
         for item in &mut str.items {
@@ -398,7 +392,7 @@ impl AstWalker for NameResolver<'_> {
             });
 
             self.validate_var_name(&param.name.to_string(), param.name.span);
-            self.resolve_type(param.ty.clone());
+            self.resolve_type(&param.ty);
         }
 
         if let Some(body) = &mut func.body {
@@ -440,7 +434,7 @@ impl AstWalker for NameResolver<'_> {
 
                 for variant in &mut e.variants {
                     for field in &mut variant.fields {
-                        self.resolve_type(field.ty.clone());
+                        self.resolve_type(&field.ty);
                     }
                 }
 
@@ -465,10 +459,6 @@ impl AstWalker for NameResolver<'_> {
 
     fn walk_expr(&mut self, expr: &mut Expr) {
         match &mut expr.kind {
-            ExprKind::Binary(lhs, _, rhs) => {
-                self.walk_expr(lhs);
-                self.walk_expr(rhs);
-            }
             ExprKind::Unary(_, operand) => self.walk_expr(operand),
             ExprKind::Field(idents) => {
                 self.resolve_variable(idents.first().unwrap());
@@ -478,8 +468,7 @@ impl AstWalker for NameResolver<'_> {
                 self.walk_expr(index);
             }
             ExprKind::Literal(_) => {}
-            ExprKind::Paren(inner) => self.walk_expr(inner),
-            ExprKind::Return(inner) => self.walk_expr(inner),
+            ExprKind::Paren(inner) | ExprKind::Return(inner) => self.walk_expr(inner),
             ExprKind::Var(ident) => {
                 if let Some(item) = self.compiled.symbols.resolve(&ident.to_string(), self.file) {
                     let item = self.simple.get_item(item.id.item_id);
@@ -504,7 +493,9 @@ impl AstWalker for NameResolver<'_> {
                     self.resolve_variable(ident);
                 }
             }
-            ExprKind::AssignOp(lhs, _, rhs) | ExprKind::Assign(lhs, rhs) => {
+            ExprKind::AssignOp(lhs, _, rhs)
+            | ExprKind::Binary(lhs, _, rhs)
+            | ExprKind::Assign(lhs, rhs) => {
                 self.walk_expr(lhs);
                 self.walk_expr(rhs);
             }
@@ -560,7 +551,7 @@ impl AstWalker for NameResolver<'_> {
                 }
             }
             ExprKind::StaticAccess(ident, expr) => {
-                self.resolve_path(ident.clone(), expr.id, true);
+                self.resolve_path(ident, expr.id, true);
 
                 let assigned = self.compiled.assigned_paths.get(&expr.id);
                 if let Some(assigned) = assigned {
@@ -599,7 +590,7 @@ impl AstWalker for NameResolver<'_> {
                                 });
                             }
                         } else if let Some(item) = str.kind.as_enum() {
-                            if let None = item.find(&ident) {
+                            if item.find(&ident).is_none() {
                                 let res = item.find_item(&ident);
                                 if res.is_none() {
                                     self.ctx.emit_impl(NoVariantOrItemInEnum {
@@ -627,10 +618,10 @@ impl AstWalker for NameResolver<'_> {
             }
             ExprKind::Match(mt) => self.visit_match(mt),
             ExprKind::Path(idents) => {
-                self.resolve_path(idents.clone(), expr.id, false);
+                self.resolve_path(idents, expr.id, false);
             }
             ExprKind::Type(ty) => {
-                self.resolve_type(*ty.clone());
+                self.resolve_type(&ty);
             }
             ExprKind::Unwrap(expr) => {
                 self.walk_expr(expr);

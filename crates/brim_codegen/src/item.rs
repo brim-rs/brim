@@ -16,7 +16,7 @@ impl CppCodegen {
                 let ret = self.generate_ty(decl.sig.return_type.clone());
 
                 let generics = &decl.sig.generics;
-                self.generate_generics(&generics);
+                self.generate_generics(generics);
 
                 let params = &decl.sig.params.params;
                 let params = params
@@ -75,7 +75,7 @@ impl CppCodegen {
                 }
 
                 self.generate_static = true;
-                for (ident, id) in s.items {
+                for (_, id) in s.items {
                     let item = self.compiled.get_item(id);
 
                     self.generate_item(item.clone(), compiled);
@@ -258,7 +258,7 @@ pub fn sort_items_by_module(
         for related_item in relations {
             all_items.insert(related_item.clone());
 
-            dependency_map.entry(related_item.clone()).or_insert_with(Vec::new).push(item.clone());
+            dependency_map.entry(related_item.clone()).or_default().push(item.clone());
         }
     }
 
@@ -272,7 +272,7 @@ pub fn sort_items_by_module(
         let mod_id = item.id.mod_id;
         let item_id = item.id.item_id;
 
-        module_graphs.entry(mod_id).or_insert_with(BTreeMap::new);
+        module_graphs.entry(mod_id).or_default();
 
         let same_module_deps: Vec<ItemId> = dependencies
             .iter()
@@ -284,10 +284,10 @@ pub fn sort_items_by_module(
     }
 
     for (mod_id, items) in &module_items {
-        let graph_entry = module_graphs.entry(*mod_id).or_insert_with(BTreeMap::new);
+        let graph_entry = module_graphs.entry(*mod_id).or_default();
 
         for &item_id in items {
-            graph_entry.entry(item_id).or_insert_with(Vec::new);
+            graph_entry.entry(item_id).or_default();
         }
     }
 

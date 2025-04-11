@@ -1,5 +1,5 @@
 use crate::index::{ByteIndex, RawIndex};
-use std::{fmt, ops::Range};
+use std::{fmt, ops::Range, str::FromStr};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Span {
@@ -21,10 +21,6 @@ impl Span {
 
     pub const fn initial() -> Span {
         Span { start: ByteIndex(0), end: ByteIndex(0) }
-    }
-
-    pub fn from_str(s: &str) -> Span {
-        Span::new(0, s.len() as u32)
     }
 
     pub fn merge(self, other: Span) -> Span {
@@ -102,5 +98,13 @@ impl From<Span> for Range<usize> {
 impl From<Span> for Range<RawIndex> {
     fn from(span: Span) -> Range<RawIndex> {
         span.start.0..span.end.0
+    }
+}
+
+impl FromStr for Span {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Span::new(0, s.len() as u32))
     }
 }

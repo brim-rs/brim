@@ -6,7 +6,7 @@ use brim_ast::{
 use brim_hir::{
     builtin::get_builtin_function,
     expr::{HirExpr, HirExprKind, HirIfStmt, HirStructConstructor},
-    items::{HirGenericArgs, HirItemKind},
+    items::HirItemKind,
     ty::HirTyKind,
 };
 use std::fmt::Write;
@@ -28,7 +28,6 @@ impl CppCodegen {
     }
 
     fn generate_expr_kind(&mut self, expr: HirExpr) -> String {
-        let mut is_ret = false;
         let kind = expr.kind.clone();
         let code = match kind.clone() {
             HirExprKind::Block(block) => {
@@ -41,8 +40,6 @@ impl CppCodegen {
             }
             HirExprKind::Return(expr) => {
                 let expr_code = self.generate_expr(*expr);
-                is_ret = true;
-
                 format!("return {expr_code};")
             }
             HirExprKind::Binary(lhs, op, rhs) => {
@@ -159,7 +156,7 @@ impl CppCodegen {
             HirExprKind::Ternary(cond, then_block, else_block) => {
                 let cond_code = self.generate_expr(*cond);
                 let then_code = self.generate_expr(*then_block);
-                let else_code = self.generate_expr(*else_block.clone());
+                let else_code = self.generate_expr(*else_block);
 
                 format!("({cond_code} ? {then_code} : {else_code})")
             }

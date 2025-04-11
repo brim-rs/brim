@@ -22,19 +22,19 @@ impl DiagnosticContext {
         Self { config: DiagConfig::default() }
     }
 
-    pub fn emit(&mut self, diag: &Box<dyn ToDiagnostic>, files: &SimpleFiles) {
+    pub fn emit(&mut self, diag: &dyn ToDiagnostic, files: &SimpleFiles) {
         let diag = diag.to_diagnostic();
 
-        self.emit_inner(diag, files);
+        self.emit_inner(&diag, files);
     }
 
-    pub fn emit_inner(&mut self, diag: Diagnostic<usize>, files: &SimpleFiles) {
+    pub fn emit_inner(&mut self, diag: &Diagnostic<usize>, files: &SimpleFiles) {
         emit(&mut stderr(), &self.config, files, &diag).unwrap();
     }
 
     pub fn extend_temporary(&mut self, temp: &TemporaryDiagnosticContext, files: &SimpleFiles) {
         for diag in &temp.diags {
-            self.emit_inner(diag.clone(), files);
+            self.emit_inner(&diag.clone(), files);
         }
     }
 }

@@ -32,7 +32,7 @@ use brim_middle::{
     temp_diag::TemporaryDiagnosticContext,
 };
 use brim_span::{span::Span, symbols::Symbol};
-use std::{collections::HashMap, env::var, path::PathBuf, vec};
+use std::{collections::HashMap, path::PathBuf, vec};
 
 #[derive(Clone, Debug)]
 pub struct LocId {
@@ -378,7 +378,7 @@ impl<'a> Transformer<'a> {
         }
         let mut variants = vec![];
 
-        for variant in enm.variants.iter() {
+        for variant in &enm.variants {
             let variant = HirEnumVariant {
                 id: variant.id,
                 span: variant.span,

@@ -179,15 +179,14 @@ impl TypeChecker {
 
             if let Some((ty, span)) = ret_ty
                 && let Some(first_ty) = first_ty
+                && !first_ty.simple_eq(&ty)
             {
-                if !first_ty.simple_eq(&ty) {
-                    self.ctx.emit_impl(FieldMismatch {
-                        span: (span, self.mod_id),
-                        field: String::new(),
-                        expected: mt.expr.ty.clone(),
-                        found: ty.clone(),
-                    });
-                }
+                self.ctx.emit_impl(FieldMismatch {
+                    span: (span, self.mod_id),
+                    field: String::new(),
+                    expected: mt.expr.ty.clone(),
+                    found: ty.clone(),
+                });
             }
         }
     }

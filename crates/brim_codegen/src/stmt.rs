@@ -1,7 +1,5 @@
 use crate::codegen::CppCodegen;
-use brim_ast::expr::MatchArm;
 use brim_hir::{
-    Codegen,
     expr::{HirExprKind, HirMatchArm},
     stmts::{HirStmt, HirStmtKind},
 };
@@ -57,8 +55,7 @@ impl CppCodegen {
                     }
                 }
 
-                let arms = arms.join("\n");
-                arms
+                arms.join("\n")
             }
         }
     }

@@ -175,7 +175,7 @@ pub fn compile_project(
 
     let entry_file = sess.main_file()?;
     let mut parser = Parser::new(entry_file, sess.config.experimental.clone());
-    let mut barrel = parser.parse_barrel()?;
+    let barrel = parser.parse_barrel()?;
     for diag in &parser.dcx.diags {
         comp.emit_diag(diag.clone());
     }
@@ -187,7 +187,7 @@ pub fn compile_project(
     discover.map.insert_or_update(get_path(entry_file)?, barrel.clone());
     let mut visited = HashSet::new();
 
-    let module_map = discover.create_module_map(&mut barrel, &mut visited)?;
+    let module_map = discover.create_module_map(&barrel, &mut visited)?;
     let mut resolver = ImportResolver::new(resolver_temp, sess, compiled.clone(), module_map);
     let map = resolver.resolve()?;
 

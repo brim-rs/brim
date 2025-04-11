@@ -14,7 +14,7 @@ use crate::{
     },
     items::{
         HirCallParam, HirFn, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam,
-        HirGenerics, HirItem, HirItemKind,
+        HirItem, HirItemKind,
     },
     stmts::{HirStmt, HirStmtKind},
     transformer::{HirModule, HirModuleMap, StoredHirItem},
@@ -834,7 +834,7 @@ impl TypeInference<'_> {
                     self.infer_expr(pat);
                     self.infer_expr(expr);
 
-                    if let None = ty {
+                    if ty.is_none() {
                         ty = Some(expr.ty.clone());
                     } else if let Some(ty) = &mut ty {
                         HirTyKind::try_promote_type(&mut expr.ty, ty, true);

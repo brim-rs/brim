@@ -52,7 +52,7 @@ impl CompilerContext {
     }
 
     pub fn emit_diag(&mut self, diag: Diagnostic<usize>) -> ErrorEmitted {
-        self.dcx.emit_inner(diag.clone(), &SimpleFiles::from_files(files()));
+        self.dcx.emit_inner(&diag, &SimpleFiles::from_files(files()));
         self.emitted.push(diag);
 
         ErrorEmitted::new()
@@ -60,7 +60,7 @@ impl CompilerContext {
 
     pub fn emit_inner(&mut self, diag: Box<dyn ToDiagnostic>) -> ErrorEmitted {
         let diag_clone = diag.to_diagnostic();
-        self.dcx.emit(&Box::new(diag), &SimpleFiles::from_files(files()));
+        self.dcx.emit(&*diag, &SimpleFiles::from_files(files()));
         self.emitted.push(diag_clone);
 
         ErrorEmitted::new()

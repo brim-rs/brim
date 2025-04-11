@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use crate::{
     files::Error,
     index::{ByteIndex, ColumnIndex, LineIndex, LineOffset, RawIndex},
@@ -223,7 +224,7 @@ where
     }
 
     fn source_span(&self) -> Span {
-        Span::from_str(self.source.as_ref())
+        Span::from_str(self.source.as_ref()).unwrap()
     }
 
     fn source_slice(&self, span: Span) -> Result<&str, Error> {

@@ -51,10 +51,7 @@ impl CppCodegen {
                 format!("std::vector<{ty}>")
             }
 
-            HirTyKind::Mut(ty) => {
-                let ty = self.generate_ty(*ty);
-                ty
-            }
+            HirTyKind::Mut(ty) => self.generate_ty(*ty),
 
             HirTyKind::Const(ty) => {
                 let ty = self.generate_ty(*ty);

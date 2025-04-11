@@ -65,7 +65,7 @@ fn main() -> Result<()> {
     }
 }
 
-pub fn exec_command<'a>(
+pub fn exec_command(
     args: RunArgs,
     func: impl FnOnce(ColorChoice, RunArgs, Config) -> Result<()>,
     shell: &mut Shell,

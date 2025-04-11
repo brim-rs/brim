@@ -1,12 +1,9 @@
 use crate::{CodeBuilder, item::sort_items_by_module};
-use brim_ast::{
-    ItemId,
-    item::{FunctionContext, Ident},
-};
+use brim_ast::{ItemId, item::FunctionContext};
 use brim_hir::{
     Codegen, CompiledModules,
     expr::HirExpr,
-    items::{HirGenerics, HirItem, HirItemKind},
+    items::{HirItem, HirItemKind},
     stmts::HirStmt,
     transformer::{HirModule, HirModuleMap},
     ty::HirTyKind,
@@ -269,7 +266,7 @@ impl Codegen for CppCodegen {
 
         let mut items = BTreeMap::new();
 
-        for &item_id in module.items.iter() {
+        for &item_id in &module.items {
             let item = compiled.get_item(item_id).clone();
 
             items.insert(item.ident, item.clone());

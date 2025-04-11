@@ -1,25 +1,25 @@
 [workspace]
 members = [
-  "cli",
-  "crates/brim",
-  "crates/brim_ast",
-  "crates/brim_codegen",
-  "crates/brim_config",
-  "crates/brim_cpp_compiler",
-  "crates/brim_ctx",
-  "crates/brim_diag_macro",
-  "crates/brim_diagnostics/lib",
-  "crates/brim_diagnostics/playground",
-  "crates/brim_fs",
-  "crates/brim_hir",
-  "crates/brim_index",
-  "crates/brim_lexer",
-  "crates/brim_middle",
-  "crates/brim_parser",
-  "crates/brim_shell",
-  "crates/brim_span",
-  "crates/brim_span",
-  "crates/brim_symbols_macro",
+    "cli",
+    "crates/brim",
+    "crates/brim_ast",
+    "crates/brim_codegen",
+    "crates/brim_config",
+    "crates/brim_cpp_compiler",
+    "crates/brim_ctx",
+    "crates/brim_diag_macro",
+    "crates/brim_diagnostics/lib",
+    "crates/brim_diagnostics/playground",
+    "crates/brim_fs",
+    "crates/brim_hir",
+    "crates/brim_index",
+    "crates/brim_lexer",
+    "crates/brim_middle",
+    "crates/brim_parser",
+    "crates/brim_shell",
+    "crates/brim_span",
+    "crates/brim_span",
+    "crates/brim_symbols_macro",
 ]
 resolver = "1"
 
@@ -114,6 +114,7 @@ wildcard_imports = "allow"
 doc_markdown = "allow"
 similar_names = "allow"
 fn_params_excessive_bools = "allow"
+missing_errors_doc = "allow"
 
 # disabled lints
 unnecessary_to_owned = "allow"
@@ -147,32 +148,3 @@ redundant_clone = "warn"
 # cargo-specific lints
 cargo = { level = "warn", priority = -1 }
 multiple_crate_versions = "allow"
-
-[profile.dev]
-debug = false
-
-[profile.dev.package]
-oxc_macros.opt-level = 1
-oxc_ast_macros.opt-level = 1
-insta.opt-level = 3
-similar.opt-level = 3
-
-[profile.release.package.oxc_playground_napi]
-opt-level = 'z'
-
-[profile.release]
-opt-level = 3
-lto = "fat"
-codegen-units = 1
-strip = "symbols"
-debug = false
-panic = "abort"
-
-[profile.release-with-debug]
-inherits = "release"
-strip = false
-debug = true
-
-[profile.dev-no-debug-assertions]
-inherits = "dev"
-debug-assertions = false
