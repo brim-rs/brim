@@ -95,12 +95,9 @@ impl SymbolTable {
             symbols.iter().find(|symbol| symbol.name.to_string() == *ident.to_string())
         })
     }
-    
+
     pub fn get_by_id(&self, id: &ItemId) -> Option<&GlobalSymbol> {
-        self.symbols
-            .values()
-            .flatten()
-            .find(|symbol| symbol.id.item_id == *id)
+        self.symbols.values().flatten().find(|symbol| symbol.id.item_id == *id)
     }
 
     pub fn by_module(&self, mod_id: ModuleId) -> Vec<GlobalSymbol> {
