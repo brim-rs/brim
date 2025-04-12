@@ -7,9 +7,10 @@ use crate::{
         HirMatchArm, HirStructConstructor,
     },
     items::{
-        HirEnum, HirEnumField, HirEnumVariant, HirExternBlock, HirField, HirFn, HirFnParams,
-        HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam, HirGenerics,
-        HirImportsKind, HirItem, HirItemKind, HirParam, HirStruct, HirTypeAlias, HirUse,
+        HirAttribute, HirEnum, HirEnumField, HirEnumVariant, HirExternBlock, HirField, HirFn,
+        HirFnParams, HirFnSig, HirGenericArg, HirGenericArgs, HirGenericKind, HirGenericParam,
+        HirGenerics, HirImportsKind, HirItem, HirItemKind, HirParam, HirStruct, HirTypeAlias,
+        HirUse,
     },
     stmts::{HirStmt, HirStmtKind},
     ty::{HirTy, HirTyKind},
@@ -265,6 +266,15 @@ impl<'a> Transformer<'a> {
             kind: hir_item_kind,
             is_public: item.vis.kind.is_public(),
             mod_id: self.current_mod_id,
+            attrs: item
+                .attrs
+                .iter()
+                .map(|attr| HirAttribute {
+                    name: attr.name,
+                    args: attr.args.iter().map(|arg| self.transform_expr(arg.clone()).0).collect(),
+                    span: attr.span,
+                })
+                .collect(),
         };
 
         self.map.insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
@@ -401,6 +411,7 @@ impl<'a> Transformer<'a> {
                 kind: HirItemKind::EnumVariant(variant),
                 is_public: true,
                 mod_id: self.current_mod_id,
+                attrs: vec![],
             };
 
             self.map.insert_hir_item(item.id, StoredHirItem::Item(item.clone()));

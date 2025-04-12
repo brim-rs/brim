@@ -1,11 +1,12 @@
 use crate::{
-    expr::ComptimeValue,
+    expr::{ComptimeValue, HirExpr, HirExprKind},
     ty::{HirTy, HirTyKind},
 };
 use brim_ast::{
     ItemId,
+    expr::Expr,
     item::{FunctionContext, Ident, Visibility},
-    token::Lit,
+    token::{Lit, LitKind},
 };
 use brim_middle::{GlobalSymbol, ModuleId};
 use brim_span::{span::Span, symbols::Symbol};
@@ -19,6 +20,27 @@ pub struct HirItem<Kind = HirItemKind> {
     pub kind: Kind,
     pub is_public: bool,
     pub mod_id: ModuleId,
+    pub attrs: Vec<HirAttribute>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HirAttribute {
+    pub span: Span,
+    pub name: Ident,
+    pub args: Vec<HirExpr>,
+}
+
+impl HirAttribute {
+    pub fn has_first_string_argument(&self) -> Option<String> {
+        if let Some(arg) = self.args.first() {
+            if let HirExprKind::Literal(lit) = &arg.kind {
+                if let LitKind::Str = lit.kind {
+                    return Some(lit.symbol.to_string());
+                }
+            }
+        }
+        None
+    }
 }
 
 impl HirItem {
@@ -55,6 +77,10 @@ impl HirItem {
             HirItemKind::Fn(_) | HirItemKind::Struct(_) | HirItemKind::Enum(_) => true,
             _ => false,
         }
+    }
+
+    pub fn has_attr(&self, name: &str) -> Option<&HirAttribute> {
+        self.attrs.iter().find(|attr| attr.name.to_string() == name)
     }
 }
 

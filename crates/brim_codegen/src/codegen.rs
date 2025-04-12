@@ -1,9 +1,12 @@
 use crate::{CodeBuilder, item::sort_items_by_module};
-use brim_ast::{ItemId, item::FunctionContext};
+use brim_ast::{
+    ItemId,
+    item::{ExternBlock, FunctionContext},
+};
 use brim_hir::{
     Codegen, CompiledModules,
     expr::HirExpr,
-    items::{HirItem, HirItemKind},
+    items::{HirExternBlock, HirItem, HirItemKind},
     stmts::HirStmt,
     transformer::{HirModule, HirModuleMap},
     ty::HirTyKind,
@@ -23,7 +26,7 @@ pub struct CppCodegen {
     pub main_file: usize,
     pub modules: Vec<usize>,
     pub imports: Vec<String>,
-    pub add_prefix: bool,
+    pub is_external: Option<HirExternBlock>,
     pub compiled: CompiledModules,
     pub items_order: HashMap<ModuleId, Vec<ItemId>>,
     /// adds `static` before function in static methods
@@ -178,7 +181,7 @@ impl CppCodegen {
             .iter()
             .map(|s| (*s).to_string())
             .collect(),
-            add_prefix: true,
+            is_external: None,
             compiled,
             items_order: sorted_modules,
             generate_static: false,

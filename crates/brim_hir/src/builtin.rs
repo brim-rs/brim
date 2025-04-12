@@ -158,6 +158,23 @@ builtin_function! {
 
         Ok(value.clone())
     }
+    codegen(cg_ctx) {
+        format!("{}", cg_ctx.generate_expr(value.clone()))
+    }
+}
+
+builtin_function! {
+    fn null(file) {
+        Ok(HirExpr {
+            id: ItemId::new(),
+            ty: HirTyKind::Null,
+            kind: HirExprKind::Dummy,
+            span: Default::default(),
+        })
+    }
+    codegen(cg_ctx) {
+        "nullptr".to_string()
+    }
 }
 
 pub fn get_builtin_function(name: &str) -> Option<BuiltInFunction> {
@@ -169,6 +186,7 @@ pub fn get_builtin_function(name: &str) -> Option<BuiltInFunction> {
         "err" => Some(err()),
         "none" => Some(none()),
         "some" => Some(some()),
+        "null" => Some(null()),
         _ => None,
     }
 }

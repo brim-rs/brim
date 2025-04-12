@@ -35,6 +35,10 @@ lazy_static! {
             description: "Creates an Option::None",
             expected_args: 0,
         });
+        m.insert("null".to_string(), FunctionData {
+            description: "Creates a null value",
+            expected_args: 0,
+        });
         m
     };
 }

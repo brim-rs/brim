@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap};
 impl CppCodegen {
     pub fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules) {
         match item.kind {
-            HirItemKind::Fn(decl) => {
+            HirItemKind::Fn(ref decl) => {
                 self.code.add_line(&format!("// Generated item with id {}", item.id.as_usize()));
 
                 let ret = self.generate_ty(decl.sig.return_type.clone());
@@ -25,13 +25,40 @@ impl CppCodegen {
                     .collect::<Vec<_>>()
                     .join(", ");
 
-                let name = if self.add_prefix {
+                let name = if self.is_external.is_none() {
                     format!("brim_{}", decl.sig.name)
                 } else {
                     decl.sig.name.to_string()
                 };
+                let before = if let Some(external) = &self.is_external {
+                    if let Some(abi) = external.abi {
+                        format!("extern \"{abi}\" __declspec(dllimport)")
+                    } else {
+                        "__declspec(dllimport)".to_string()
+                    }
+                } else {
+                    "".to_string()
+                };
+                let callconv = if let Some(attr) = item.has_attr("callconv") {
+                    if let Some(conv) = attr.has_first_string_argument() {
+                        if conv == "winapi" {
+                            " __stdcall"
+                        } else if conv == "fastcall" {
+                            " __fastcall"
+                        } else if conv == "cdecl" {
+                            " __cdecl"
+                        } else {
+                            panic!("Invalid callconv attribute");
+                        }
+                        .to_string()
+                    } else {
+                        panic!("Invalid callconv attribute");
+                    }
+                } else {
+                    "".to_string()
+                };
                 let is_static = if self.generate_static { "static" } else { "" };
-                let block_name = format!("{is_static} {ret} {name}({params})");
+                let block_name = format!("{before} {is_static} {ret} {callconv} {name}({params})");
 
                 if let Some(body) = decl.body {
                     let body_expr = self.hir().get_expr(body).clone();
@@ -48,7 +75,7 @@ impl CppCodegen {
                 self.code.add_line(&format!("// Generated item with id {}", item.id.as_usize()));
 
                 self.generate_generics(&s.generics);
-                let name = if self.add_prefix {
+                let name = if self.is_external.is_none() {
                     format!("brim_{}", s.ident.name)
                 } else {
                     s.ident.name.to_string()
@@ -86,21 +113,12 @@ impl CppCodegen {
                 self.code.add_line("};");
             }
             HirItemKind::External(external) => {
-                if let Some(abi) = external.abi {
-                    self.code.add_line(&format!("extern \"{abi}\" {{"));
-                } else {
-                    self.code.add_line("extern {");
-                }
-
-                self.code.increase_indent();
-                self.add_prefix = false;
+                self.is_external = Some(external.clone());
                 for item in external.items.clone() {
                     let item = compiled.get_item(item).clone();
                     self.generate_item(item.clone(), compiled);
                 }
-                self.add_prefix = true;
-                self.code.decrease_indent();
-                self.code.add_line("}");
+                self.is_external = None;
 
                 for item in external.items {
                     let item = compiled.get_item(item).clone();
@@ -111,7 +129,7 @@ impl CppCodegen {
                 self.code.add_line(&format!("// Generated item with id {}", item.id.as_usize()));
 
                 self.generate_generics(&e.generics);
-                let name = if self.add_prefix {
+                let name = if self.is_external.is_none() {
                     format!("brim_{}", e.ident.name)
                 } else {
                     e.ident.name.to_string()

@@ -47,6 +47,8 @@ pub enum HirTyKind {
     None,
     /// Some value
     Some(Box<HirTyKind>),
+    /// Only for FFI
+    Null,
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),
@@ -85,6 +87,7 @@ impl Display for HirTyKind {
             HirTyKind::Option(ty) => write!(f, "{ty}?"),
             HirTyKind::None => write!(f, "None"),
             HirTyKind::Some(ty) => write!(f, "Some({ty})"),
+            HirTyKind::Null => write!(f, "null"),
 
             HirTyKind::Err(_) => write!(f, "<error>"),
             HirTyKind::Placeholder => write!(f, "_"),
@@ -95,7 +98,8 @@ impl Display for HirTyKind {
 impl HirTyKind {
     pub fn simple_eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (HirTyKind::Primitive(PrimitiveType::Any), _) => true,
+            (HirTyKind::Primitive(PrimitiveType::Any) | HirTyKind::Null, _)
+            | (_, HirTyKind::Primitive(PrimitiveType::Any) | HirTyKind::Null) => true,
 
             (HirTyKind::Ref(ty1, Mutable::No), HirTyKind::Ref(ty2, Mutable::Yes)) => {
                 ty1.simple_eq(ty2)
@@ -298,7 +302,10 @@ impl HirTyKind {
 
     pub fn can_be_dereferenced(&self) -> bool {
         match self {
-            HirTyKind::Ref(_, _) | HirTyKind::Ptr(_, _) => true,
+            HirTyKind::Ref(_, _)
+            | HirTyKind::Ptr(_, _)
+            | HirTyKind::Some(_)
+            | HirTyKind::Option(_) => true,
             _ => false,
         }
     }

@@ -101,6 +101,7 @@ impl CompilerContext {
                     symbols.iter().map(|(k, v)| (k.clone(), v.clone().into_temp())).collect(),
                 ),
                 vis: Visibility::from_bool(true, Span::DUMMY),
+                attrs: vec![],
             });
         }
 

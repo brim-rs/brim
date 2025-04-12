@@ -12,9 +12,9 @@ use crate::{
 use brim_ast::{
     Const, Enum, Extern, Fn, From, Mod, SelfSmall, Struct, Type, Use,
     item::{
-        Block, Enum as AstEnum, EnumField, EnumVariant, ExternBlock, Field, FnDecl, FnReturnType,
-        FnSignature, FunctionContext, Generics, Ident, ImportsKind, Item, ItemKind, ModuleDecl,
-        Param, Struct, Use,
+        Attribute, Block, Enum as AstEnum, EnumField, EnumVariant, ExternBlock, Field, FnDecl,
+        FnReturnType, FnSignature, FunctionContext, Generics, Ident, ImportsKind, Item, ItemKind,
+        ModuleDecl, Param, Struct, Use,
     },
     token::{BinOpToken, Delimiter, LitKind, Orientation, TokenKind},
 };
@@ -27,6 +27,7 @@ impl Parser {
         if self.token_cursor.is_eof() {
             return Ok(None);
         }
+        let attrs = self.parse_attributes()?;
 
         let span = self.current().span;
         let vis = self.parse_visibility();
@@ -51,7 +52,18 @@ impl Parser {
         };
         self.eat_semis();
 
-        Ok(Some(Item { id: self.new_id(), span, vis, kind, ident }))
+        Ok(Some(Item { id: self.new_id(), span, vis, kind, ident, attrs }))
+    }
+
+    pub fn parse_attributes(&mut self) -> PResult<Vec<Attribute>> {
+        let mut attrs = vec![];
+
+        while self.current().is(TokenKind::At) {
+            let attr = self.parse_attribute()?;
+            attrs.push(attr);
+        }
+
+        Ok(attrs)
     }
 
     pub fn parse_enum(&mut self) -> PResult<(Ident, ItemKind)> {
@@ -82,6 +94,7 @@ impl Parser {
 
         while !self.is_brace(Orientation::Close) {
             let item_span = self.current().span;
+            let attrs = self.parse_attributes()?;
             let vis = self.parse_visibility();
 
             let (item_ident, kind) = if self.is_function() {
@@ -97,7 +110,14 @@ impl Parser {
 
             self.eat_semis();
 
-            items.push(Item { id: self.new_id(), span: item_span, vis, kind, ident: item_ident });
+            items.push(Item {
+                id: self.new_id(),
+                span: item_span,
+                vis,
+                kind,
+                ident: item_ident,
+                attrs,
+            });
         }
 
         self.expect_cbrace()?;
@@ -119,6 +139,29 @@ impl Parser {
                 ident,
             }),
         ))
+    }
+
+    pub fn parse_attribute(&mut self) -> PResult<Attribute> {
+        let span = self.current().span;
+        self.expect(TokenKind::At)?;
+        let ident = self.parse_ident()?;
+        let args = if self.is_paren(Orientation::Open) {
+            self.expect_oparen()?;
+            let mut args = vec![];
+            while !self.is_paren(Orientation::Close) {
+                let arg = self.parse_expr()?;
+                args.push(arg);
+                if !self.eat(TokenKind::Comma) {
+                    break;
+                }
+            }
+            self.expect_cparen()?;
+            Some(args)
+        } else {
+            None
+        };
+
+        Ok(Attribute { name: ident, args: args.unwrap_or(vec![]), span: span.to(self.prev().span) })
     }
 
     pub fn parse_enum_variant(&mut self) -> PResult<EnumVariant> {
@@ -179,6 +222,7 @@ impl Parser {
 
         while !self.is_brace(Orientation::Close) {
             let item_span = self.current().span;
+            let attrs = self.parse_attributes()?;
             let vis = self.parse_visibility();
 
             let (item_ident, kind) = if self.is_function() {
@@ -194,7 +238,14 @@ impl Parser {
 
             self.eat_semis();
 
-            items.push(Item { id: self.new_id(), span: item_span, vis, kind, ident: item_ident });
+            items.push(Item {
+                id: self.new_id(),
+                span: item_span,
+                vis,
+                kind,
+                ident: item_ident,
+                attrs,
+            });
         }
 
         self.expect_cbrace()?;

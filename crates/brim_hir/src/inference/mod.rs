@@ -164,6 +164,7 @@ impl TypeInference<'_> {
             HirTyKind::Primitive(_)
             | HirTyKind::Placeholder
             | HirTyKind::None
+            | HirTyKind::Null
             | HirTyKind::Err(_) => ty.clone(),
         }
     }

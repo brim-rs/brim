@@ -30,7 +30,6 @@ generate_symbols! {
     In = "in",
     Let = "let",
     Loop = "loop",
-    Null = "null",
     Match = "match",
     Mod = "mod",
     Mut = "mut",

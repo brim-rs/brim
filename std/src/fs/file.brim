@@ -27,7 +27,7 @@ pub struct Handle {
                 .hEvent = @none()
             }) : @none();
 
-        if WriteFile(self.inner, data.ptr, data.len, @some(&bytes_written), &overlapped) == 0 {
+        if WriteFile(self.inner, data.ptr, data.len, &bytes_written, overlapped ? @cast(&*overlapped, *void) : @null()) == 0 {
             return @err(IoError::fromOsError(GetLastError()));
         }
 

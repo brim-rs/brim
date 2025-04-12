@@ -14,6 +14,14 @@ pub struct Item<Kind = ItemKind> {
     pub vis: Visibility,
     pub ident: Ident,
     pub kind: Kind,
+    pub attrs: Vec<Attribute>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Attribute {
+    pub span: Span,
+    pub name: Ident,
+    pub args: Vec<Expr>,
 }
 
 #[derive(Copy, Clone, Eq, Ord, PartialOrd)]

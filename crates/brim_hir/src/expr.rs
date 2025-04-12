@@ -121,6 +121,7 @@ impl HirExprKind {
             HirExprKind::Field(_) => true,
             HirExprKind::Index(_, _) => true,
             HirExprKind::StaticAccess(_, _) => true,
+            HirExprKind::Unwrap(_) => true,
 
             HirExprKind::Unary(UnaryOp::Deref, _) => true,
 

@@ -3,7 +3,7 @@ use { GetStdHandle } from "../os/windows/kernel32.brim";
 
 pub fn getStdErrHandle() HandleTy {
     if @os() == "windows" {
-        return GetStdHandle(@cast(-12, u32));
+        return GetStdHandle(-12);
     }
 
     return @cast(2, HandleTy);

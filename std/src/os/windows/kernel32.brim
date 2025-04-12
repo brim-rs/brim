@@ -1,15 +1,18 @@
 use { HANDLE, DWORD, BOOL, OVERLAPPED } from "../windows.brim";
 
 extern "C" {
+    @callconv("winapi")
     fn GetStdHandle(nStdHandle: DWORD) HANDLE;
 
+    @callconv("winapi")
     fn WriteFile(
         hFile: HANDLE,
         lpBuffer: *const u8,
         nNumberOfBytesToWrite: DWORD,
-        lpNumberOfBytesWritten: *DWORD?,
-        lpOverlapped: *OVERLAPPED?
+        lpNumberOfBytesWritten: *DWORD,
+        lpOverlapped: *void
     ) BOOL;
 
+    @callconv("winapi")
     fn GetLastError() DWORD;
 }
