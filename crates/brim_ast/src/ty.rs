@@ -60,6 +60,18 @@ pub enum TyKind {
     Err(ErrorEmitted),
 }
 
+impl TyKind {
+    pub fn allowed_in_external(&self) -> bool {
+        match self {
+            TyKind::Result(_, _) | TyKind::Option(_) => false,
+            TyKind::Ref(ty, _) | TyKind::Ptr(ty, _) | TyKind::Const(ty) | TyKind::Mut(ty) => {
+                ty.kind.allowed_in_external()
+            }
+            _ => true,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PrimitiveType {
     // Signed integers

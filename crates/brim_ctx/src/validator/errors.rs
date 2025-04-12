@@ -49,3 +49,10 @@ pub struct DuplicateVariantName {
     pub dup: (Span, usize),
     pub name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("result or option types are not allowed inside extern function declarations")]
+pub struct ExternFunctionResultOption {
+    #[error("result or option types are not allowed inside extern function declarations")]
+    pub span: (Span, usize),
+}

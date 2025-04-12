@@ -1,7 +1,8 @@
 mod errors;
 
 use crate::validator::errors::{
-    BuiltinFunctionArgCount, DuplicateFieldInitializer, DuplicateParam, TooManyParameters,
+    BuiltinFunctionArgCount, DuplicateFieldInitializer, DuplicateParam, ExternFunctionResultOption,
+    TooManyParameters,
 };
 use anyhow::Result;
 use brim_ast::{
@@ -22,6 +23,7 @@ use tracing::debug;
 pub struct AstValidator {
     pub ctx: TemporaryDiagnosticContext,
     pub current_file: usize,
+    pub external: bool,
 }
 
 impl Default for AstValidator {
@@ -32,7 +34,7 @@ impl Default for AstValidator {
 
 impl AstValidator {
     pub fn new() -> Self {
-        Self { ctx: TemporaryDiagnosticContext::new(), current_file: 0 }
+        Self { ctx: TemporaryDiagnosticContext::new(), current_file: 0, external: false }
     }
 
     /// Validates AST in every module found in the module map.
@@ -61,13 +63,19 @@ impl AstValidator {
         for param in &sig.params {
             let param_name = param.name.to_string();
             if let Some(original_span) = seen.get(&param_name) {
-                self.ctx.emit(Box::new(DuplicateParam {
+                self.ctx.emit_impl(DuplicateParam {
                     dup: (param.span, self.current_file),
                     span: (*original_span, self.current_file),
                     name: param_name,
-                }));
+                });
             } else {
                 seen.insert(param_name, param.span);
+            }
+
+            if !param.ty.kind.allowed_in_external() && self.external {
+                self.ctx.emit_impl(ExternFunctionResultOption {
+                    span: (param.span, self.current_file),
+                });
             }
         }
     }
@@ -84,9 +92,11 @@ impl AstWalker for AstValidator {
                 }
             }
             ItemKind::External(external) => {
+                self.external = true;
                 for item in &mut external.items {
                     self.visit_item(item);
                 }
+                self.external = false;
             }
             ItemKind::Struct(str) => {
                 for item in &mut str.items {
