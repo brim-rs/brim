@@ -362,7 +362,17 @@ impl TypeInference<'_> {
                 self.infer_expr(operand);
 
                 match (op, &operand.ty) {
-                    (UnaryOp::Try, ty) => ty,
+                    (UnaryOp::Try, ty) => {
+                        if ty.is_result() {
+                            ty
+                        } else {
+                            &self.ret_with_error(CannotApplyUnary {
+                                span: (expr.span, self.current_mod.as_usize()),
+                                op: UnaryOp::Try,
+                                ty: ty.clone(),
+                            })
+                        }
+                    }
                     (UnaryOp::Minus, ty) => {
                         if ty.is_numeric() {
                             ty

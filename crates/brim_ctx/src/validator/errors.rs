@@ -56,3 +56,12 @@ pub struct ExternFunctionResultOption {
     #[error("result or option types are not allowed inside extern function declarations")]
     pub span: (Span, usize),
 }
+
+#[derive(Diagnostic)]
+#[error("you can't apply `try` unary to an unwrap expression")]
+pub struct TryUnaryOnUnwrap {
+    #[error]
+    pub span: (Span, usize),
+    #[note]
+    pub note: &'static str,
+}

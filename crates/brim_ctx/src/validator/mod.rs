@@ -2,11 +2,11 @@ mod errors;
 
 use crate::validator::errors::{
     BuiltinFunctionArgCount, DuplicateFieldInitializer, DuplicateParam, ExternFunctionResultOption,
-    TooManyParameters,
+    TooManyParameters, TryUnaryOnUnwrap,
 };
 use anyhow::Result;
 use brim_ast::{
-    expr::Expr,
+    expr::{Expr, ExprKind, UnaryOp},
     item::{FnSignature, GenericArgs, Ident, Item, ItemKind},
 };
 use brim_middle::{
@@ -124,6 +124,22 @@ impl AstWalker for AstValidator {
             | ItemKind::TypeAlias(_)
             | ItemKind::Use(_) => {}
         }
+    }
+
+    fn visit_unary(&mut self, op: &mut UnaryOp, operand: &mut Box<Expr>) {
+        match op {
+            UnaryOp::Try => {
+                if let ExprKind::Unwrap(ty) = &operand.kind {
+                    self.ctx.emit_impl(TryUnaryOnUnwrap {
+                        span: (operand.span, self.current_file),
+                        note: "choose either unwrap (!) or try operator",
+                    });
+                }
+            }
+            _ => {}
+        }
+
+        self.visit_expr(operand);
     }
 
     fn visit_struct_constructor(

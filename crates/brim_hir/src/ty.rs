@@ -637,4 +637,13 @@ impl HirTyKind {
             _ => false,
         }
     }
+    
+    pub fn is_result(&self) -> bool {
+        match self {
+            HirTyKind::Result(_, _) => true,
+            HirTyKind::ResultOk(_) => true,
+            HirTyKind::ResultErr(_) => true,
+            _ => false,
+        }
+    }
 }

@@ -35,3 +35,9 @@ T unwrap(const std::expected<T, E> &result) {
     }
     return *result;
 }
+
+#define TRY_IN_EXPR(expr) ([&]() -> decltype(expr) { \
+    auto __res = (expr);                             \
+    if (!__res) return std::unexpected(__res.error()); \
+    return __res;                                    \
+}())

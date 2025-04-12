@@ -1,5 +1,5 @@
 use brim_ast::{
-    expr::{Expr, ExprKind, Match, MatchArm},
+    expr::{Expr, ExprKind, Match, MatchArm, UnaryOp},
     item::{
         Block, FnDecl, FnReturnType, FnSignature, GenericArgs, Generics, Ident, Item, ItemKind,
         Struct, TypeAlias, Use,
@@ -107,13 +107,15 @@ pub trait AstWalker {
         }
     }
 
+    fn visit_unary(&mut self, _op: &mut UnaryOp, _operand: &mut Box<Expr>) {}
+
     fn walk_expr(&mut self, expr: &mut Expr) {
         match &mut expr.kind {
             ExprKind::Binary(lhs, _, rhs) => {
                 self.visit_expr(lhs);
                 self.visit_expr(rhs);
             }
-            ExprKind::Unary(_, operand) => self.visit_expr(operand),
+            ExprKind::Unary(op, operand) => self.visit_unary(op, operand),
             ExprKind::Field(_) => {}
             ExprKind::Index(base, index) => {
                 self.visit_expr(base);

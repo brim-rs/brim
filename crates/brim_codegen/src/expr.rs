@@ -97,7 +97,7 @@ impl CppCodegen {
                     UnaryOp::Not => format!("!{expr_code}"),
                     UnaryOp::Deref => format!("*{expr_code}"),
                     UnaryOp::Ref => format!("&{expr_code}"),
-                    _ => unimplemented!(),
+                    UnaryOp::Try => format!("TRY_IN_EXPR({expr_code})"),
                 }
             }
             HirExprKind::StaticAccess(id, expr) => {
