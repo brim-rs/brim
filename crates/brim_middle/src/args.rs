@@ -25,3 +25,15 @@ impl RunArgs {
         }
     }
 }
+
+impl Default for RunArgs {
+    fn default() -> Self {
+        Self {
+            no_write: false,
+            codegen_debug: false,
+            exec_args: vec![],
+            time: false,
+            color_choice: Default::default(),
+        }
+    }
+}
