@@ -1,3 +1,4 @@
+use anstream::ColorChoice;
 use clap::ArgMatches;
 
 #[derive(Debug, Clone)]
@@ -6,6 +7,7 @@ pub struct RunArgs {
     pub codegen_debug: bool,
     pub exec_args: Vec<String>,
     pub time: bool,
+    pub color_choice: ColorChoice,
 }
 
 impl RunArgs {
@@ -19,6 +21,7 @@ impl RunArgs {
                 .map(std::string::ToString::to_string)
                 .collect(),
             time: args.get_flag("time"),
+            color_choice: Default::default(),
         }
     }
 }

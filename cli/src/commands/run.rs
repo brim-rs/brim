@@ -3,7 +3,6 @@ use crate::{
         codegen_debug, debug_mode, dynamic_lib_mode, min_size_rel_mode, no_write,
         rel_with_deb_info_mode, release_mode, static_lib_mode,
     },
-    graph::ProjectResolver,
     plural::plural,
 };
 use anstream::ColorChoice;
@@ -16,6 +15,7 @@ use brim::{
     create_file_parent_dirs,
     discover::ModuleDiscover,
     files::get_path,
+    graph::ProjectResolver,
     lints::Lints,
     resolver::ImportResolver,
     session::Session,
@@ -65,19 +65,16 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
         let configs = resolver.get_configs(&order);
 
         let compiled_projects = &mut CompiledModules::new();
-        let simple = &mut SimpleModules {items: Default::default()};
+        let simple = &mut SimpleModules { items: Default::default() };
 
         for config in configs {
-            let sess = &mut Session::new(config.cwd.clone(), config.clone(), c_choice);
+            let sess = &mut Session::new(config.cwd.clone(), config.clone(), args.color_choice);
             let ctx = &mut CompilerContext::new(args.clone(), lints);
-            let hir = compile_project(sess, ctx, c_choice, compiled_projects, simple)?;
+            let hir = compile_project(sess, ctx, args.color_choice, compiled_projects, simple)?;
 
             compiled_projects
                 .map
-                .insert(config.project.name.clone(), CompiledModule {
-                    config,
-                    hir: hir.clone(),
-                });
+                .insert(config.project.name.clone(), CompiledModule { config, hir: hir.clone() });
 
             compiled_projects.expanded_by_builtins.extend(hir.expanded_by_builtins);
             compiled_projects.builtin_args.extend(hir.builtin_args);

@@ -288,6 +288,7 @@ dependencies = [
 name = "brim-middle"
 version = "0.1.0"
 dependencies = [
+ "anstream",
  "brim-ast",
  "brim-diag-macro",
  "brim-diagnostics",

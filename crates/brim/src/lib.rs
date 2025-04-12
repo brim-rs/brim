@@ -1,6 +1,7 @@
 extern crate core;
 
 pub mod discover;
+pub mod graph;
 pub mod resolver;
 pub mod session;
 

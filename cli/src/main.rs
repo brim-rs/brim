@@ -13,7 +13,6 @@ use std::{env, process::exit};
 
 pub mod cli;
 mod commands;
-mod graph;
 mod panic;
 pub mod plural;
 mod tracing;
@@ -45,7 +44,8 @@ fn main() -> Result<()> {
     let res = match cmd.0 {
         "run" => {
             let config = Config::get(&dir, Some(cmd.1))?;
-            let run_args = RunArgs::from_args(cmd.1);
+            let mut run_args = RunArgs::from_args(cmd.1);
+            run_args.color_choice = color_choice;
 
             exec_command(run_args, run_command, shell, config)
         }
