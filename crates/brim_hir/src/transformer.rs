@@ -29,6 +29,7 @@ use brim_ast::{
 use brim_diagnostics::diagnostic::ToDiagnostic;
 use brim_middle::{
     GlobalSymbol, ModuleId, SymbolTable,
+    barrel::Barrel,
     modules::{Module, ModuleMap},
     temp_diag::TemporaryDiagnosticContext,
 };
@@ -157,6 +158,7 @@ pub struct HirModule {
     // Not sure if this will be needed
     pub path: PathBuf,
     pub imports: Vec<LocId>,
+    pub barrel: Barrel,
 }
 
 #[derive(Debug)]
@@ -210,6 +212,7 @@ impl<'a> Transformer<'a> {
             items,
             path: module.path,
             imports: vec![],
+            barrel: module.barrel,
         }
     }
 

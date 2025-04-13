@@ -75,7 +75,7 @@ impl<'a> ModuleDiscover<'a> {
             let file = self.sess.add_file(path.clone(), content);
 
             let mut parser = Parser::new(file, self.sess.config.experimental.clone());
-            let new_barrel = parser.parse_barrel()?;
+            let new_barrel = parser.parse_barrel();
             self.ctx.extend(parser.dcx.diags);
 
             self.create_module_map(&new_barrel, visited)?;

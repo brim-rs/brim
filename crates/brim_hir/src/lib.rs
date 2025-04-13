@@ -9,8 +9,9 @@ use crate::{
 };
 use brim_ast::ItemId;
 use brim_config::toml::Config;
+use brim_fs::paths_equal;
 use brim_middle::{GlobalSymbol, SymbolTable};
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 pub mod builtin;
 pub mod comptime;
@@ -121,6 +122,13 @@ impl CompiledModules {
     pub fn get_enum_by_variant(&self, variant_id: ItemId) -> &ItemId {
         self.enums.get(&variant_id).unwrap_or_else(|| {
             panic!("tried to query an enum with variant id: {variant_id:?}, but it doesn't exist")
+        })
+    }
+
+    /// Finds module by path in the whole structure.
+    pub fn find_module_by_path(&self, path: PathBuf) -> Option<&HirModule> {
+        self.map.iter().find_map(|(_, module)| {
+            module.hir.modules.iter().find(|module| paths_equal(&module.path, &path))
         })
     }
 }

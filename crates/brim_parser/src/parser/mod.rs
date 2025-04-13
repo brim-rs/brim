@@ -147,7 +147,7 @@ impl Parser {
         ItemId::new()
     }
 
-    pub fn parse_barrel(&mut self) -> Result<Barrel> {
+    pub fn parse_barrel(&mut self) -> Barrel {
         if !GLOBAL_INTERNER.lock().unwrap().initialized {
             GLOBAL_INTERNER.lock().unwrap().initialized = true;
 
@@ -156,7 +156,7 @@ impl Parser {
             }
         }
 
-        let file = get_file(self.file)?;
+        let file = get_file(self.file).unwrap();
         debug!("======= Parsing barrel with id: {}", self.file);
 
         let content = file.source().clone();
@@ -187,7 +187,8 @@ impl Parser {
 
             tokens.push(token);
         }
-        self.tokens = tokens;
+        let tokens = tokens.clone();
+        self.tokens = tokens.clone();
 
         self.token_cursor = TokenCursor::new(self.tokens.clone());
         let mut items = vec![];
@@ -210,7 +211,7 @@ impl Parser {
         self.dcx.diags.extend(lexer.ctx.diags);
         debug!("======= Finished parsing barrel with id: {}", self.file);
 
-        Ok(Barrel { items, id: self.new_id(), file_id: self.file })
+        Barrel { items, id: self.new_id(), file_id: self.file, tokens }
     }
 
     pub fn advance(&mut self) -> Token {

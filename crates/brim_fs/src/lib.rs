@@ -68,3 +68,9 @@ pub fn canonicalize_path(path: PathBuf) -> Result<PathBuf> {
     let path = fs_err::canonicalize(path)?;
     Ok(remove_prefix(&path))
 }
+
+pub fn paths_equal<P: AsRef<Path>, Q: AsRef<Path>>(a: P, b: Q) -> bool {
+    let a = Path::new(a.as_ref()).components().collect::<Vec<_>>();
+    let b = Path::new(b.as_ref()).components().collect::<Vec<_>>();
+    a == b
+}
