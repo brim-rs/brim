@@ -79,10 +79,6 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
             compiled_projects.expanded_by_builtins.extend(hir.expanded_by_builtins);
             compiled_projects.builtin_args.extend(hir.builtin_args);
         }
-        println!("{:#?}", compiled_projects.map.iter().map(|(k, v)| {
-            let modules: Vec<_> = v.hir.modules.iter().map(|m| m.path.display().to_string()).collect();
-            (k, modules)
-        }).collect::<Vec<_>>());
         let mut cg = CppCodegen::new(main_sess.main_file()?, compiled_projects.clone());
         cg.generate(compiled_projects);
 

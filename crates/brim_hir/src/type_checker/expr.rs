@@ -97,7 +97,7 @@ impl TypeChecker {
                     });
                 }
 
-                if !lhs.ty.is_mutable() {
+                if lhs.ty.is_mutable().is_none() {
                     self.ctx.emit_impl(CannotAssignToImmutable {
                         span: (lhs.span.to(rhs.span), self.mod_id),
                         name: match lhs.kind {

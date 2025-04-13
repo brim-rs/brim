@@ -319,6 +319,7 @@ pub struct Generics {
 pub struct GenericArgs {
     pub span: Span,
     pub params: Vec<GenericArg>,
+    pub braces: Option<(Span, Span)>,
 }
 
 #[derive(Clone, Debug)]

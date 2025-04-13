@@ -123,7 +123,7 @@ pub trait AstWalker {
             }
             ExprKind::Literal(..) => {}
             ExprKind::Paren(inner) => self.visit_expr(inner),
-            ExprKind::Return(inner) => self.visit_expr(inner),
+            ExprKind::Return(inner, _) => self.visit_expr(inner),
             ExprKind::Var(_) => {}
             ExprKind::AssignOp(lhs, _, rhs) | ExprKind::Assign(lhs, rhs) => {
                 self.visit_expr(lhs);

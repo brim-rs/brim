@@ -45,7 +45,7 @@ pub enum ExprKind {
     /// `(x + y) * z`
     Paren(Box<Expr>),
     /// `return x`
-    Return(Box<Expr>),
+    Return(Box<Expr>, Span),
     /// `x`
     Var(Ident),
     /// `x += 1`, `x *= 2`

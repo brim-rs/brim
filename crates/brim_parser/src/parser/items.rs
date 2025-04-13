@@ -417,9 +417,7 @@ impl Parser {
             return Ok(None);
         }
 
-        self.expect_obrace()?;
-        let block = self.parse_block(false)?;
-        self.expect_cbrace()?;
+        let block = self.parse_block(true)?;
 
         Ok(Some(block))
     }

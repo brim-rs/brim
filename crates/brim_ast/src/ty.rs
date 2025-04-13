@@ -16,7 +16,9 @@ pub struct Ty {
 impl Ty {
     pub fn is_const(&self) -> bool {
         match &self.kind {
-            TyKind::Mut(_) | TyKind::Ref(_, Mutable::No) | TyKind::Ptr(_, Mutable::No) => true,
+            TyKind::Mut(_, _) | TyKind::Ref(_, _, Mutable::No) | TyKind::Ptr(_, _, Mutable::No) => {
+                true
+            }
             _ => false,
         }
     }
@@ -24,26 +26,26 @@ impl Ty {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Mutable {
-    Yes,
+    Yes(Span),
     No,
 }
 
 impl Mutable {
-    pub fn from_bool(is_mutable: bool) -> Self {
-        if is_mutable { Mutable::Yes } else { Mutable::No }
+    pub fn from_bool(is_mutable: bool, span: Span) -> Self {
+        if is_mutable { Mutable::Yes(span) } else { Mutable::No }
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum TyKind {
-    /// Reference type eg. `&T` (brim) -> `T&` (C++) or `mut &T` (brim) -> `T&` (C++)
-    Ref(Box<Ty>, Mutable),
-    /// Pointer type eg. `*T` (brim) -> `T*` (C++) or `mut *T` (brim) -> `T*` (C++)
-    Ptr(Box<Ty>, Mutable),
+    /// Reference type eg. `&T` (brim) -> `T&` (C++) or `&mut T` (brim) -> `T&` (C++)
+    Ref(Span, Box<Ty>, Mutable),
+    /// Pointer type eg. `*T` (brim) -> `T*` (C++) or `*mut T` (brim) -> `T*` (C++)
+    Ptr(Span, Box<Ty>, Mutable),
     /// Mutable type eg. `mut T` (brim) -> `T` (C++)
-    Mut(Box<Ty>),
+    Mut(Box<Ty>, Span),
     /// Const type eg. `const T` (brim) -> `const T` (C++)
-    Const(Box<Ty>),
+    Const(Span, Box<Ty>),
     /// Vector type eg. `T[]` (brim) -> `std::vector<T>` (C++). Resizable array. The syntax in brim
     /// is the same as array in C++.
     Vec(Box<Ty>),
@@ -64,9 +66,10 @@ impl TyKind {
     pub fn allowed_in_external(&self) -> bool {
         match self {
             TyKind::Result(_, _) | TyKind::Option(_) => false,
-            TyKind::Ref(ty, _) | TyKind::Ptr(ty, _) | TyKind::Const(ty) | TyKind::Mut(ty) => {
-                ty.kind.allowed_in_external()
-            }
+            TyKind::Ref(_, ty, _)
+            | TyKind::Ptr(_, ty, _)
+            | TyKind::Const(_, ty)
+            | TyKind::Mut(ty, _) => ty.kind.allowed_in_external(),
             _ => true,
         }
     }

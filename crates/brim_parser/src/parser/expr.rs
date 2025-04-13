@@ -209,10 +209,10 @@ impl Parser {
             }
             TokenKind::Ident(_) => {
                 if self.eat_keyword(ptok!(Return)) {
-                    let span = self.current().span;
+                    let span = self.prev().span;
                     let expr = self.parse_expr()?;
 
-                    Ok(self.new_expr(span.to(expr.span), ExprKind::Return(Box::new(expr))))
+                    Ok(self.new_expr(expr.span, ExprKind::Return(Box::new(expr), span)))
                 } else if self.eat_keyword(ptok!(If)) {
                     box_diag!(IfAsExpressionError { span: (self.current().span, self.file) })
                 } else if self.eat_keyword(ptok!(Comptime)) {

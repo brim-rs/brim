@@ -10,6 +10,7 @@ use brim_ast::{
     token::{BinOpToken, Delimiter, Orientation, TokenKind},
     ty::{Mutable, PrimitiveType, Ty, TyKind},
 };
+use brim_span::span::Span;
 
 impl Parser {
     pub fn parse_type(&mut self) -> PResult<Ty> {
@@ -24,21 +25,23 @@ impl Parser {
         let span = self.current().span;
 
         let kind = if self.eat(TokenKind::BinOp(BinOpToken::And)) {
-            let is_mut = self.is_mut();
+            let mutable = self.is_mut();
             let inner_ty = self.parse_type_core()?;
-            TyKind::Ref(Box::new(inner_ty), Mutable::from_bool(is_mut))
+            TyKind::Ref(span, Box::new(inner_ty), mutable)
         } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
-            let is_mut = self.is_mut();
+            let mutable = self.is_mut();
             let inner_ty = self.parse_type_core()?;
-            TyKind::Ptr(Box::new(inner_ty), Mutable::from_bool(is_mut))
+            TyKind::Ptr(span, Box::new(inner_ty), mutable)
         } else if self.current().is_keyword(Mut) {
+            let span = self.current().span;
             self.eat_keyword(ptok!(Mut));
             let inner_ty = self.parse_type_core()?;
-            TyKind::Mut(Box::new(inner_ty))
+            TyKind::Mut(Box::new(inner_ty), span)
         } else if self.current().is_keyword(Const) {
+            let span = self.current().span;
             self.eat_keyword(ptok!(Const));
             let inner_ty = self.parse_type_core()?;
-            TyKind::Const(Box::new(inner_ty))
+            TyKind::Const(span, Box::new(inner_ty))
         } else {
             let ident = self.parse_ident()?;
 
@@ -65,37 +68,44 @@ impl Parser {
             // Apply the vector modifier with consideration for type modifiers
             match ty.kind {
                 // For const types, we want const(T[]) not (const T)[]
-                TyKind::Const(inner_ty) => {
+                TyKind::Const(span, inner_ty) => {
                     let element_ty = *inner_ty;
                     ty = Ty {
                         span,
-                        kind: TyKind::Const(Box::new(Ty {
-                            span: element_ty.span,
-                            kind: TyKind::Vec(Box::new(element_ty)),
-                            id: self.new_id(),
-                        })),
+                        kind: TyKind::Const(
+                            span,
+                            Box::new(Ty {
+                                span: element_ty.span,
+                                kind: TyKind::Vec(Box::new(element_ty)),
+                                id: self.new_id(),
+                            }),
+                        ),
                         id: self.new_id(),
                     };
                 }
                 // For mut types, we want mut(T[]) not (mut T)[]
-                TyKind::Mut(inner_ty) => {
+                TyKind::Mut(inner_ty, span) => {
                     let element_ty = *inner_ty;
                     ty = Ty {
                         span,
-                        kind: TyKind::Mut(Box::new(Ty {
-                            span: element_ty.span,
-                            kind: TyKind::Vec(Box::new(element_ty)),
-                            id: self.new_id(),
-                        })),
+                        kind: TyKind::Mut(
+                            Box::new(Ty {
+                                span: element_ty.span,
+                                kind: TyKind::Vec(Box::new(element_ty)),
+                                id: self.new_id(),
+                            }),
+                            span,
+                        ),
                         id: self.new_id(),
                     };
                 }
                 // For ref types, apply vec to the inner type: &(T[]) not (&T)[]
-                TyKind::Ref(inner_ty, mutability) => {
+                TyKind::Ref(span, inner_ty, mutability) => {
                     let element_ty = *inner_ty;
                     ty = Ty {
                         span,
                         kind: TyKind::Ref(
+                            span,
                             Box::new(Ty {
                                 span: element_ty.span,
                                 kind: TyKind::Vec(Box::new(element_ty)),
@@ -107,11 +117,12 @@ impl Parser {
                     };
                 }
                 // For ptr types, apply vec to the inner type: *(T[]) not (*T)[]
-                TyKind::Ptr(inner_ty, mutability) => {
+                TyKind::Ptr(span, inner_ty, mutability) => {
                     let element_ty = *inner_ty;
                     ty = Ty {
                         span,
                         kind: TyKind::Ptr(
+                            span,
                             Box::new(Ty {
                                 span: element_ty.span,
                                 kind: TyKind::Vec(Box::new(element_ty)),
@@ -165,15 +176,16 @@ impl Parser {
         let kind_opt = if self.eat(TokenKind::BinOp(BinOpToken::And)) {
             let is_mut = self.is_mut();
             let inner_ty_opt = self.parse_type_core_without_ident()?;
-            inner_ty_opt.map(|inner_ty| TyKind::Ref(Box::new(inner_ty), Mutable::from_bool(is_mut)))
+            inner_ty_opt.map(|inner_ty| TyKind::Ref(span, Box::new(inner_ty), is_mut))
         } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
             let is_mut = self.is_mut();
             let inner_ty_opt = self.parse_type_core_without_ident()?;
-            inner_ty_opt.map(|inner_ty| TyKind::Ptr(Box::new(inner_ty), Mutable::from_bool(is_mut)))
+            inner_ty_opt.map(|inner_ty| TyKind::Ptr(span, Box::new(inner_ty), is_mut))
         } else if self.current().is_keyword(Mut) {
+            let span = self.current().span;
             self.eat_keyword(ptok!(Mut));
             let inner_ty_opt = self.parse_type_core_without_ident()?;
-            inner_ty_opt.map(|inner_ty| TyKind::Mut(Box::new(inner_ty)))
+            inner_ty_opt.map(|inner_ty| TyKind::Mut(Box::new(inner_ty), span))
         } else {
             let ident_opt = self.parse_ident_without_err()?;
 
@@ -189,29 +201,19 @@ impl Parser {
 
     // No longer need these methods, as they're now integrated into parse_type_core
     pub fn parse_mut(&mut self) -> PResult<TyKind> {
+        let span = self.current().span;
         self.eat_keyword(ptok!(Mut));
-        Ok(TyKind::Mut(Box::new(self.parse_type()?)))
+        Ok(TyKind::Mut(Box::new(self.parse_type()?), span))
     }
 
-    pub fn is_mut(&mut self) -> bool {
+    pub fn is_mut(&mut self) -> Mutable {
         if self.current().is_keyword(Mut) {
             self.eat_keyword(ptok!(Mut));
-            true
+
+            Mutable::from_bool(true, self.prev().span)
         } else {
-            false
+            Mutable::from_bool(false, Span::DUMMY)
         }
-    }
-
-    pub fn parse_ref(&mut self) -> PResult<TyKind> {
-        let is_mut = self.is_mut();
-        let ty = self.parse_type()?;
-        Ok(TyKind::Ref(Box::new(ty), Mutable::from_bool(is_mut)))
-    }
-
-    pub fn parse_ptr(&mut self) -> PResult<TyKind> {
-        let is_mut = self.is_mut();
-        let ty = self.parse_type()?;
-        Ok(TyKind::Ptr(Box::new(ty), Mutable::from_bool(is_mut)))
     }
 
     pub fn is_primitive(&self, ident: Ident) -> PResult<Option<PrimitiveType>> {

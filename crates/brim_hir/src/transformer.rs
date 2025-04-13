@@ -521,7 +521,7 @@ impl<'a> Transformer<'a> {
                     }
                 }
                 ExprKind::Paren(expr) => self.transform_expr(*expr).0.kind,
-                ExprKind::Return(expr) => {
+                ExprKind::Return(expr, _) => {
                     HirExprKind::Return(Box::new(self.transform_expr(*expr).0))
                 }
                 ExprKind::Var(ident) => HirExprKind::Var(ident),
@@ -703,16 +703,16 @@ impl<'a> Transformer<'a> {
             id: ty.id,
             span: ty.span,
             kind: match ty.kind {
-                TyKind::Ptr(ty, cnst) => {
+                TyKind::Ptr(_, ty, cnst) => {
                     HirTyKind::Ptr(Box::new(self.transform_ty(*ty).kind), cnst)
                 }
-                TyKind::Ref(ty, cnst) => {
+                TyKind::Ref(_, ty, cnst) => {
                     HirTyKind::Ref(Box::new(self.transform_ty(*ty).kind), cnst)
                 }
                 TyKind::Primitive(primitive) => HirTyKind::Primitive(primitive),
                 TyKind::Vec(ty) => HirTyKind::Vec(Box::new(self.transform_ty(*ty).kind)),
-                TyKind::Mut(ty) => HirTyKind::Mut(Box::new(self.transform_ty(*ty).kind)),
-                TyKind::Const(ty) => HirTyKind::Const(Box::new(self.transform_ty(*ty).kind)),
+                TyKind::Mut(ty, _) => HirTyKind::Mut(Box::new(self.transform_ty(*ty).kind)),
+                TyKind::Const(_, ty) => HirTyKind::Const(Box::new(self.transform_ty(*ty).kind)),
                 TyKind::Ident { ident, generics } => HirTyKind::Ident {
                     ident,
                     generics: self.transform_generic_arguments(generics),

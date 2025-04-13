@@ -42,7 +42,11 @@ impl Parser {
         let token = self.current().span;
         if !self.eat(TokenKind::Lt) {
             // no generics. return early
-            return Ok(GenericArgs { span: self.prev().span.from_end(), params: vec![] });
+            return Ok(GenericArgs {
+                span: self.prev().span.from_end(),
+                params: vec![],
+                braces: None,
+            });
         }
 
         let params = {
@@ -61,13 +65,14 @@ impl Parser {
             params
         };
 
+        let closing = self.current().span;
         if !self.eat(TokenKind::Gt) {
             let expected_span = self.prev().span.from_end();
 
             self.emit(ExpectedClosingGenerics { span: (expected_span, self.file) });
         }
 
-        Ok(GenericArgs { span: token.to(self.prev().span), params })
+        Ok(GenericArgs { span: token.to(self.prev().span), params, braces: Some((token, closing)) })
     }
 
     pub fn parse_generics_params(&mut self) -> PResult<Vec<GenericParam>> {

@@ -61,11 +61,17 @@ impl Display for HirTyKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             HirTyKind::Ref(ty, mutable) => {
-                let const_str = if *mutable == Mutable::Yes { "mut " } else { "" };
+                let const_str = match mutable {
+                    Mutable::Yes(_) => "mut ",
+                    _ => "",
+                };
                 write!(f, "&{const_str}{ty}")
             }
             HirTyKind::Ptr(ty, mutable) => {
-                let const_str = if *mutable == Mutable::Yes { "mut " } else { "" };
+                let const_str = match mutable {
+                    Mutable::Yes(_) => "mut ",
+                    _ => "",
+                };
                 write!(f, "*{const_str}{ty}")
             }
             HirTyKind::Mut(ty) => write!(f, "mut {ty}"),
@@ -101,7 +107,7 @@ impl HirTyKind {
             (HirTyKind::Primitive(PrimitiveType::Any) | HirTyKind::Null, _)
             | (_, HirTyKind::Primitive(PrimitiveType::Any) | HirTyKind::Null) => true,
 
-            (HirTyKind::Ref(ty1, Mutable::No), HirTyKind::Ref(ty2, Mutable::Yes)) => {
+            (HirTyKind::Ref(ty1, Mutable::No), HirTyKind::Ref(ty2, Mutable::Yes(_))) => {
                 ty1.simple_eq(ty2)
             }
 
@@ -112,7 +118,7 @@ impl HirTyKind {
             (HirTyKind::Ref(_, _), _) => false,
             (_, HirTyKind::Ref(_, _)) => false,
 
-            (HirTyKind::Ptr(ty1, Mutable::No), HirTyKind::Ptr(ty2, Mutable::Yes)) => {
+            (HirTyKind::Ptr(ty1, Mutable::No), HirTyKind::Ptr(ty2, Mutable::Yes(_))) => {
                 ty1.simple_eq(ty2)
             }
 
@@ -238,7 +244,7 @@ impl HirTyKind {
             (HirTyKind::Ptr(ty1, m), HirTyKind::Ptr(ty2, m1)) => {
                 ty1.simple_eq(ty2) && (*m == *m1 || *m == Mutable::No)
             }
-            (HirTyKind::Ptr(_, Mutable::Yes), _) => false,
+            (HirTyKind::Ptr(_, Mutable::Yes(_)), _) => false,
 
             (HirTyKind::Mut(ty1), ty2) => ty1.can_be_initialized_with(ty2),
             (ty1, HirTyKind::Mut(ty2)) => ty1.can_be_initialized_with(ty2),
@@ -365,12 +371,13 @@ impl HirTyKind {
         }
     }
 
-    pub fn is_mutable(&self) -> bool {
+    pub fn is_mutable(&self) -> Option<Span> {
         match self {
-            HirTyKind::Ref(_, Mutable::Yes)
-            | HirTyKind::Ptr(_, Mutable::Yes)
-            | HirTyKind::Mut(_) => true,
-            _ => false,
+            HirTyKind::Ref(_, Mutable::Yes(span)) | HirTyKind::Ptr(_, Mutable::Yes(span)) => {
+                Some(*span)
+            }
+            HirTyKind::Mut(ty) => Some(Span::DUMMY),
+            _ => None,
         }
     }
 
@@ -427,7 +434,7 @@ impl HirTyKind {
     pub fn is_const_vector(&self) -> bool {
         match self {
             HirTyKind::Ptr(ty, mutable) | HirTyKind::Ref(ty, mutable) => {
-                ty.is_vector().is_some() && mutable == &Mutable::Yes
+                ty.is_vector().is_some() && matches!(mutable, Mutable::Yes(_))
             }
             HirTyKind::Const(ty) => ty.is_vector().is_some(),
             _ => false,

@@ -406,13 +406,13 @@ impl TypeInference<'_> {
                         }
 
                         if let Some(opt) = ty.is_option() {
-                            &HirTyKind::Option(Box::new(if ty.is_mutable() {
-                                HirTyKind::Ptr(Box::new(opt), Mutable::Yes)
+                            &HirTyKind::Option(Box::new(if let Some(span) = ty.is_mutable() {
+                                HirTyKind::Ptr(Box::new(opt), Mutable::Yes(span))
                             } else {
                                 HirTyKind::Ptr(Box::new(opt), Mutable::No)
                             }))
-                        } else if ty.is_mutable() {
-                            &HirTyKind::Ptr(Box::new(ty.clone()), Mutable::Yes)
+                        } else if let Some(span) = ty.is_mutable() {
+                            &HirTyKind::Ptr(Box::new(ty.clone()), Mutable::Yes(span))
                         } else {
                             &HirTyKind::Ptr(Box::new(ty.clone()), Mutable::No)
                         }
@@ -928,7 +928,7 @@ impl TypeInference<'_> {
                 return if ty.is_const_vector() {
                     Some(HirTyKind::Ptr(Box::from(HirTyKind::Const(Box::new(new_ty))), Mutable::No))
                 } else {
-                    Some(HirTyKind::Ptr(Box::new(new_ty), Mutable::Yes))
+                    Some(HirTyKind::Ptr(Box::new(new_ty), Mutable::Yes(Span::DUMMY)))
                 };
             }
         }
