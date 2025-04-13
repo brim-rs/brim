@@ -189,10 +189,10 @@ impl AstWalker for UseCollector<'_> {
 
             let mod_id = ModuleId::from_usize(id);
             match &use_stmt.imports {
-                ImportsKind::All => {
+                ImportsKind::All(_) => {
                     symbols = self.table.by_module(mod_id);
                 }
-                ImportsKind::List(list) => {
+                ImportsKind::List(list, ..) => {
                     for import in list {
                         let symbol = self.table.get_by_ident(import, id);
 

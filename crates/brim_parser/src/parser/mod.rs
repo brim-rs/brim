@@ -363,7 +363,7 @@ impl Parser {
         }
     }
 
-    /// automatically detects if the keyword can be a part of comptime. e.g. match in a type aliast
+    /// automatically detects if the keyword can be a part of comptime. e.g. match in a type alias
     pub fn can_begin_comptime(&self) -> bool {
         self.current().is_keyword(Match)
     }

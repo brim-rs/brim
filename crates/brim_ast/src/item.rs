@@ -19,6 +19,7 @@ pub struct Item<Kind = ItemKind> {
 
 #[derive(Clone, Debug)]
 pub struct Attribute {
+    pub at_span: Span,
     pub span: Span,
     pub name: Ident,
     pub args: Vec<Expr>,
@@ -230,8 +231,11 @@ pub struct Field {
 
 #[derive(Clone, Debug)]
 pub struct Use {
+    pub use_span: Span,
     pub span: Span,
     pub path: String,
+    pub path_span: Span,
+    pub from_span: Span,
     pub imports: ImportsKind,
     pub resolved: Option<PathBuf>,
 }
@@ -245,9 +249,9 @@ impl Use {
 #[derive(Clone, Debug)]
 pub enum ImportsKind {
     /// `use { foo, bar } from "test";`
-    List(Vec<Ident>),
+    List(Vec<Ident>, Vec<Span>, (Span, Span)),
     /// `use * from "test";`
-    All,
+    All(Span),
     /// `use windows from std::os::windows;`
     Default(Ident),
 }

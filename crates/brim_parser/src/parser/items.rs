@@ -161,7 +161,12 @@ impl Parser {
             None
         };
 
-        Ok(Attribute { name: ident, args: args.unwrap_or(vec![]), span: span.to(self.prev().span) })
+        Ok(Attribute {
+            name: ident,
+            args: args.unwrap_or(vec![]),
+            span: span.to(self.prev().span),
+            at_span: span,
+        })
     }
 
     pub fn parse_enum_variant(&mut self) -> PResult<EnumVariant> {
@@ -326,27 +331,35 @@ impl Parser {
     }
 
     pub fn parse_use(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {
+        let use_span = self.current().span;
         self.eat_keyword(ptok!(Use));
 
         let kind = if self.current().kind == TokenKind::BinOp(BinOpToken::Star) {
+            let star_span = self.current().span;
             self.advance();
-            ImportsKind::All
+            ImportsKind::All(star_span)
         } else if self.is_brace(Orientation::Open) {
+            let obrace = self.current().span;
             self.advance();
 
             let mut imports = vec![];
+            let mut commas = vec![];
 
             while !self.is_brace(Orientation::Close) {
                 let ident = self.parse_ident()?;
                 imports.push(ident);
 
-                if !self.eat(TokenKind::Comma) {
+                if self.current().kind == TokenKind::Comma {
+                    commas.push(self.current().span);
+                    self.advance();
+                } else {
                     break;
                 }
             }
 
+            let cbrace = self.current().span;
             self.expect_cbrace()?;
-            ImportsKind::List(imports)
+            ImportsKind::List(imports, commas, (obrace, cbrace))
         } else if self.is_ident() {
             let ident = self.parse_ident()?;
             ImportsKind::Default(ident)
@@ -354,20 +367,25 @@ impl Parser {
             box_diag!(UseStatementBraces { span: (span.to(self.current().span), self.file) });
         };
 
+        let from_span = self.current().span;
         if !self.eat_keyword(ptok!(From)) {
             self.emit(MissingFromKeyword { span: (self.prev().span.from_end(), self.file) });
         }
 
+        let path_span = self.current().span;
         let path = self.expect_str_literal()?;
 
         debug!("Parsed use statement: {:?}", path);
         Ok((
             Ident::dummy(),
             ItemKind::Use(Use {
+                use_span,
                 span: span.to(self.current().span),
                 imports: kind,
                 path,
                 resolved: None,
+                path_span,
+                from_span,
             }),
         ))
     }

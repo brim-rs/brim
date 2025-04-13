@@ -1,4 +1,4 @@
-use crate::index::{ByteIndex, RawIndex};
+use crate::index::{ByteIndex, ByteOffset, RawIndex, RawOffset};
 use std::{fmt, ops::Range, str::FromStr};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -65,6 +65,16 @@ impl Span {
     pub fn from_point(point: impl Into<ByteIndex>) -> Span {
         let point = point.into();
         Span::new(point, point)
+    }
+
+    pub fn length(self) -> usize {
+        (self.end - self.start).into()
+    }
+
+    pub fn move_by(self, offset: usize) -> Span {
+        let start = self.start + ByteOffset(offset as RawOffset);
+        let end = self.end + ByteOffset(offset as RawOffset);
+        Span::new(start, end)
     }
 }
 

@@ -61,6 +61,40 @@ impl Token {
     pub fn is_assign(&self) -> bool {
         self.is(TokenKind::Eq)
     }
+
+    pub fn is_operator(&self) -> bool {
+        match &self.kind {
+            TokenKind::Eq
+            | TokenKind::Lt
+            | TokenKind::Le
+            | TokenKind::EqEq
+            | TokenKind::Ne
+            | TokenKind::Ge
+            | TokenKind::Gt
+            | TokenKind::AndAnd
+            | TokenKind::OrOr
+            | TokenKind::Tilde
+            | TokenKind::Bang
+            | TokenKind::At
+            | TokenKind::QuestionMark
+            | TokenKind::BinOp(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_separator(&self) -> bool {
+        match &self.kind {
+            TokenKind::Comma
+            | TokenKind::Semicolon
+            | TokenKind::Dot
+            | TokenKind::Delimiter(_, _)
+            | TokenKind::Arrow
+            | TokenKind::DoubleColon
+            | TokenKind::Colon
+            | TokenKind::FatArrow => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Clone)]
