@@ -467,7 +467,7 @@ impl AstWalker for NameResolver<'_> {
                 self.walk_expr(base);
                 self.walk_expr(index);
             }
-            ExprKind::Literal(_) => {}
+            ExprKind::Literal(..) => {}
             ExprKind::Paren(inner) | ExprKind::Return(inner) => self.walk_expr(inner),
             ExprKind::Var(ident) => {
                 if let Some(item) = self.compiled.symbols.resolve(&ident.to_string(), self.file) {

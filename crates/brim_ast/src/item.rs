@@ -306,6 +306,7 @@ pub struct Block {
     pub id: ItemId,
     pub span: Span,
     pub stmts: Vec<Stmt>,
+    pub braces: Option<(Span, Span)>,
 }
 
 #[derive(Clone, Debug)]
@@ -341,12 +342,14 @@ pub enum GenericKind {
 
 #[derive(Clone, Debug)]
 pub struct FnSignature {
+    pub keyword: Span,
     /// `const fn ...` (brim) -> `constexpr ...` (C++)
-    pub constant: bool,
+    pub constant: Option<Span>,
     pub name: Ident,
     pub return_type: FnReturnType,
     pub params: Vec<Param>,
     pub span: Span,
+    pub parens: Option<(Span, Span)>,
 }
 
 #[derive(Clone, Debug)]
@@ -355,6 +358,8 @@ pub struct Param {
     pub id: ItemId,
     pub span: Span,
     pub name: Ident,
+    pub colon: Span,
+    pub comma: Option<Span>,
 }
 
 #[derive(Clone, Debug)]

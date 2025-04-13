@@ -428,6 +428,7 @@ impl Parser {
         let span = self.current().span;
         let constant = self.parse_constant();
 
+        let keyword = self.current().span;
         if !self.eat_keyword(ptok!(Fn)) {
             self.emit(InvalidFunctionSignature {
                 span: (span, self.file),
@@ -447,7 +448,7 @@ impl Parser {
         debug!("=== Starting to parse function: {}", ident);
 
         let generics = self.parse_generics()?;
-        let params = self.parse_fn_params()?;
+        let (params, parens) = self.parse_fn_params()?;
 
         let ret_type = self.parse_return_type()?;
 
@@ -457,6 +458,8 @@ impl Parser {
             name: ident,
             params,
             return_type: ret_type,
+            keyword,
+            parens,
         }))
     }
 
@@ -471,13 +474,14 @@ impl Parser {
         }
     }
 
-    pub fn parse_fn_params(&mut self) -> PResult<Vec<Param>> {
+    pub fn parse_fn_params(&mut self) -> PResult<(Vec<Param>, Option<(Span, Span)>)> {
         let mut params = vec![];
         if !self.current_token.is_delimiter(Delimiter::Paren, Orientation::Open) {
             self.emit(MissingParamList { span: (self.prev().span.from_end(), self.file) });
 
-            return Ok(params);
+            return Ok((params, None));
         }
+        let oparen = self.current().span;
         self.expect_oparen()?;
 
         while !self.is_paren(Orientation::Close) {
@@ -488,24 +492,37 @@ impl Parser {
                 box_diag!(SelfOutsideMethod { span: (ident.span, self.file) });
             }
 
+            let colon = self.current().span;
             self.expect(TokenKind::Colon)?;
             let ty = self.parse_type()?;
 
-            params.push(Param {
-                id: self.new_id(),
-                span: span_start.to(self.prev().span),
-                ty,
-                name: ident,
-            });
-
+            let comma = self.current().span;
             if !self.eat(TokenKind::Comma) {
+                params.push(Param {
+                    id: self.new_id(),
+                    span: span_start.to(self.prev().span),
+                    ty,
+                    name: ident,
+                    colon,
+                    comma: None,
+                });
                 break;
+            } else {
+                params.push(Param {
+                    id: self.new_id(),
+                    span: span_start.to(self.prev().span),
+                    ty,
+                    name: ident,
+                    colon,
+                    comma: Some(comma),
+                });
             }
         }
 
+        let cparen = self.current().span;
         self.expect_cparen()?;
 
-        Ok(params)
+        Ok((params, Some((oparen, cparen))))
     }
 
     pub fn parse_ident(&mut self) -> PResult<Ident> {
@@ -541,13 +558,14 @@ impl Parser {
         });
     }
 
-    pub fn parse_constant(&mut self) -> bool {
+    pub fn parse_constant(&mut self) -> Option<Span> {
+        let span = self.current().span;
         if self.eat_keyword(ptok!(Const)) {
             self.advance();
 
-            true
+            Some(span)
         } else {
-            false
+            None
         }
     }
 }

@@ -121,7 +121,7 @@ pub trait AstWalker {
                 self.visit_expr(base);
                 self.visit_expr(index);
             }
-            ExprKind::Literal(_) => {}
+            ExprKind::Literal(..) => {}
             ExprKind::Paren(inner) => self.visit_expr(inner),
             ExprKind::Return(inner) => self.visit_expr(inner),
             ExprKind::Var(_) => {}

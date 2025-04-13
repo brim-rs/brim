@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use crate::{
     files::Error,
     index::{ByteIndex, ColumnIndex, LineIndex, LineOffset, RawIndex},
@@ -9,6 +8,7 @@ use std::{
     ffi::{OsStr, OsString},
     num::NonZeroU32,
     path::PathBuf,
+    str::FromStr,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

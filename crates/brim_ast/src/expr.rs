@@ -41,7 +41,7 @@ pub enum ExprKind {
     /// `Vec::new()`
     StaticAccess(Vec<Ident>, Box<Expr>),
     /// `123`, `"hello"`, etc.
-    Literal(Lit),
+    Literal(Lit, Span),
     /// `(x + y) * z`
     Paren(Box<Expr>),
     /// `return x`

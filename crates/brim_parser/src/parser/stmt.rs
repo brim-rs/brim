@@ -26,11 +26,17 @@ impl Parser {
             stmts.push(stmt);
         }
 
+        let span_end = self.current().span;
         if eat_braces {
             self.expect_cbrace()?;
         }
 
-        Ok(Block { id: self.new_id(), stmts, span: span_start.to(self.current().span) })
+        Ok(Block {
+            id: self.new_id(),
+            stmts,
+            span: span_start.to(self.current().span),
+            braces: Some((span_start, span_end)),
+        })
     }
 
     pub fn parse_stmt(&mut self) -> PResult<Stmt> {

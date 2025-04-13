@@ -227,6 +227,7 @@ impl Parser {
                 kind: StmtKind::Expr(expr.clone()),
                 span: expr.span,
             }],
+            braces: None,
         }
     }
 

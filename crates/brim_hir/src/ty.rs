@@ -637,7 +637,7 @@ impl HirTyKind {
             _ => false,
         }
     }
-    
+
     pub fn is_result(&self) -> bool {
         match self {
             HirTyKind::Result(_, _) => true,

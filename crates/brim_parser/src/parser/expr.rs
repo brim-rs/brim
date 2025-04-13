@@ -200,10 +200,12 @@ impl Parser {
     pub fn parse_primary_expr(&mut self) -> PResult<Expr> {
         match self.current().kind {
             TokenKind::Literal(lit) => {
+                let span = self.current().span;
                 self.advance();
                 self.validate_suffix(lit)?;
 
-                Ok(self.new_expr(self.prev().span, ExprKind::Literal(lit)))
+                let span = span.to(self.prev().span);
+                Ok(self.new_expr(span, ExprKind::Literal(lit, span)))
             }
             TokenKind::Ident(_) => {
                 if self.eat_keyword(ptok!(Return)) {

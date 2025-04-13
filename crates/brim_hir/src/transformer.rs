@@ -330,7 +330,7 @@ impl<'a> Transformer<'a> {
 
         HirFn {
             sig: HirFnSig {
-                constant: f_decl.sig.constant,
+                constant: f_decl.sig.constant.is_some(),
                 name: f_decl.sig.name,
                 return_type: if let FnReturnType::Ty(ty) = f_decl.sig.return_type {
                     self.transform_ty(ty).kind
@@ -503,7 +503,7 @@ impl<'a> Transformer<'a> {
                     Box::new(self.transform_expr(*expr).0),
                     Box::new(self.transform_expr(*index).0),
                 ),
-                ExprKind::Literal(lit) => {
+                ExprKind::Literal(lit, _) => {
                     // When literal is an integer with f32 suffix, we need to convert it to float,
                     // because C++ compiler will error
                     if lit.kind == LitKind::Integer
