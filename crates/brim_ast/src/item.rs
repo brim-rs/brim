@@ -15,6 +15,7 @@ pub struct Item<Kind = ItemKind> {
     pub ident: Ident,
     pub kind: Kind,
     pub attrs: Vec<Attribute>,
+    pub semis: Vec<Span>,
 }
 
 #[derive(Clone, Debug)]
@@ -181,8 +182,10 @@ impl Display for ItemKind {
 #[derive(Debug, Clone)]
 pub struct ExternBlock {
     pub span: Span,
-    pub abi: Option<Symbol>,
+    pub abi: Option<(Symbol, Span)>,
     pub items: Vec<Item>,
+    pub keyword: Span,
+    pub braces: Option<(Span, Span)>,
 }
 
 #[derive(Clone, Debug)]

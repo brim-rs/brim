@@ -50,9 +50,19 @@ impl Parser {
         } else {
             box_diag!(UnknownItem { span: (span, self.file), found: self.current().kind })
         };
-        self.eat_semis();
+        let semis = self.eat_semis();
 
-        Ok(Some(Item { id: self.new_id(), span, vis, kind, ident, attrs }))
+        Ok(Some(Item { id: self.new_id(), span, vis, kind, ident, attrs, semis }))
+    }
+
+    pub fn eat_semis(&mut self) -> Vec<Span> {
+        let mut semis = vec![];
+
+        while self.current().is(TokenKind::Semicolon) {
+            semis.push(self.current().span);
+            self.advance();
+        }
+        semis
     }
 
     pub fn parse_attributes(&mut self) -> PResult<Vec<Attribute>> {
@@ -108,7 +118,7 @@ impl Parser {
                 break;
             };
 
-            self.eat_semis();
+            let semis = self.eat_semis();
 
             items.push(Item {
                 id: self.new_id(),
@@ -117,6 +127,7 @@ impl Parser {
                 kind,
                 ident: item_ident,
                 attrs,
+                semis,
             });
         }
 
@@ -241,7 +252,7 @@ impl Parser {
                 break;
             };
 
-            self.eat_semis();
+            let semis = self.eat_semis();
 
             items.push(Item {
                 id: self.new_id(),
@@ -250,6 +261,7 @@ impl Parser {
                 kind,
                 ident: item_ident,
                 attrs,
+                semis,
             });
         }
 
@@ -264,17 +276,19 @@ impl Parser {
         let span = self.current().span;
         self.eat_keyword(ptok!(Extern));
 
+        let abi_span = self.current().span;
         let abi = match self.current().kind {
             TokenKind::Literal(lit) => match lit.kind {
                 LitKind::Str => {
                     self.advance();
-                    Some(lit.symbol)
+                    Some((lit.symbol, abi_span.to(self.prev().span)))
                 }
                 _ => None,
             },
             _ => None,
         };
 
+        let obrace = self.current().span;
         self.expect_obrace()?;
 
         let mut items = vec![];
@@ -301,11 +315,18 @@ impl Parser {
         }
         self.fn_ctx = None;
 
+        let cbrace = self.current().span;
         self.expect_cbrace()?;
 
         Ok((
             Ident::dummy(),
-            ItemKind::External(ExternBlock { span: span.to(self.prev().span), abi, items }),
+            ItemKind::External(ExternBlock {
+                span: span.to(self.prev().span),
+                abi,
+                items,
+                keyword: span,
+                braces: Some((obrace, cbrace)),
+            }),
         ))
     }
 

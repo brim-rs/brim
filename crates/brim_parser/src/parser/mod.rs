@@ -329,10 +329,6 @@ impl Parser {
         while self.eat(p.clone()) {}
     }
 
-    pub fn eat_semis(&mut self) {
-        self.eat_while(TokenKind::Semicolon);
-    }
-
     /// Eats until it finds a first brace, returns the span of the brace
     pub fn eat_until_brace(&mut self, orientation: Orientation) -> Span {
         while !self.current().is(TokenKind::Delimiter(Delimiter::Brace, orientation)) {

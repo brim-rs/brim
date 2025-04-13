@@ -245,7 +245,7 @@ impl<'a> Transformer<'a> {
                     .collect::<Vec<_>>();
 
                 HirItemKind::External(HirExternBlock {
-                    abi: external.abi,
+                    abi: external.abi.map(|abi| abi.0),
                     items,
                     span: external.span,
                 })
