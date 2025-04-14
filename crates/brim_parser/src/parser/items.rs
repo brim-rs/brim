@@ -204,14 +204,17 @@ impl Parser {
 
     pub fn parse_struct(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {
         self.eat_keyword(ptok!(Struct));
+        let keyword = self.prev().span;
 
         let ident = self.parse_ident()?;
         let generics = self.parse_generics()?;
 
         self.expect_obrace()?;
+        let obrace = self.prev().span;
 
         let mut fields = vec![];
         let mut items = vec![];
+        let mut field_commas = vec![];
 
         while !self.is_brace(Orientation::Close) {
             if self.is_function() || self.current().is_keyword(Use) {
@@ -221,6 +224,7 @@ impl Parser {
             let vis = self.parse_visibility();
             let ident = self.parse_ident()?;
             self.expect(TokenKind::Colon)?;
+            let colon = self.prev().span;
             let ty = self.parse_type()?;
 
             fields.push(Field {
@@ -229,9 +233,13 @@ impl Parser {
                 ident,
                 ty,
                 vis,
+                colon,
             });
 
-            if !self.eat(TokenKind::Comma) {
+            if self.current().kind == TokenKind::Comma {
+                field_commas.push(self.current().span);
+                self.advance();
+            } else {
                 break;
             }
         }
@@ -266,10 +274,23 @@ impl Parser {
         }
 
         self.expect_cbrace()?;
+        let cbrace = self.prev().span;
 
         debug!("Parsed struct: {:?} with {} fields and {} items", ident, fields.len(), items.len());
 
-        Ok((ident, ItemKind::Struct(Struct { ident, generics, span, fields, items })))
+        Ok((
+            ident,
+            ItemKind::Struct(Struct {
+                braces: Some((obrace, cbrace)),
+                keyword,
+                field_commas,
+                ident,
+                generics,
+                span,
+                fields,
+                items,
+            }),
+        ))
     }
 
     pub fn parse_extern(&mut self) -> PResult<(Ident, ItemKind)> {

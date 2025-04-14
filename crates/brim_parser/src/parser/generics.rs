@@ -8,22 +8,30 @@ use brim_ast::{
     token::TokenKind,
 };
 use brim_middle::ExperimentalFeatureNotEnabled;
+use brim_span::span::Span;
 
 impl Parser {
     pub fn parse_generics(&mut self) -> PResult<Generics> {
         let token = self.current().span;
         if !self.eat(TokenKind::Lt) {
             // no generics. return early
-            return Ok(Generics { span: self.prev().span.from_end(), params: vec![] });
+            return Ok(Generics {
+                chevrons: None,
+                commas: vec![],
+                span: self.prev().span.from_end(),
+                params: vec![],
+            });
         }
+        let ochevron = token;
 
-        let params = self.parse_generics_params()?;
+        let (params, commas) = self.parse_generics_params()?;
 
         if !self.eat(TokenKind::Gt) {
             let expected_span = self.prev().span.from_end();
 
             self.emit(ExpectedClosingGenerics { span: (expected_span, self.file) });
         }
+        let cchevron = self.prev().span;
 
         let span = token.to(self.prev().span);
         if !self.experimental.generics {
@@ -34,7 +42,7 @@ impl Parser {
             });
         }
 
-        Ok(Generics { span, params })
+        Ok(Generics { span, params, commas, chevrons: Some((ochevron, cchevron)) })
     }
 
     /// Parses the generic arguments provided as an argument. eg: `foo<T, U>`
@@ -75,16 +83,18 @@ impl Parser {
         Ok(GenericArgs { span: token.to(self.prev().span), params, braces: Some((token, closing)) })
     }
 
-    pub fn parse_generics_params(&mut self) -> PResult<Vec<GenericParam>> {
+    pub fn parse_generics_params(&mut self) -> PResult<(Vec<GenericParam>, Vec<Span>)> {
         let mut params: Vec<GenericParam> = vec![];
+        let mut commas = vec![];
 
         loop {
             if self.is_ident() {
                 let ident = self.parse_ident()?;
 
                 let default = if self.eat(TokenKind::Colon) {
+                    let span = self.prev().span;
                     let def = self.parse_type()?;
-                    Some(def)
+                    Some((span, def))
                 } else {
                     None
                 };
@@ -92,36 +102,44 @@ impl Parser {
                 params.push(GenericParam {
                     id: self.new_id(),
                     ident,
-                    kind: GenericKind::Type { default },
+                    kind: GenericKind::Type { default: default.clone().map(|x| x.1), colon: default.map(|x| x.0) },
                 })
             } else if self.eat_keyword(ptok!(Const)) {
                 let ident = self.parse_ident()?;
 
+                let mut colon = Span::DUMMY;
                 let ty = {
                     self.expect(TokenKind::Colon)?;
+                    colon = self.prev().span;
                     self.parse_type()?
                 };
 
                 let const_expr = if self.eat(TokenKind::Eq) {
+                    let eq = self.prev().span;
                     let expr = self.parse_expr()?;
-                    Some(expr)
+                    Some((eq, expr))
                 } else {
                     None
                 };
+                let eq = const_expr.as_ref().map(|x| x.0);
+                let const_expr = const_expr.map(|x| x.1);
                 params.push(GenericParam {
                     id: self.new_id(),
                     ident,
-                    kind: GenericKind::NonType { ty, default: const_expr },
+                    kind: GenericKind::NonType { ty, default: const_expr, eq, colon },
                 })
             } else {
                 break;
             }
 
-            if !self.eat(TokenKind::Comma) {
+            if self.current().kind == TokenKind::Comma {
+                commas.push(self.current().span);
+                self.advance();
+            } else {
                 break;
             }
         }
 
-        Ok(params)
+        Ok((params, commas))
     }
 }

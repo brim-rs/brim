@@ -102,6 +102,7 @@ impl CompilerContext {
                 ),
                 vis: Visibility::from_bool(true, Span::DUMMY),
                 attrs: vec![],
+                semis: vec![],
             });
         }
 

@@ -1,4 +1,5 @@
 use brim_ast::{ItemId, item::Item, token::Token};
+use brim_span::span::Span;
 
 #[derive(Clone, Debug)]
 pub struct Barrel {
@@ -6,4 +7,5 @@ pub struct Barrel {
     pub id: ItemId,
     pub file_id: usize,
     pub tokens: Vec<Token>,
+    pub comments: Vec<Span>,
 }

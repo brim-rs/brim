@@ -175,6 +175,7 @@ impl Parser {
         let lex_temp = TemporaryDiagnosticContext::new();
         let mut lexer = Lexer::new(&file, self.primitives.clone(), lex_temp);
         let mut tokens = vec![];
+        let mut comments: Vec<Span> = vec![];
 
         while let Some(token) = lexer.next_token() {
             if token.kind == TokenKind::Eof {
@@ -182,6 +183,11 @@ impl Parser {
             }
 
             if token.kind == TokenKind::Skipable {
+                continue;
+            }
+
+            if matches!(token.kind, TokenKind::DocComment(_) | TokenKind::Comment) {
+                comments.push(token.span);
                 continue;
             }
 
@@ -211,7 +217,7 @@ impl Parser {
         self.dcx.diags.extend(lexer.ctx.diags);
         debug!("======= Finished parsing barrel with id: {}", self.file);
 
-        Barrel { items, id: self.new_id(), file_id: self.file, tokens }
+        Barrel { items, id: self.new_id(), file_id: self.file, tokens, comments }
     }
 
     pub fn advance(&mut self) -> Token {

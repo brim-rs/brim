@@ -379,10 +379,12 @@ impl Parser {
                 debug!("Found parenthesized expression");
 
                 self.expect_oparen()?;
+                let oparen = self.prev().span;
                 let expr = self.parse_expr()?;
                 self.expect_cparen()?;
+                let cparen = self.prev().span;
 
-                Ok(self.new_expr(expr.span, ExprKind::Paren(Box::new(expr))))
+                Ok(self.new_expr(expr.span, ExprKind::Paren(Box::new(expr), (oparen, cparen))))
             }
             TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
                 let span_start = self.current().span;

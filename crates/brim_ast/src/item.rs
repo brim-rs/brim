@@ -211,8 +211,11 @@ pub enum TypeAliasValue {
 #[derive(Clone, Debug)]
 pub struct Struct {
     pub span: Span,
+    pub keyword: Span,
     pub ident: Ident,
+    pub braces: Option<(Span, Span)>,
     pub fields: Vec<Field>,
+    pub field_commas: Vec<Span>,
     pub generics: Generics,
     pub items: Vec<Item>,
 }
@@ -228,6 +231,7 @@ pub struct Field {
     pub id: ItemId,
     pub span: Span,
     pub ident: Ident,
+    pub colon: Span,
     pub ty: Ty,
     pub vis: Visibility,
 }
@@ -315,6 +319,8 @@ pub struct Block {
 #[derive(Clone, Debug)]
 pub struct Generics {
     pub span: Span,
+    pub chevrons: Option<(Span, Span)>,
+    pub commas: Vec<Span>,
     pub params: Vec<GenericParam>,
 }
 
@@ -340,8 +346,8 @@ pub struct GenericParam {
 
 #[derive(Clone, Debug)]
 pub enum GenericKind {
-    Type { default: Option<Ty> },
-    NonType { default: Option<Expr>, ty: Ty },
+    Type { default: Option<Ty>, colon: Option<Span> },
+    NonType { default: Option<Expr>, ty: Ty, eq: Option<Span>, colon: Span },
 }
 
 #[derive(Clone, Debug)]

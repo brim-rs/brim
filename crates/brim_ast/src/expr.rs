@@ -43,7 +43,7 @@ pub enum ExprKind {
     /// `123`, `"hello"`, etc.
     Literal(Lit, Span),
     /// `(x + y) * z`
-    Paren(Box<Expr>),
+    Paren(Box<Expr>, (Span, Span)),
     /// `return x`
     Return(Box<Expr>, Span),
     /// `x`

@@ -47,13 +47,15 @@ impl Lexer<'_> {
         self.pos = start + ByteOffset(token.len as RawOffset);
 
         let kind = match token.kind {
-            PrimitiveTokenKind::Whitespace | PrimitiveTokenKind::Comment { doc: false } => {
-                TokenKind::Skipable
-            }
-            PrimitiveTokenKind::Comment { doc: true } => {
-                let comment_start = start + ByteOffset(3);
-                let content = self.content_from(comment_start);
-                TokenKind::DocComment(Symbol::new(content))
+            PrimitiveTokenKind::Whitespace => TokenKind::Skipable,
+            PrimitiveTokenKind::Comment { doc } => {
+                if doc {
+                    let comment_start = start + ByteOffset(3);
+                    let content = self.content_from(comment_start);
+                    TokenKind::DocComment(Symbol::new(content))
+                } else {
+                    TokenKind::Comment
+                }
             }
 
             PrimitiveTokenKind::Ident => self.ident(start),

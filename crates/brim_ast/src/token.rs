@@ -173,6 +173,7 @@ pub enum TokenKind {
 
     Skipable,
     DocComment(Symbol),
+    Comment,
 
     Eof,
 }
@@ -340,6 +341,7 @@ impl Display for TokenKind {
             TokenKind::BinOp(bin_op) => write!(f, "{:?}", bin_op),
             TokenKind::Skipable => write!(f, "Skipable"),
             TokenKind::DocComment(comment) => write!(f, "DocComment({})", comment),
+            TokenKind::Comment => write!(f, "Comment"),
             TokenKind::Eof => write!(f, "EOF"),
         }
     }

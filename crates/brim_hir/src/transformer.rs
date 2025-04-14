@@ -470,10 +470,10 @@ impl<'a> Transformer<'a> {
 
     pub fn hir_generic_kind(&mut self, kind: GenericKind) -> HirGenericKind {
         match kind {
-            GenericKind::Type { default } => {
+            GenericKind::Type { default, .. } => {
                 HirGenericKind::Type { default: default.map(|ty| self.transform_ty(ty)) }
             }
-            GenericKind::NonType { ty, default } => HirGenericKind::Const {
+            GenericKind::NonType { ty, default, .. } => HirGenericKind::Const {
                 ty: self.transform_ty(ty),
                 default: default.map(|expr| *self.transform_comptime_expr(expr).as_lit()),
             },
@@ -520,7 +520,7 @@ impl<'a> Transformer<'a> {
                         HirExprKind::Literal(lit)
                     }
                 }
-                ExprKind::Paren(expr) => self.transform_expr(*expr).0.kind,
+                ExprKind::Paren(expr, _) => self.transform_expr(*expr).0.kind,
                 ExprKind::Return(expr, _) => {
                     HirExprKind::Return(Box::new(self.transform_expr(*expr).0))
                 }
