@@ -11,4 +11,4 @@ serde = { workspace = true, features = ["derive"] }
 spinners = "4.1.1"
 thiserror = { workspace = true }
 tracing = { workspace = true }
-which = "7.0.2"
+which = "7.0.3"
