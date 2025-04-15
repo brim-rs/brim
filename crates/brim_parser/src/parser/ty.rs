@@ -152,8 +152,13 @@ impl Parser {
 
         // Handle Option type
         if self.current().kind == TokenKind::QuestionMark {
+            let mark = self.current().span;
             self.eat(TokenKind::QuestionMark);
-            ty = Ty { span, kind: TyKind::Option(Box::new(ty)), id: self.new_id() };
+            ty = Ty {
+                span: span.to(self.prev().span),
+                kind: TyKind::Option(Box::new(ty), mark),
+                id: self.new_id(),
+            };
         }
 
         Ok(ty)
@@ -229,7 +234,6 @@ impl Parser {
                 kind: StmtKind::Expr(expr.clone()),
                 span: expr.span,
             }],
-            braces: None,
         }
     }
 
@@ -247,6 +251,9 @@ impl Parser {
             TypeAliasValue::Ty(self.parse_type()?)
         };
 
-        Ok((ident, ItemKind::TypeAlias(TypeAlias { span, generics, ident, ty })))
+        Ok((
+            ident,
+            ItemKind::TypeAlias(TypeAlias { span: span.to(self.prev().span), generics, ident, ty }),
+        ))
     }
 }

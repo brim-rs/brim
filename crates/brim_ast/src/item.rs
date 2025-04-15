@@ -184,8 +184,6 @@ pub struct ExternBlock {
     pub span: Span,
     pub abi: Option<(Symbol, Span)>,
     pub items: Vec<Item>,
-    pub keyword: Span,
-    pub braces: Option<(Span, Span)>,
 }
 
 #[derive(Clone, Debug)]
@@ -211,11 +209,8 @@ pub enum TypeAliasValue {
 #[derive(Clone, Debug)]
 pub struct Struct {
     pub span: Span,
-    pub keyword: Span,
     pub ident: Ident,
-    pub braces: Option<(Span, Span)>,
     pub fields: Vec<Field>,
-    pub field_commas: Vec<Span>,
     pub generics: Generics,
     pub items: Vec<Item>,
 }
@@ -256,7 +251,7 @@ impl Use {
 #[derive(Clone, Debug)]
 pub enum ImportsKind {
     /// `use { foo, bar } from "test";`
-    List(Vec<Ident>, Vec<Span>, (Span, Span)),
+    List(Vec<Ident>, (Span, Span)),
     /// `use * from "test";`
     All(Span),
     /// `use windows from std::os::windows;`
@@ -313,14 +308,12 @@ pub struct Block {
     pub id: ItemId,
     pub span: Span,
     pub stmts: Vec<Stmt>,
-    pub braces: Option<(Span, Span)>,
 }
 
 #[derive(Clone, Debug)]
 pub struct Generics {
     pub span: Span,
     pub chevrons: Option<(Span, Span)>,
-    pub commas: Vec<Span>,
     pub params: Vec<GenericParam>,
 }
 
@@ -352,14 +345,12 @@ pub enum GenericKind {
 
 #[derive(Clone, Debug)]
 pub struct FnSignature {
-    pub keyword: Span,
     /// `const fn ...` (brim) -> `constexpr ...` (C++)
     pub constant: Option<Span>,
     pub name: Ident,
     pub return_type: FnReturnType,
     pub params: Vec<Param>,
     pub span: Span,
-    pub parens: Option<(Span, Span)>,
 }
 
 #[derive(Clone, Debug)]
@@ -369,7 +360,6 @@ pub struct Param {
     pub span: Span,
     pub name: Ident,
     pub colon: Span,
-    pub comma: Option<Span>,
 }
 
 #[derive(Clone, Debug)]

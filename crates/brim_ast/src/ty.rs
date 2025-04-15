@@ -56,7 +56,7 @@ pub enum TyKind {
     /// Result type eg. `Result<T, E>` (brim) -> `std::expected<T, E>` (C++)
     Result(Box<Ty>, Box<Ty>),
     /// Option type eg. `T?` (brim) -> `std::optional<T>` (C++)
-    Option(Box<Ty>),
+    Option(Box<Ty>, Span),
 
     /// Indicating that the compiler failed to determine the type
     Err(ErrorEmitted),
@@ -65,7 +65,7 @@ pub enum TyKind {
 impl TyKind {
     pub fn allowed_in_external(&self) -> bool {
         match self {
-            TyKind::Result(_, _) | TyKind::Option(_) => false,
+            TyKind::Result(_, _) | TyKind::Option(..) => false,
             TyKind::Ref(_, ty, _)
             | TyKind::Ptr(_, ty, _)
             | TyKind::Const(_, ty)

@@ -17,14 +17,13 @@ impl Parser {
             // no generics. return early
             return Ok(Generics {
                 chevrons: None,
-                commas: vec![],
                 span: self.prev().span.from_end(),
                 params: vec![],
             });
         }
         let ochevron = token;
 
-        let (params, commas) = self.parse_generics_params()?;
+        let params = self.parse_generics_params()?;
 
         if !self.eat(TokenKind::Gt) {
             let expected_span = self.prev().span.from_end();
@@ -42,7 +41,7 @@ impl Parser {
             });
         }
 
-        Ok(Generics { span, params, commas, chevrons: Some((ochevron, cchevron)) })
+        Ok(Generics { span, params, chevrons: Some((ochevron, cchevron)) })
     }
 
     /// Parses the generic arguments provided as an argument. eg: `foo<T, U>`
@@ -83,9 +82,8 @@ impl Parser {
         Ok(GenericArgs { span: token.to(self.prev().span), params, braces: Some((token, closing)) })
     }
 
-    pub fn parse_generics_params(&mut self) -> PResult<(Vec<GenericParam>, Vec<Span>)> {
+    pub fn parse_generics_params(&mut self) -> PResult<Vec<GenericParam>> {
         let mut params: Vec<GenericParam> = vec![];
-        let mut commas = vec![];
 
         loop {
             if self.is_ident() {
@@ -102,7 +100,10 @@ impl Parser {
                 params.push(GenericParam {
                     id: self.new_id(),
                     ident,
-                    kind: GenericKind::Type { default: default.clone().map(|x| x.1), colon: default.map(|x| x.0) },
+                    kind: GenericKind::Type {
+                        default: default.clone().map(|x| x.1),
+                        colon: default.map(|x| x.0),
+                    },
                 })
             } else if self.eat_keyword(ptok!(Const)) {
                 let ident = self.parse_ident()?;
@@ -132,14 +133,11 @@ impl Parser {
                 break;
             }
 
-            if self.current().kind == TokenKind::Comma {
-                commas.push(self.current().span);
-                self.advance();
-            } else {
+            if !self.eat(TokenKind::Comma) {
                 break;
             }
         }
 
-        Ok((params, commas))
+        Ok(params)
     }
 }

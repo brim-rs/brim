@@ -210,7 +210,7 @@ impl<'a> NameResolver<'a> {
     fn resolve_type(&mut self, ty: &Ty) {
         match &ty.kind {
             TyKind::Ref(_, ty, _) | TyKind::Ptr(_, ty, _) => self.resolve_type(&ty),
-            TyKind::Mut(ty, _) | TyKind::Const(_, ty) | TyKind::Option(ty) | TyKind::Vec(ty) => {
+            TyKind::Mut(ty, _) | TyKind::Const(_, ty) | TyKind::Option(ty, _) | TyKind::Vec(ty) => {
                 self.resolve_type(&ty)
             }
             TyKind::Result(ok, err) => {
@@ -459,7 +459,7 @@ impl AstWalker for NameResolver<'_> {
 
     fn walk_expr(&mut self, expr: &mut Expr) {
         match &mut expr.kind {
-            ExprKind::Unary(_, operand) => self.walk_expr(operand),
+            ExprKind::Unary(_, _, operand) => self.walk_expr(operand),
             ExprKind::Field(idents) => {
                 self.resolve_variable(idents.first().unwrap());
             }
@@ -468,7 +468,7 @@ impl AstWalker for NameResolver<'_> {
                 self.walk_expr(index);
             }
             ExprKind::Literal(..) => {}
-            ExprKind::Paren(inner, _) | ExprKind::Return(inner, _) => self.walk_expr(inner),
+            ExprKind::Paren(inner) | ExprKind::Return(inner, _) => self.walk_expr(inner),
             ExprKind::Var(ident) => {
                 if let Some(item) = self.compiled.symbols.resolve(&ident.to_string(), self.file) {
                     let item = self.simple.get_item(item.id.item_id);
@@ -500,7 +500,7 @@ impl AstWalker for NameResolver<'_> {
                 self.walk_expr(rhs);
             }
             ExprKind::Block(block) => self.visit_block(block),
-            ExprKind::Call(func, args) => {
+            ExprKind::Call(func, args, ..) => {
                 let name = func.as_ident().unwrap().to_string();
 
                 let func_sym = self.compiled.symbols.resolve(&name, self.file);
@@ -557,7 +557,7 @@ impl AstWalker for NameResolver<'_> {
                 if let Some(assigned) = assigned {
                     let str = self.simple.get_item(*assigned).clone();
 
-                    if let ExprKind::Call(ident, args) = &mut expr.kind {
+                    if let ExprKind::Call(ident, args, ..) = &mut expr.kind {
                         for arg in args {
                             self.walk_expr(arg);
                         }
@@ -610,7 +610,7 @@ impl AstWalker for NameResolver<'_> {
                 // Identifiers can only be checked in type inference so we actually
                 // know where to look for the method
 
-                if let ExprKind::Call(_, args) = call.kind.clone() {
+                if let ExprKind::Call(_, args, ..) = call.kind.clone() {
                     for mut arg in args {
                         self.walk_expr(&mut arg);
                     }

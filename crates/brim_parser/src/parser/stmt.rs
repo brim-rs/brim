@@ -31,12 +31,7 @@ impl Parser {
             self.expect_cbrace()?;
         }
 
-        Ok(Block {
-            id: self.new_id(),
-            stmts,
-            span: span_start.to(span_end),
-            braces: Some((span_start, span_end)),
-        })
+        Ok(Block { id: self.new_id(), stmts, span: span_start.to(span_end) })
     }
 
     pub fn parse_stmt(&mut self) -> PResult<Stmt> {
@@ -66,12 +61,20 @@ impl Parser {
     pub fn parse_let(&mut self) -> PResult<Let> {
         let span = self.current().span;
         self.eat_keyword(ptok!(Let));
+        let keyword = self.prev().span;
 
         let ident = self.parse_ident()?;
+        let mut colon = None;
+        let ty = if self.eat(TokenKind::Colon) {
+            colon = Some(self.prev().span);
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
 
-        let ty = if self.eat(TokenKind::Colon) { Some(self.parse_type()?) } else { None };
-
+        let mut eq = None;
         let value = if self.eat(TokenKind::Eq) {
+            eq = Some(self.prev().span);
             Some(self.parse_expr()?)
         } else if let Some(op) = self.current().is_compound_assign() {
             box_diag!(InvalidVariableInit { found: op, span: (self.current().span, self.file) })
@@ -79,6 +82,15 @@ impl Parser {
             None
         };
 
-        Ok(Let { id: self.new_id(), ident, ty, value, span: span.to(self.prev().span) })
+        Ok(Let {
+            id: self.new_id(),
+            ident,
+            ty,
+            value,
+            span: span.to(self.prev().span),
+            keyword,
+            colon,
+            eq,
+        })
     }
 }

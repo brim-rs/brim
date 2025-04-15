@@ -79,6 +79,7 @@ impl Parser {
     pub fn parse_enum(&mut self) -> PResult<(Ident, ItemKind)> {
         let span = self.current().span;
         self.eat_keyword(ptok!(Enum));
+        let keyword = self.prev().span;
         let ident = self.parse_ident()?;
         let generics = self.parse_generics()?;
         self.expect_obrace()?;
@@ -190,6 +191,10 @@ impl Parser {
                 let ty = self.parse_type()?;
                 fields.push(EnumField { span: ty.span.to(self.current().span), ty });
                 self.eat_possible(TokenKind::Comma);
+
+                if !self.eat(TokenKind::Comma) {
+                    break;
+                }
             }
             self.expect_cparen()?;
         }
@@ -204,17 +209,14 @@ impl Parser {
 
     pub fn parse_struct(&mut self, span: Span) -> PResult<(Ident, ItemKind)> {
         self.eat_keyword(ptok!(Struct));
-        let keyword = self.prev().span;
 
         let ident = self.parse_ident()?;
         let generics = self.parse_generics()?;
 
         self.expect_obrace()?;
-        let obrace = self.prev().span;
 
         let mut fields = vec![];
         let mut items = vec![];
-        let mut field_commas = vec![];
 
         while !self.is_brace(Orientation::Close) {
             if self.is_function() || self.current().is_keyword(Use) {
@@ -236,10 +238,7 @@ impl Parser {
                 colon,
             });
 
-            if self.current().kind == TokenKind::Comma {
-                field_commas.push(self.current().span);
-                self.advance();
-            } else {
+            if !self.eat(TokenKind::Comma) {
                 break;
             }
         }
@@ -274,23 +273,10 @@ impl Parser {
         }
 
         self.expect_cbrace()?;
-        let cbrace = self.prev().span;
 
         debug!("Parsed struct: {:?} with {} fields and {} items", ident, fields.len(), items.len());
 
-        Ok((
-            ident,
-            ItemKind::Struct(Struct {
-                braces: Some((obrace, cbrace)),
-                keyword,
-                field_commas,
-                ident,
-                generics,
-                span,
-                fields,
-                items,
-            }),
-        ))
+        Ok((ident, ItemKind::Struct(Struct { ident, generics, span, fields, items })))
     }
 
     pub fn parse_extern(&mut self) -> PResult<(Ident, ItemKind)> {
@@ -309,7 +295,6 @@ impl Parser {
             _ => None,
         };
 
-        let obrace = self.current().span;
         self.expect_obrace()?;
 
         let mut items = vec![];
@@ -336,18 +321,11 @@ impl Parser {
         }
         self.fn_ctx = None;
 
-        let cbrace = self.current().span;
         self.expect_cbrace()?;
 
         Ok((
             Ident::dummy(),
-            ItemKind::External(ExternBlock {
-                span: span.to(self.prev().span),
-                abi,
-                items,
-                keyword: span,
-                braces: Some((obrace, cbrace)),
-            }),
+            ItemKind::External(ExternBlock { span: span.to(self.prev().span), abi, items }),
         ))
     }
 
@@ -355,7 +333,6 @@ impl Parser {
         let mut idents = vec![];
 
         self.eat_keyword(ptok!(Mod));
-
         while self.is_ident() {
             let ident = self.parse_ident()?;
             idents.push(ident);
@@ -385,23 +362,19 @@ impl Parser {
             self.advance();
 
             let mut imports = vec![];
-            let mut commas = vec![];
 
             while !self.is_brace(Orientation::Close) {
                 let ident = self.parse_ident()?;
                 imports.push(ident);
 
-                if self.current().kind == TokenKind::Comma {
-                    commas.push(self.current().span);
-                    self.advance();
-                } else {
+                if !self.eat(TokenKind::Comma) {
                     break;
                 }
             }
 
             let cbrace = self.current().span;
             self.expect_cbrace()?;
-            ImportsKind::List(imports, commas, (obrace, cbrace))
+            ImportsKind::List(imports, (obrace, cbrace))
         } else if self.is_ident() {
             let ident = self.parse_ident()?;
             ImportsKind::Default(ident)
@@ -468,7 +441,6 @@ impl Parser {
         let span = self.current().span;
         let constant = self.parse_constant();
 
-        let keyword = self.current().span;
         if !self.eat_keyword(ptok!(Fn)) {
             self.emit(InvalidFunctionSignature {
                 span: (span, self.file),
@@ -488,7 +460,7 @@ impl Parser {
         debug!("=== Starting to parse function: {}", ident);
 
         let generics = self.parse_generics()?;
-        let (params, parens) = self.parse_fn_params()?;
+        let params = self.parse_fn_params()?;
 
         let ret_type = self.parse_return_type()?;
 
@@ -498,8 +470,6 @@ impl Parser {
             name: ident,
             params,
             return_type: ret_type,
-            keyword,
-            parens,
         }))
     }
 
@@ -514,14 +484,13 @@ impl Parser {
         }
     }
 
-    pub fn parse_fn_params(&mut self) -> PResult<(Vec<Param>, Option<(Span, Span)>)> {
+    pub fn parse_fn_params(&mut self) -> PResult<Vec<Param>> {
         let mut params = vec![];
         if !self.current_token.is_delimiter(Delimiter::Paren, Orientation::Open) {
             self.emit(MissingParamList { span: (self.prev().span.from_end(), self.file) });
 
-            return Ok((params, None));
+            return Ok(params);
         }
-        let oparen = self.current().span;
         self.expect_oparen()?;
 
         while !self.is_paren(Orientation::Close) {
@@ -535,34 +504,22 @@ impl Parser {
             let colon = self.current().span;
             self.expect(TokenKind::Colon)?;
             let ty = self.parse_type()?;
+            params.push(Param {
+                id: self.new_id(),
+                span: span_start.to(self.prev().span),
+                ty,
+                name: ident,
+                colon,
+            });
 
-            let comma = self.current().span;
             if !self.eat(TokenKind::Comma) {
-                params.push(Param {
-                    id: self.new_id(),
-                    span: span_start.to(self.prev().span),
-                    ty,
-                    name: ident,
-                    colon,
-                    comma: None,
-                });
                 break;
-            } else {
-                params.push(Param {
-                    id: self.new_id(),
-                    span: span_start.to(self.prev().span),
-                    ty,
-                    name: ident,
-                    colon,
-                    comma: Some(comma),
-                });
             }
         }
 
-        let cparen = self.current().span;
         self.expect_cparen()?;
 
-        Ok((params, Some((oparen, cparen))))
+        Ok(params)
     }
 
     pub fn parse_ident(&mut self) -> PResult<Ident> {

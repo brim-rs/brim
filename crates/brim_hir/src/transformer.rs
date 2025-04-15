@@ -495,10 +495,10 @@ impl<'a> Transformer<'a> {
                     op,
                     Box::new(self.transform_expr(*rhs).0),
                 ),
-                ExprKind::Unary(op, expr) => {
+                ExprKind::Unary(_, op, expr) => {
                     HirExprKind::Unary(op, Box::new(self.transform_expr(*expr).0))
                 }
-                ExprKind::Field(idents) => HirExprKind::Field(idents),
+                ExprKind::Field(idents, ..) => HirExprKind::Field(idents),
                 ExprKind::Index(expr, index) => HirExprKind::Index(
                     Box::new(self.transform_expr(*expr).0),
                     Box::new(self.transform_expr(*index).0),
@@ -520,7 +520,7 @@ impl<'a> Transformer<'a> {
                         HirExprKind::Literal(lit)
                     }
                 }
-                ExprKind::Paren(expr, _) => self.transform_expr(*expr).0.kind,
+                ExprKind::Paren(expr) => self.transform_expr(*expr).0.kind,
                 ExprKind::Return(expr, _) => {
                     HirExprKind::Return(Box::new(self.transform_expr(*expr).0))
                 }
@@ -559,7 +559,7 @@ impl<'a> Transformer<'a> {
                     Box::new(self.transform_expr(*rhs).0),
                 ),
                 ExprKind::Block(block) => HirExprKind::Block(self.transform_block(block)),
-                ExprKind::Call(expr, args) => HirExprKind::Call(
+                ExprKind::Call(expr, args, ..) => HirExprKind::Call(
                     Box::new(self.transform_expr(*expr).0),
                     args.iter().map(|arg| self.transform_expr(arg.clone()).0).collect(),
                     vec![],
@@ -612,7 +612,7 @@ impl<'a> Transformer<'a> {
                     })
                 }
                 ExprKind::Match(mt) => HirExprKind::Match(self.transform_match(mt)),
-                ExprKind::Path(_) => {
+                ExprKind::Path(..) => {
                     let id = self.compiled.get_assigned_path(expr.id);
 
                     HirExprKind::Path(id)
@@ -722,7 +722,7 @@ impl<'a> Transformer<'a> {
                     Box::new(self.transform_ty(*ty).kind),
                     Box::new(self.transform_ty(*err_ty).kind),
                 ),
-                TyKind::Option(ty) => HirTyKind::Option(Box::new(self.transform_ty(*ty).kind)),
+                TyKind::Option(ty, _) => HirTyKind::Option(Box::new(self.transform_ty(*ty).kind)),
                 TyKind::Err(_) => panic!("on ty: {ty:?}"),
             },
         }

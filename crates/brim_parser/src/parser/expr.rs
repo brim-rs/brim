@@ -45,7 +45,7 @@ impl Parser {
         if self.current().is_assign() {
             debug!("Found assignment operator");
             self.advance();
-
+            let span = self.prev().span;
             let right = self.parse_assignment_expr()?;
             return Ok(self.new_expr(
                 expr.span.to(right.span),
@@ -130,6 +130,7 @@ impl Parser {
             }
 
             self.advance();
+
             let mut right = self.parse_unary_expr()?;
 
             while let Some(next_operator) = self.parse_binary_operator() {
@@ -161,7 +162,9 @@ impl Parser {
 
             self.advance();
             let operand = self.parse_unary_expr()?;
-            return Ok(self.new_expr(span.to(operand.span), ExprKind::Unary(op, Box::new(operand))));
+            return Ok(
+                self.new_expr(span.to(operand.span), ExprKind::Unary(span, op, Box::new(operand)))
+            );
         }
 
         self.parse_access_expr()
@@ -238,10 +241,10 @@ impl Parser {
 
                     if self.is_paren(Orientation::Open) {
                         self.expect_oparen()?;
-
                         let mut args = Vec::new();
                         while !self.is_paren(Orientation::Close) {
                             args.push(self.parse_expr()?);
+
                             if !self.eat(TokenKind::Comma) {
                                 break;
                             }
@@ -379,12 +382,10 @@ impl Parser {
                 debug!("Found parenthesized expression");
 
                 self.expect_oparen()?;
-                let oparen = self.prev().span;
                 let expr = self.parse_expr()?;
                 self.expect_cparen()?;
-                let cparen = self.prev().span;
 
-                Ok(self.new_expr(expr.span, ExprKind::Paren(Box::new(expr), (oparen, cparen))))
+                Ok(self.new_expr(expr.span, ExprKind::Paren(Box::new(expr))))
             }
             TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open) => {
                 let span_start = self.current().span;

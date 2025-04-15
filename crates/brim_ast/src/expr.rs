@@ -31,7 +31,7 @@ pub enum ExprKind {
     /// `1 + 2`, `x * y`
     Binary(Box<Expr>, BinOpKind, Box<Expr>),
     /// `try x()`, `!x`
-    Unary(UnaryOp, Box<Expr>),
+    Unary(Span, UnaryOp, Box<Expr>),
     /// `x.name`
     Field(Vec<Ident>),
     /// `x[0]`
@@ -43,7 +43,7 @@ pub enum ExprKind {
     /// `123`, `"hello"`, etc.
     Literal(Lit, Span),
     /// `(x + y) * z`
-    Paren(Box<Expr>, (Span, Span)),
+    Paren(Box<Expr>),
     /// `return x`
     Return(Box<Expr>, Span),
     /// `x`

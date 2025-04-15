@@ -115,14 +115,14 @@ pub trait AstWalker {
                 self.visit_expr(lhs);
                 self.visit_expr(rhs);
             }
-            ExprKind::Unary(op, operand) => self.visit_unary(op, operand),
+            ExprKind::Unary(_, op, operand) => self.visit_unary(op, operand),
             ExprKind::Field(_) => {}
             ExprKind::Index(base, index) => {
                 self.visit_expr(base);
                 self.visit_expr(index);
             }
             ExprKind::Literal(..) => {}
-            ExprKind::Paren(inner, _) => self.visit_expr(inner),
+            ExprKind::Paren(inner) => self.visit_expr(inner),
             ExprKind::Return(inner, _) => self.visit_expr(inner),
             ExprKind::Var(_) => {}
             ExprKind::AssignOp(lhs, _, rhs) | ExprKind::Assign(lhs, rhs) => {
@@ -130,7 +130,7 @@ pub trait AstWalker {
                 self.visit_expr(rhs);
             }
             ExprKind::Block(block) => self.visit_block(block),
-            ExprKind::Call(func, args) => {
+            ExprKind::Call(func, args, ..) => {
                 self.visit_expr(func);
                 for arg in args {
                     self.visit_expr(arg);
@@ -147,7 +147,7 @@ pub trait AstWalker {
                 self.visit_struct_constructor(ident, gens, fields);
             }
             ExprKind::Match(mt) => self.visit_match(mt),
-            ExprKind::Path(_) => {}
+            ExprKind::Path(..) => {}
             ExprKind::Type(ty) => {
                 self.visit_ty(ty);
             }
