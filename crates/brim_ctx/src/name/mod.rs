@@ -3,8 +3,9 @@ pub mod scopes;
 
 use crate::name::{
     errors::{
-        AccessOutsideComptime, InvalidPathAccess, NamespaceMissingSymbol, NoVariantOrItemInEnum,
-        UndeclaredFunction, UndeclaredStruct, UndeclaredVariable,
+        AccessOutsideComptime, ConstructorNotAStruct, FieldNotInStruct, InvalidPathAccess,
+        NamespaceMissingSymbol, NoVariantOrItemInEnum, UndeclaredFunction, UndeclaredStruct,
+        UndeclaredVariable,
     },
     scopes::Scope,
 };
@@ -28,6 +29,7 @@ use errors::{
     StaticCallToMethodInStruct,
 };
 use scopes::{ScopeManager, VariableInfo};
+use std::fmt::format;
 use tracing::{debug, trace};
 
 #[derive(Debug, Clone)]
@@ -471,7 +473,10 @@ impl AstWalker for NameResolver<'_> {
             ExprKind::Paren(inner) | ExprKind::Return(inner, _) => self.walk_expr(inner),
             ExprKind::Var(ident) => {
                 if let Some(item) = self.compiled.symbols.resolve(&ident.to_string(), self.file) {
-                    let item = self.simple.get_item(item.id.item_id);
+                    let item = self.simple.items.get(&item.id.item_id).expect(&format!(
+                        "looked for item {ident} in module {} {:#?}",
+                        self.file, item
+                    ));
 
                     match &item.kind {
                         ItemKind::TypeAlias(ty) => {
@@ -541,7 +546,27 @@ impl AstWalker for NameResolver<'_> {
                 let name = ident.to_string();
                 let func_sym = self.compiled.symbols.resolve(&name, self.file);
 
-                if func_sym.is_none() {
+                if let Some(sym) = func_sym {
+                    let item = self.simple.get_item(sym.id.item_id).clone();
+                    self.resolve_ident(item.ident);
+
+                    if let Some(item) = item.kind.as_struct() {
+                        for (ident, _) in fields.iter_mut() {
+                            if let None = item.find_field(ident.clone()) {
+                                self.ctx.emit_impl(FieldNotInStruct {
+                                    span: (ident.span, self.file),
+                                    name: ident.to_string(),
+                                    struct_name: name.clone(),
+                                });
+                            }
+                        }
+                    } else {
+                        self.ctx.emit_impl(ConstructorNotAStruct {
+                            span: (ident.span, self.file),
+                            struct_name: name,
+                        });
+                    }
+                } else {
                     self.ctx
                         .emit(Box::new(UndeclaredStruct { span: (ident.span, self.file), name }));
                 }

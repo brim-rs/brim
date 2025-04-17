@@ -4,7 +4,7 @@ use thiserror::Error;
 
 #[derive(Debug)]
 #[non_exhaustive]
-pub enum Error {
+pub enum FilesError {
     FileMissing,
     IndexTooLarge { given: usize, max: usize },
     LineTooLarge { given: usize, max: usize },
@@ -13,35 +13,37 @@ pub enum Error {
     Io(std::io::Error),
 }
 
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Error {
-        Error::Io(err)
+impl From<std::io::Error> for FilesError {
+    fn from(err: std::io::Error) -> FilesError {
+        FilesError::Io(err)
     }
 }
 
-impl std::fmt::Display for Error {
+impl std::fmt::Display for FilesError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::FileMissing => write!(f, "file missing"),
-            Error::IndexTooLarge { given, max } => {
+            FilesError::FileMissing => write!(f, "file missing"),
+            FilesError::IndexTooLarge { given, max } => {
                 write!(f, "invalid index {}, maximum index is {}", given, max)
             }
-            Error::LineTooLarge { given, max } => {
+            FilesError::LineTooLarge { given, max } => {
                 write!(f, "invalid line {}, maximum line is {}", given, max)
             }
-            Error::ColumnTooLarge { given, max } => {
+            FilesError::ColumnTooLarge { given, max } => {
                 write!(f, "invalid column {}, maximum column {}", given, max)
             }
-            Error::InvalidCharBoundary { .. } => write!(f, "index is not a code point boundary"),
-            Error::Io(err) => write!(f, "{}", err),
+            FilesError::InvalidCharBoundary { .. } => {
+                write!(f, "index is not a code point boundary")
+            }
+            FilesError::Io(err) => write!(f, "{}", err),
         }
     }
 }
 
-impl std::error::Error for Error {
+impl std::error::Error for FilesError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self {
-            Error::Io(err) => Some(err),
+            FilesError::Io(err) => Some(err),
             _ => None,
         }
     }
@@ -51,14 +53,14 @@ pub trait Files<'a> {
     type FileId: 'a + Copy + PartialEq;
     type Source: 'a + AsRef<str>;
 
-    fn name(&'a self, id: Self::FileId) -> Result<PathBuf, Error>;
+    fn name(&'a self, id: Self::FileId) -> Result<PathBuf, FilesError>;
 
-    fn source(&'a self, id: Self::FileId) -> Result<Self::Source, Error>;
+    fn source(&'a self, id: Self::FileId) -> Result<Self::Source, FilesError>;
 
-    fn line_index(&'a self, id: Self::FileId, byte_index: usize) -> Result<usize, Error>;
+    fn line_index(&'a self, id: Self::FileId, byte_index: usize) -> Result<usize, FilesError>;
 
     #[allow(unused_variables)]
-    fn line_number(&'a self, id: Self::FileId, line_index: usize) -> Result<usize, Error> {
+    fn line_number(&'a self, id: Self::FileId, line_index: usize) -> Result<usize, FilesError> {
         Ok(line_index + 1)
     }
 
@@ -67,7 +69,7 @@ pub trait Files<'a> {
         id: Self::FileId,
         line_index: usize,
         byte_index: usize,
-    ) -> Result<usize, Error> {
+    ) -> Result<usize, FilesError> {
         let source = self.source(id)?;
         let line_range = self.line_range(id, line_index)?;
         let column_index = column_index(source.as_ref(), line_range, byte_index);
@@ -75,7 +77,7 @@ pub trait Files<'a> {
         Ok(column_index + 1)
     }
 
-    fn location(&'a self, id: Self::FileId, byte_index: usize) -> Result<Location, Error> {
+    fn location(&'a self, id: Self::FileId, byte_index: usize) -> Result<Location, FilesError> {
         let line_index = self.line_index(id, byte_index)?;
 
         Ok(Location {
@@ -84,7 +86,11 @@ pub trait Files<'a> {
         })
     }
 
-    fn line_range(&'a self, id: Self::FileId, line_index: usize) -> Result<Range<usize>, Error>;
+    fn line_range(
+        &'a self,
+        id: Self::FileId,
+        line_index: usize,
+    ) -> Result<Range<usize>, FilesError>;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -126,7 +132,7 @@ impl SimpleFile {
         &self.source
     }
 
-    fn line_start(&self, line_index: usize) -> Result<usize, Error> {
+    fn line_start(&self, line_index: usize) -> Result<usize, FilesError> {
         use std::cmp::Ordering;
 
         match line_index.cmp(&self.line_starts.len()) {
@@ -137,7 +143,7 @@ impl SimpleFile {
                 .expect("failed despite previous check")),
             Ordering::Equal => Ok(self.source.len()),
             Ordering::Greater => {
-                Err(Error::LineTooLarge { given: line_index, max: self.line_starts.len() - 1 })
+                Err(FilesError::LineTooLarge { given: line_index, max: self.line_starts.len() - 1 })
             }
         }
     }
@@ -151,19 +157,19 @@ impl<'a> Files<'a> for SimpleFile {
     type FileId = ();
     type Source = &'a str;
 
-    fn name(&self, (): ()) -> Result<PathBuf, Error> {
+    fn name(&self, (): ()) -> Result<PathBuf, FilesError> {
         Ok(self.name.clone())
     }
 
-    fn source(&self, (): ()) -> Result<&str, Error> {
+    fn source(&self, (): ()) -> Result<&str, FilesError> {
         Ok(self.source.as_ref())
     }
 
-    fn line_index(&self, (): (), byte_index: usize) -> Result<usize, Error> {
+    fn line_index(&self, (): (), byte_index: usize) -> Result<usize, FilesError> {
         Ok(self.line_starts.binary_search(&byte_index).unwrap_or_else(|next_line| next_line - 1))
     }
 
-    fn line_range(&self, (): (), line_index: usize) -> Result<Range<usize>, Error> {
+    fn line_range(&self, (): (), line_index: usize) -> Result<Range<usize>, FilesError> {
         let line_start = self.line_start(line_index)?;
         let next_line_start = self.line_start(line_index + 1)?;
 
@@ -215,18 +221,18 @@ impl SimpleFiles {
     }
 
     /// Retrieves a file by its ID
-    pub fn get(&self, file_id: usize) -> Result<&SimpleFile, Error> {
-        self.files.iter().find(|file| file.id == file_id).ok_or(Error::FileMissing)
+    pub fn get(&self, file_id: usize) -> Result<&SimpleFile, FilesError> {
+        self.files.iter().find(|file| file.id == file_id).ok_or(FilesError::FileMissing)
     }
 
     /// Retrieves a file by its name
-    pub fn get_by_name(&self, name: &PathBuf) -> Result<&SimpleFile, Error> {
-        self.files.iter().find(|file| file.name == *name).ok_or(Error::FileMissing)
+    pub fn get_by_name(&self, name: &PathBuf) -> Result<&SimpleFile, FilesError> {
+        self.files.iter().find(|file| file.name == *name).ok_or(FilesError::FileMissing)
     }
 
     /// Gets the index of a file by its name
-    pub fn get_index_by_name(&self, name: &PathBuf) -> Result<usize, Error> {
-        self.files.iter().position(|file| file.name == *name).ok_or(Error::FileMissing)
+    pub fn get_index_by_name(&self, name: &PathBuf) -> Result<usize, FilesError> {
+        self.files.iter().position(|file| file.name == *name).ok_or(FilesError::FileMissing)
     }
 
     /// Updates an existing file
@@ -249,9 +255,9 @@ impl SimpleFiles {
     }
 
     /// Removes a file by ID
-    pub fn remove(&mut self, file_id: usize) -> Result<SimpleFile, Error> {
+    pub fn remove(&mut self, file_id: usize) -> Result<SimpleFile, FilesError> {
         let position =
-            self.files.iter().position(|file| file.id == file_id).ok_or(Error::FileMissing)?;
+            self.files.iter().position(|file| file.id == file_id).ok_or(FilesError::FileMissing)?;
         Ok(self.files.remove(position))
     }
 }
@@ -277,19 +283,19 @@ impl<'a> Files<'a> for SimpleFiles {
     type FileId = usize;
     type Source = &'a str;
 
-    fn name(&self, file_id: usize) -> Result<PathBuf, Error> {
+    fn name(&self, file_id: usize) -> Result<PathBuf, FilesError> {
         Ok(self.get(file_id)?.name().clone())
     }
 
-    fn source(&self, file_id: usize) -> Result<&str, Error> {
+    fn source(&self, file_id: usize) -> Result<&str, FilesError> {
         Ok(self.get(file_id)?.source().as_ref())
     }
 
-    fn line_index(&self, file_id: usize, byte_index: usize) -> Result<usize, Error> {
+    fn line_index(&self, file_id: usize, byte_index: usize) -> Result<usize, FilesError> {
         self.get(file_id)?.line_index((), byte_index)
     }
 
-    fn line_range(&self, file_id: usize, line_index: usize) -> Result<Range<usize>, Error> {
+    fn line_range(&self, file_id: usize, line_index: usize) -> Result<Range<usize>, FilesError> {
         self.get(file_id)?.line_range((), line_index)
     }
 }
@@ -309,15 +315,15 @@ pub fn add_file(name: PathBuf, source: String) -> usize {
     GLOBAL_FILES.lock().expect("Failed to lock global files").add(name, source)
 }
 
-pub fn get_file(file_id: usize) -> Result<SimpleFile, Error> {
+pub fn get_file(file_id: usize) -> Result<SimpleFile, FilesError> {
     GLOBAL_FILES.lock().expect("Failed to lock global files").get(file_id).cloned()
 }
 
-pub fn get_file_by_name(name: &PathBuf) -> Result<SimpleFile, Error> {
+pub fn get_file_by_name(name: &PathBuf) -> Result<SimpleFile, FilesError> {
     GLOBAL_FILES.lock().expect("Failed to lock global files").get_by_name(name).cloned()
 }
 
-pub fn get_index_by_name(name: &PathBuf) -> Result<usize, Error> {
+pub fn get_index_by_name(name: &PathBuf) -> Result<usize, FilesError> {
     GLOBAL_FILES.lock().expect("Failed to lock global files").get_index_by_name(name)
 }
 
@@ -325,7 +331,7 @@ pub fn update_file(file_id: usize, name: PathBuf, source: String) {
     GLOBAL_FILES.lock().expect("Failed to lock global files").update(file_id, name, source)
 }
 
-pub fn remove_file(file_id: usize) -> Result<SimpleFile, Error> {
+pub fn remove_file(file_id: usize) -> Result<SimpleFile, FilesError> {
     GLOBAL_FILES.lock().expect("Failed to lock global files").remove(file_id)
 }
 
@@ -333,10 +339,10 @@ pub fn files() -> Vec<SimpleFile> {
     GLOBAL_FILES.lock().expect("Failed to lock global files").files.clone()
 }
 
-pub fn get_path(file_id: usize) -> Result<PathBuf, Error> {
+pub fn get_path(file_id: usize) -> Result<PathBuf, FilesError> {
     GLOBAL_FILES.lock().expect("Failed to lock global files").name(file_id)
 }
 
-pub fn get_id_by_name(name: &PathBuf) -> Result<usize, Error> {
+pub fn get_id_by_name(name: &PathBuf) -> Result<usize, FilesError> {
     GLOBAL_FILES.lock().expect("Failed to lock global files").get_index_by_name(name)
 }

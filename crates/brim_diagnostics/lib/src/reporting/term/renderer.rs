@@ -3,7 +3,7 @@ use crate::reporting::{
     term::{Chars, DiagConfig, Styles},
 };
 use anstyle::Style;
-use brim_span::files::{Error, Location};
+use brim_span::files::{FilesError, Location};
 use std::{
     io::{self, Write},
     ops::Range,
@@ -59,7 +59,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         severity: Severity,
         code: Option<&str>,
         message: &str,
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         if let Some(locus) = locus {
             self.snippet_locus(locus)?;
             write!(self, ": ")?;
@@ -89,7 +89,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         Ok(())
     }
 
-    pub fn render_empty(&mut self) -> Result<(), Error> {
+    pub fn render_empty(&mut self) -> Result<(), FilesError> {
         writeln!(self)?;
         Ok(())
     }
@@ -98,7 +98,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         &mut self,
         outer_padding: usize,
         locus: &Locus,
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         self.outer_gutter(outer_padding)?;
 
         self.set_color(&self.styles().source_border)?;
@@ -122,7 +122,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         single_labels: &[SingleLabel],
         num_multi_labels: usize,
         multi_labels: &[(usize, LabelStyle, MultiLabel<'_>)],
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         let source = source.trim_end_matches(['\n', '\r', '\0'].as_ref());
 
         {
@@ -387,7 +387,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         severity: Severity,
         num_multi_labels: usize,
         multi_labels: &[(usize, LabelStyle, MultiLabel<'_>)],
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         self.outer_gutter(outer_padding)?;
         self.border_left()?;
         self.inner_gutter(severity, num_multi_labels, multi_labels)?;
@@ -401,7 +401,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         severity: Severity,
         num_multi_labels: usize,
         multi_labels: &[(usize, LabelStyle, MultiLabel<'_>)],
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         self.outer_gutter(outer_padding)?;
         self.border_left_break()?;
         self.inner_gutter(severity, num_multi_labels, multi_labels)?;
@@ -413,7 +413,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         &mut self,
         outer_padding: usize,
         message: &str,
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         for (note_line_index, line) in message.lines().enumerate() {
             self.outer_gutter(outer_padding)?;
             match note_line_index {
@@ -455,7 +455,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         })
     }
 
-    fn snippet_locus(&mut self, locus: &Locus) -> Result<(), Error> {
+    fn snippet_locus(&mut self, locus: &Locus) -> Result<(), FilesError> {
         write!(
             self,
             "{name}:{line_number}:{column_number}",
@@ -466,7 +466,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         Ok(())
     }
 
-    fn outer_gutter(&mut self, outer_padding: usize) -> Result<(), Error> {
+    fn outer_gutter(&mut self, outer_padding: usize) -> Result<(), FilesError> {
         write!(self, "{space: >width$} ", space = "", width = outer_padding)?;
         Ok(())
     }
@@ -475,7 +475,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         &mut self,
         line_number: usize,
         outer_padding: usize,
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         self.set_color(&self.styles().line_number)?;
         write!(self, "{line_number: >width$}", line_number = line_number, width = outer_padding,)?;
         self.reset()?;
@@ -483,14 +483,14 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         Ok(())
     }
 
-    fn border_left(&mut self) -> Result<(), Error> {
+    fn border_left(&mut self) -> Result<(), FilesError> {
         self.set_color(&self.styles().source_border)?;
         write!(self, "{}", self.chars().source_border_left)?;
         self.reset()?;
         Ok(())
     }
 
-    fn border_left_break(&mut self) -> Result<(), Error> {
+    fn border_left_break(&mut self) -> Result<(), FilesError> {
         self.set_color(&self.styles().source_border)?;
         write!(self, "{}", self.chars().source_border_left_break)?;
         self.reset()?;
@@ -504,7 +504,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         single_labels: &[SingleLabel],
         trailing_label: Option<(usize, &SingleLabel)>,
         char_indices: impl Iterator<Item = (usize, char)>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         for (metrics, ch) in self.char_metrics(char_indices) {
             let column_range = metrics.byte_index..(metrics.byte_index + ch.len_utf8());
             let label_style = hanging_labels(single_labels, trailing_label)
@@ -535,7 +535,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         severity: Severity,
         label_style: LabelStyle,
         underline: Option<LabelStyle>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         match underline {
             None => write!(self, " ")?,
 
@@ -555,7 +555,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         &mut self,
         severity: Severity,
         label_style: LabelStyle,
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         write!(self, " ")?;
         self.set_color(self.styles().label(severity, label_style))?;
         write!(self, "{}", self.chars().multi_top_left)?;
@@ -567,7 +567,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         &mut self,
         severity: Severity,
         label_style: LabelStyle,
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         write!(self, " ")?;
         self.set_color(self.styles().label(severity, label_style))?;
         write!(self, "{}", self.chars().multi_bottom_left)?;
@@ -581,7 +581,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         label_style: LabelStyle,
         source: &str,
         start: usize,
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         self.set_color(self.styles().label(severity, label_style.clone()))?;
 
         for (metrics, _) in self
@@ -613,7 +613,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         source: &str,
         start: usize,
         message: &str,
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         self.set_color(self.styles().label(severity, label_style.clone()))?;
 
         for (metrics, _) in self
@@ -644,7 +644,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         &mut self,
         severity: Severity,
         underline: Option<Underline>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         match underline {
             None => self.inner_gutter_space(),
             Some((label_style, vertical_bound)) => {
@@ -660,7 +660,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         }
     }
 
-    fn inner_gutter_space(&mut self) -> Result<(), Error> {
+    fn inner_gutter_space(&mut self) -> Result<(), FilesError> {
         write!(self, "  ")?;
         Ok(())
     }
@@ -670,7 +670,7 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
         severity: Severity,
         num_multi_labels: usize,
         multi_labels: &[(usize, LabelStyle, MultiLabel<'_>)],
-    ) -> Result<(), Error> {
+    ) -> Result<(), FilesError> {
         let mut multi_labels_iter = multi_labels.iter().peekable();
         for label_column in 0..num_multi_labels {
             match multi_labels_iter.peek() {

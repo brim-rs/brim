@@ -1,5 +1,5 @@
 use crate::{
-    files::Error,
+    files::FilesError,
     index::{ByteIndex, ColumnIndex, LineIndex, LineOffset, RawIndex},
     location::Location,
     span::Span,
@@ -74,7 +74,7 @@ where
         &self,
         file_id: FileId,
         line_index: impl Into<LineIndex>,
-    ) -> Result<Span, Error> {
+    ) -> Result<Span, FilesError> {
         self.get(file_id).line_span(line_index.into())
     }
 
@@ -86,7 +86,7 @@ where
         &self,
         file_id: FileId,
         byte_index: impl Into<ByteIndex>,
-    ) -> Result<Location, Error> {
+    ) -> Result<Location, FilesError> {
         self.get(file_id).location(byte_index.into())
     }
 
@@ -98,7 +98,7 @@ where
         self.get(file_id).source_span()
     }
 
-    pub fn source_slice(&self, file_id: FileId, span: impl Into<Span>) -> Result<&str, Error> {
+    pub fn source_slice(&self, file_id: FileId, span: impl Into<Span>) -> Result<&str, FilesError> {
         self.get(file_id).source_slice(span.into())
     }
 }
@@ -110,17 +110,17 @@ where
     type FileId = FileId;
     type Source = &'a str;
 
-    fn name(&self, id: FileId) -> Result<PathBuf, Error> {
+    fn name(&self, id: FileId) -> Result<PathBuf, FilesError> {
         use std::path::PathBuf;
 
         Ok(PathBuf::from(self.name(id)))
     }
 
-    fn source(&'a self, id: FileId) -> Result<&'a str, Error> {
+    fn source(&'a self, id: FileId) -> Result<&'a str, FilesError> {
         Ok(self.source(id).as_ref())
     }
 
-    fn line_index(&self, id: FileId, byte_index: usize) -> Result<usize, Error> {
+    fn line_index(&self, id: FileId, byte_index: usize) -> Result<usize, FilesError> {
         Ok(self.line_index(id, byte_index as u32).to_usize())
     }
 
@@ -128,7 +128,7 @@ where
         &'a self,
         id: FileId,
         line_index: usize,
-    ) -> Result<std::ops::Range<usize>, Error> {
+    ) -> Result<std::ops::Range<usize>, FilesError> {
         let span = self.line_span(id, line_index as u32)?;
 
         Ok(span.start().to_usize()..span.end().to_usize())
@@ -162,13 +162,13 @@ where
         &self.name
     }
 
-    fn line_start(&self, line_index: LineIndex) -> Result<ByteIndex, Error> {
+    fn line_start(&self, line_index: LineIndex) -> Result<ByteIndex, FilesError> {
         use std::cmp::Ordering;
 
         match line_index.cmp(&self.last_line_index()) {
             Ordering::Less => Ok(self.line_starts[line_index.to_usize()]),
             Ordering::Equal => Ok(self.source_span().end()),
-            Ordering::Greater => Err(Error::LineTooLarge {
+            Ordering::Greater => Err(FilesError::LineTooLarge {
                 given: line_index.to_usize(),
                 max: self.last_line_index().to_usize(),
             }),
@@ -179,7 +179,7 @@ where
         LineIndex::from(self.line_starts.len() as RawIndex)
     }
 
-    fn line_span(&self, line_index: LineIndex) -> Result<Span, Error> {
+    fn line_span(&self, line_index: LineIndex) -> Result<Span, FilesError> {
         let line_start = self.line_start(line_index)?;
         let next_line_start = self.line_start(line_index + LineOffset::from(1))?;
 
@@ -193,12 +193,13 @@ where
         }
     }
 
-    fn location(&self, byte_index: ByteIndex) -> Result<Location, Error> {
+    fn location(&self, byte_index: ByteIndex) -> Result<Location, FilesError> {
         let line_index = self.line_index(byte_index);
-        let line_start_index = self.line_start(line_index).map_err(|_| Error::IndexTooLarge {
-            given: byte_index.to_usize(),
-            max: self.source().as_ref().len() - 1,
-        })?;
+        let line_start_index =
+            self.line_start(line_index).map_err(|_| FilesError::IndexTooLarge {
+                given: byte_index.to_usize(),
+                max: self.source().as_ref().len() - 1,
+            })?;
         let line_src = self
             .source
             .as_ref()
@@ -207,9 +208,9 @@ where
                 let given = byte_index.to_usize();
                 let max = self.source().as_ref().len() - 1;
                 if given > max {
-                    Error::IndexTooLarge { given, max }
+                    FilesError::IndexTooLarge { given, max }
                 } else {
-                    Error::InvalidCharBoundary { given }
+                    FilesError::InvalidCharBoundary { given }
                 }
             })?;
 
@@ -227,13 +228,13 @@ where
         Span::from_str(self.source.as_ref()).unwrap()
     }
 
-    fn source_slice(&self, span: Span) -> Result<&str, Error> {
+    fn source_slice(&self, span: Span) -> Result<&str, FilesError> {
         let start = span.start().to_usize();
         let end = span.end().to_usize();
 
         self.source.as_ref().get(start..end).ok_or_else(|| {
             let max = self.source().as_ref().len() - 1;
-            Error::IndexTooLarge { given: if start > max { start } else { end }, max }
+            FilesError::IndexTooLarge { given: if start > max { start } else { end }, max }
         })
     }
 }

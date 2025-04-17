@@ -10,6 +10,7 @@ use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
 use brim_span::{files::get_id_by_name, span::Span};
 use std::{collections::HashMap, path::PathBuf};
+use tracing::info;
 
 #[derive(Debug, Clone)]
 pub struct Module {

@@ -112,3 +112,20 @@ pub struct IdentifierNotFound {
     pub span: (Span, usize),
     pub name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("constructor `{struct_name}` is not a struct")]
+pub struct ConstructorNotAStruct {
+    #[error("constructor `{struct_name}` is not a struct")]
+    pub span: (Span, usize),
+    pub struct_name: String,
+}
+
+#[derive(Diagnostic)]
+#[error("field `{name}` is not a field in struct `{struct_name}`")]
+pub struct FieldNotInStruct {
+    #[error("field `{name}` is not a field in struct `{struct_name}`")]
+    pub span: (Span, usize),
+    pub name: String,
+    pub struct_name: String,
+}

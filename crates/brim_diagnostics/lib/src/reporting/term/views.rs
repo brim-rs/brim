@@ -5,7 +5,7 @@ use crate::reporting::{
         renderer::{Locus, MultiLabel, Renderer, SingleLabel},
     },
 };
-use brim_span::files::{Error, Files, Location};
+use brim_span::files::{Files, FilesError, Location};
 use std::ops::Range;
 
 fn count_digits(n: usize) -> usize {
@@ -32,7 +32,7 @@ where
         &self,
         files: &'files impl Files<'files, FileId = FileId>,
         renderer: &mut Renderer<'_, '_>,
-    ) -> Result<(), Error>
+    ) -> Result<(), FilesError>
     where
         FileId: 'files,
     {

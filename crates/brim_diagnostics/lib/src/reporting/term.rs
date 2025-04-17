@@ -15,7 +15,7 @@ pub fn emit<'files, F: Files<'files>>(
     config: &DiagConfig,
     files: &'files F,
     diagnostic: &Diagnostic<F::FileId>,
-) -> Result<(), brim_span::files::Error> {
+) -> Result<(), brim_span::files::FilesError> {
     use self::{renderer::Renderer, views::RichDiagnostic};
 
     let mut renderer = Renderer::new(writer, config);

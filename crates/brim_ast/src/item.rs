@@ -219,6 +219,10 @@ impl Struct {
     pub fn find_item(&self, id: Ident) -> Option<&Item> {
         self.items.iter().find(|item| item.ident == id)
     }
+
+    pub fn find_field(&self, id: Ident) -> Option<&Field> {
+        self.fields.iter().find(|field| field.ident == id)
+    }
 }
 
 #[derive(Clone, Debug)]

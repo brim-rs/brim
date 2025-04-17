@@ -150,6 +150,15 @@ pub enum StoredHirItem {
     Expr(HirExpr),
 }
 
+impl StoredHirItem {
+    pub fn as_item(&self) -> HirItem {
+        match self {
+            StoredHirItem::Item(item) => item.clone(),
+            _ => panic!("Expected item, found {:?}", self),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct HirModule {
     /// In hir we no longer use file ids, we use module ids.
