@@ -24,12 +24,15 @@ pub struct Handle {
                         .OffsetHigh = @cast((offset! >> 32), DWORD)
                     },
                 },
-                .test = 0,
                 .hEvent = @none()
             }) : @none();
 
         if WriteFile(self.inner, data.ptr, data.len, &bytes_written, overlapped ? @cast(&*overlapped, *void) : @null()) == 0 {
             return @err(IoError::fromOsError(GetLastError()));
+        }
+
+        if bytes_written != data.len {
+            return @err(IoError::fromOsError("wd")); // TODO: Use a more specific error
         }
 
         return @ok(bytes_written);

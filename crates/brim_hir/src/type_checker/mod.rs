@@ -3,7 +3,7 @@ mod expr;
 mod functions;
 
 use crate::{
-    CompiledModules,
+    MainContext,
     inference::scope::TypeScopeManager,
     items::{HirFn, HirItemKind},
     transformer::{HirModule, HirModuleMap},
@@ -18,19 +18,19 @@ pub struct TypeChecker {
     pub mod_id: usize,
     pub scope_manager: TypeScopeManager,
     pub current_fn: Option<HirFn>,
-    pub compiled: CompiledModules,
+    pub main_ctx: MainContext,
     pub ty_returned_from_fn: Option<HirTyKind>,
 }
 
 impl TypeChecker {
-    pub fn new(hir: HirModuleMap, compiled: CompiledModules) -> Self {
+    pub fn new(hir: HirModuleMap, main_ctx: MainContext) -> Self {
         Self {
             ctx: TemporaryDiagnosticContext::new(),
             hir,
             mod_id: 0,
             scope_manager: TypeScopeManager::new(),
             current_fn: None,
-            compiled,
+            main_ctx,
             ty_returned_from_fn: None,
         }
     }
@@ -47,19 +47,19 @@ impl TypeChecker {
             HirItemKind::Fn(func) => self.check_fn(func),
             HirItemKind::External(external) => {
                 for item in external.items {
-                    let item = self.compiled.get_item(item).clone();
+                    let item = self.main_ctx.get_item(item).clone();
                     self.check_item(item.kind);
                 }
             }
             HirItemKind::Struct(str) => {
                 for (_, item) in str.items {
-                    let item = self.compiled.get_item(item).clone();
+                    let item = self.main_ctx.get_item(item).clone();
                     self.check_item(item.kind);
                 }
             }
             HirItemKind::Enum(en) => {
                 for (_, item) in en.items {
-                    let item = self.compiled.get_item(item).clone();
+                    let item = self.main_ctx.get_item(item).clone();
                     self.check_item(item.kind);
                 }
             }
@@ -72,7 +72,7 @@ impl TypeChecker {
 
     pub fn check_module(&mut self, module: HirModule) {
         for item in module.items {
-            let item = self.compiled.get_item(item).clone();
+            let item = self.main_ctx.get_item(item).clone();
 
             self.check_item(item.kind);
         }

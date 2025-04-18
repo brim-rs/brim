@@ -2,7 +2,7 @@ pub mod errors;
 mod eval_scopes;
 
 use crate::{
-    CompiledModules,
+    MainContext,
     comptime::{
         errors::NoValueReturned,
         eval_scopes::{EvalScopeManager, VariableInfo},
@@ -47,19 +47,19 @@ impl Transformer<'_> {
     pub fn transform_comptime_expr(&mut self, expr: Expr) -> ComptimeReturnValue {
         let (expr, _) = self.transform_expr(expr);
 
-        Evaluator::new(self.current_mod_id, self.compiled).eval_expr(expr)
+        Evaluator::new(self.current_mod_id, self.main_ctx).eval_expr(expr)
     }
 }
 
 pub fn transform_comptime<'a>(
     hir: &'a mut HirModuleMap,
-    compiled: &'a mut CompiledModules,
+    main_ctx: &'a mut MainContext,
 ) -> ComptimeTransformer<'a> {
     let mut transformer = ComptimeTransformer {
         hir,
         current_mod: ModuleId::from_usize(0),
         temp: TemporaryDiagnosticContext::new(),
-        compiled,
+        main_ctx,
     };
 
     transformer.eval();
@@ -73,7 +73,7 @@ pub struct ComptimeTransformer<'a> {
     pub hir: &'a mut HirModuleMap,
     pub current_mod: ModuleId,
     pub temp: TemporaryDiagnosticContext,
-    pub compiled: &'a mut CompiledModules,
+    pub main_ctx: &'a mut MainContext,
 }
 
 impl ComptimeTransformer<'_> {
@@ -100,7 +100,7 @@ impl ComptimeTransformer<'_> {
     }
 
     fn visit_item(&mut self, item: &mut ItemId) {
-        let mut item = self.compiled.items[item].clone();
+        let mut item = self.main_ctx.items[item].clone();
 
         match &mut item.kind {
             HirItemKind::Fn(_) => {}
@@ -120,7 +120,7 @@ impl ComptimeTransformer<'_> {
         }
 
         self.hir.hir_items.insert(item.id, StoredHirItem::Item(item.clone()));
-        self.compiled.items.insert(item.id, item);
+        self.main_ctx.items.insert(item.id, item);
     }
 
     fn visit_type_alias(&mut self, type_alias: &mut HirTypeAlias) {
@@ -139,7 +139,7 @@ impl ComptimeTransformer<'_> {
     }
 
     fn transform_comptime_expr(&mut self, expr: HirExpr) -> ComptimeReturnValue {
-        Evaluator::new(self.current_mod, self.compiled).eval_expr(expr)
+        Evaluator::new(self.current_mod, self.main_ctx).eval_expr(expr)
     }
 }
 
@@ -150,17 +150,17 @@ pub struct Evaluator<'a> {
     pub last_val: Option<ComptimeReturnValue>,
     pub mod_id: usize,
     pub temp: TemporaryDiagnosticContext,
-    pub compiled: &'a mut CompiledModules,
+    pub main_ctx: &'a mut MainContext,
 }
 
 impl<'a> Evaluator<'a> {
-    pub fn new(mod_id: ModuleId, compiled: &'a mut CompiledModules) -> Self {
+    pub fn new(mod_id: ModuleId, main_ctx: &'a mut MainContext) -> Self {
         Self {
             scopes: EvalScopeManager::new(),
             last_val: None,
             mod_id: mod_id.as_usize(),
             temp: TemporaryDiagnosticContext::new(),
-            compiled,
+            main_ctx,
         }
     }
 }
@@ -237,7 +237,7 @@ impl Evaluator<'_> {
             HirExprKind::Match(mt) => self.eval_match(mt.clone()),
             HirExprKind::Type(ty) => ComptimeReturnValue::Ty(ty.clone()),
             HirExprKind::Path(id) => {
-                let item = self.compiled.get_item(*id);
+                let item = self.main_ctx.get_item(*id);
 
                 if let HirItemKind::TypeAlias(alias) = &item.kind {
                     if let ComptimeValue::Resolved(val) = &alias.ty {
@@ -254,7 +254,7 @@ impl Evaluator<'_> {
                 if let Some((_, info)) = self.scopes.resolve_variable(&ident) {
                     return info.val.clone();
                 } else {
-                    if let Some(item) = self.compiled.resolve_symbol(&ident, self.mod_id) {
+                    if let Some(item) = self.main_ctx.resolve_symbol(&ident, self.mod_id) {
                         if let HirItemKind::TypeAlias(alias) = &item.kind {
                             return alias.ty.resolved().clone();
                         } else {

@@ -2,7 +2,7 @@ mod errors;
 pub mod scope;
 
 use crate::{
-    CompiledModules,
+    MainContext,
     expr::{HirExpr, HirExprKind, HirIfStmt, HirMatch, HirMatchArm},
     inference::{
         errors::{
@@ -40,7 +40,7 @@ pub struct TypeInference<'a> {
     pub scope_manager: TypeScopeManager,
     pub current_mod: ModuleId,
     pub temp: TemporaryDiagnosticContext,
-    pub compiled: &'a mut CompiledModules,
+    pub main_ctx: &'a mut MainContext,
 }
 
 #[derive(Debug, Clone)]
@@ -71,7 +71,7 @@ impl InferCtx {
 
 pub fn infer_types<'a>(
     hir: &'a mut HirModuleMap,
-    compiled: &'a mut CompiledModules,
+    main_ctx: &'a mut MainContext,
 ) -> TypeInference<'a> {
     let mut ti = TypeInference {
         hir,
@@ -79,7 +79,7 @@ pub fn infer_types<'a>(
         scope_manager: TypeScopeManager::new(),
         current_mod: ModuleId::from_usize(0),
         temp: TemporaryDiagnosticContext::new(),
-        compiled,
+        main_ctx,
     };
     ti.infer();
 
@@ -122,7 +122,7 @@ impl TypeInference<'_> {
             HirTyKind::Vec(inner) => HirTyKind::Vec(Box::new(self.resolve_type_alias(inner))),
             HirTyKind::Ident { ident, .. } => {
                 if let Some(sym) =
-                    self.compiled.resolve_symbol(&ident.to_string(), self.current_mod.as_usize())
+                    self.main_ctx.resolve_symbol(&ident.to_string(), self.current_mod.as_usize())
                 {
                     if let HirItemKind::TypeAlias(ty_alias) = &sym.kind {
                         let resolved_ty = ty_alias.ty.resolved().as_ty();
@@ -170,7 +170,7 @@ impl TypeInference<'_> {
     }
 
     fn infer_item_inner(&mut self, id: ItemId) -> HirItem {
-        let mut item = self.compiled.items[&id].clone();
+        let mut item = self.main_ctx.items[&id].clone();
         match item.kind {
             HirItemKind::Fn(ref mut f) => {
                 self.scope_manager.push_scope();
@@ -275,7 +275,7 @@ impl TypeInference<'_> {
         let item = self.infer_item_inner(item);
 
         self.hir.hir_items.insert(item.id, StoredHirItem::Item(item.clone()));
-        self.compiled.items.insert(item.id, item);
+        self.main_ctx.items.insert(item.id, item);
     }
 
     fn infer_body(&mut self, body_id: ItemId) {
@@ -344,9 +344,9 @@ impl TypeInference<'_> {
     }
 
     fn infer_expr(&mut self, expr: &mut HirExpr) {
-        if self.compiled.expanded_by_builtins.get(&expr.id).cloned().is_some() {
+        if self.main_ctx.expanded_by_builtins.get(&expr.id).cloned().is_some() {
             let mut new = vec![];
-            if let Some(params) = &mut self.compiled.builtin_args.get(&expr.id).cloned() {
+            if let Some(params) = &mut self.main_ctx.builtin_args.get(&expr.id).cloned() {
                 for param in params.iter_mut() {
                     self.infer_expr(param);
 
@@ -354,7 +354,7 @@ impl TypeInference<'_> {
                 }
             }
 
-            self.compiled.builtin_args.insert(expr.id, new);
+            self.main_ctx.builtin_args.insert(expr.id, new);
         }
 
         let kind = match &mut expr.kind {
@@ -526,7 +526,7 @@ impl TypeInference<'_> {
             HirExprKind::Call(ident, args, params) => {
                 let func_ident = ident.as_ident().unwrap().to_string();
                 let func = match self
-                    .compiled
+                    .main_ctx
                     .resolve_symbol(&func_ident, self.current_mod.as_usize())
                     .cloned()
                 {
@@ -546,7 +546,7 @@ impl TypeInference<'_> {
                 let ident = &hir_struct.name;
 
                 let str = self
-                    .compiled
+                    .main_ctx
                     .resolve_symbol(&ident.to_string(), self.current_mod.as_usize())
                     .unwrap()
                     .clone();
@@ -669,7 +669,7 @@ impl TypeInference<'_> {
                 &HirTyKind::void()
             }
             HirExprKind::StaticAccess(id, expr) => {
-                let citem = self.compiled.get_item(*id);
+                let citem = self.main_ctx.get_item(*id);
 
                 let generics = if let Some(str) = citem.as_struct() {
                     str.generics.clone().params
@@ -683,7 +683,7 @@ impl TypeInference<'_> {
                     let ident = *ident.as_ident().unwrap();
                     if let Some(str) = citem.as_struct() {
                         let method = str.get_item(ident);
-                        let func = self.compiled.get_item(method.unwrap()).as_fn().clone();
+                        let func = self.main_ctx.get_item(method.unwrap()).as_fn().clone();
 
                         for generic in generics {
                             self.ctx.push_generic(generic);
@@ -698,7 +698,7 @@ impl TypeInference<'_> {
                                 is_generic: false,
                             }
                         } else if let Some(item) = en.get_item(ident) {
-                            let func = self.compiled.get_item(*item).as_fn().clone();
+                            let func = self.main_ctx.get_item(*item).as_fn().clone();
 
                             for generic in generics {
                                 self.ctx.push_generic(generic);
@@ -800,12 +800,12 @@ impl TypeInference<'_> {
             }
             HirExprKind::Match(mt) => &self.infer_match(mt),
             HirExprKind::Path(id) => {
-                let item = self.compiled.get_item(*id);
+                let item = self.main_ctx.get_item(*id);
 
                 match &item.kind {
                     HirItemKind::EnumVariant(variant) => {
-                        let id = self.compiled.get_enum_by_variant(variant.id);
-                        let item = self.compiled.get_item(*id);
+                        let id = self.main_ctx.get_enum_by_variant(variant.id);
+                        let item = self.main_ctx.get_item(*id);
 
                         &HirTyKind::Ident {
                             ident: item.ident,
@@ -902,7 +902,7 @@ impl TypeInference<'_> {
         if let Some(type_ident) = ty.is_ident() {
             let type_name = type_ident.to_string();
 
-            let sym = self.compiled.resolve_symbol(&type_name, self.current_mod.as_usize());
+            let sym = self.main_ctx.resolve_symbol(&type_name, self.current_mod.as_usize());
 
             if let Some(sym) = sym {
                 if let Some(struct_data) = sym.as_struct() {
@@ -1004,7 +1004,7 @@ impl TypeInference<'_> {
         if let Some(ident) = type_info.ty.is_ident() {
             let ident_str = ident.to_string();
 
-            let sym = self.compiled.resolve_symbol(&ident_str, self.current_mod.as_usize());
+            let sym = self.main_ctx.resolve_symbol(&ident_str, self.current_mod.as_usize());
 
             if sym.is_some() {
                 return self.resolve_member_access(
@@ -1037,7 +1037,7 @@ impl TypeInference<'_> {
         if let Some(type_ident) = ty.is_ident() {
             let type_name = type_ident.to_string();
 
-            let sym = self.compiled.resolve_symbol(&type_name, self.current_mod.as_usize());
+            let sym = self.main_ctx.resolve_symbol(&type_name, self.current_mod.as_usize());
 
             if let Some(sym) = sym {
                 let method_id = sym.as_struct().unwrap().get_item(current_ident);
@@ -1045,7 +1045,7 @@ impl TypeInference<'_> {
                 if let Some(method_id) = method_id {
                     idents.remove(0);
 
-                    let item = self.compiled.get_item(method_id).clone();
+                    let item = self.main_ctx.get_item(method_id).clone();
 
                     return if idents.is_empty() {
                         Some(item)

@@ -1,5 +1,5 @@
 use crate::{
-    CompiledModules,
+    MainContext,
     builtin::get_builtin_function,
     comptime::ComptimeReturnValue,
     expr::{
@@ -44,9 +44,9 @@ pub struct LocId {
 
 pub fn transform_module(
     map: ModuleMap,
-    compiled_modules: &mut CompiledModules,
+    main_ctx: &mut MainContext,
 ) -> (HirModuleMap, TemporaryDiagnosticContext) {
-    let mut transformer = Transformer::new(map, compiled_modules);
+    let mut transformer = Transformer::new(map, main_ctx);
     (transformer.transform_modules(), transformer.ctx)
 }
 
@@ -177,18 +177,18 @@ pub struct Transformer<'a> {
     pub module_map: ModuleMap,
     pub current_mod_id: ModuleId,
     pub ctx: TemporaryDiagnosticContext,
-    pub compiled: &'a mut CompiledModules,
+    pub main_ctx: &'a mut MainContext,
 }
 
 impl<'a> Transformer<'a> {
-    pub fn new(module_map: ModuleMap, compiled: &'a mut CompiledModules) -> Self {
+    pub fn new(module_map: ModuleMap, main_ctx: &'a mut MainContext) -> Self {
         Self {
             map: HirModuleMap::new(),
             last_id: 0,
             module_map,
             current_mod_id: ModuleId::from_usize(0),
             ctx: TemporaryDiagnosticContext::new(),
-            compiled,
+            main_ctx,
         }
     }
 
@@ -199,7 +199,7 @@ impl<'a> Transformer<'a> {
             self.map.new_module(module);
         }
 
-        for (module, symbols) in self.compiled.symbols.symbols.clone() {
+        for (module, symbols) in self.main_ctx.symbols.symbols.clone() {
             for sym in symbols {
                 self.map.symbols.add_symbol(module, sym);
             }
@@ -290,7 +290,7 @@ impl<'a> Transformer<'a> {
         };
 
         self.map.insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
-        self.compiled.insert_item(item.clone());
+        self.main_ctx.insert_item(item.clone());
 
         Some(item.id)
     }
@@ -427,7 +427,7 @@ impl<'a> Transformer<'a> {
             };
 
             self.map.insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
-            self.compiled.insert_item(item.clone());
+            self.main_ctx.insert_item(item.clone());
         }
 
         HirEnum {
@@ -622,13 +622,13 @@ impl<'a> Transformer<'a> {
                 }
                 ExprKind::Match(mt) => HirExprKind::Match(self.transform_match(mt)),
                 ExprKind::Path(..) => {
-                    let id = self.compiled.get_assigned_path(expr.id);
+                    let id = self.main_ctx.get_assigned_path(expr.id);
 
                     HirExprKind::Path(id)
                 }
                 ExprKind::Type(ty) => HirExprKind::Type(self.transform_ty(*ty).kind),
                 ExprKind::StaticAccess(_, expr) => {
-                    let id = self.compiled.get_assigned_path(expr.id);
+                    let id = self.main_ctx.get_assigned_path(expr.id);
 
                     HirExprKind::StaticAccess(id, Box::new(self.transform_expr(*expr).0))
                 }
@@ -651,8 +651,8 @@ impl<'a> Transformer<'a> {
 
         self.map.insert_hir_expr(id, expr.clone());
         if let Some(fn_name) = fn_name {
-            self.compiled.expanded_by_builtins.insert(id, fn_name);
-            self.compiled.builtin_args.insert(id, builtin_params);
+            self.main_ctx.expanded_by_builtins.insert(id, fn_name);
+            self.main_ctx.builtin_args.insert(id, builtin_params);
         }
 
         (expr, id)

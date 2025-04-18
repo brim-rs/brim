@@ -4,7 +4,7 @@ use brim_ast::{
     item::{ExternBlock, FunctionContext},
 };
 use brim_hir::{
-    Codegen, CompiledModules,
+    Codegen, MainContext,
     expr::HirExpr,
     items::{HirExternBlock, HirItem, HirItemKind},
     stmts::HirStmt,
@@ -27,7 +27,7 @@ pub struct CppCodegen {
     pub modules: Vec<usize>,
     pub imports: Vec<String>,
     pub is_external: Option<HirExternBlock>,
-    pub compiled: CompiledModules,
+    pub main_ctx: MainContext,
     pub items_order: HashMap<ModuleId, Vec<ItemId>>,
     /// adds `static` before function in static methods
     pub generate_static: bool,
@@ -42,7 +42,7 @@ pub struct ModuleDependencyResolver {
 }
 
 impl ModuleDependencyResolver {
-    fn new(compiled: &CompiledModules) -> Self {
+    fn new(main_ctx: &MainContext) -> Self {
         let mut resolver = Self {
             module_dependencies: HashMap::new(),
             module_imports: HashMap::new(),
@@ -50,26 +50,26 @@ impl ModuleDependencyResolver {
             hirs: HashMap::new(),
         };
 
-        resolver.build_dependency_graph(compiled);
+        resolver.build_dependency_graph(main_ctx);
 
         resolver
     }
 
-    fn build_dependency_graph(&mut self, compiled: &CompiledModules) {
-        for project in compiled.map.values() {
+    fn build_dependency_graph(&mut self, main_ctx: &MainContext) {
+        for project in main_ctx.map.values() {
             for module in &project.hir.modules {
                 let module_id = module.mod_id;
                 let mut dependencies = HashSet::new();
                 let mut module_imports = Vec::new();
 
                 for item_id in &module.items {
-                    let item = compiled.get_item(*item_id).clone();
+                    let item = main_ctx.get_item(*item_id).clone();
 
                     if let HirItemKind::Use(use_stmt) = &item.kind {
                         module_imports.push(use_stmt.resolved_path.clone());
 
                         if let Some(imported_mod_id) =
-                            self.find_module_id_for_path(compiled, &use_stmt.resolved_path)
+                            self.find_module_id_for_path(main_ctx, &use_stmt.resolved_path)
                         {
                             dependencies.insert(imported_mod_id);
                         }
@@ -83,12 +83,8 @@ impl ModuleDependencyResolver {
         }
     }
 
-    fn find_module_id_for_path(
-        &self,
-        compiled: &CompiledModules,
-        path: &PathBuf,
-    ) -> Option<ModuleId> {
-        for project in compiled.map.values() {
+    fn find_module_id_for_path(&self, main_ctx: &MainContext, path: &PathBuf) -> Option<ModuleId> {
+        for project in main_ctx.map.values() {
             for module in &project.hir.modules {
                 if module.path == *path {
                     return Some(module.mod_id);
@@ -151,10 +147,10 @@ impl ModuleDependencyResolver {
 }
 
 impl CppCodegen {
-    pub fn new(main_file: usize, compiled: CompiledModules) -> Self {
+    pub fn new(main_file: usize, main_ctx: MainContext) -> Self {
         let code = CodeBuilder::new(4);
 
-        let sorted_modules = sort_items_by_module(&compiled.item_relations);
+        let sorted_modules = sort_items_by_module(&main_ctx.item_relations);
 
         Self {
             code,
@@ -182,7 +178,7 @@ impl CppCodegen {
             .map(|s| (*s).to_string())
             .collect(),
             is_external: None,
-            compiled,
+            main_ctx,
             items_order: sorted_modules,
             generate_static: false,
         }
@@ -217,8 +213,8 @@ impl CppCodegen {
         self.code.add_line("}");
     }
 
-    pub fn populate(&mut self, compiled: &CompiledModules) {
-        for project in compiled.map.values() {
+    pub fn populate(&mut self, main_ctx: &MainContext) {
+        for project in main_ctx.map.values() {
             for module in &project.hir.modules {
                 self.modules.push(module.mod_id.as_usize());
             }
@@ -231,19 +227,19 @@ impl CppCodegen {
 }
 
 impl Codegen for CppCodegen {
-    fn generate(&mut self, compiled: &CompiledModules) {
-        let mut resolver = ModuleDependencyResolver::new(compiled);
+    fn generate(&mut self, main_ctx: &MainContext) {
+        let mut resolver = ModuleDependencyResolver::new(main_ctx);
 
         resolver.print_module_dependencies();
 
         let generation_order = resolver.determine_generation_order();
 
-        self.populate(compiled);
+        self.populate(main_ctx);
         self.add_standard_module();
         self.add_injects();
 
         for module_id in generation_order {
-            let module = compiled
+            let module = main_ctx
                 .map
                 .values()
                 .flat_map(|project| &project.hir.modules)
@@ -252,13 +248,13 @@ impl Codegen for CppCodegen {
 
             self.current_mod = module.mod_id;
             self.hir = Some(resolver.hirs[&module_id].clone());
-            self.generate_module(module.clone(), compiled);
+            self.generate_module(module.clone(), main_ctx);
         }
 
         self.add_main();
     }
 
-    fn generate_module(&mut self, module: HirModule, compiled: &CompiledModules) {
+    fn generate_module(&mut self, module: HirModule, main_ctx: &MainContext) {
         let mod_id = module.mod_id;
 
         self.code.add_line(&format!("\n\n// =========== module{}", mod_id.as_u32()));
@@ -270,7 +266,7 @@ impl Codegen for CppCodegen {
         let mut items = BTreeMap::new();
 
         for &item_id in &module.items {
-            let item = compiled.get_item(item_id).clone();
+            let item = main_ctx.get_item(item_id).clone();
 
             items.insert(item.ident, item.clone());
         }
@@ -281,7 +277,7 @@ impl Codegen for CppCodegen {
             let mut processed_items = HashSet::new();
 
             for item_id in ordered_ids {
-                let item = compiled.get_item(item_id);
+                let item = main_ctx.get_item(item_id);
 
                 if !processed_items.insert(item_id) {
                     continue;
@@ -296,7 +292,7 @@ impl Codegen for CppCodegen {
                 }
 
                 if let Some(item) = items.remove(&item.ident) {
-                    self.generate_item(item, compiled);
+                    self.generate_item(item, main_ctx);
                 }
             }
 
@@ -309,7 +305,7 @@ impl Codegen for CppCodegen {
                     _ => {}
                 }
 
-                self.generate_item(item, compiled);
+                self.generate_item(item, main_ctx);
             }
         } else {
             for (_, item) in items {
@@ -321,7 +317,7 @@ impl Codegen for CppCodegen {
                     _ => {}
                 }
 
-                self.generate_item(item, compiled);
+                self.generate_item(item, main_ctx);
             }
         }
 
@@ -329,8 +325,8 @@ impl Codegen for CppCodegen {
         self.code.add_line("}");
     }
 
-    fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules) {
-        self.generate_item(item, compiled);
+    fn generate_item(&mut self, item: HirItem, main_ctx: &MainContext) {
+        self.generate_item(item, main_ctx);
     }
 
     fn generate_expr(&mut self, expr: HirExpr) -> String {

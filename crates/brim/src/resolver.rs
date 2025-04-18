@@ -1,4 +1,4 @@
-use crate::{CompiledModules, session::Session};
+use crate::{MainContext, session::Session};
 use anyhow::Result;
 use brim_ast::item::ItemKind;
 use brim_fs::{canonicalize_path, loader::BrimFileLoader};
@@ -12,17 +12,17 @@ pub struct ImportResolver<'a> {
     pub map: ModuleMap,
     pub temp_loader: BrimFileLoader,
     pub sess: &'a mut Session,
-    pub compiled: CompiledModules,
+    pub main_ctx: MainContext,
 }
 
 impl<'a> ImportResolver<'a> {
     pub fn new(
         ctx: &'a mut TemporaryDiagnosticContext,
         sess: &'a mut Session,
-        compiled: CompiledModules,
+        main_ctx: MainContext,
         map: ModuleMap,
     ) -> Self {
-        Self { ctx, map, temp_loader: BrimFileLoader, sess, compiled }
+        Self { ctx, map, temp_loader: BrimFileLoader, sess, main_ctx }
     }
 
     pub fn resolve(&mut self) -> Result<ModuleMap> {
@@ -34,7 +34,7 @@ impl<'a> ImportResolver<'a> {
 
                     let path = if use_stmt.is_dep() {
                         let dep_name = use_stmt.path.clone();
-                        let project = self.compiled.map.get(&dep_name).unwrap();
+                        let project = self.main_ctx.map.get(&dep_name).unwrap();
                         let mut path = project.config.cwd.clone();
                         path.push(project.config.main_dir());
 

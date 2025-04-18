@@ -8,7 +8,7 @@ use crate::{
 use anstream::ColorChoice;
 use anyhow::{Result, bail};
 use brim::{
-    Codegen, CompiledModule, CompiledModules, ModuleId, Shell,
+    Codegen, MainContext, ModuleId, Project, Shell,
     args::RunArgs,
     compiler::CompilerContext,
     config::toml::{Config, ProjectType},
@@ -64,23 +64,23 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
         let order = resolver.resolve_project()?;
         let configs = resolver.get_configs(&order);
 
-        let compiled_projects = &mut CompiledModules::new();
+        let main_ctx = &mut MainContext::new();
         let simple = &mut SimpleModules { items: Default::default() };
 
         for config in configs {
             let sess = &mut Session::new(config.cwd.clone(), config.clone(), args.color_choice);
             let ctx = &mut CompilerContext::new(args.clone(), lints);
-            let hir = compile_project(sess, ctx, args.color_choice, compiled_projects, simple)?;
+            let hir = compile_project(sess, ctx, args.color_choice, main_ctx, simple)?;
 
-            compiled_projects
+            main_ctx
                 .map
-                .insert(config.project.name.clone(), CompiledModule { config, hir: hir.clone() });
+                .insert(config.project.name.clone(), Project { config, hir: hir.clone() });
 
-            compiled_projects.expanded_by_builtins.extend(hir.expanded_by_builtins);
-            compiled_projects.builtin_args.extend(hir.builtin_args);
+            main_ctx.expanded_by_builtins.extend(hir.expanded_by_builtins);
+            main_ctx.builtin_args.extend(hir.builtin_args);
         }
-        let mut cg = CppCodegen::new(main_sess.main_file()?, compiled_projects.clone());
-        cg.generate(compiled_projects);
+        let mut cg = CppCodegen::new(main_sess.main_file()?, main_ctx.clone());
+        cg.generate(main_ctx);
 
         let mut sources = vec![];
         let code = cg.code.build();
@@ -161,7 +161,7 @@ pub fn compile_project(
     sess: &mut Session,
     comp: &mut CompilerContext,
     c_choice: ColorChoice,
-    compiled: &mut CompiledModules,
+    main_ctx: &mut MainContext,
     simple: &mut SimpleModules,
 ) -> Result<HirModuleMap> {
     let project_name = sess.config.project.name.clone();
@@ -185,7 +185,7 @@ pub fn compile_project(
     let mut visited = HashSet::new();
 
     let module_map = discover.create_module_map(&barrel, &mut visited)?;
-    let mut resolver = ImportResolver::new(resolver_temp, sess, compiled.clone(), module_map);
+    let mut resolver = ImportResolver::new(resolver_temp, sess, main_ctx.clone(), module_map);
     let map = resolver.resolve()?;
 
     comp.extend_temp(resolver_temp.clone());
@@ -194,7 +194,7 @@ pub fn compile_project(
         bail_on_errors(comp.emitted.len())?;
     }
 
-    let hir = comp.analyze(map, compiled, simple)?;
+    let hir = comp.analyze(map, main_ctx, simple)?;
 
     if hir.modules.is_empty() && comp.should_bail() {
         bail_on_errors(comp.emitted.len())?;

@@ -11,7 +11,7 @@ use brim_diagnostics::{
     diagnostic::{Diagnostic, Severity, ToDiagnostic},
 };
 use brim_hir::{
-    CompiledModules,
+    MainContext,
     comptime::transform_comptime,
     inference::infer_types,
     items::HirFn,
@@ -75,7 +75,7 @@ impl CompilerContext {
     pub fn analyze(
         &mut self,
         mut map: ModuleMap,
-        compiled: &mut CompiledModules,
+        main_ctx: &mut MainContext,
         simple: &mut SimpleModules,
     ) -> Result<HirModuleMap> {
         let map = &mut map;
@@ -84,10 +84,10 @@ impl CompilerContext {
         validator.validate(map.clone())?;
         self.extend_temp(validator.ctx);
 
-        let mut collector = SymbolCollector::new(&mut compiled.symbols, simple);
+        let mut collector = SymbolCollector::new(&mut main_ctx.symbols, simple);
         collector.collect(map);
 
-        let mut use_collector = UseCollector::new(&mut compiled.symbols);
+        let mut use_collector = UseCollector::new(&mut main_ctx.symbols);
         use_collector.collect(map);
 
         self.extend_temp(use_collector.ctx);
@@ -106,7 +106,7 @@ impl CompilerContext {
             });
         }
 
-        let mut name_resolver = NameResolver::new(map.clone(), self.lints, compiled, simple);
+        let mut name_resolver = NameResolver::new(map.clone(), self.lints, main_ctx, simple);
         name_resolver.resolve_names();
         self.extend_temp(name_resolver.ctx);
 
@@ -114,17 +114,17 @@ impl CompilerContext {
             return Ok(HirModuleMap::new());
         }
 
-        let (hir, hir_temp) = &mut transform_module(name_resolver.map, compiled);
+        let (hir, hir_temp) = &mut transform_module(name_resolver.map, main_ctx);
         self.extend_temp(hir_temp.clone());
 
-        let comp_transformer = transform_comptime(hir, compiled);
+        let comp_transformer = transform_comptime(hir, main_ctx);
         self.extend_temp(comp_transformer.temp);
 
-        let ti = infer_types(hir, compiled);
+        let ti = infer_types(hir, main_ctx);
         self.extend_temp(ti.temp.clone());
 
         if ti.temp.diags.is_empty() {
-            let mut type_analyzer = TypeChecker::new(hir.clone(), compiled.clone());
+            let mut type_analyzer = TypeChecker::new(hir.clone(), main_ctx.clone());
             type_analyzer.check();
             self.extend_temp(type_analyzer.ctx);
 

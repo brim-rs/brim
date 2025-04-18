@@ -1,14 +1,14 @@
 use crate::codegen::CppCodegen;
 use brim_ast::ItemId;
 use brim_hir::{
-    CompiledModules,
+    MainContext,
     items::{HirItem, HirItemKind},
 };
 use brim_middle::{GlobalSymbol, ModuleId};
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap};
 
 impl CppCodegen {
-    pub fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules) {
+    pub fn generate_item(&mut self, item: HirItem, main_ctx: &MainContext) {
         match item.kind {
             HirItemKind::Fn(ref decl) => {
                 self.code.add_line(&format!("// Generated item with id {}", item.id.as_usize()));
@@ -90,11 +90,11 @@ impl CppCodegen {
                 }
 
                 for (ident, id) in s.items.clone() {
-                    let item = self.compiled.get_item(id);
+                    let item = self.main_ctx.get_item(id);
 
                     if let Some(func) = item.as_fn_safe() {
                         if !func.is_static() {
-                            self.generate_item(item.clone(), compiled);
+                            self.generate_item(item.clone(), main_ctx);
 
                             s.items.remove(&ident);
                         }
@@ -103,9 +103,9 @@ impl CppCodegen {
 
                 self.generate_static = true;
                 for (_, id) in s.items {
-                    let item = self.compiled.get_item(id);
+                    let item = self.main_ctx.get_item(id);
 
-                    self.generate_item(item.clone(), compiled);
+                    self.generate_item(item.clone(), main_ctx);
                 }
                 self.generate_static = false;
 
@@ -115,13 +115,13 @@ impl CppCodegen {
             HirItemKind::External(external) => {
                 self.is_external = Some(external.clone());
                 for item in external.items.clone() {
-                    let item = compiled.get_item(item).clone();
-                    self.generate_item(item.clone(), compiled);
+                    let item = main_ctx.get_item(item).clone();
+                    self.generate_item(item.clone(), main_ctx);
                 }
                 self.is_external = None;
 
                 for item in external.items {
-                    let item = compiled.get_item(item).clone();
+                    let item = main_ctx.get_item(item).clone();
                     self.generate_wrapper_item(item);
                 }
             }
@@ -202,11 +202,11 @@ impl CppCodegen {
                 }
 
                 for (ident, id) in e.items.clone() {
-                    let item = self.compiled.get_item(id);
+                    let item = self.main_ctx.get_item(id);
 
                     if let Some(func) = item.as_fn_safe() {
                         if !func.is_static() {
-                            self.generate_item(item.clone(), compiled);
+                            self.generate_item(item.clone(), main_ctx);
 
                             e.items.remove(&ident);
                         }
@@ -215,9 +215,9 @@ impl CppCodegen {
 
                 self.generate_static = true;
                 for (_, id) in e.items {
-                    let item = self.compiled.get_item(id);
+                    let item = self.main_ctx.get_item(id);
 
-                    self.generate_item(item.clone(), compiled);
+                    self.generate_item(item.clone(), main_ctx);
                 }
                 self.generate_static = false;
 

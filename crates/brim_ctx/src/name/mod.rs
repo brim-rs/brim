@@ -17,12 +17,12 @@ use brim_ast::{
     ty::{Ty, TyKind},
 };
 use brim_diagnostics::diag_opt;
-use brim_hir::CompiledModules;
+use brim_hir::MainContext;
 use brim_middle::{
     GlobalSymbol, SimpleModules, builtins::BUILTIN_FUNCTIONS, lints::Lints, modules::ModuleMap,
     temp_diag::TemporaryDiagnosticContext, walker::AstWalker,
 };
-use brim_span::span::Span;
+use brim_span::{files::get_path, span::Span};
 use convert_case::{Case, Casing};
 use errors::{
     IdentifierNotFound, InvalidReceiverForStaticAccess, ItemNotAMethodInStruct, NoItemInStruct,
@@ -70,7 +70,7 @@ pub struct NameResolver<'a> {
     pub file: usize,
     pub lints: &'static Lints,
     pub inside_comptime: bool,
-    pub compiled: &'a mut CompiledModules,
+    pub main_ctx: &'a mut MainContext,
     pub external: bool,
     pub simple: &'a mut SimpleModules,
     pub generics: GenericsCtx,
@@ -81,7 +81,7 @@ impl<'a> NameResolver<'a> {
     pub fn new(
         map: ModuleMap,
         lints: &'static Lints,
-        compiled: &'a mut CompiledModules,
+        main_ctx: &'a mut MainContext,
         simple: &'a mut SimpleModules,
     ) -> Self {
         Self {
@@ -91,7 +91,7 @@ impl<'a> NameResolver<'a> {
             file: 0,
             lints,
             inside_comptime: false,
-            compiled,
+            main_ctx,
             external: false,
             simple,
             generics: GenericsCtx::new(),
@@ -109,7 +109,7 @@ impl<'a> NameResolver<'a> {
                 self.walk_item(item);
             }
 
-            mods.push(module);
+            mods.push(module.clone());
         }
 
         self.map.modules = mods;
@@ -149,7 +149,7 @@ impl<'a> NameResolver<'a> {
         let name = idents[0].to_string();
         let span = (idents[0].span, self.file);
 
-        match self.compiled.symbols.resolve(&name, self.file) {
+        match self.main_ctx.symbols.resolve(&name, self.file) {
             Some(sym) => {
                 let item = self.simple.get_item(sym.id.item_id).clone();
                 self.resolve_ident(item.ident);
@@ -157,7 +157,7 @@ impl<'a> NameResolver<'a> {
                 if from_call {
                     match &item.kind {
                         ItemKind::Struct(_) | ItemKind::Enum(_) => {
-                            self.compiled.assign_path(expr_id, item.id);
+                            self.main_ctx.assign_path(expr_id, item.id);
                         }
                         _ => {
                             self.ctx.emit_impl(InvalidReceiverForStaticAccess { span, name });
@@ -170,7 +170,7 @@ impl<'a> NameResolver<'a> {
                     match &item.kind {
                         ItemKind::Namespace(symbols) => {
                             if let Some(sym) = symbols.get(&second_name) {
-                                self.compiled.assign_path(expr_id, sym.1.0);
+                                self.main_ctx.assign_path(expr_id, sym.1.0);
                             } else {
                                 self.ctx.emit_impl(NamespaceMissingSymbol {
                                     span: (second_ident.span, self.file),
@@ -181,8 +181,8 @@ impl<'a> NameResolver<'a> {
                         }
                         ItemKind::Enum(e) => {
                             if let Some(variant) = e.find(second_ident) {
-                                self.compiled.assign_path(expr_id, variant.id);
-                                self.compiled.add_enum(variant.id, item.id);
+                                self.main_ctx.assign_path(expr_id, variant.id);
+                                self.main_ctx.add_enum(variant.id, item.id);
                             } else {
                                 self.ctx.emit_impl(NoVariantOrItemInEnum {
                                     span: (second_ident.span, self.file),
@@ -196,7 +196,7 @@ impl<'a> NameResolver<'a> {
                         }
                     }
                 } else {
-                    self.compiled.assign_path(expr_id, item.id);
+                    self.main_ctx.assign_path(expr_id, item.id);
                 }
             }
             None => {
@@ -233,11 +233,11 @@ impl<'a> NameResolver<'a> {
     }
 
     pub fn resolve_ident(&mut self, ident: Ident) {
-        let sym = self.compiled.symbols.resolve(&ident.to_string(), self.file);
+        let sym = self.main_ctx.symbols.resolve(&ident.to_string(), self.file);
 
         if let Some(sym) = sym {
             if let Some(current) = self.current_sym.clone() {
-                self.compiled.add_item_relation(current, sym);
+                self.main_ctx.add_item_relation(current, sym);
             } else {
                 trace!("Resolving identifier {} outside of an item context", ident);
             }
@@ -266,7 +266,7 @@ impl<'a> NameResolver<'a> {
                 Some((scope, var.clone()))
             }
         } else {
-            if self.compiled.symbols.resolve(&var_name, self.file).is_none() {
+            if self.main_ctx.symbols.resolve(&var_name, self.file).is_none() {
                 self.ctx.emit_impl(UndeclaredVariable {
                     span: (ident.span, self.file),
                     name: var_name.clone(),
@@ -327,7 +327,7 @@ impl AstWalker for NameResolver<'_> {
     }
 
     fn visit_struct(&mut self, str: &mut Struct) {
-        let s = self.compiled.symbols.resolve(&str.ident.to_string(), self.file);
+        let s = self.main_ctx.symbols.resolve(&str.ident.to_string(), self.file);
 
         let parent_sym = self.current_sym.clone();
         self.set_id(s);
@@ -346,9 +346,9 @@ impl AstWalker for NameResolver<'_> {
 
             if let Some(struct_sym) = struct_sym {
                 if let Some(item_sym) =
-                    self.compiled.symbols.resolve(&item.ident.to_string(), self.file)
+                    self.main_ctx.symbols.resolve(&item.ident.to_string(), self.file)
                 {
-                    self.compiled.add_item_relation(struct_sym, item_sym);
+                    self.main_ctx.add_item_relation(struct_sym, item_sym);
                 }
             }
         }
@@ -365,9 +365,9 @@ impl AstWalker for NameResolver<'_> {
         let sym = if let Some(sym) = self.current_sym.clone() {
             let item = self.simple.get_item(sym.id.item_id).clone();
 
-            self.compiled.symbols.resolve(&format!("{}::{}", item.ident, name), self.file)
+            self.main_ctx.symbols.resolve(&format!("{}::{}", item.ident, name), self.file)
         } else {
-            self.compiled.symbols.resolve(&name, self.file)
+            self.main_ctx.symbols.resolve(&name, self.file)
         };
         self.set_id(sym);
 
@@ -425,7 +425,7 @@ impl AstWalker for NameResolver<'_> {
             }
             ItemKind::Namespace(_) => unreachable!(),
             ItemKind::Enum(e) => {
-                let en = self.compiled.symbols.resolve(&e.ident.to_string(), self.file);
+                let en = self.main_ctx.symbols.resolve(&e.ident.to_string(), self.file);
 
                 let parent_sym = self.current_sym.clone();
                 self.set_id(en);
@@ -446,9 +446,9 @@ impl AstWalker for NameResolver<'_> {
 
                     if let Some(enum_sym) = enum_sym {
                         if let Some(item_sym) =
-                            self.compiled.symbols.resolve(&item.ident.to_string(), self.file)
+                            self.main_ctx.symbols.resolve(&item.ident.to_string(), self.file)
                         {
-                            self.compiled.add_item_relation(enum_sym, item_sym);
+                            self.main_ctx.add_item_relation(enum_sym, item_sym);
                         }
                     }
                 }
@@ -472,7 +472,7 @@ impl AstWalker for NameResolver<'_> {
             ExprKind::Literal(..) => {}
             ExprKind::Paren(inner) | ExprKind::Return(inner, _) => self.walk_expr(inner),
             ExprKind::Var(ident) => {
-                if let Some(item) = self.compiled.symbols.resolve(&ident.to_string(), self.file) {
+                if let Some(item) = self.main_ctx.symbols.resolve(&ident.to_string(), self.file) {
                     let item = self.simple.items.get(&item.id.item_id).expect(&format!(
                         "looked for item {ident} in module {} {:#?}",
                         self.file, item
@@ -508,7 +508,7 @@ impl AstWalker for NameResolver<'_> {
             ExprKind::Call(func, args, ..) => {
                 let name = func.as_ident().unwrap().to_string();
 
-                let func_sym = self.compiled.symbols.resolve(&name, self.file);
+                let func_sym = self.main_ctx.symbols.resolve(&name, self.file);
 
                 if func_sym.is_none() {
                     self.ctx
@@ -544,7 +544,7 @@ impl AstWalker for NameResolver<'_> {
             }
             ExprKind::StructConstructor(ident, _, fields) => {
                 let name = ident.to_string();
-                let func_sym = self.compiled.symbols.resolve(&name, self.file);
+                let func_sym = self.main_ctx.symbols.resolve(&name, self.file);
 
                 if let Some(sym) = func_sym {
                     let item = self.simple.get_item(sym.id.item_id).clone();
@@ -578,7 +578,7 @@ impl AstWalker for NameResolver<'_> {
             ExprKind::StaticAccess(ident, expr) => {
                 self.resolve_path(ident, expr.id, true);
 
-                let assigned = self.compiled.assigned_paths.get(&expr.id);
+                let assigned = self.main_ctx.assigned_paths.get(&expr.id);
                 if let Some(assigned) = assigned {
                     let str = self.simple.get_item(*assigned).clone();
 

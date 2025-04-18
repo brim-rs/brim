@@ -13,10 +13,10 @@ use std::fmt::Write;
 
 impl CppCodegen {
     pub fn generate_expr(&mut self, expr: HirExpr) -> String {
-        if let Some(fn_name) = self.compiled.expanded_by_builtins.get(&expr.id).cloned() {
+        if let Some(fn_name) = self.main_ctx.expanded_by_builtins.get(&expr.id).cloned() {
             let func = get_builtin_function(&fn_name).unwrap();
-            self.compiled.expanded_by_builtins.remove(&expr.id);
-            let params = &mut self.compiled.builtin_args[&expr.id].clone();
+            self.main_ctx.expanded_by_builtins.remove(&expr.id);
+            let params = &mut self.main_ctx.builtin_args[&expr.id].clone();
 
             if let Some(codegen) = func.codegen {
                 let string = codegen(self, params);
@@ -101,7 +101,7 @@ impl CppCodegen {
                 }
             }
             HirExprKind::StaticAccess(id, expr) => {
-                let item = self.compiled.get_item(id).clone();
+                let item = self.main_ctx.get_item(id).clone();
 
                 match expr.kind {
                     HirExprKind::Call(ident, args, _) => {
@@ -150,12 +150,12 @@ impl CppCodegen {
                 format!("({cond_code} ? {then_code} : {else_code})")
             }
             HirExprKind::Path(id) => {
-                let item = self.compiled.get_item(id);
+                let item = self.main_ctx.get_item(id);
 
                 match &item.kind {
                     HirItemKind::EnumVariant(variant) => {
-                        let id = self.compiled.get_enum_by_variant(variant.id);
-                        let item = self.compiled.get_item(*id);
+                        let id = self.main_ctx.get_enum_by_variant(variant.id);
+                        let item = self.main_ctx.get_item(*id);
 
                         format!(
                             "(module{}::brim_{}::brim_{}())",

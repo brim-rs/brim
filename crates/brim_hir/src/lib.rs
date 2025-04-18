@@ -10,7 +10,7 @@ use crate::{
 use brim_ast::ItemId;
 use brim_config::toml::Config;
 use brim_fs::paths_equal;
-use brim_middle::{GlobalSymbol, SymbolTable};
+use brim_middle::{GlobalSymbol, SymbolTable, modules::Module};
 use std::{collections::HashMap, path::PathBuf};
 
 pub mod builtin;
@@ -25,11 +25,11 @@ pub mod ty;
 pub mod type_checker;
 
 pub trait Codegen {
-    fn generate(&mut self, compiled: &CompiledModules);
+    fn generate(&mut self, main_ctx: &MainContext);
 
-    fn generate_module(&mut self, module: HirModule, compiled: &CompiledModules);
+    fn generate_module(&mut self, module: HirModule, main_ctx: &MainContext);
 
-    fn generate_item(&mut self, item: HirItem, compiled: &CompiledModules);
+    fn generate_item(&mut self, item: HirItem, main_ctx: &MainContext);
 
     fn generate_expr(&mut self, expr: HirExpr) -> String;
 
@@ -39,14 +39,14 @@ pub trait Codegen {
 }
 
 #[derive(Clone, Debug)]
-pub struct CompiledModule {
+pub struct Project {
     pub config: Config,
     pub hir: HirModuleMap,
 }
 
 #[derive(Debug, Clone)]
-pub struct CompiledModules {
-    pub map: HashMap<String, CompiledModule>,
+pub struct MainContext {
+    pub map: HashMap<String, Project>,
     pub symbols: SymbolTable,
     pub items: HashMap<ItemId, HirItem>,
     pub assigned_paths: HashMap<ItemId, ItemId>,
@@ -58,13 +58,13 @@ pub struct CompiledModules {
     pub enums: HashMap<ItemId, ItemId>,
 }
 
-impl Default for CompiledModules {
+impl Default for MainContext {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl CompiledModules {
+impl MainContext {
     pub fn new() -> Self {
         Self {
             map: HashMap::new(),
