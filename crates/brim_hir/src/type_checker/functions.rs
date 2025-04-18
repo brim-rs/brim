@@ -15,9 +15,7 @@ use super::errors::CannotInitializeWithVoid;
 
 impl TypeChecker {
     pub fn check_fn(&mut self, func: HirFn) {
-        if let Some(body) = func.body {
-            let body = self.hir.get_expr(body);
-
+        if let Some(body) = &func.body {
             self.current_fn = Some(func.clone());
             self.check_expr(body.clone());
             self.current_fn = None;

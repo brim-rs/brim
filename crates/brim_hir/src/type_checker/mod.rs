@@ -36,7 +36,7 @@ impl TypeChecker {
     }
 
     pub fn check(&mut self) {
-        for module in self.hir.modules.clone() {
+        for module in self.hir.modules().clone() {
             self.mod_id = module.mod_id.as_usize();
             self.check_module(module);
         }

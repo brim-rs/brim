@@ -60,9 +60,8 @@ impl CppCodegen {
                 let is_static = if self.generate_static { "static" } else { "" };
                 let block_name = format!("{before} {is_static} {ret} {callconv} {name}({params})");
 
-                if let Some(body) = decl.body {
-                    let body_expr = self.hir().get_expr(body).clone();
-                    let body_code = self.generate_expr(body_expr);
+                if let Some(body) = &decl.body {
+                    let body_code = self.generate_expr(body.clone());
 
                     self.code.add_block(&block_name, |code| {
                         code.add_line_no_indent(&body_code);

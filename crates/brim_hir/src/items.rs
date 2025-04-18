@@ -5,7 +5,7 @@ use crate::{
 use brim_ast::{
     ItemId,
     expr::Expr,
-    item::{FunctionContext, Ident, Visibility},
+    item::{Block, FunctionContext, Ident, Visibility},
     token::{Lit, LitKind},
 };
 use brim_middle::{GlobalSymbol, ModuleId};
@@ -207,7 +207,7 @@ pub enum HirImportsKind {
 pub struct HirFn {
     pub sig: HirFnSig,
     /// ID of the function body block
-    pub body: Option<ItemId>,
+    pub body: Option<HirExpr>,
     pub ctx: FunctionContext,
 }
 

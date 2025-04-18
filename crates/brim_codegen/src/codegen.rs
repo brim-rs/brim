@@ -57,7 +57,7 @@ impl ModuleDependencyResolver {
 
     fn build_dependency_graph(&mut self, main_ctx: &MainContext) {
         for project in main_ctx.map.values() {
-            for module in &project.hir.modules {
+            for module in project.hir.modules() {
                 let module_id = module.mod_id;
                 let mut dependencies = HashSet::new();
                 let mut module_imports = Vec::new();
@@ -85,7 +85,7 @@ impl ModuleDependencyResolver {
 
     fn find_module_id_for_path(&self, main_ctx: &MainContext, path: &PathBuf) -> Option<ModuleId> {
         for project in main_ctx.map.values() {
-            for module in &project.hir.modules {
+            for module in project.hir.modules() {
                 if module.path == *path {
                     return Some(module.mod_id);
                 }
@@ -215,7 +215,7 @@ impl CppCodegen {
 
     pub fn populate(&mut self, main_ctx: &MainContext) {
         for project in main_ctx.map.values() {
-            for module in &project.hir.modules {
+            for module in project.hir.modules() {
                 self.modules.push(module.mod_id.as_usize());
             }
         }
@@ -242,7 +242,7 @@ impl Codegen for CppCodegen {
             let module = main_ctx
                 .map
                 .values()
-                .flat_map(|project| &project.hir.modules)
+                .flat_map(|project| project.hir.modules())
                 .find(|m| m.mod_id == module_id)
                 .expect("Module not found");
 

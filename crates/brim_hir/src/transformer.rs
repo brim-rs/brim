@@ -51,91 +51,37 @@ pub fn transform_module(
 }
 
 #[derive(Debug, Clone)]
-pub struct HirModuleMap {
-    pub modules: Vec<HirModule>,
-    pub hir_items: HashMap<ItemId, StoredHirItem>,
-}
+pub struct HirModuleMap(pub Vec<HirModule>);
 
 impl HirModuleMap {
     pub fn new() -> Self {
-        Self { modules: Vec::new(), hir_items: HashMap::new() }
-    }
-
-    pub fn insert_hir_item(&mut self, id: ItemId, item: StoredHirItem) {
-        self.hir_items.insert(id, item);
-    }
-
-    pub fn insert_hir_expr(&mut self, id: ItemId, expr: HirExpr) {
-        self.hir_items.insert(id, StoredHirItem::Expr(expr));
+        Self(Vec::new())
     }
 
     pub fn new_module(&mut self, module: HirModule) {
-        self.modules.push(module);
-    }
-
-    pub fn get(&self, id: ItemId) -> Option<&StoredHirItem> {
-        self.hir_items.get(&id)
-    }
-
-    pub fn get_mut(&mut self, id: ItemId) -> Option<&mut StoredHirItem> {
-        self.hir_items.get_mut(&id)
-    }
-
-    pub fn get_expr(&self, id: ItemId) -> &HirExpr {
-        match self.get(id) {
-            Some(StoredHirItem::Expr(expr)) => expr,
-            _ => panic!("Expected expr for ID {:?}, but found {:?}", id, self.get(id)),
-        }
-    }
-
-    pub fn get_expr_mut(&mut self, id: ItemId) -> &mut HirExpr {
-        match self.get_mut(id) {
-            Some(StoredHirItem::Expr(expr)) => expr,
-            _ => panic!("Expected expr for ID {id:?}"),
-        }
+        self.0.push(module);
     }
 
     pub fn get_module(&self, id: ModuleId) -> Option<&HirModule> {
-        self.modules.iter().find(|module| module.mod_id == id)
-    }
-
-    pub fn get_fn(&self, id: ModuleId, name: &str) -> Option<&HirFn> {
-        self.get_module(id).and_then(|module| {
-            module.items.iter().find_map(|item| match self.get(*item) {
-                Some(StoredHirItem::Item(HirItem { kind: HirItemKind::Fn(f), .. }))
-                    if f.sig.name.to_string() == *name =>
-                {
-                    Some(f)
-                }
-                _ => None,
-            })
-        })
+        self.0.iter().find(|module| module.mod_id == id)
     }
 
     pub fn get_module_by_id(&self, id: ModuleId) -> Option<&HirModule> {
-        self.modules.iter().find(|module| module.mod_id == id)
+        self.0.iter().find(|module| module.mod_id == id)
+    }
+
+    pub fn modules(&self) -> &Vec<HirModule> {
+        &self.0
+    }
+
+    pub fn modules_mut(&mut self) -> &mut Vec<HirModule> {
+        &mut self.0
     }
 }
 
 impl Default for HirModuleMap {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum StoredHirItem {
-    Item(HirItem),
-    Stmt(HirStmt),
-    Expr(HirExpr),
-}
-
-impl StoredHirItem {
-    pub fn as_item(&self) -> HirItem {
-        match self {
-            StoredHirItem::Item(item) => item.clone(),
-            _ => panic!("Expected item, found {:?}", self),
-        }
     }
 }
 
@@ -261,7 +207,6 @@ impl<'a> Transformer<'a> {
                 .collect(),
         };
 
-        self.map.insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
         self.main_ctx.insert_item(item.clone());
 
         Some(item.id)
@@ -291,8 +236,7 @@ impl<'a> Transformer<'a> {
                 id: body.id,
             };
 
-            self.map.insert_hir_expr(hir.id, hir.clone());
-            Some(hir.id)
+            Some(hir)
         } else {
             None
         };
@@ -398,7 +342,6 @@ impl<'a> Transformer<'a> {
                 attrs: vec![],
             };
 
-            self.map.insert_hir_item(item.id, StoredHirItem::Item(item.clone()));
             self.main_ctx.insert_item(item.clone());
         }
 
@@ -621,7 +564,6 @@ impl<'a> Transformer<'a> {
         let id = if let Some(id) = overwrite_id { id } else { expr.id };
         expr.id = id;
 
-        self.map.insert_hir_expr(id, expr.clone());
         if let Some(fn_name) = fn_name {
             self.main_ctx.expanded_by_builtins.insert(id, fn_name);
             self.main_ctx.builtin_args.insert(id, builtin_params);

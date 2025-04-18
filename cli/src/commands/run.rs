@@ -16,6 +16,7 @@ use brim::{
     discover::ModuleDiscover,
     files::get_path,
     graph::ProjectResolver,
+    items::HirItemKind,
     lints::Lints,
     resolver::ImportResolver,
     session::Session,
@@ -24,7 +25,7 @@ use brim::{
 };
 use brim_codegen::codegen::CppCodegen;
 use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
-use brim_ctx::errors::NoMainFunction;
+use brim_ctx::errors::{MainFunctionNotFunction, NoMainFunction};
 use brim_middle::SimpleModules;
 use brim_parser::parser::Parser;
 use clap::Command;
@@ -192,16 +193,19 @@ pub fn compile_project(
 
     let hir = comp.analyze(map, main_ctx, simple)?;
 
-    if hir.modules.is_empty() && comp.should_bail() {
+    if hir.modules().is_empty() && comp.should_bail() {
         bail_on_errors(comp.emitted.len())?;
     }
 
     if sess.config.is_bin() {
         let main_mod = hir.get_module(ModuleId::from_usize(entry_file)).unwrap();
-        let main_fn = hir.get_fn(ModuleId::from_usize(entry_file), "main");
-
-        if let Some(func) = main_fn {
-            comp.validate_main_function(func, entry_file);
+        let main_fn = main_ctx.resolve_symbol(&"main".to_string(), entry_file);
+        if let Some(item) = main_fn {
+            if let HirItemKind::Fn(func) = &item.kind {
+                comp.validate_main_function(func, entry_file);
+            } else {
+                comp.emit(MainFunctionNotFunction { span: (item.ident.span, entry_file) });
+            }
         } else {
             comp.emit(NoMainFunction { file: main_mod.path.display().to_string() });
         }

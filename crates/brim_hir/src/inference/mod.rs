@@ -17,7 +17,7 @@ use crate::{
         HirItem, HirItemKind,
     },
     stmts::{HirStmt, HirStmtKind},
-    transformer::{HirModule, HirModuleMap, StoredHirItem},
+    transformer::{HirModule, HirModuleMap},
     ty::HirTyKind,
 };
 use brim_ast::{
@@ -90,7 +90,7 @@ impl TypeInference<'_> {
     pub fn infer(&mut self) {
         let inferred_modules: Vec<_> = self
             .hir
-            .modules
+            .modules()
             .clone()
             .into_iter()
             .map(|mut module| {
@@ -100,7 +100,7 @@ impl TypeInference<'_> {
             })
             .collect();
 
-        self.hir.modules = inferred_modules;
+        self.hir.0 = inferred_modules;
     }
 
     pub fn infer_module(&mut self, module: &mut HirModule) {
@@ -193,8 +193,8 @@ impl TypeInference<'_> {
 
                 f.sig.return_type = self.update_generic(f.sig.return_type.clone());
 
-                if let Some(body_id) = f.body {
-                    self.infer_body(body_id);
+                if let Some(body_id) = &mut f.body {
+                    self.infer_expr(body_id);
                 }
 
                 self.scope_manager.pop_scope();
@@ -274,15 +274,7 @@ impl TypeInference<'_> {
     fn infer_item(&mut self, item: ItemId) {
         let item = self.infer_item_inner(item);
 
-        self.hir.hir_items.insert(item.id, StoredHirItem::Item(item.clone()));
         self.main_ctx.items.insert(item.id, item);
-    }
-
-    fn infer_body(&mut self, body_id: ItemId) {
-        let mut expr = self.hir.get_expr_mut(body_id).clone();
-
-        self.infer_expr(&mut expr);
-        *self.hir.get_expr_mut(body_id) = expr;
     }
 
     fn infer_stmt(&mut self, stmt: &mut HirStmt) {
@@ -317,8 +309,6 @@ impl TypeInference<'_> {
                 self.infer_match(mt);
             }
         }
-
-        self.hir.hir_items.insert(stmt.id, StoredHirItem::Stmt(stmt.clone()));
     }
 
     fn is_generic(&self, ty: &HirTyKind) -> Option<HirGenericParam> {
@@ -745,8 +735,6 @@ impl TypeInference<'_> {
                             );
                             expr.ty = inferred_type;
 
-                            self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(*expr.clone()));
-
                             self.update_builtins(*expr.clone());
 
                             return_type
@@ -779,8 +767,6 @@ impl TypeInference<'_> {
 
                 if let Some(field_type) = field_ty {
                     expr.ty = field_type;
-
-                    self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(expr.clone()));
 
                     self.update_builtins(expr.clone());
 
@@ -829,8 +815,6 @@ impl TypeInference<'_> {
         }
 
         expr.ty = self.resolve_type_alias(&expr.ty);
-
-        self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(expr.clone()));
 
         self.update_builtins(expr.clone());
     }

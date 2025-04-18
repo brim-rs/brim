@@ -9,6 +9,13 @@ pub struct NoMainFunction {
 }
 
 #[derive(Diagnostic)]
+#[error("found item with name `main` but it is not a function")]
+pub struct MainFunctionNotFunction {
+    #[error("delete the `main` item")]
+    pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
 #[error("main function cannot have parameters")]
 pub struct MainFunctionParams {
     #[error("delete the parameters")]

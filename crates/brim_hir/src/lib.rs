@@ -128,7 +128,7 @@ impl MainContext {
     /// Finds module by path in the whole structure.
     pub fn find_module_by_path(&self, path: PathBuf) -> Option<&HirModule> {
         self.map.iter().find_map(|(_, module)| {
-            module.hir.modules.iter().find(|module| paths_equal(&module.path, &path))
+            module.hir.modules().iter().find(|module| paths_equal(&module.path, &path))
         })
     }
 }

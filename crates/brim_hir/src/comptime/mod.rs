@@ -11,7 +11,7 @@ use crate::{
     expr::{ComptimeValue, HirBlock, HirExpr, HirExprKind, HirMatch, HirMatchArm},
     items::{HirItemKind, HirTypeAlias},
     stmts::HirStmtKind,
-    transformer::{HirModule, HirModuleMap, StoredHirItem, Transformer},
+    transformer::{HirModule, HirModuleMap, Transformer},
     ty::HirTyKind,
 };
 use brim_ast::{
@@ -80,7 +80,7 @@ impl ComptimeTransformer<'_> {
     pub fn eval(&mut self) {
         let inferred_modules: Vec<_> = self
             .hir
-            .modules
+            .modules()
             .clone()
             .into_iter()
             .map(|mut module| {
@@ -90,7 +90,7 @@ impl ComptimeTransformer<'_> {
             })
             .collect();
 
-        self.hir.modules = inferred_modules;
+        self.hir.0 = inferred_modules;
     }
 
     pub fn eval_module(&mut self, module: &mut HirModule) {
@@ -119,7 +119,6 @@ impl ComptimeTransformer<'_> {
             HirItemKind::External(_) => {}
         }
 
-        self.hir.hir_items.insert(item.id, StoredHirItem::Item(item.clone()));
         self.main_ctx.items.insert(item.id, item);
     }
 
