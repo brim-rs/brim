@@ -54,20 +54,11 @@ pub fn transform_module(
 pub struct HirModuleMap {
     pub modules: Vec<HirModule>,
     pub hir_items: HashMap<ItemId, StoredHirItem>,
-    pub expanded_by_builtins: HashMap<ItemId, String>,
-    pub builtin_args: HashMap<ItemId, Vec<HirExpr>>,
-    pub symbols: SymbolTable,
 }
 
 impl HirModuleMap {
     pub fn new() -> Self {
-        Self {
-            modules: Vec::new(),
-            hir_items: HashMap::new(),
-            expanded_by_builtins: HashMap::new(),
-            symbols: SymbolTable::new(),
-            builtin_args: HashMap::new(),
-        }
+        Self { modules: Vec::new(), hir_items: HashMap::new() }
     }
 
     pub fn insert_hir_item(&mut self, id: ItemId, item: StoredHirItem) {
@@ -124,17 +115,6 @@ impl HirModuleMap {
     pub fn get_module_by_id(&self, id: ModuleId) -> Option<&HirModule> {
         self.modules.iter().find(|module| module.mod_id == id)
     }
-
-    /// looks for an expr in a self.builtin_args and updates if found
-    pub fn update_builtins(&mut self, expr: HirExpr) {
-        for args in self.builtin_args.values_mut() {
-            for arg in args.iter_mut() {
-                if arg.id == expr.id {
-                    *arg = expr.clone();
-                }
-            }
-        }
-    }
 }
 
 impl Default for HirModuleMap {
@@ -161,10 +141,8 @@ impl StoredHirItem {
 
 #[derive(Clone, Debug)]
 pub struct HirModule {
-    /// In hir we no longer use file ids, we use module ids.
     pub mod_id: ModuleId,
     pub items: Vec<ItemId>,
-    // Not sure if this will be needed
     pub path: PathBuf,
     pub imports: Vec<LocId>,
     pub barrel: Barrel,
@@ -197,12 +175,6 @@ impl<'a> Transformer<'a> {
             self.current_mod_id = ModuleId::from_usize(module.barrel.file_id);
             let module = self.transform_module(module);
             self.map.new_module(module);
-        }
-
-        for (module, symbols) in self.main_ctx.symbols.symbols.clone() {
-            for sym in symbols {
-                self.map.symbols.add_symbol(module, sym);
-            }
         }
 
         self.map.clone()

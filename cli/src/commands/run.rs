@@ -53,8 +53,7 @@ pub fn run_cmd() -> Command {
 
 pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Result<()> {
     let main_sess = &mut Session::new(current_dir()?, config.clone(), c_choice);
-    let lints = Box::new(Lints::configure(&config.lints));
-    let lints = Box::leak(lints);
+    let lints = Lints::configure(&config.lints);
     main_sess.measure_time = args.time;
 
     main_sess.assert_type(ProjectType::Bin, "Can only use `run` command on binary projects")?;
@@ -69,15 +68,12 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
 
         for config in configs {
             let sess = &mut Session::new(config.cwd.clone(), config.clone(), args.color_choice);
-            let ctx = &mut CompilerContext::new(args.clone(), lints);
+            let ctx = &mut CompilerContext::new(args.clone(), lints.clone());
             let hir = compile_project(sess, ctx, args.color_choice, main_ctx, simple)?;
 
             main_ctx
                 .map
                 .insert(config.project.name.clone(), Project { config, hir: hir.clone() });
-
-            main_ctx.expanded_by_builtins.extend(hir.expanded_by_builtins);
-            main_ctx.builtin_args.extend(hir.builtin_args);
         }
         let mut cg = CppCodegen::new(main_sess.main_file()?, main_ctx.clone());
         cg.generate(main_ctx);

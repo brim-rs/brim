@@ -188,7 +188,7 @@ impl CppCodegen {
         let fn_name = fn_ident.to_string();
 
         let func_symbol =
-            self.hir().symbols.resolve(&fn_name, self.current_mod.as_usize()).unwrap();
+            self.main_ctx.symbols.resolve(&fn_name, self.current_mod.as_usize()).unwrap();
 
         let func_mod_id = func_symbol.id.mod_id;
 
@@ -234,7 +234,7 @@ impl CppCodegen {
         let ident = str.name;
 
         let symbol =
-            self.hir().symbols.resolve(&ident.to_string(), self.current_mod.as_usize()).unwrap();
+            self.main_ctx.symbols.resolve(&ident.to_string(), self.current_mod.as_usize()).unwrap();
 
         let mod_id = symbol.id.mod_id;
 

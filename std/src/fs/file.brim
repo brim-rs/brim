@@ -31,10 +31,6 @@ pub struct Handle {
             return @err(IoError::fromOsError(GetLastError()));
         }
 
-        if bytes_written != data.len {
-            return @err(IoError::fromOsError("wd")); // TODO: Use a more specific error
-        }
-
         return @ok(bytes_written);
     }
 }

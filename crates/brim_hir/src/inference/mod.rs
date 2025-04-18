@@ -747,7 +747,7 @@ impl TypeInference<'_> {
 
                             self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(*expr.clone()));
 
-                            self.hir.update_builtins(*expr.clone());
+                            self.update_builtins(*expr.clone());
 
                             return_type
                         }
@@ -782,7 +782,7 @@ impl TypeInference<'_> {
 
                     self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(expr.clone()));
 
-                    self.hir.update_builtins(expr.clone());
+                    self.update_builtins(expr.clone());
 
                     &expr.ty
                 } else {
@@ -832,7 +832,7 @@ impl TypeInference<'_> {
 
         self.hir.hir_items.insert(expr.id, StoredHirItem::Expr(expr.clone()));
 
-        self.hir.update_builtins(expr.clone());
+        self.update_builtins(expr.clone());
     }
 
     pub fn infer_match(&mut self, mt: &mut HirMatch) -> HirTyKind {
@@ -1241,5 +1241,16 @@ impl TypeInference<'_> {
     pub fn ret_with_error(&mut self, err: impl ToDiagnostic + 'static) -> HirTyKind {
         self.temp.emit(Box::new(err));
         HirTyKind::err()
+    }
+
+    /// looks for an expr in a self.builtin_args and updates if found
+    pub fn update_builtins(&mut self, expr: HirExpr) {
+        for args in self.main_ctx.builtin_args.values_mut() {
+            for arg in args.iter_mut() {
+                if arg.id == expr.id {
+                    *arg = expr.clone();
+                }
+            }
+        }
     }
 }

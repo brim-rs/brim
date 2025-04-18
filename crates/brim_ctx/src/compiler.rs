@@ -35,11 +35,11 @@ pub struct CompilerContext {
     dcx: DiagnosticContext,
     pub emitted: Vec<Diagnostic<usize>>,
     pub args: RunArgs,
-    pub lints: &'static Lints,
+    pub lints: Lints,
 }
 
 impl CompilerContext {
-    pub fn new(args: RunArgs, lints: &'static Lints) -> Self {
+    pub fn new(args: RunArgs, lints: Lints) -> Self {
         Self { dcx: DiagnosticContext::new(), emitted: vec![], args, lints }
     }
 
@@ -106,7 +106,8 @@ impl CompilerContext {
             });
         }
 
-        let mut name_resolver = NameResolver::new(map.clone(), self.lints, main_ctx, simple);
+        let mut name_resolver =
+            NameResolver::new(map.clone(), self.lints.clone(), main_ctx, simple);
         name_resolver.resolve_names();
         self.extend_temp(name_resolver.ctx);
 

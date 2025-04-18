@@ -68,7 +68,7 @@ pub struct NameResolver<'a> {
     pub map: ModuleMap,
     pub scopes: ScopeManager,
     pub file: usize,
-    pub lints: &'static Lints,
+    pub lints: Lints,
     pub inside_comptime: bool,
     pub main_ctx: &'a mut MainContext,
     pub external: bool,
@@ -80,7 +80,7 @@ pub struct NameResolver<'a> {
 impl<'a> NameResolver<'a> {
     pub fn new(
         map: ModuleMap,
-        lints: &'static Lints,
+        lints: Lints,
         main_ctx: &'a mut MainContext,
         simple: &'a mut SimpleModules,
     ) -> Self {

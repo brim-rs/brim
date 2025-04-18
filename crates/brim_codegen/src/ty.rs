@@ -35,7 +35,7 @@ impl CppCodegen {
                     format!("{}{}", ident.name, generics)
                 } else {
                     let symbol = self
-                        .hir()
+                        .main_ctx
                         .symbols
                         .resolve(&ident.to_string(), self.current_mod.as_usize())
                         .unwrap_or_else(|| panic!("Failed to resolve symbol: {}", ident.name));
