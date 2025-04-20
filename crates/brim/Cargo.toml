@@ -19,6 +19,7 @@ brim-parser = { workspace = true }
 brim-shell = { workspace = true }
 brim-span = { workspace = true }
 tracing = { workspace = true }
+dashmap = { workspace = true }
 
 [features]
 snap = []

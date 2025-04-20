@@ -1,7 +1,7 @@
 use brim_ast::{ItemId, item::Param};
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::{
-    OptionalDiag, box_diag,
+    OptionalDiag,
     diagnostic::{Label, LabelStyle, Severity, ToDiagnostic},
 };
 use brim_span::span::Span;
@@ -61,11 +61,13 @@ impl Scope {
         if self.variables.contains_key(&name) && check_duplicates {
             let var = &self.variables[&name];
 
-            box_diag!(@opt RedeclaredVariable {
-                span: (var.span, self.file),
-                redecl: (info.span, self.file),
-                name
-            });
+            return Some(Box::new(
+                (RedeclaredVariable {
+                    span: (var.span, self.file),
+                    redecl: (info.span, self.file),
+                    name,
+                }),
+            ));
         }
 
         self.variables.insert(name, info);

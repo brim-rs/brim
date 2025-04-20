@@ -148,8 +148,8 @@ impl<'a> Transformer<'a> {
             ItemKind::Fn(f_decl) => HirItemKind::Fn(self.transform_fn(f_decl)),
             ItemKind::Use(u) => {
                 let imports = match u.imports {
-                    ImportsKind::List(list, ..) => HirImportsKind::List(list),
-                    ImportsKind::All(_) => HirImportsKind::All,
+                    ImportsKind::List(list) => HirImportsKind::List(list),
+                    ImportsKind::All => HirImportsKind::All,
                     ImportsKind::Default(ident) => HirImportsKind::Default(ident),
                 };
 

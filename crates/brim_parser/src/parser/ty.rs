@@ -13,57 +13,57 @@ use brim_ast::{
 use brim_span::span::Span;
 
 impl Parser {
-    pub fn parse_type(&mut self) -> PResult<Ty> {
-        let mut ty = self.parse_type_core()?;
+    pub fn parse_type(&mut self) -> Ty {
+        let mut ty = self.parse_type_core();
 
-        ty = self.apply_type_modifiers(ty)?;
+        ty = self.apply_type_modifiers(ty);
 
-        Ok(ty)
+        ty
     }
 
-    fn parse_type_core(&mut self) -> PResult<Ty> {
+    fn parse_type_core(&mut self) -> Ty {
         let span = self.current().span;
 
         let kind = if self.eat(TokenKind::BinOp(BinOpToken::And)) {
             let mutable = self.is_mut();
-            let inner_ty = self.parse_type_core()?;
+            let inner_ty = self.parse_type_core();
             TyKind::Ref(span, Box::new(inner_ty), mutable)
         } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
             let mutable = self.is_mut();
-            let inner_ty = self.parse_type_core()?;
+            let inner_ty = self.parse_type_core();
             TyKind::Ptr(span, Box::new(inner_ty), mutable)
         } else if self.current().is_keyword(Mut) {
             let span = self.current().span;
             self.eat_keyword(ptok!(Mut));
-            let inner_ty = self.parse_type_core()?;
+            let inner_ty = self.parse_type_core();
             TyKind::Mut(Box::new(inner_ty), span)
         } else if self.current().is_keyword(Const) {
             let span = self.current().span;
             self.eat_keyword(ptok!(Const));
-            let inner_ty = self.parse_type_core()?;
+            let inner_ty = self.parse_type_core();
             TyKind::Const(span, Box::new(inner_ty))
         } else {
-            let ident = self.parse_ident()?;
+            let ident = self.parse_ident();
 
-            if let Some(primitive) = self.is_primitive(ident)? {
+            if let Some(primitive) = self.is_primitive(ident) {
                 TyKind::Primitive(primitive)
             } else {
-                TyKind::Ident { ident, generics: self.parse_argument_generics()? }
+                TyKind::Ident { ident, generics: self.parse_argument_generics() }
             }
         };
 
-        Ok(Ty { span, kind, id: self.new_id() })
+        Ty { span, kind, id: self.new_id() }
     }
 
-    fn apply_type_modifiers(&mut self, mut ty: Ty) -> PResult<Ty> {
+    fn apply_type_modifiers(&mut self, mut ty: Ty) -> Ty {
         let span = ty.span;
 
         // Handle array/vector types
         if self.current().is_delimiter(Delimiter::Bracket, Orientation::Open)
             && self.next().is_delimiter(Delimiter::Bracket, Orientation::Close)
         {
-            self.expect_obracket()?;
-            self.expect_cbracket()?;
+            self.expect_obracket();
+            self.expect_cbracket();
 
             // Apply the vector modifier with consideration for type modifiers
             match ty.kind {
@@ -142,7 +142,7 @@ impl Parser {
         // Handle Result type
         if self.current().kind == TokenKind::Bang {
             self.eat(TokenKind::Bang);
-            let err_ty = self.parse_type()?;
+            let err_ty = self.parse_type();
             ty = Ty {
                 span,
                 kind: TyKind::Result(Box::new(ty), Box::new(err_ty)),
@@ -161,54 +161,54 @@ impl Parser {
             };
         }
 
-        Ok(ty)
+        ty
     }
 
-    pub fn parse_ty_without_ident(&mut self) -> PResult<Option<Ty>> {
-        let ty_opt = self.parse_type_core_without_ident()?;
+    pub fn parse_ty_without_ident(&mut self) -> Option<Ty> {
+        let ty_opt = self.parse_type_core_without_ident();
 
         if let Some(ty) = ty_opt {
-            let ty_with_modifiers = self.apply_type_modifiers(ty)?;
-            Ok(Some(ty_with_modifiers))
+            let ty_with_modifiers = self.apply_type_modifiers(ty);
+            Some(ty_with_modifiers)
         } else {
-            Ok(None)
+            None
         }
     }
 
-    fn parse_type_core_without_ident(&mut self) -> PResult<Option<Ty>> {
+    fn parse_type_core_without_ident(&mut self) -> Option<Ty> {
         let span = self.current().span;
 
         let kind_opt = if self.eat(TokenKind::BinOp(BinOpToken::And)) {
             let is_mut = self.is_mut();
-            let inner_ty_opt = self.parse_type_core_without_ident()?;
+            let inner_ty_opt = self.parse_type_core_without_ident();
             inner_ty_opt.map(|inner_ty| TyKind::Ref(span, Box::new(inner_ty), is_mut))
         } else if self.eat(TokenKind::BinOp(BinOpToken::Star)) {
             let is_mut = self.is_mut();
-            let inner_ty_opt = self.parse_type_core_without_ident()?;
+            let inner_ty_opt = self.parse_type_core_without_ident();
             inner_ty_opt.map(|inner_ty| TyKind::Ptr(span, Box::new(inner_ty), is_mut))
         } else if self.current().is_keyword(Mut) {
             let span = self.current().span;
             self.eat_keyword(ptok!(Mut));
-            let inner_ty_opt = self.parse_type_core_without_ident()?;
+            let inner_ty_opt = self.parse_type_core_without_ident();
             inner_ty_opt.map(|inner_ty| TyKind::Mut(Box::new(inner_ty), span))
         } else {
-            let ident_opt = self.parse_ident_without_err()?;
+            let ident_opt = self.parse_ident_without_err();
 
             if let Some(ident) = ident_opt {
-                self.is_primitive(ident)?.map(TyKind::Primitive)
+                self.is_primitive(ident).map(TyKind::Primitive)
             } else {
                 None
             }
         };
 
-        Ok(kind_opt.map(|kind| Ty { span, kind, id: self.new_id() }))
+        kind_opt.map(|kind| Ty { span, kind, id: self.new_id() })
     }
 
     // No longer need these methods, as they're now integrated into parse_type_core
     pub fn parse_mut(&mut self) -> PResult<TyKind> {
         let span = self.current().span;
         self.eat_keyword(ptok!(Mut));
-        Ok(TyKind::Mut(Box::new(self.parse_type()?), span))
+        Ok(TyKind::Mut(Box::new(self.parse_type()), span))
     }
 
     pub fn is_mut(&mut self) -> Mutable {
@@ -221,8 +221,8 @@ impl Parser {
         }
     }
 
-    pub fn is_primitive(&self, ident: Ident) -> PResult<Option<PrimitiveType>> {
-        Ok(PrimitiveType::try_from_string(ident.to_string()))
+    pub fn is_primitive(&self, ident: Ident) -> Option<PrimitiveType> {
+        PrimitiveType::try_from_string(ident.to_string())
     }
 
     pub fn block_from_expr(&mut self, expr: Expr) -> Block {
@@ -237,23 +237,23 @@ impl Parser {
         }
     }
 
-    pub fn parse_type_alias(&mut self) -> PResult<(Ident, ItemKind)> {
+    pub fn parse_type_alias(&mut self) -> (Ident, ItemKind) {
         let span = self.current().span;
         self.eat_keyword(ptok!(Type));
 
-        let ident = self.parse_ident()?;
-        let generics = self.parse_generics()?;
-        self.expect(TokenKind::Eq)?;
+        let ident = self.parse_ident();
+        let generics = self.parse_generics();
+        self.expect(TokenKind::Eq);
 
         let ty = if self.can_begin_comptime() {
-            TypeAliasValue::Const(self.parse_expr()?)
+            TypeAliasValue::Const(self.parse_expr())
         } else {
-            TypeAliasValue::Ty(self.parse_type()?)
+            TypeAliasValue::Ty(self.parse_type())
         };
 
-        Ok((
+        (
             ident,
             ItemKind::TypeAlias(TypeAlias { span: span.to(self.prev().span), generics, ident, ty }),
-        ))
+        )
     }
 }

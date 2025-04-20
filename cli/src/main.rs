@@ -17,6 +17,11 @@ mod panic;
 pub mod plural;
 mod tracing;
 
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 fn main() -> Result<()> {
     let args = cli().try_get_matches().unwrap_or_else(|err| {
         err.print().expect("Error printing error");

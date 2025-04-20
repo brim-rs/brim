@@ -3,12 +3,16 @@ use anyhow::Result;
 use brim_ast::item::ItemKind;
 use brim_diag_macro::Diagnostic;
 use brim_diagnostics::diagnostic::{Label, LabelStyle, Severity, ToDiagnostic};
-use brim_fs::loader::{BrimFileLoader, FileLoader};
+use brim_fs::{
+    loader::{BrimFileLoader, FileLoader},
+    paths_equal,
+};
 use brim_middle::{barrel::Barrel, modules::ModuleMap, temp_diag::TemporaryDiagnosticContext};
 use brim_parser::parser::Parser;
 use brim_span::{files::get_path, span::Span};
+use dashmap::DashMap;
 use std::{collections::HashSet, path::PathBuf};
-use tracing::debug;
+use tracing::{debug, info};
 
 #[derive(Debug)]
 pub struct ModuleDiscover<'a> {
@@ -28,6 +32,7 @@ impl<'a> ModuleDiscover<'a> {
         &mut self,
         barrel: &Barrel,
         visited: &mut HashSet<PathBuf>,
+        updated: &DashMap<PathBuf, String>,
     ) -> Result<ModuleMap> {
         self.file = barrel.file_id;
         let mut module_paths = Vec::new();
@@ -71,14 +76,19 @@ impl<'a> ModuleDiscover<'a> {
                 continue;
             }
 
-            let content = self.temp_loader.read_file(&path)?;
+            let content =
+                if let Some(saved) = updated.iter().find(|x| paths_equal(x.key(), path.clone())) {
+                    saved.value().clone()
+                } else {
+                    self.temp_loader.read_file(&path)?
+                };
             let file = self.sess.add_file(path.clone(), content);
 
             let mut parser = Parser::new(file, self.sess.config.experimental.clone());
             let new_barrel = parser.parse_barrel();
             self.ctx.extend(parser.dcx.diags);
 
-            self.create_module_map(&new_barrel, visited)?;
+            self.create_module_map(&new_barrel, visited, updated)?;
         }
         Ok(self.map.clone())
     }

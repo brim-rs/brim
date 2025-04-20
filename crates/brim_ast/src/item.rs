@@ -255,9 +255,9 @@ impl Use {
 #[derive(Clone, Debug)]
 pub enum ImportsKind {
     /// `use { foo, bar } from "test";`
-    List(Vec<Ident>, (Span, Span)),
+    List(Vec<Ident>),
     /// `use * from "test";`
-    All(Span),
+    All,
     /// `use windows from std::os::windows;`
     Default(Ident),
 }
@@ -343,8 +343,8 @@ pub struct GenericParam {
 
 #[derive(Clone, Debug)]
 pub enum GenericKind {
-    Type { default: Option<Ty>, colon: Option<Span> },
-    NonType { default: Option<Expr>, ty: Ty, eq: Option<Span>, colon: Span },
+    Type { default: Option<Ty> },
+    NonType { default: Option<Expr>, ty: Ty },
 }
 
 #[derive(Clone, Debug)]

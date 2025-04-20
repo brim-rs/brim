@@ -5,10 +5,11 @@ use crate::{
 use anyhow::Result;
 use brim_ast::{
     ItemId, Match, Pub, SYMBOL_STRINGS,
-    item::{FunctionContext, Visibility},
+    expr::{Expr, ExprKind},
+    item::{Block, FunctionContext, Visibility},
     token::{Delimiter, Orientation, Token, TokenKind},
 };
-use brim_diagnostics::{ErrorEmitted, box_diag, diagnostic::ToDiagnostic};
+use brim_diagnostics::{ErrorEmitted, diagnostic::ToDiagnostic};
 use brim_lexer::{PrimitiveToken, PrimitiveTokenKind, cursor::Cursor};
 use brim_middle::{
     barrel::Barrel, experimental::Experimental, temp_diag::TemporaryDiagnosticContext,
@@ -203,12 +204,8 @@ impl Parser {
         self.advance();
         loop {
             let token = match self.parse_item() {
-                Ok(Some(item)) => item,
-                Ok(None) => break,
-                Err(diag) => {
-                    self.dcx.emit(diag);
-                    break;
-                }
+                Some(item) => item,
+                None => break,
             };
 
             items.push(token);
@@ -295,39 +292,41 @@ impl Parser {
         matches!(self.current().kind, TokenKind::Ident(_)) && !self.current().is_any_keyword()
     }
 
-    pub fn expect(&mut self, p: TokenKind) -> PResult<Token> {
+    pub fn expect(&mut self, p: TokenKind) -> Token {
         if self.current().kind == p {
-            Ok(self.advance())
+            self.advance()
         } else {
-            box_diag!(ExpectedToken {
+            self.dcx.emit_impl(ExpectedToken {
                 span: (self.current().span, self.file),
                 expected: p,
                 found: self.current().kind,
-            })
+            });
+
+            Token::new(TokenKind::Skipable, Span::DUMMY).into()
         }
     }
 
-    pub fn expect_oparen(&mut self) -> PResult<Token> {
+    pub fn expect_oparen(&mut self) -> Token {
         self.expect(TokenKind::Delimiter(Delimiter::Paren, Orientation::Open))
     }
 
-    pub fn expect_cparen(&mut self) -> PResult<Token> {
+    pub fn expect_cparen(&mut self) -> Token {
         self.expect(TokenKind::Delimiter(Delimiter::Paren, Orientation::Close))
     }
 
-    pub fn expect_obrace(&mut self) -> PResult<Token> {
+    pub fn expect_obrace(&mut self) -> Token {
         self.expect(TokenKind::Delimiter(Delimiter::Brace, Orientation::Open))
     }
 
-    pub fn expect_cbrace(&mut self) -> PResult<Token> {
+    pub fn expect_cbrace(&mut self) -> Token {
         self.expect(TokenKind::Delimiter(Delimiter::Brace, Orientation::Close))
     }
 
-    pub fn expect_obracket(&mut self) -> PResult<Token> {
+    pub fn expect_obracket(&mut self) -> Token {
         self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open))
     }
 
-    pub fn expect_cbracket(&mut self) -> PResult<Token> {
+    pub fn expect_cbracket(&mut self) -> Token {
         self.expect(TokenKind::Delimiter(Delimiter::Bracket, Orientation::Close))
     }
 
@@ -383,6 +382,14 @@ impl Parser {
             .clone();
         if self.token_cursor.current > 0 {
             self.previous_token = self.tokens[self.token_cursor.current - 1].clone();
+        }
+    }
+
+    pub fn dummy_block(&mut self) -> Expr {
+        Expr {
+            kind: ExprKind::Block(Block { id: self.new_id(), stmts: vec![], span: Span::DUMMY }),
+            id: self.new_id(),
+            span: Span::DUMMY,
         }
     }
 }

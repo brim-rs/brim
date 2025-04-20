@@ -98,9 +98,10 @@ pub struct ElseIfAfterElse {
 }
 
 #[derive(Diagnostic)]
-#[error("use statement requires braces in the item list.")]
-pub struct UseStatementBraces {
-    #[error("add braces around the item list")]
+#[error(
+    "no valid items found in the list. expected one of: `use {{ ... }} from \"...\"`, `use namespace from \"...\"` or `use * from \"...\"`"
+)]
+pub struct InvalidUseItems {
     pub span: (Span, usize),
 }
 
@@ -203,4 +204,12 @@ pub struct IfAsExpressionError {
 pub struct ExpectedColonInTernaryError {
     #[error]
     pub span: (Span, usize),
+}
+
+#[derive(Diagnostic)]
+#[error("expected type after `const` keyword. found `{found}`.")]
+pub struct ExpectedTypeAfterConst {
+    #[error]
+    pub span: (Span, usize),
+    pub found: TokenKind,
 }

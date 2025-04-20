@@ -42,10 +42,8 @@ pub struct Let {
     pub id: ItemId,
     pub keyword: Span,
     pub span: Span,
-    pub colon: Option<Span>,
     pub ty: Option<Ty>,
     pub ident: Ident,
     // E.g. `let x: i32 = 5;` or `let x;`
     pub value: Option<Expr>,
-    pub eq: Option<Span>,
 }

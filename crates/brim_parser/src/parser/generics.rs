@@ -11,19 +11,15 @@ use brim_middle::ExperimentalFeatureNotEnabled;
 use brim_span::span::Span;
 
 impl Parser {
-    pub fn parse_generics(&mut self) -> PResult<Generics> {
+    pub fn parse_generics(&mut self) -> Generics {
         let token = self.current().span;
         if !self.eat(TokenKind::Lt) {
             // no generics. return early
-            return Ok(Generics {
-                chevrons: None,
-                span: self.prev().span.from_end(),
-                params: vec![],
-            });
+            return Generics { chevrons: None, span: self.prev().span.from_end(), params: vec![] };
         }
         let ochevron = token;
 
-        let params = self.parse_generics_params()?;
+        let params = self.parse_generics_params();
 
         if !self.eat(TokenKind::Gt) {
             let expected_span = self.prev().span.from_end();
@@ -41,26 +37,22 @@ impl Parser {
             });
         }
 
-        Ok(Generics { span, params, chevrons: Some((ochevron, cchevron)) })
+        Generics { span, params, chevrons: Some((ochevron, cchevron)) }
     }
 
     /// Parses the generic arguments provided as an argument. eg: `foo<T, U>`
-    pub fn parse_argument_generics(&mut self) -> PResult<GenericArgs> {
+    pub fn parse_argument_generics(&mut self) -> GenericArgs {
         let token = self.current().span;
         if !self.eat(TokenKind::Lt) {
             // no generics. return early
-            return Ok(GenericArgs {
-                span: self.prev().span.from_end(),
-                params: vec![],
-                braces: None,
-            });
+            return GenericArgs { span: self.prev().span.from_end(), params: vec![], braces: None };
         }
 
         let params = {
             let mut params = vec![];
 
             loop {
-                let ty = self.parse_type()?;
+                let ty = self.parse_type();
 
                 params.push(GenericArg { id: self.new_id(), ty });
 
@@ -79,19 +71,19 @@ impl Parser {
             self.emit(ExpectedClosingGenerics { span: (expected_span, self.file) });
         }
 
-        Ok(GenericArgs { span: token.to(self.prev().span), params, braces: Some((token, closing)) })
+        GenericArgs { span: token.to(self.prev().span), params, braces: Some((token, closing)) }
     }
 
-    pub fn parse_generics_params(&mut self) -> PResult<Vec<GenericParam>> {
+    pub fn parse_generics_params(&mut self) -> Vec<GenericParam> {
         let mut params: Vec<GenericParam> = vec![];
 
         loop {
             if self.is_ident() {
-                let ident = self.parse_ident()?;
+                let ident = self.parse_ident();
 
                 let default = if self.eat(TokenKind::Colon) {
                     let span = self.prev().span;
-                    let def = self.parse_type()?;
+                    let def = self.parse_type();
                     Some((span, def))
                 } else {
                     None
@@ -100,34 +92,26 @@ impl Parser {
                 params.push(GenericParam {
                     id: self.new_id(),
                     ident,
-                    kind: GenericKind::Type {
-                        default: default.clone().map(|x| x.1),
-                        colon: default.map(|x| x.0),
-                    },
+                    kind: GenericKind::Type { default: default.clone().map(|x| x.1) },
                 })
             } else if self.eat_keyword(ptok!(Const)) {
-                let ident = self.parse_ident()?;
+                let ident = self.parse_ident();
 
-                let mut colon = Span::DUMMY;
                 let ty = {
-                    self.expect(TokenKind::Colon)?;
-                    colon = self.prev().span;
-                    self.parse_type()?
+                    self.expect(TokenKind::Colon);
+                    self.parse_type()
                 };
 
                 let const_expr = if self.eat(TokenKind::Eq) {
-                    let eq = self.prev().span;
-                    let expr = self.parse_expr()?;
-                    Some((eq, expr))
+                    let expr = self.parse_expr();
+                    Some(expr)
                 } else {
                     None
                 };
-                let eq = const_expr.as_ref().map(|x| x.0);
-                let const_expr = const_expr.map(|x| x.1);
                 params.push(GenericParam {
                     id: self.new_id(),
                     ident,
-                    kind: GenericKind::NonType { ty, default: const_expr, eq, colon },
+                    kind: GenericKind::NonType { ty, default: const_expr },
                 })
             } else {
                 break;
@@ -138,6 +122,6 @@ impl Parser {
             }
         }
 
-        Ok(params)
+        params
     }
 }

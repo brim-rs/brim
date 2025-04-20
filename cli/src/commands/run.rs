@@ -29,6 +29,7 @@ use brim_ctx::errors::{MainFunctionNotFunction, NoMainFunction};
 use brim_middle::SimpleModules;
 use brim_parser::parser::Parser;
 use clap::Command;
+use dashmap::DashMap;
 use std::{collections::HashSet, env::current_dir, process, process::exit};
 use tracing::debug;
 
@@ -181,7 +182,7 @@ pub fn compile_project(
     discover.map.insert_or_update(get_path(entry_file)?, barrel.clone());
     let mut visited = HashSet::new();
 
-    let module_map = discover.create_module_map(&barrel, &mut visited)?;
+    let module_map = discover.create_module_map(&barrel, &mut visited, &DashMap::new())?;
     let mut resolver = ImportResolver::new(resolver_temp, sess, main_ctx.clone(), module_map);
     let map = resolver.resolve()?;
 

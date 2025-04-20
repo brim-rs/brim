@@ -66,6 +66,10 @@ toml_edit = "0.22.24"
 tracing = { version = "0.1.40", default-features = false, features = ["std"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "chrono", "time"] }
 url = "2.5.4"
+dashmap = "7.0.0-rc2"
+
+[profile.release]
+panic = 'abort'
 
 # These clippy settings are copied from https://github.com/oxc-project/oxc/blob/main/Cargo.toml
 
