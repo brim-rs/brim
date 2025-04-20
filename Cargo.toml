@@ -46,7 +46,7 @@ brim-symbols-macro = { path = "crates/brim_symbols_macro", version = "0.1.0" }
 # Other dependencies
 anstream = "0.6.18"
 anstyle = "1.0.10"
-anyhow = "1.0.97"
+anyhow = "1.0.98"
 backtrace = "0.3.74"
 clap = { version = "4.5.35", features = ["derive"] }
 colored = "3.0.0"
