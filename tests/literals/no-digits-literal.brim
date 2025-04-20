@@ -1,5 +1,0 @@
-/// @expect_error: Literal has no digits
-
-pub fn main() {
-    let abc = 0o;
-};

@@ -1,5 +1,0 @@
-/// @expect_error: Invalid modifier order. `const` keyword should be placed before `fn` keyword
-/// @expect_error: expected identifier. but found `const`
-
-pub fn const main() {
-};

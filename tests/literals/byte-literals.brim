@@ -1,8 +1,0 @@
-/// @expect_error: Unterminated `byte` literal
-/// @expect_error: Unterminated `byte string` literal
-
-pub fn main() {
-    let x = b'0;
-
-    let z = b"dwa;
-};

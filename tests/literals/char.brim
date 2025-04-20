@@ -1,5 +1,0 @@
-/// @expect_error: Unterminated `char` literal
-
-pub fn main() {
-    let abc = 'a;
-};

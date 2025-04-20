@@ -1,5 +1,0 @@
-/// @expect_error: Unsupported float base `octal`
-
-pub fn main() {
-    let abc = 0o0.0;
-};

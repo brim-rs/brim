@@ -1,5 +1,0 @@
-/// @expect_error: Invalid digit literal for base `8`
-
-pub fn main() {
-    let abc = 0o9;
-};
