@@ -1,4 +1,4 @@
-use crate::{CodeBuilder, item::sort_items_by_module};
+use crate::CodeBuilder;
 use brim_ast::{
     ItemId,
     item::{ExternBlock, FunctionContext},
@@ -11,26 +11,23 @@ use brim_hir::{
     transformer::{HirModule, HirModuleMap},
     ty::HirTyKind,
 };
-use brim_middle::ModuleId;
+use brim_middle::{GlobalSymbol, ModuleId};
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    cmp::Reverse,
+    collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet},
     path::PathBuf,
 };
 use tracing::debug;
 
 #[derive(Debug)]
-pub struct CppCodegen {
+pub struct DefaultCodegen {
     pub code: CodeBuilder,
     pub current_mod: ModuleId,
     pub hir: Option<HirModuleMap>,
     pub main_file: usize,
     pub modules: Vec<usize>,
-    pub imports: Vec<String>,
-    pub is_external: Option<HirExternBlock>,
     pub main_ctx: MainContext,
     pub items_order: HashMap<ModuleId, Vec<ItemId>>,
-    /// adds `static` before function in static methods
-    pub generate_static: bool,
 }
 
 #[derive(Debug)]
@@ -146,7 +143,7 @@ impl ModuleDependencyResolver {
     }
 }
 
-impl CppCodegen {
+impl DefaultCodegen {
     pub fn new(main_file: usize, main_ctx: MainContext) -> Self {
         let code = CodeBuilder::new(4);
 
@@ -158,29 +155,8 @@ impl CppCodegen {
             hir: None,
             main_file,
             modules: vec![],
-            imports: [
-                "string",
-                "vector",
-                "cstdint",
-                "expected",
-                "any",
-                "cstdlib",
-                "optional",
-                "typeinfo",
-                "typeindex",
-                "cstring",
-                "cstddef",
-                "variant",
-                "iostream",
-                "format",
-            ]
-            .iter()
-            .map(|s| (*s).to_string())
-            .collect(),
-            is_external: None,
             main_ctx,
             items_order: sorted_modules,
-            generate_static: false,
         }
     }
 
@@ -192,27 +168,6 @@ impl CppCodegen {
         self.hir.as_ref().unwrap()
     }
 
-    pub fn add_standard_module(&mut self) {
-        self.code.add_line("");
-
-        for std_module in &self.imports {
-            self.code.add_line(&format!("#include <{std_module}>;"));
-        }
-        self.code.add_line("");
-    }
-
-    pub fn add_main(&mut self) {
-        self.code.add_line("// main.cpp");
-
-        self.code.add_line("");
-        self.code.add_line("int main() {");
-        self.code.increase_indent();
-        self.code.add_line(&format!("module{}::brim_main();", self.main_file));
-        self.code.add_line("return 0;");
-        self.code.decrease_indent();
-        self.code.add_line("}");
-    }
-
     pub fn populate(&mut self, main_ctx: &MainContext) {
         for project in main_ctx.map.values() {
             for module in project.hir.modules() {
@@ -220,23 +175,16 @@ impl CppCodegen {
             }
         }
     }
-
-    pub fn add_injects(&mut self) {
-        self.code.add_line(include_str!("./injects.cpp"));
-    }
 }
 
-impl Codegen for CppCodegen {
+impl Codegen for DefaultCodegen {
     fn generate(&mut self, main_ctx: &MainContext) {
         let mut resolver = ModuleDependencyResolver::new(main_ctx);
 
         resolver.print_module_dependencies();
 
         let generation_order = resolver.determine_generation_order();
-
         self.populate(main_ctx);
-        self.add_standard_module();
-        self.add_injects();
 
         for module_id in generation_order {
             let module = main_ctx
@@ -250,18 +198,10 @@ impl Codegen for CppCodegen {
             self.hir = Some(resolver.hirs[&module_id].clone());
             self.generate_module(module.clone(), main_ctx);
         }
-
-        self.add_main();
     }
 
     fn generate_module(&mut self, module: HirModule, main_ctx: &MainContext) {
         let mod_id = module.mod_id;
-
-        self.code.add_line(&format!("\n\n// =========== module{}", mod_id.as_u32()));
-        self.code.add_line("");
-
-        self.code.add_line(&format!("namespace module{} {{", mod_id.as_u32()));
-        self.code.increase_indent();
 
         let mut items = BTreeMap::new();
 
@@ -320,24 +260,130 @@ impl Codegen for CppCodegen {
                 self.generate_item(item, main_ctx);
             }
         }
-
-        self.code.decrease_indent();
-        self.code.add_line("}");
     }
 
-    fn generate_item(&mut self, item: HirItem, main_ctx: &MainContext) {
-        self.generate_item(item, main_ctx);
-    }
+    fn generate_item(&mut self, item: HirItem, main_ctx: &MainContext) {}
 
     fn generate_expr(&mut self, expr: HirExpr) -> String {
-        self.generate_expr(expr)
+        String::new()
     }
 
     fn generate_stmt(&mut self, stmt: HirStmt) -> String {
-        self.generate_stmt(stmt)
+        String::new()
     }
 
     fn generate_ty(&mut self, ty: HirTyKind) -> String {
-        self.generate_ty(ty)
+        String::new()
     }
+}
+
+pub fn sort_items_by_module(
+    item_relations: &HashMap<GlobalSymbol, Vec<GlobalSymbol>>,
+) -> HashMap<ModuleId, Vec<ItemId>> {
+    let mut module_items: BTreeMap<ModuleId, BTreeSet<ItemId>> = BTreeMap::new();
+    let mut all_items: BTreeSet<GlobalSymbol> = BTreeSet::new();
+
+    let mut dependency_map: HashMap<GlobalSymbol, Vec<GlobalSymbol>> = HashMap::new();
+
+    for (item, relations) in item_relations {
+        all_items.insert(item.clone());
+
+        for related_item in relations {
+            all_items.insert(related_item.clone());
+
+            dependency_map.entry(related_item.clone()).or_default().push(item.clone());
+        }
+    }
+
+    for item in &all_items {
+        module_items.entry(item.id.mod_id).or_default().insert(item.id.item_id);
+    }
+
+    let mut module_graphs: BTreeMap<ModuleId, BTreeMap<ItemId, Vec<ItemId>>> = BTreeMap::new();
+
+    for (item, dependencies) in &dependency_map {
+        let mod_id = item.id.mod_id;
+        let item_id = item.id.item_id;
+
+        module_graphs.entry(mod_id).or_default();
+
+        let same_module_deps: Vec<ItemId> = dependencies
+            .iter()
+            .filter(|dep| dep.id.mod_id == mod_id)
+            .map(|dep| dep.id.item_id)
+            .collect();
+
+        module_graphs.get_mut(&mod_id).unwrap().insert(item_id, same_module_deps);
+    }
+
+    for (mod_id, items) in &module_items {
+        let graph_entry = module_graphs.entry(*mod_id).or_default();
+
+        for &item_id in items {
+            graph_entry.entry(item_id).or_default();
+        }
+    }
+
+    let mut result: HashMap<ModuleId, Vec<ItemId>> = HashMap::new();
+
+    for (mod_id, items) in &module_items {
+        let temp = BTreeMap::new();
+        let graph = module_graphs.get(mod_id).unwrap_or(&temp);
+        let sorted_items = topological_sort(items, graph);
+        result.insert(*mod_id, sorted_items);
+    }
+
+    result
+}
+
+pub fn topological_sort(
+    items: &BTreeSet<ItemId>,
+    graph: &BTreeMap<ItemId, Vec<ItemId>>,
+) -> Vec<ItemId> {
+    let mut indegree: BTreeMap<ItemId, usize> = BTreeMap::new();
+    let mut adj_list: BTreeMap<ItemId, Vec<ItemId>> = BTreeMap::new();
+
+    for item in items {
+        indegree.insert(*item, 0);
+        adj_list.insert(*item, Vec::new());
+    }
+
+    for (item, deps) in graph {
+        for dep in deps {
+            if items.contains(dep) {
+                adj_list.entry(*item).or_default().push(*dep);
+                *indegree.entry(*dep).or_default() += 1;
+            }
+        }
+    }
+
+    let mut queue: BinaryHeap<Reverse<ItemId>> =
+        indegree.iter().filter(|&(_, &count)| count == 0).map(|(item, _)| Reverse(*item)).collect();
+
+    let mut result = Vec::new();
+
+    while let Some(Reverse(item)) = queue.pop() {
+        result.push(item);
+
+        if let Some(adjacent) = adj_list.get(&item) {
+            for adj in adjacent {
+                if let Some(count) = indegree.get_mut(adj) {
+                    *count -= 1;
+                    if *count == 0 {
+                        queue.push(Reverse(*adj));
+                    }
+                }
+            }
+        }
+    }
+
+    if result.len() != items.len() {
+        for item in items {
+            if !result.contains(item) {
+                result.push(*item);
+            }
+        }
+    }
+
+    result
 }

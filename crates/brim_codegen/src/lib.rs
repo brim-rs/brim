@@ -1,11 +1,6 @@
 #![feature(let_chains)]
 
 pub mod codegen;
-mod expr;
-mod generics;
-mod item;
-mod stmt;
-mod ty;
 
 #[derive(Debug)]
 pub struct CodeBuilder {
@@ -15,7 +10,6 @@ pub struct CodeBuilder {
 }
 
 impl CodeBuilder {
-    /// Creates a new `CodeBuilder` with the given indentation size
     pub fn new(indent_size: usize) -> Self {
         Self { code: String::new(), indent: 0, indent_size }
     }

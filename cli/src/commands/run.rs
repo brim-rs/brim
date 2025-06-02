@@ -23,7 +23,7 @@ use brim::{
     temp_diag::TemporaryDiagnosticContext,
     transformer::HirModuleMap,
 };
-use brim_codegen::codegen::CppCodegen;
+use brim_codegen::codegen::DefaultCodegen;
 use brim_cpp_compiler::{CppBuild, compiler::CompilerKind};
 use brim_ctx::errors::{MainFunctionNotFunction, NoMainFunction};
 use brim_middle::SimpleModules;
@@ -77,7 +77,7 @@ pub fn run_command(c_choice: ColorChoice, args: RunArgs, config: Config) -> Resu
                 .map
                 .insert(config.project.name.clone(), Project { config, hir: hir.clone() });
         }
-        let mut cg = CppCodegen::new(main_sess.main_file()?, main_ctx.clone());
+        let mut cg = DefaultCodegen::new(main_sess.main_file()?, main_ctx.clone());
         cg.generate(main_ctx);
 
         let mut sources = vec![];
