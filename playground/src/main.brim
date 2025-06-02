@@ -9,7 +9,7 @@ struct Vec2<T> {
     }
 }
 
-pub fn optionTest(x: string?) string {
+pub fn optionTest(x: ?string) string {
     return x orelse "None";
 }
 

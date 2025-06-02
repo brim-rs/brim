@@ -65,3 +65,12 @@ pub struct TryUnaryOnUnwrap {
     #[note]
     pub note: &'static str,
 }
+
+#[derive(Diagnostic)]
+#[error("field access only allows plain identifiers or unwrap expressions")]
+pub struct FieldAccessOnlyPlainOrUnwrap {
+    #[error]
+    pub span: (Span, usize),
+    #[note]
+    pub note: &'static str,
+}

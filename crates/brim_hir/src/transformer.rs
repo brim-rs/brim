@@ -422,7 +422,9 @@ impl<'a> Transformer<'a> {
                 ExprKind::Unary(_, op, expr) => {
                     HirExprKind::Unary(op, Box::new(self.transform_expr(*expr).0))
                 }
-                ExprKind::Field(idents, ..) => HirExprKind::Field(idents),
+                ExprKind::Field(idents) => {
+                    HirExprKind::Field(self.transform_expr_vec(idents.clone()))
+                }
                 ExprKind::Index(expr, index) => HirExprKind::Index(
                     Box::new(self.transform_expr(*expr).0),
                     Box::new(self.transform_expr(*index).0),
@@ -485,15 +487,13 @@ impl<'a> Transformer<'a> {
                 ExprKind::Block(block) => HirExprKind::Block(self.transform_block(block)),
                 ExprKind::Call(expr, args, ..) => HirExprKind::Call(
                     Box::new(self.transform_expr(*expr).0),
-                    args.iter().map(|arg| self.transform_expr(arg.clone()).0).collect(),
+                    self.transform_expr_vec(args),
                     vec![],
                 ),
                 ExprKind::Comptime(expr) => HirExprKind::Comptime(ComptimeValue::Expr(Box::new(
                     self.transform_expr(*expr).0,
                 ))),
-                ExprKind::Array(items) => HirExprKind::Array(
-                    items.iter().map(|item| self.transform_expr(item.clone()).0).collect(),
-                ),
+                ExprKind::Array(items) => HirExprKind::Array(self.transform_expr_vec(items)),
                 ExprKind::Builtin(name, args) => {
                     let func = get_builtin_function(&name.to_string());
                     let new_args: &mut Vec<HirExpr> = &mut Vec::new();
@@ -547,9 +547,10 @@ impl<'a> Transformer<'a> {
 
                     HirExprKind::StaticAccess(id, Box::new(self.transform_expr(*expr).0))
                 }
-                ExprKind::MethodCall(ident, expr) => {
-                    HirExprKind::MethodCall(ident, Box::new(self.transform_expr(*expr).0))
-                }
+                ExprKind::MethodCall(ident, expr) => HirExprKind::MethodCall(
+                    self.transform_expr_vec(ident),
+                    Box::new(self.transform_expr(*expr).0),
+                ),
                 ExprKind::Unwrap(expr) => {
                     HirExprKind::Unwrap(Box::new(self.transform_expr(*expr).0))
                 }
@@ -570,6 +571,10 @@ impl<'a> Transformer<'a> {
         }
 
         (expr, id)
+    }
+
+    pub fn transform_expr_vec(&mut self, exprs: Vec<Expr>) -> Vec<HirExpr> {
+        exprs.into_iter().map(|expr| self.transform_expr(expr).0).collect()
     }
 
     pub fn transform_match(&mut self, mt: Match) -> HirMatch {

@@ -1,4 +1,5 @@
 mod errors;
+mod method_resolver;
 pub mod scope;
 
 use crate::{
@@ -10,6 +11,7 @@ use crate::{
             InvalidFunctionArgCount, NoField, NoVariableForMethodAccess, OrelseExpectedOption,
             UnwrapNonOptionalOrResult,
         },
+        method_resolver::MethodResolver,
         scope::{TypeInfo, TypeScopeManager},
     },
     items::{
@@ -22,7 +24,7 @@ use crate::{
 };
 use brim_ast::{
     ItemId,
-    expr::{BinOpKind, UnaryOp},
+    expr::{BinOpKind, Expr, UnaryOp},
     item::{FunctionContext, Ident},
     token::{Lit, LitKind},
     ty::{Mutable, PrimitiveType},
@@ -38,8 +40,8 @@ pub struct TypeInference<'a> {
     pub hir: &'a mut HirModuleMap,
     pub ctx: InferCtx,
     pub scope_manager: TypeScopeManager,
-    pub current_mod: ModuleId,
     pub temp: TemporaryDiagnosticContext,
+    pub current_mod: ModuleId,
     pub main_ctx: &'a mut MainContext,
 }
 
@@ -709,40 +711,56 @@ impl TypeInference<'_> {
             }
             HirExprKind::MethodCall(idents, expr) => {
                 let idents_clone = idents.clone();
-                let item = self.resolve_method_from_idents(idents, expr, None);
-                *idents = idents_clone; // Restore the original idents after resolution
+                let method_resolver = &mut MethodResolver::new(
+                    self.scope_manager.clone(),
+                    self.current_mod,
+                    self.main_ctx,
+                    idents.clone(),
+                );
+                self.temp.extend(method_resolver.temp.diags.clone());
+                let item = method_resolver.resolve_method_call();
+                *idents = idents_clone;
 
-                if let Some(item) = item {
-                    let method_fn = item.as_fn().clone();
-                    let return_type = method_fn.sig.return_type.clone();
+                &if let Some(item) = item
+                    && let HirExprKind::Call(call_ident, args, params) = &mut expr.kind
+                {
+                    let call_ident = call_ident.as_ident().unwrap().clone();
+                    let method = item.get_method(&call_ident);
 
-                    &match &mut expr.kind {
-                        HirExprKind::Call(call_ident, args, params) => {
-                            let ident_clone = *call_ident.as_ident().unwrap();
+                    if method.is_none() {
+                        self.temp.emit_impl(NoMethod {
+                            span: (call_ident.span, self.current_mod.as_usize()),
+                            method: call_ident.to_string(),
+                            // TODO: use the correct type here
+                            ty: HirTyKind::Placeholder,
+                        });
+                        expr.ty = HirTyKind::err();
+                        HirTyKind::err()
+                    } else {
+                        let method_fn = self.main_ctx.get_item(method.unwrap()).as_fn().clone();
+                        let return_type = method_fn.sig.return_type.clone();
 
-                            let mut method_fn_for_inference = method_fn;
-                            if !method_fn_for_inference.is_static()
-                                && method_fn_for_inference.ctx == FunctionContext::Method
-                            {
-                                method_fn_for_inference.sig.params.params.remove(0);
-                            }
-
-                            let inferred_type = self.infer_call_expr(
-                                ident_clone,
-                                &method_fn_for_inference,
-                                args,
-                                params,
-                            );
-                            expr.ty = inferred_type;
-
-                            self.update_builtins(*expr.clone());
-
-                            return_type
+                        let mut method_fn_for_inference = method_fn;
+                        if !method_fn_for_inference.is_static()
+                            && method_fn_for_inference.ctx == FunctionContext::Method
+                        {
+                            method_fn_for_inference.sig.params.params.remove(0);
                         }
-                        _ => unreachable!(),
+
+                        let inferred_type = self.infer_call_expr(
+                            call_ident,
+                            &method_fn_for_inference,
+                            args,
+                            params,
+                        );
+                        expr.ty = inferred_type;
+
+                        self.update_builtins(*expr.clone());
+
+                        return_type
                     }
                 } else {
-                    &HirTyKind::err()
+                    HirTyKind::err()
                 }
             }
             HirExprKind::Unwrap(expr) => {
@@ -844,19 +862,25 @@ impl TypeInference<'_> {
         ty.unwrap_or(HirTyKind::void())
     }
 
-    pub fn resolve_field_from_idents(&mut self, idents: &mut Vec<Ident>) -> Option<HirTyKind> {
+    pub fn resolve_field_from_idents(&mut self, idents: &mut Vec<HirExpr>) -> Option<HirTyKind> {
         if idents.is_empty() {
             return None;
         }
 
-        let first = idents.first().unwrap().to_string();
+        let first = idents.first().unwrap().as_member_part().to_string();
         let var = self.scope_manager.resolve_variable(&first).cloned();
 
         if let Some(var) = var {
-            idents.remove(0);
+            let first = idents.remove(0);
 
             if idents.is_empty() {
                 return Some(var.ty);
+            }
+
+            if let Some(opt) = var.ty.is_option()
+                && let HirExprKind::Unwrap(_) = first.kind
+            {
+                return self.resolve_field_access(opt, idents);
             }
 
             self.resolve_field_access(var.ty, idents)
@@ -875,13 +899,15 @@ impl TypeInference<'_> {
     fn resolve_field_access(
         &mut self,
         ty: HirTyKind,
-        idents: &mut Vec<Ident>,
+        idents: &mut Vec<HirExpr>,
     ) -> Option<HirTyKind> {
         if idents.is_empty() {
             return Some(ty);
         }
-        let current_ident = *idents.first().unwrap();
+        let current_ident = idents.first().unwrap().clone();
         let error_span = current_ident.span;
+
+        let current_ident = current_ident.as_member_part();
 
         if let Some(type_ident) = ty.is_ident() {
             let type_name = type_ident.to_string();
@@ -940,135 +966,6 @@ impl TypeInference<'_> {
         }
 
         if_stmt.then_block.ty.clone()
-    }
-
-    pub fn resolve_method_from_idents(
-        &mut self,
-        idents: &mut Vec<Ident>,
-        expr: &mut Box<HirExpr>,
-        last: Option<TypeInfo>,
-    ) -> Option<HirItem> {
-        if idents.is_empty() {
-            return None;
-        }
-
-        let first = idents.first().unwrap().to_string();
-
-        if let Some(type_info) = last {
-            return self.resolve_from_type(type_info, idents, expr);
-        }
-
-        let var = self.scope_manager.resolve_variable(&first).cloned();
-        let function_call = expr.as_call().as_ident().unwrap();
-
-        if let Some(var) = var {
-            idents.remove(0);
-
-            if idents.is_empty() {
-                return None;
-            }
-
-            self.resolve_member_access(var.ty, idents, expr, function_call.span)
-        } else {
-            self.temp.emit_impl(NoVariableForMethodAccess {
-                span: (function_call.span, self.current_mod.as_usize()),
-                name: first,
-            });
-
-            None
-        }
-    }
-
-    fn resolve_from_type(
-        &mut self,
-        type_info: TypeInfo,
-        idents: &mut Vec<Ident>,
-        expr: &mut Box<HirExpr>,
-    ) -> Option<HirItem> {
-        if let Some(ident) = type_info.ty.is_ident() {
-            let ident_str = ident.to_string();
-
-            let sym = self.main_ctx.resolve_symbol(&ident_str, self.current_mod.as_usize());
-
-            if sym.is_some() {
-                return self.resolve_member_access(
-                    type_info.ty,
-                    idents,
-                    expr,
-                    idents.first().unwrap().span,
-                );
-            }
-        }
-
-        self.temp.emit_impl(NoMethod {
-            span: (idents.first().unwrap().span, self.current_mod.as_usize()),
-            method: idents.first().unwrap().to_string(),
-            ty: type_info.ty,
-        });
-
-        None
-    }
-
-    fn resolve_member_access(
-        &mut self,
-        ty: HirTyKind,
-        idents: &mut Vec<Ident>,
-        expr: &mut Box<HirExpr>,
-        error_span: Span,
-    ) -> Option<HirItem> {
-        let current_ident = *idents.first().unwrap();
-
-        if let Some(type_ident) = ty.is_ident() {
-            let type_name = type_ident.to_string();
-
-            let sym = self.main_ctx.resolve_symbol(&type_name, self.current_mod.as_usize());
-
-            if let Some(sym) = sym {
-                let method_id = sym.as_struct().unwrap().get_item(current_ident);
-
-                if let Some(method_id) = method_id {
-                    idents.remove(0);
-
-                    let item = self.main_ctx.get_item(method_id).clone();
-
-                    return if idents.is_empty() {
-                        Some(item)
-                    } else {
-                        let method_fn = item.as_fn();
-                        let return_type = method_fn.sig.return_type.clone();
-
-                        let next_type =
-                            TypeInfo { ty: return_type, span: idents.first().unwrap().span };
-
-                        self.resolve_method_from_idents(idents, expr, Some(next_type))
-                    };
-                }
-
-                let struct_data = sym.as_struct().unwrap();
-                for field in &struct_data.fields {
-                    if field.ident == current_ident {
-                        idents.remove(0);
-
-                        if idents.is_empty() {
-                            return None;
-                        }
-
-                        let next_type =
-                            TypeInfo { ty: field.ty.clone(), span: idents.first().unwrap().span };
-
-                        return self.resolve_method_from_idents(idents, expr, Some(next_type));
-                    }
-                }
-            }
-        }
-
-        self.temp.emit_impl(NoMethod {
-            span: (error_span, self.current_mod.as_usize()),
-            method: current_ident.to_string(),
-            ty,
-        });
-
-        None
     }
 
     pub fn infer_call_expr(

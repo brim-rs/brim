@@ -213,3 +213,10 @@ pub struct ExpectedTypeAfterConst {
     pub span: (Span, usize),
     pub found: TokenKind,
 }
+
+#[derive(Diagnostic)]
+#[error("`?` should be placed before a type to make it optional.")]
+pub struct OptionalTypeError {
+    #[error]
+    pub span: (Span, usize),
+}

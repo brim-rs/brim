@@ -89,7 +89,7 @@ impl TypeChecker {
             HirExprKind::Assign(lhs, rhs) => {
                 if rhs.ty == HirTyKind::Primitive(PrimitiveType::Void) {
                     self.ctx.emit_impl(CannotInitializeWithVoid { span: (rhs.span, self.mod_id) });
-                } else if lhs.ty != rhs.ty {
+                } else if !lhs.ty.simple_eq(&rhs.ty) {
                     self.ctx.emit_impl(AssignMismatch {
                         span: (lhs.span.to(rhs.span), self.mod_id),
                         expected: lhs.ty.clone(),
@@ -97,13 +97,26 @@ impl TypeChecker {
                     });
                 }
 
-                if lhs.ty.is_mutable().is_none() {
+                let mut check_mutability = true;
+                let mut target = &lhs.kind;
+
+                if let HirExprKind::Field(exprs) = &lhs.kind {
+                    target = &exprs[0].kind;
+                    check_mutability = !exprs[0].ty.is_mutable().is_none();
+                } else {
+                    check_mutability = lhs.ty.is_mutable().is_none();
+                }
+
+                if check_mutability {
+                    let name = if let HirExprKind::Var(ident) = target {
+                        ident.to_string()
+                    } else {
+                        String::new()
+                    };
+
                     self.ctx.emit_impl(CannotAssignToImmutable {
                         span: (lhs.span.to(rhs.span), self.mod_id),
-                        name: match lhs.kind {
-                            HirExprKind::Var(ident) => ident.to_string(),
-                            _ => String::new(),
-                        },
+                        name,
                     });
                 }
 

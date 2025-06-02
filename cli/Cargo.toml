@@ -21,3 +21,7 @@ toml_edit = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 dashmap = { workspace = true }
+dhat = { version = "0.3.3" }
+
+[features]
+dhat-heap = []

@@ -12,10 +12,10 @@ pub type HandleTy = match @os() {
 pub struct Handle {
     inner: HandleTy
 
-    fn write(self: &Handle, data: const u8[], offset: u64?) usize!IoError {
+    fn write(self: &Handle, data: const u8[], offset: ?u64) usize!IoError {
         let bytes_written: DWORD = 0;
         let x = data.len;
-        let overlapped: OVERLAPPED? = offset ?
+        let overlapped: mut ?OVERLAPPED = offset ?
              @some(OVERLAPPED {
                 .Internal = 0,
                 .InternalHigh = 0,
@@ -27,10 +27,6 @@ pub struct Handle {
                 },
                 .hEvent = @none(),
             }) : @none();
-
-        if write() {
-            return @err(IoError::fromOsError(GetLastError()));
-        }
 
         if overlapped {
             overlapped!.hEvent = @none();

@@ -82,6 +82,15 @@ impl HirItem {
     pub fn has_attr(&self, name: &str) -> Option<&HirAttribute> {
         self.attrs.iter().find(|attr| attr.name.to_string() == name)
     }
+
+    // only for enums and structs
+    pub fn get_method(&self, name: &Ident) -> Option<ItemId> {
+        match &self.kind {
+            HirItemKind::Struct(s) => s.items.get(name).cloned(),
+            HirItemKind::Enum(e) => e.items.get(name).cloned(),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

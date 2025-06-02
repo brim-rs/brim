@@ -47,7 +47,6 @@ impl Parser {
         if self.current().is_assign() {
             debug!("Found assignment operator");
             self.advance();
-            let span = self.prev().span;
             let right = self.parse_assignment_expr();
             return self.new_expr(
                 expr.span.to(right.span),
@@ -62,7 +61,6 @@ impl Parser {
         let condition = self.parse_binary_expression();
 
         if self.current().kind == TokenKind::QuestionMark {
-            debug!("Found ternary operator");
             self.advance();
 
             let true_expr = self.parse_expr();
@@ -71,6 +69,7 @@ impl Parser {
                 self.advance();
                 let false_expr = self.parse_assignment_expr();
 
+                debug!("Parsed ternary expression");
                 return self.new_expr(
                     condition.span.to(false_expr.span),
                     ExprKind::Ternary(
@@ -85,6 +84,7 @@ impl Parser {
                 });
 
                 let dummy = self.dummy_block();
+                debug!("Parsed ternary expression");
                 return self.new_expr(
                     condition.span.to(true_expr.span),
                     ExprKind::Ternary(Box::new(condition), Box::new(true_expr), Box::new(dummy)),
@@ -156,6 +156,7 @@ impl Parser {
                 left.span.to(right.span),
                 ExprKind::Binary(Box::new(left), operator, Box::new(right)),
             );
+            debug!("Parsed binary expression: {:?}", left.kind);
         }
 
         left
@@ -164,10 +165,9 @@ impl Parser {
     fn parse_unary_expr(&mut self) -> Expr {
         let span = self.current().span;
         if let Some(op) = self.peek_unary_op() {
-            debug!("Found unary operator: {:?}", op);
-
             self.advance();
             let operand = self.parse_unary_expr();
+            debug!("Found unary operator: {:?}", op);
             return self
                 .new_expr(span.to(operand.span), ExprKind::Unary(span, op, Box::new(operand)));
         }
@@ -175,7 +175,17 @@ impl Parser {
         self.parse_access_expr()
     }
 
+    pub fn is_access_start(&mut self) -> bool {
+        match self.current().kind {
+            TokenKind::Delimiter(Delimiter::Bracket, Orientation::Open)
+            | TokenKind::Bang
+            | TokenKind::Dot => true,
+            _ => false,
+        }
+    }
+
     pub fn parse_access_expr(&mut self) -> Expr {
+        let span = self.current().span;
         let mut primary = self.parse_primary_expr();
 
         loop {
@@ -188,7 +198,6 @@ impl Parser {
                         primary.span.to(index.span),
                         ExprKind::Index(Box::new(primary), Box::new(index)),
                     );
-
                     debug!("Parsed index expression");
                 }
                 TokenKind::Bang => {
@@ -197,6 +206,31 @@ impl Parser {
                         primary.span.to(self.prev().span),
                         ExprKind::Unwrap(Box::new(primary)),
                     );
+                }
+                TokenKind::Dot => {
+                    self.advance();
+                    let mut idents = vec![primary];
+
+                    loop {
+                        idents.push(self.parse_primary_expr());
+
+                        if !self.eat(TokenKind::Dot) {
+                            break;
+                        }
+                    }
+
+                    if let Some(last) = idents.last().cloned()
+                        && matches!(last.kind, ExprKind::Call(..))
+                    {
+                        let call_span = span.to(self.prev().span);
+                        idents.pop();
+                        primary = self.new_expr(
+                            call_span,
+                            ExprKind::MethodCall(idents, Box::new(last.clone())),
+                        )
+                    } else {
+                        primary = self.new_expr(span, ExprKind::Field(idents))
+                    }
                 }
                 _ => break,
             }
@@ -213,6 +247,7 @@ impl Parser {
                 self.validate_suffix(lit);
 
                 let span = span.to(self.prev().span);
+                debug!("Parsed literal expression: {:?}", lit.kind);
                 self.new_expr(span, ExprKind::Literal(lit, span))
             }
             TokenKind::Ident(_) => {
@@ -220,11 +255,13 @@ impl Parser {
                     let span = self.prev().span;
                     let expr = self.parse_expr();
 
+                    debug!("Parsed return expression");
                     self.new_expr(expr.span, ExprKind::Return(Box::new(expr), span))
                 } else if self.eat_keyword(ptok!(If)) {
                     self.dcx
                         .emit_impl(IfAsExpressionError { span: (self.current().span, self.file) });
 
+                    debug!("Parsed not allowed if expression");
                     self.dummy_block()
                 } else if self.eat_keyword(ptok!(Comptime)) {
                     let block = self.parse_block(true);
@@ -236,6 +273,7 @@ impl Parser {
                     self.parse_match_expression()
                 } else if self.current().is_keyword(Const) {
                     if let Some(ty) = self.parse_ty_without_ident() {
+                        debug!("Parsed type expression");
                         self.new_expr(ty.span, ExprKind::Type(Box::new(ty)))
                     } else {
                         self.dcx.emit_impl(ExpectedTypeAfterConst {
@@ -243,6 +281,7 @@ impl Parser {
                             span: (self.current().span, self.file),
                         });
 
+                        debug!("Invalid type expression");
                         self.dummy_block()
                     }
                 } else {
@@ -295,6 +334,7 @@ impl Parser {
 
                         self.expect_cbrace();
 
+                        debug!("Parsed struct constructor expression");
                         self.new_expr(
                             span.to(self.prev().span),
                             ExprKind::StructConstructor(ident, generics, fields),
@@ -303,6 +343,8 @@ impl Parser {
                         if let Some(primitive) = self.is_primitive(ident) {
                             let ty =
                                 Ty { span, kind: TyKind::Primitive(primitive), id: self.new_id() };
+
+                            debug!("Parsed primitive type expression");
                             return self.new_expr(span, ExprKind::Type(Box::new(ty)));
                         }
 
@@ -313,6 +355,8 @@ impl Parser {
                                 kind: TyKind::Ident { ident, generics },
                                 id: self.new_id(),
                             };
+
+                            debug!("Parsed generic type expression");
                             return self.new_expr(span, ExprKind::Type(Box::new(ty)));
                         }
 
@@ -344,43 +388,6 @@ impl Parser {
 
                             debug!("Parsed path expression");
                             self.new_expr(span, ExprKind::Path(path))
-                        } else if self.eat(TokenKind::Dot) {
-                            let mut idents = vec![ident];
-
-                            while let TokenKind::Ident(_) = self.current().kind {
-                                idents.push(self.parse_ident());
-
-                                if !self.eat(TokenKind::Dot) {
-                                    break;
-                                }
-                            }
-
-                            if self.is_paren(Orientation::Open) {
-                                self.expect_oparen();
-                                let mut args = vec![];
-                                while !self.is_paren(Orientation::Close) {
-                                    args.push(self.parse_expr());
-                                    if !self.eat(TokenKind::Comma) {
-                                        break;
-                                    }
-                                }
-                                self.expect_cparen();
-
-                                let call_span = span.to(self.prev().span);
-                                let ex = ExprKind::Call(
-                                    Box::new(
-                                        self.new_expr(idents[0].span, ExprKind::Var(idents[0])),
-                                    ),
-                                    args,
-                                );
-                                let call_expr = self.new_expr(call_span, ex);
-                                self.new_expr(
-                                    span,
-                                    ExprKind::MethodCall(idents, Box::new(call_expr)),
-                                )
-                            } else {
-                                self.new_expr(span, ExprKind::Field(idents))
-                            }
                         } else {
                             debug!("Parsed variable expression: {}", ident);
                             self.new_expr(span, ExprKind::Var(ident))
@@ -415,6 +422,7 @@ impl Parser {
             }
             TokenKind::BinOp(BinOpToken::And) | TokenKind::BinOp(BinOpToken::Star) => {
                 if let Some(ty) = self.parse_ty_without_ident() {
+                    debug!("Parsed type expression");
                     return self.new_expr(ty.span, ExprKind::Type(Box::new(ty)));
                 }
 
@@ -577,6 +585,7 @@ impl Parser {
 
     pub fn parse_match_expression(&mut self) -> Expr {
         let mt = self.parse_match();
+        debug!("Parsed match expression");
         self.new_expr(mt.span, ExprKind::Match(mt))
     }
 

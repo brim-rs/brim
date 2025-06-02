@@ -109,6 +109,8 @@ pub trait AstWalker {
 
     fn visit_unary(&mut self, _op: &mut UnaryOp, _operand: &mut Box<Expr>) {}
 
+    fn visit_field(&mut self, _exprs: &mut Vec<Expr>) {}
+
     fn walk_expr(&mut self, expr: &mut Expr) {
         match &mut expr.kind {
             ExprKind::Binary(lhs, _, rhs) => {
@@ -116,7 +118,7 @@ pub trait AstWalker {
                 self.visit_expr(rhs);
             }
             ExprKind::Unary(_, op, operand) => self.visit_unary(op, operand),
-            ExprKind::Field(_) => {}
+            ExprKind::Field(exprs) => self.visit_field(exprs),
             ExprKind::Index(base, index) => {
                 self.visit_expr(base);
                 self.visit_expr(index);
@@ -183,7 +185,7 @@ pub trait AstWalker {
         }
     }
 
-    fn visit_method_call(&mut self, _: &Vec<Ident>, args: &mut Box<Expr>) {
+    fn visit_method_call(&mut self, _: &mut Vec<Expr>, args: &mut Box<Expr>) {
         self.visit_expr(args);
     }
 

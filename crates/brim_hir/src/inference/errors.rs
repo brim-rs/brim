@@ -100,3 +100,19 @@ pub struct NoVariableForMethodAccess {
     pub span: (Span, usize),
     pub name: String,
 }
+
+#[derive(Diagnostic)]
+#[error("failed to resolve item with name `{name}`")]
+pub struct FailedToResolveItem {
+    #[error]
+    pub span: (Span, usize),
+    pub name: String,
+}
+
+#[derive(Diagnostic)]
+#[error("cannot access field on a non-struct type `{ty}`")]
+pub struct CannotAccessFieldOnNonStruct {
+    #[error]
+    pub span: (Span, usize),
+    pub ty: HirTyKind,
+}

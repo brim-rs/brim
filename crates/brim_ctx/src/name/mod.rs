@@ -463,7 +463,7 @@ impl AstWalker for NameResolver<'_> {
         match &mut expr.kind {
             ExprKind::Unary(_, _, operand) => self.walk_expr(operand),
             ExprKind::Field(idents) => {
-                self.resolve_variable(idents.first().unwrap());
+                self.resolve_variable(&idents.first().unwrap().as_ident_with_unwrap());
             }
             ExprKind::Index(base, index) => {
                 self.walk_expr(base);

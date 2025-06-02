@@ -69,7 +69,7 @@ url = "2.5.4"
 dashmap = "7.0.0-rc2"
 
 [profile.release]
-panic = 'abort'
+debug = 1
 
 # These clippy settings are copied from https://github.com/oxc-project/oxc/blob/main/Cargo.toml
 

@@ -50,6 +50,18 @@ impl HirExpr {
             _ => panic!("Expected if expression"),
         }
     }
+
+    /// only returns if it's a variable or an unwrap of a variable
+    pub fn as_member_part(&self) -> Ident {
+        match &self.kind {
+            HirExprKind::Unwrap(expr) => match &expr.kind {
+                HirExprKind::Var(ident) => ident.clone(),
+                _ => panic!("Expected variable inside unwrap"),
+            },
+            HirExprKind::Var(ident) => ident.clone(),
+            _ => panic!("Expected variable or unwrap"),
+        }
+    }
 }
 
 // We no longer need parenthesized expressions, because the tree defines the structure.
@@ -62,7 +74,7 @@ pub enum HirExprKind {
     /// Unary operations.
     Unary(UnaryOp, Box<HirExpr>),
     /// Field access: `x.name`.
-    Field(Vec<Ident>),
+    Field(Vec<HirExpr>),
     /// Array indexing: `x[0]`.
     Index(Box<HirExpr>, Box<HirExpr>),
     /// Literal values like numbers or strings.
@@ -94,7 +106,7 @@ pub enum HirExprKind {
     /// Static access to a struct field.
     StaticAccess(ItemId, Box<HirExpr>),
     /// Method call on an expression.
-    MethodCall(Vec<Ident>, Box<HirExpr>),
+    MethodCall(Vec<HirExpr>, Box<HirExpr>),
     /// Unwrap an option.
     Unwrap(Box<HirExpr>),
     /// Ternary operator.

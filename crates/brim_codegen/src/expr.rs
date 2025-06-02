@@ -64,20 +64,20 @@ impl CppCodegen {
                 format!("{expr_code}[{index_code}]")
             }
             HirExprKind::Field(idents) => {
-                let mut vals = idents.iter().map(|id| format!("{id}")).collect::<Vec<String>>();
-                if let Some(last) = idents.last() {
-                    let last = *last;
-
-                    if last.to_string() == "len" {
-                        vals.pop();
-                        vals.push("size()".to_string());
-                    }
-
-                    if last.to_string() == "ptr" {
-                        vals.pop();
-                        vals.push("data()".to_string());
-                    }
-                };
+                let mut vals = idents.iter().map(|id| format!("")).collect::<Vec<String>>();
+                // if let Some(last) = idents.last() {
+                //     let last = *last;
+                //
+                //     if last.to_string() == "len" {
+                //         vals.pop();
+                //         vals.push("size()".to_string());
+                //     }
+                //
+                //     if last.to_string() == "ptr" {
+                //         vals.pop();
+                //         vals.push("data()".to_string());
+                //     }
+                // };
 
                 format!("brim_{}", vals.join("."))
             }
@@ -119,11 +119,13 @@ impl CppCodegen {
             }
             HirExprKind::MethodCall(mut r_ident, call) => match call.kind.clone() {
                 HirExprKind::Call(_, args, _) => {
-                    let last = *r_ident.last().unwrap();
+                    let last = r_ident.last().unwrap().as_ident().unwrap().clone();
                     r_ident.pop();
+
                     let path = r_ident
                         .iter()
-                        .map(std::string::ToString::to_string)
+                        .map(|x| x.as_ident().unwrap())
+                        .map(ToString::to_string)
                         .collect::<Vec<String>>()
                         .join(".");
 

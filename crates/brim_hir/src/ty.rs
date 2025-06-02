@@ -90,7 +90,7 @@ impl Display for HirTyKind {
             HirTyKind::ResultOk(ty) => write!(f, "@ok({ty})"),
             HirTyKind::ResultErr(err) => write!(f, "@err({err})"),
 
-            HirTyKind::Option(ty) => write!(f, "{ty}?"),
+            HirTyKind::Option(ty) => write!(f, "?({ty})"),
             HirTyKind::None => write!(f, "None"),
             HirTyKind::Some(ty) => write!(f, "Some({ty})"),
             HirTyKind::Null => write!(f, "null"),
@@ -312,6 +312,7 @@ impl HirTyKind {
             | HirTyKind::Ptr(_, _)
             | HirTyKind::Some(_)
             | HirTyKind::Option(_) => true,
+            HirTyKind::Mut(ty) | HirTyKind::Const(ty) => ty.can_be_dereferenced(),
             _ => false,
         }
     }
@@ -400,7 +401,8 @@ impl HirTyKind {
 
     pub fn is_option(&self) -> Option<HirTyKind> {
         match self {
-            HirTyKind::Option(ty) | HirTyKind::Const(ty) => Some(*ty.clone()),
+            HirTyKind::Option(ty) => Some(*ty.clone()),
+            HirTyKind::Const(ty) | HirTyKind::Mut(ty) => ty.is_option(),
             _ => None,
         }
     }

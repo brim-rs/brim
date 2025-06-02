@@ -1,5 +1,5 @@
 use crate::{
-    parser::{PResult, PToken, PTokenKind, Parser},
+    parser::{PResult, PToken, PTokenKind, Parser, errors::OptionalTypeError},
     ptok,
 };
 use brim_ast::{
@@ -16,6 +16,7 @@ impl Parser {
     pub fn parse_type(&mut self) -> Ty {
         let mut ty = self.parse_type_core();
 
+        // Apply additional modifiers that come after the type
         ty = self.apply_type_modifiers(ty);
 
         ty
@@ -32,6 +33,10 @@ impl Parser {
             let mutable = self.is_mut();
             let inner_ty = self.parse_type_core();
             TyKind::Ptr(span, Box::new(inner_ty), mutable)
+        } else if self.eat(TokenKind::QuestionMark) {
+            // Handle Option type (?Type)
+            let inner_ty = self.parse_type_core();
+            TyKind::Option(Box::new(inner_ty), span)
         } else if self.current().is_keyword(Mut) {
             let span = self.current().span;
             self.eat_keyword(ptok!(Mut));
@@ -150,15 +155,9 @@ impl Parser {
             };
         }
 
-        // Handle Option type
         if self.current().kind == TokenKind::QuestionMark {
-            let mark = self.current().span;
             self.eat(TokenKind::QuestionMark);
-            ty = Ty {
-                span: span.to(self.prev().span),
-                kind: TyKind::Option(Box::new(ty), mark),
-                id: self.new_id(),
-            };
+            self.emit(OptionalTypeError { span: (self.prev().span, self.file) });
         }
 
         ty
@@ -186,11 +185,20 @@ impl Parser {
             let is_mut = self.is_mut();
             let inner_ty_opt = self.parse_type_core_without_ident();
             inner_ty_opt.map(|inner_ty| TyKind::Ptr(span, Box::new(inner_ty), is_mut))
+        } else if self.eat(TokenKind::QuestionMark) {
+            // Handle Option type (?Type)
+            let inner_ty_opt = self.parse_type_core_without_ident();
+            inner_ty_opt.map(|inner_ty| TyKind::Option(Box::new(inner_ty), span))
         } else if self.current().is_keyword(Mut) {
             let span = self.current().span;
             self.eat_keyword(ptok!(Mut));
             let inner_ty_opt = self.parse_type_core_without_ident();
             inner_ty_opt.map(|inner_ty| TyKind::Mut(Box::new(inner_ty), span))
+        } else if self.current().is_keyword(Const) {
+            let span = self.current().span;
+            self.eat_keyword(ptok!(Const));
+            let inner_ty_opt = self.parse_type_core_without_ident();
+            inner_ty_opt.map(|inner_ty| TyKind::Const(span, Box::new(inner_ty)))
         } else {
             let ident_opt = self.parse_ident_without_err();
 

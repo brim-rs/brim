@@ -1,5 +1,9 @@
 #![feature(let_chains)]
 
+#[cfg(feature = "dhat-heap")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 use crate::{
     commands::{init::init_command, run::run_command},
     panic::setup_panic_handler,

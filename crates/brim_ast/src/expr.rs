@@ -22,6 +22,17 @@ impl Expr {
             _ => None,
         }
     }
+
+    pub fn as_ident_with_unwrap(&self) -> Ident {
+        match &self.kind {
+            ExprKind::Unwrap(expr) => match &expr.kind {
+                ExprKind::Var(ident) => ident.clone(),
+                _ => panic!("Expected variable inside unwrap"),
+            },
+            ExprKind::Var(ident) => ident.clone(),
+            _ => panic!("Expected variable or unwrap"),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -33,11 +44,11 @@ pub enum ExprKind {
     /// `try x()`, `!x`
     Unary(Span, UnaryOp, Box<Expr>),
     /// `x.name`
-    Field(Vec<Ident>),
+    Field(Vec<Expr>),
     /// `x[0]`
     Index(Box<Expr>, Box<Expr>),
     /// `x.foo()`
-    MethodCall(Vec<Ident>, Box<Expr>),
+    MethodCall(Vec<Expr>, Box<Expr>),
     /// `Vec::new()`
     StaticAccess(Vec<Ident>, Box<Expr>),
     /// `123`, `"hello"`, etc.

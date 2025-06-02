@@ -2,7 +2,7 @@ mod errors;
 
 use crate::validator::errors::{
     BuiltinFunctionArgCount, DuplicateFieldInitializer, DuplicateParam, ExternFunctionResultOption,
-    TooManyParameters, TryUnaryOnUnwrap,
+    FieldAccessOnlyPlainOrUnwrap, TooManyParameters, TryUnaryOnUnwrap,
 };
 use anyhow::Result;
 use brim_ast::{
@@ -79,6 +79,20 @@ impl AstValidator {
             }
         }
     }
+
+    fn validate_fields(&mut self, exprs: &mut Vec<Expr>) {
+        for expr in exprs {
+            match expr.kind {
+                ExprKind::Var(_) | ExprKind::Unwrap(_) => {}
+                _ => {
+                    self.ctx.emit_impl(FieldAccessOnlyPlainOrUnwrap {
+                        span: (expr.span, self.current_file),
+                        note: "example: `x.y.z`, `x!.y.z`, `x.y!.z` etc.",
+                    });
+                }
+            }
+        }
+    }
 }
 
 impl AstWalker for AstValidator {
@@ -124,6 +138,15 @@ impl AstWalker for AstValidator {
             | ItemKind::TypeAlias(_)
             | ItemKind::Use(_) => {}
         }
+    }
+
+    fn visit_field(&mut self, exprs: &mut Vec<Expr>) {
+        // we only allow field access like these: `x.y.z`, `x!.y.z`, `x.y!.z` etc.
+        self.validate_fields(exprs);
+    }
+
+    fn visit_method_call(&mut self, exprs: &mut Vec<Expr>, args: &mut Box<Expr>) {
+        self.validate_fields(exprs);
     }
 
     fn visit_unary(&mut self, op: &mut UnaryOp, operand: &mut Box<Expr>) {
